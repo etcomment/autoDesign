@@ -22,8 +22,8 @@ export function ShapeRenderer({ shape, isSelected }: ShapeRendererProps) {
 
   const commonProps = {
     fill: style.fill,
-    stroke: isSelected ? '#4a90d9' : style.stroke,
-    strokeWidth: isSelected ? style.strokeWidth + 1 : style.strokeWidth,
+    stroke: style.stroke,
+    strokeWidth: style.strokeWidth,
     opacity: style.opacity,
     cursor: 'pointer',
   }
