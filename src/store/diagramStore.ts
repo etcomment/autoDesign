@@ -22,7 +22,9 @@ interface DiagramStore {
   readonly sequenceData: SequenceData | null
   readonly diagramType: string
   readonly diagramData: Record<string, unknown> | null
+  readonly diagramColors: Record<string, string>
   readonly selectedShapeIds: ReadonlySet<string>
+  readonly selectedDiagramElementIds: ReadonlySet<string>
   readonly viewBox: ViewBox
   readonly isConnectMode: boolean
 
@@ -49,6 +51,14 @@ interface DiagramStore {
   toggleSelection: (id: string) => void
   selectAll: () => void
   clearSelection: () => void
+
+  selectDiagramElement: (id: string) => void
+  deselectDiagramElement: (id: string) => void
+  toggleDiagramElement: (id: string) => void
+  clearDiagramElementSelection: () => void
+
+  updateDiagramColor: (elementId: string, color: string) => void
+  setDiagramColors: (colors: Record<string, string>) => void
 
   setViewBox: (viewBox: ViewBox) => void
   toggleConnectMode: () => void
@@ -79,7 +89,9 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
     sequenceData: null,
     diagramType: 'flowchart',
     diagramData: null,
+    diagramColors: {},
     selectedShapeIds: new Set(),
+    selectedDiagramElementIds: new Set(),
     viewBox: { x: 0, y: 0, scale: 1 },
     isConnectMode: false,
     canUndo: false,
@@ -186,6 +198,46 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
       set({ selectedShapeIds: new Set() })
     },
 
+    selectDiagramElement: (id) => {
+      const { selectedDiagramElementIds } = get()
+      if (selectedDiagramElementIds.has(id)) return
+      const next = new Set(selectedDiagramElementIds)
+      next.add(id)
+      set({ selectedDiagramElementIds: next, selectedShapeIds: new Set() })
+    },
+
+    deselectDiagramElement: (id) => {
+      const { selectedDiagramElementIds } = get()
+      if (!selectedDiagramElementIds.has(id)) return
+      const next = new Set(selectedDiagramElementIds)
+      next.delete(id)
+      set({ selectedDiagramElementIds: next })
+    },
+
+    toggleDiagramElement: (id) => {
+      const { selectedDiagramElementIds } = get()
+      const next = new Set(selectedDiagramElementIds)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      set({ selectedDiagramElementIds: next, selectedShapeIds: new Set() })
+    },
+
+    clearDiagramElementSelection: () => {
+      set({ selectedDiagramElementIds: new Set() })
+    },
+
+    updateDiagramColor: (elementId, color) => {
+      const { diagramColors } = get()
+      set({ diagramColors: { ...diagramColors, [elementId]: color } })
+    },
+
+    setDiagramColors: (colors) => {
+      set({ diagramColors: { ...colors } })
+    },
+
     setViewBox: (viewBox) => {
       set({ viewBox })
     },
@@ -200,39 +252,22 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
     },
 
     mergeMermaid: (dsl) => {
-      const { model: imported, subgraphGroups, sequenceData, diagramType, diagramData } = parseMermaid(dsl)
-      const existingShapes = model.shapes
+      const { model: imported, subgraphGroups, sequenceData, diagramType, diagramData, diagramColors } = parseMermaid(dsl)
 
-      const existingByText = new Map<string, string>()
-      for (const shape of existingShapes) {
-        if (shape.text.content) {
-          existingByText.set(shape.text.content, shape.id)
-        }
-      }
+      model.clear()
 
       const idMap = new Map<string, string>()
 
       for (const importedShape of imported.shapes) {
-        const existingId = existingByText.get(importedShape.text.content)
-        if (existingId) {
-          idMap.set(importedShape.id, existingId)
-          model.updateShapeStyle(existingId, importedShape.style)
-        } else {
-          const newShape = model.mergeMermaidShape(importedShape)
-          idMap.set(importedShape.id, newShape.id)
-        }
+        const newShape = model.mergeMermaidShape(importedShape)
+        idMap.set(importedShape.id, newShape.id)
       }
 
       for (const conn of imported.connections) {
         const sourceId = idMap.get(conn.sourceId)
         const targetId = idMap.get(conn.targetId)
         if (sourceId && targetId) {
-          const exists = model.connections.some(
-            c => c.sourceId === sourceId && c.targetId === targetId,
-          )
-          if (!exists) {
-            model.addConnection(sourceId, targetId)
-          }
+          model.addConnection(sourceId, targetId)
         }
       }
 
@@ -246,7 +281,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
         }
       }
 
-      set({ ...syncState(), selectedShapeIds: new Set(), subgraphGroups: resolvedGroups, sequenceData: sequenceData ?? null, diagramType, diagramData: diagramData ?? null })
+      set({ ...syncState(), selectedShapeIds: new Set(), selectedDiagramElementIds: new Set(), subgraphGroups: resolvedGroups, sequenceData: sequenceData ?? null, diagramType, diagramData: diagramData ?? null, diagramColors: diagramColors ?? {} })
     },
 
     getModel: () => model,

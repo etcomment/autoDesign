@@ -1,4 +1,16 @@
-export type ShapeType = 'rectangle' | 'ellipse' | 'diamond'
+export type ShapeType =
+  | 'rectangle'
+  | 'ellipse'
+  | 'diamond'
+  | 'stadium'
+  | 'hexagon'
+  | 'cylinder'
+  | 'parallelogram'
+  | 'parallelogramAlt'
+  | 'trapezoid'
+  | 'trapezoidAlt'
+  | 'document'
+  | 'subroutine'
 
 export interface ConnectionType {
   readonly id: string

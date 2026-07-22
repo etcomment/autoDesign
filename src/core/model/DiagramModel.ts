@@ -67,6 +67,11 @@ export class DiagramModel {
     }
   }
 
+  clear(): void {
+    this.shapeMap.clear()
+    this.connectionMap.clear()
+  }
+
   addConnection(sourceId: string, targetId: string): ConnectionType {
     if (!this.shapeMap.has(sourceId)) {
       throw new Error(`Source shape not found: ${sourceId}`)

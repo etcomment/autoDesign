@@ -4,6 +4,19 @@ interface ClassDef {
   name: string
   attributes: string[]
   methods: string[]
+  stereotype: string
+  label?: string
+}
+
+function stripGenerics(name: string): string {
+  let result = name
+  let prev: string
+  do {
+    prev = result
+    result = result.replace(/~([^~]+)~/, '<$1>')
+  } while (result !== prev)
+  result = result.replace(/~+$/, '')
+  return result
 }
 
 export function parseClassDiagram(dsl: string): DiagramModel {
@@ -11,6 +24,7 @@ export function parseClassDiagram(dsl: string): DiagramModel {
   const lines = dsl.split('\n')
   const classes: ClassDef[] = []
   const relations: { source: string; target: string }[] = []
+  const notes: { text: string; forClass?: string }[] = []
 
   let currentClass: ClassDef | null = null
 
@@ -18,13 +32,40 @@ export function parseClassDiagram(dsl: string): DiagramModel {
     const trimmed = line.trim()
     if (!trimmed || trimmed.startsWith('%%') || /^classDiagram/i.test(trimmed)) continue
 
-    const classMatch = /^class\s+(\w[\w-]*)\s*(\{?)/.exec(trimmed)
-    if (classMatch) {
-      currentClass = { name: classMatch[1]!, attributes: [], methods: [] }
+    if (/^namespace\s/i.test(trimmed)) continue
+    if (/^end\s*$/i.test(trimmed)) continue
+    if (/^direction\s/i.test(trimmed)) continue
+    if (/^(link|callback|click|cssClass|classDef)\s/i.test(trimmed)) continue
+
+    const annotationClassMatch = /^<<(\w+)>>\s+class\s+(\w[\w-]*)/.exec(trimmed)
+    if (annotationClassMatch) {
+      currentClass = { name: annotationClassMatch[2]!, attributes: [], methods: [], stereotype: annotationClassMatch[1]! }
       classes.push(currentClass)
-      if (!classMatch[2]) {
+      if (!trimmed.endsWith('{')) {
         currentClass = null
       }
+      continue
+    }
+
+    const classMatch = /^class\s+(?:`([^`]+)`|([\w-]+(?:~[^~]+~)?))\s*(?:\["([^"]*)"\]|\[`([^`]*)`\])?\s*(?:<<(\w+)>>)?\s*(\{?)/.exec(trimmed)
+    if (classMatch) {
+      const rawName = classMatch[1] ?? classMatch[2] ?? ''
+      const name = stripGenerics(rawName)
+      const label = classMatch[3] ?? classMatch[4] ?? ''
+      const stereotype = classMatch[5] ?? ''
+      currentClass = { name, attributes: [], methods: [], stereotype }
+      if (label) currentClass.label = label
+      classes.push(currentClass)
+      if (!classMatch[6]) {
+        currentClass = null
+      }
+      continue
+    }
+
+    const noteMatch = /^note\s+(?:for\s+(\w[\w-]*)\s+)?[""]([^""]+)[""]/.exec(trimmed)
+    if (noteMatch) {
+      const text = noteMatch[2]!.replace(/\\n/g, '\n')
+      notes.push({ text, forClass: noteMatch[1] })
       continue
     }
 
@@ -34,6 +75,12 @@ export function parseClassDiagram(dsl: string): DiagramModel {
     }
 
     if (currentClass) {
+      const inlineStereoMatch = /^<<(\w+)>>$/.exec(trimmed)
+      if (inlineStereoMatch) {
+        currentClass.stereotype = inlineStereoMatch[1]!
+        continue
+      }
+
       const memberMatch = /^([+\-#~]?)\s*(.+)$/.exec(trimmed)
       if (memberMatch) {
         const rawVisibility = memberMatch[1] ?? ''
@@ -99,13 +146,16 @@ export function parseClassDiagram(dsl: string): DiagramModel {
   const maxPerRow = 4
 
   for (const [name, cls] of classByName) {
+    const displayName = cls.stereotype
+      ? `\u00ab${cls.stereotype}\u00bb\n${cls.label ?? name}`
+      : (cls.label ?? name)
     const totalLines = 1 + cls.attributes.length + cls.methods.length
     const classHeight = 30 + totalLines * 16 + 20
     const x = 100 + col * 220
     const y = 20 + row * 280
 
     const shape = model.addShape('rectangle', { x, y }, { width: 200, height: classHeight })
-    const textLines = [name, ...cls.attributes, ...cls.methods]
+    const textLines = [displayName, ...cls.attributes, ...cls.methods]
     model.updateShapeText(shape.id, { content: textLines.join('\n'), fontAlign: 'left', fontSize: 12 })
 
     classNameById.set(name, shape.id)
@@ -120,6 +170,24 @@ export function parseClassDiagram(dsl: string): DiagramModel {
     if (sourceId && targetId) {
       model.addConnection(sourceId, targetId)
     }
+  }
+
+  for (const note of notes) {
+    const x = 100 + col * 220
+    const y = 20 + row * 280
+    const shape = model.addShape('rectangle', { x, y }, { width: 200, height: 60 })
+    model.updateShapeText(shape.id, { content: note.text, fontAlign: 'left', fontSize: 12 })
+    model.updateShapeStyle(shape.id, { fill: '#fef9c3', stroke: '#ca8a04' })
+
+    if (note.forClass) {
+      const targetId = classNameById.get(note.forClass)
+      if (targetId) {
+        model.addConnection(shape.id, targetId)
+      }
+    }
+
+    col++
+    if (col >= maxPerRow) { col = 0; row++ }
   }
 
   return model

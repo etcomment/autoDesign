@@ -4,6 +4,16 @@ import { ShapeRenderer } from './shapes/ShapeRenderer'
 import { ConnectionLines } from './shapes/ConnectionLines'
 import { SubgraphRenderer } from './shapes/SubgraphRenderer'
 import { SequenceLifelines } from './shapes/SequenceLifelines'
+import { PieRenderer } from './shapes/PieRenderer'
+import { QuadrantRenderer } from './shapes/QuadrantRenderer'
+import { TimelineRenderer } from './shapes/TimelineRenderer'
+import { UserJourneyRenderer } from './shapes/UserJourneyRenderer'
+import { GanttRenderer } from './shapes/GanttRenderer'
+import { MindmapRenderer } from './shapes/MindmapRenderer'
+import { GitGraphRenderer } from './shapes/GitGraphRenderer'
+import { SankeyRenderer } from './shapes/SankeyRenderer'
+import { XYChartRenderer } from './shapes/XYChartRenderer'
+import { KanbanRenderer } from './shapes/KanbanRenderer'
 import { GRID_SIZE, snapToGrid } from '../core/grid'
 
 interface MarqueeRect {
@@ -19,6 +29,7 @@ export function Canvas() {
   const viewBox = useDiagramStore(s => s.viewBox)
   const setViewBox = useDiagramStore(s => s.setViewBox)
   const clearSelection = useDiagramStore(s => s.clearSelection)
+  const clearDiagramElementSelection = useDiagramStore(s => s.clearDiagramElementSelection)
   const toggleSelection = useDiagramStore(s => s.toggleSelection)
   const selectShape = useDiagramStore(s => s.selectShape)
   const moveShape = useDiagramStore(s => s.moveShape)
@@ -122,6 +133,7 @@ export function Canvas() {
       // Start marquee selection
       if (!e.ctrlKey && !e.metaKey) {
         clearSelection()
+        clearDiagramElementSelection()
       }
       const canvas = screenToCanvas(e.clientX, e.clientY)
       setMarquee({ startX: canvas.x, startY: canvas.y, endX: canvas.x, endY: canvas.y })
@@ -236,6 +248,15 @@ export function Canvas() {
         <rect x={-5000} y={-5000} width={10000} height={10000} fill="url(#grid)" />
         <SubgraphRenderer />
         <SequenceLifelines />
+        <PieRenderer />
+        <QuadrantRenderer />
+        <TimelineRenderer />
+        <UserJourneyRenderer />
+        <GanttRenderer />
+        <MindmapRenderer />
+        <GitGraphRenderer />
+        <SankeyRenderer />
+        <XYChartRenderer />
         <ConnectionLines />
 
         {shapes.map((shape) => (
@@ -246,6 +267,8 @@ export function Canvas() {
             />
           </g>
         ))}
+
+        <KanbanRenderer />
 
         {marquee && (
           <rect

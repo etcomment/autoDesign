@@ -9,8 +9,13 @@ interface ShapeTemplate {
 
 const SHAPES: readonly ShapeTemplate[] = [
   { type: 'rectangle', label: 'Rectangle' },
+  { type: 'stadium', label: 'Stadium' },
   { type: 'ellipse', label: 'Ellipse' },
   { type: 'diamond', label: 'Diamond' },
+  { type: 'hexagon', label: 'Hexagon' },
+  { type: 'cylinder', label: 'Cylinder' },
+  { type: 'parallelogram', label: 'Parallelogram' },
+  { type: 'subroutine', label: 'Subroutine' },
 ]
 
 export function ShapeLibrary() {
@@ -68,6 +73,45 @@ function ShapeIcon({ type }: { readonly type: ShapeType }) {
             stroke="#999"
             strokeWidth={1.5}
           />
+        </svg>
+      )
+    case 'stadium':
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <rect x={4} y={8} width={size - 8} height={size - 16} rx={12} ry={12} fill="white" stroke="#999" strokeWidth={1.5} />
+        </svg>
+      )
+    case 'hexagon':
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <polygon points={`${half},4 ${size - 6},${half} ${half},${size - 4} 6,${half}`} fill="white" stroke="#999" strokeWidth={1.5} />
+        </svg>
+      )
+    case 'cylinder':
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <path d={`M 6 ${half - 4} C 6 8, ${size - 6} 8, ${size - 6} ${half - 4} L ${size - 6} ${half + 4} C ${size - 6} ${size - 8}, 6 ${size - 8}, 6 ${half + 4} Z`} fill="white" stroke="#999" strokeWidth={1.5} />
+          <ellipse cx={half} cy={half - 4} rx={half - 6} ry={4} fill="white" stroke="#999" strokeWidth={1.5} />
+        </svg>
+      )
+    case 'parallelogram':
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <polygon points={`10,8 ${size - 4},8 ${size - 10},${size - 8} 4,${size - 8}`} fill="white" stroke="#999" strokeWidth={1.5} />
+        </svg>
+      )
+    case 'subroutine':
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <rect x={4} y={8} width={size - 8} height={size - 16} rx={3} fill="white" stroke="#999" strokeWidth={1.5} />
+          <line x1={8} y1={8} x2={8} y2={size - 8} stroke="#999" strokeWidth={1.5} />
+          <line x1={size - 8} y1={8} x2={size - 8} y2={size - 8} stroke="#999" strokeWidth={1.5} />
+        </svg>
+      )
+    default:
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+          <rect x={4} y={8} width={size - 8} height={size - 16} rx={3} fill="white" stroke="#999" strokeWidth={1.5} />
         </svg>
       )
   }

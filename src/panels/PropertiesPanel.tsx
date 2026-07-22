@@ -11,13 +11,26 @@ const PRESET_COLORS = [
 export function PropertiesPanel() {
   const shapes = useDiagramStore(s => s.shapes)
   const selectedShapeIds = useDiagramStore(s => s.selectedShapeIds)
+  const selectedDiagramElementIds = useDiagramStore(s => s.selectedDiagramElementIds)
+  const diagramColors = useDiagramStore(s => s.diagramColors)
   const batchUpdateShapeStyle = useDiagramStore(s => s.batchUpdateShapeStyle)
   const updateShapeText = useDiagramStore(s => s.updateShapeText)
+  const updateDiagramColor = useDiagramStore(s => s.updateDiagramColor)
 
   const selectedIds = [...selectedShapeIds]
   const primaryShape = shapes.find(s => s.id === selectedIds[0])
 
-  if (selectedShapeIds.size === 0 || !primaryShape) return null
+  if (selectedShapeIds.size === 0 && selectedDiagramElementIds.size === 0) return null
+
+  if (selectedDiagramElementIds.size > 0) {
+    return <DiagramElementColorPanel
+      selectedIds={selectedDiagramElementIds}
+      diagramColors={diagramColors}
+      updateDiagramColor={updateDiagramColor}
+    />
+  }
+
+  if (!primaryShape) return null
 
   const plural = selectedIds.length > 1
 
@@ -114,6 +127,77 @@ export function PropertiesPanel() {
           />
         </div>
       )}
+    </div>
+  )
+}
+
+interface DiagramElementColorPanelProps {
+  selectedIds: ReadonlySet<string>
+  diagramColors: Record<string, string>
+  updateDiagramColor: (elementId: string, color: string) => void
+}
+
+function diagramElementLabel(elementId: string): string {
+  const prefix = elementId.includes('-') ? elementId.split('-')[0]! : 'element'
+  const name = elementId.includes('-') ? elementId.slice(elementId.indexOf('-') + 1) : elementId
+  const typeLabel: Record<string, string> = {
+    slice: 'Slice',
+    point: 'Point',
+    event: 'Event',
+    task: 'Task',
+    node: 'Node',
+    branch: 'Branch',
+    series: 'Series',
+    col: 'Column',
+    group: 'Group',
+    service: 'Service',
+    'c4-Person': 'Person',
+    'c4-System': 'System',
+    'c4-Container': 'Container',
+    'c4-Component': 'Component',
+  }
+  return `${typeLabel[prefix] ?? prefix}: ${name}`
+}
+
+function DiagramElementColorPanel({ selectedIds, diagramColors, updateDiagramColor }: DiagramElementColorPanelProps) {
+  const elements = [...selectedIds]
+
+  return (
+    <div style={styles.panel}>
+      <h3 style={styles.title}>
+        {elements.length > 1 ? `${elements.length} elements` : 'Element Color'}
+      </h3>
+      {elements.map(elementId => {
+        const currentColor = diagramColors[elementId] ?? PRESET_COLORS[0]
+        return (
+          <div key={elementId} style={styles.section}>
+            <label style={styles.label}>{diagramElementLabel(elementId)}</label>
+            <div style={styles.colorGrid}>
+              {PRESET_COLORS.map((color) => (
+                <button
+                  key={color}
+                  style={{
+                    ...styles.colorButton,
+                    backgroundColor: color,
+                    border: currentColor === color ? '2px solid #333' : '1px solid #ccc',
+                  }}
+                  onClick={() => updateDiagramColor(elementId, color)}
+                  title={color}
+                />
+              ))}
+            </div>
+            <div style={styles.row}>
+              <label style={styles.label}>Custom</label>
+              <input
+                type="color"
+                value={currentColor}
+                onChange={(e) => updateDiagramColor(elementId, e.target.value)}
+                style={styles.colorInput}
+              />
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

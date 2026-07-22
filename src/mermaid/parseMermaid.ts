@@ -1,5 +1,4 @@
 import { DiagramModel } from '../core/model/DiagramModel'
-import type { ShapeType } from '../core/model/Shape'
 import dagre from 'dagre'
 import { parseSequenceDiagram, isSequenceDiagram, isClassDiagram } from './parseSequenceDiagram'
 import type { SequenceData } from './parseSequenceDiagram'
@@ -14,18 +13,24 @@ import { parseUserJourney, isUserJourney } from './parseUserJourney'
 import { parseGantt, isGantt } from './parseGantt'
 import { parseMindmap, isMindmap } from './parseMindmap'
 import { parseGitGraph, isGitGraph } from './parseGitGraph'
-
-interface ParsedNode {
-  id: string
-  type: ShapeType
-  text: string
-  subgraph?: string
-}
-
-interface ParsedEdge {
-  sourceId: string
-  targetId: string
-}
+import { parseRequirementDiagram, isRequirementDiagram } from './parseRequirementDiagram'
+import { parseC4Diagram, isC4Diagram } from './parseC4Diagram'
+import { parseSankey, isSankey } from './parseSankey'
+import { parseXYChart, isXYChart } from './parseXYChart'
+import { parseFlowchart } from './parseFlowchart'
+import { parsePacket, isPacket } from './parsePacket'
+import { parseVenn, isVenn } from './parseVenn'
+import { parseIshikawa, isIshikawa } from './parseIshikawa'
+import { parseTreeView, isTreeView } from './parseTreeView'
+import { parseKanban, isKanban } from './parseKanban'
+import { parseRadar, isRadar } from './parseRadar'
+import { parseTreemap, isTreemap } from './parseTreemap'
+import { parseArchitecture, isArchitecture } from './parseArchitecture'
+import { parseEventModeling, isEventModeling } from './parseEventModeling'
+import { parseSwimlanes, isSwimlanes } from './parseSwimlanes'
+import { parseWardley, isWardley } from './parseWardley'
+import { parseCynefin, isCynefin } from './parseCynefin'
+import { parseZenUml, isZenUml } from './parseZenUml'
 
 interface ParsedStyle {
   nodeId: string
@@ -35,24 +40,6 @@ interface ParsedStyle {
 interface ParsedClassDef {
   className: string
   properties: Record<string, string>
-}
-
-export interface SubgraphGroup {
-  readonly title: string
-  readonly shapeIds: readonly string[]
-}
-
-export interface ParseResult {
-  model: DiagramModel
-  subgraphGroups: readonly SubgraphGroup[]
-  diagramType: 'flowchart' | 'sequence' | 'class' | 'state' | 'er' | 'block' | 'pie' | 'quadrant' | 'timeline' | 'userJourney' | 'gantt' | 'mindmap' | 'gitGraph'
-  sequenceData?: SequenceData
-  diagramData?: Record<string, unknown>
-}
-
-function parseDirection(dsl: string): 'TD' | 'LR' | 'RL' | 'BT' {
-  const match = /(?:graph|flowchart)\s+(TD|LR|RL|BT)/i.exec(dsl)
-  return (match?.[1]?.toUpperCase() ?? 'TD') as 'TD' | 'LR' | 'RL' | 'BT'
 }
 
 function parseStyleProperties(styleStr: string): Record<string, string> {
@@ -68,40 +55,33 @@ function parseStyleProperties(styleStr: string): Record<string, string> {
   return props
 }
 
-function parseStyles(lines: string[]): ParsedStyle[] {
+function parseStyles(dsl: string): ParsedStyle[] {
   const styles: ParsedStyle[] = []
-  for (const line of lines) {
-    const trimmed = line.trim()
-    const match = /^style\s+(\w[\w-]*)\s+(.+)$/i.exec(trimmed)
-    if (!match) continue
-    const nodeId = match[1]!
-    const props = parseStyleProperties(match[2]!)
-    styles.push({ nodeId, properties: props })
+  const re = /^[ \t]*style\s+(\w[\w-]*)\s+(.+)$/gim
+  let m: RegExpExecArray | null
+  while ((m = re.exec(dsl)) !== null) {
+    styles.push({ nodeId: m[1]!, properties: parseStyleProperties(m[2]!) })
   }
   return styles
 }
 
-function parseClassDefs(lines: string[]): ParsedClassDef[] {
+function parseClassDefs(dsl: string): ParsedClassDef[] {
   const defs: ParsedClassDef[] = []
-  for (const line of lines) {
-    const trimmed = line.trim()
-    const match = /^classDef\s+(\w[\w-]*)\s+(.+)$/i.exec(trimmed)
-    if (!match) continue
-    const className = match[1]!
-    const props = parseStyleProperties(match[2]!)
-    defs.push({ className, properties: props })
+  const re = /^[ \t]*classDef\s+(\w[\w-]*)\s+(.+)$/gim
+  let m: RegExpExecArray | null
+  while ((m = re.exec(dsl)) !== null) {
+    defs.push({ className: m[1]!, properties: parseStyleProperties(m[2]!) })
   }
   return defs
 }
 
-function parseClassAssignments(lines: string[]): Map<string, string> {
+function parseClassAssignments(dsl: string): Map<string, string> {
   const assignments = new Map<string, string>()
-  for (const line of lines) {
-    const trimmed = line.trim()
-    const match = /^class\s+([\w\s,]+)\s+(\w[\w-]*)$/i.exec(trimmed)
-    if (!match) continue
-    const nodeIds = match[1]!.split(',').map(id => id.trim()).filter(Boolean)
-    const className = match[2]!
+  const re = /^[ \t]*class\s+([\w\s,]+)\s+(\w[\w-]*)$/gim
+  let m: RegExpExecArray | null
+  while ((m = re.exec(dsl)) !== null) {
+    const nodeIds = m[1]!.split(',').map(id => id.trim()).filter(Boolean)
+    const className = m[2]!
     for (const id of nodeIds) {
       assignments.set(id, className)
     }
@@ -111,169 +91,27 @@ function parseClassAssignments(lines: string[]): Map<string, string> {
 
 function applyStyleProperty(key: string, value: string): Record<string, string | number> | null {
   switch (key) {
-    case 'fill':
-      return { fill: value }
-    case 'stroke':
-      return { stroke: value }
-    case 'stroke-width':
-      return { strokeWidth: parseInt(value, 10) || 2 }
-    case 'color':
-      return { color: value }
-    case 'stroke-dasharray':
-      return { strokeDasharray: value }
-    default:
-      return null
+    case 'fill': return { fill: value }
+    case 'stroke': return { stroke: value }
+    case 'stroke-width': return { strokeWidth: parseInt(value, 10) || 2 }
+    case 'color': return { color: value }
+    case 'stroke-dasharray': return { strokeDasharray: value }
+    default: return null
   }
 }
 
-function resolveNodeStyle(
-  nodeId: string,
-  styles: ParsedStyle[],
-  classDefs: ParsedClassDef[],
-  classAssignments: Map<string, string>,
-): Record<string, string | number> {
-  const resolved: Record<string, string | number> = {}
-
-  const className = classAssignments.get(nodeId)
-  if (className) {
-    const classDef = classDefs.find(d => d.className === className)
-    if (classDef) {
-      for (const [key, value] of Object.entries(classDef.properties)) {
-        const applied = applyStyleProperty(key, value)
-        if (applied) Object.assign(resolved, applied)
-      }
-    }
-  }
-
-  const directStyle = styles.find(s => s.nodeId === nodeId)
-  if (directStyle) {
-    for (const [key, value] of Object.entries(directStyle.properties)) {
-      const applied = applyStyleProperty(key, value)
-      if (applied) Object.assign(resolved, applied)
-    }
-  }
-
-  return resolved
+export interface SubgraphGroup {
+  readonly title: string
+  readonly shapeIds: readonly string[]
 }
 
-function parseNodes(lines: string[]): ParsedNode[] {
-  const nodes: ParsedNode[] = []
-  const seenIds = new Set<string>()
-  let currentSubgraph: string | undefined
-
-  const bracketRegex = /(\w+)\s*\[([^\]]*)\]/g
-  const circleRegex = /(\w+)\s*\(\(([^)]*)\)\)/g
-  const diamondRegex = /(\w+)\s*\{([^}]*)\}/g
-  const roundRegex = /(\w+)\s*\(([^(\s][^)]*)\)/g
-
-  function addIfNew(id: string, type: ShapeType, nodeText: string) {
-    if (!seenIds.has(id)) {
-      seenIds.add(id)
-      nodes.push({ id, type, text: nodeText, subgraph: currentSubgraph })
-    }
-  }
-
-  for (const line of lines) {
-    const trimmed = line.trim()
-
-    const subgraphMatch = /^subgraph\s+(.+)/i.exec(trimmed)
-    if (subgraphMatch) {
-      currentSubgraph = subgraphMatch[1]!.trim()
-      continue
-    }
-    if (/^end\b/i.test(trimmed)) {
-      currentSubgraph = undefined
-      continue
-    }
-
-    for (const m of line.matchAll(circleRegex)) {
-      addIfNew(m[1]!, 'ellipse', m[2]!)
-    }
-    for (const m of line.matchAll(diamondRegex)) {
-      addIfNew(m[1]!, 'diamond', m[2]!)
-    }
-    for (const m of line.matchAll(bracketRegex)) {
-      addIfNew(m[1]!, 'rectangle', m[2]!)
-    }
-    for (const m of line.matchAll(roundRegex)) {
-      addIfNew(m[1]!, 'rectangle', m[2]!)
-    }
-  }
-
-  return nodes
-}
-
-function parseEdges(lines: string[]): { edges: ParsedEdge[]; nodeIds: Set<string> } {
-  const edges: ParsedEdge[] = []
-  const nodeIds = new Set<string>()
-
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('%%') || trimmed.startsWith('graph') || trimmed.startsWith('flowchart')) continue
-    if (/^(subgraph|end|style|classDef|class)\b/.test(trimmed)) continue
-
-    let clean = trimmed.replace(/\|[^|]*\|/g, '')
-
-    clean = clean.replace(/\s*--\s+[^-]+\s*--\s*/g, ' --> ')
-    clean = clean.replace(/\s*==>\s*/g, ' --> ')
-    clean = clean.replace(/\s*-\.->\s*/g, ' --> ')
-    clean = clean.replace(/\s*---\s*/g, ' --> ')
-
-    const parts = clean.split(/\s*-->/)
-
-    if (parts.length < 2) continue
-
-    for (let i = 0; i < parts.length - 1; i++) {
-      const sourceMatch = /(\w+)/.exec(parts[i] ?? '')
-      const targetMatch = /(\w+)/.exec(parts[i + 1] ?? '')
-      const sourceId = sourceMatch?.[1]
-      const targetId = targetMatch?.[1]
-
-      if (sourceId && targetId) {
-        edges.push({ sourceId, targetId })
-        nodeIds.add(sourceId)
-        nodeIds.add(targetId)
-      }
-    }
-  }
-
-  return { edges, nodeIds }
-}
-
-function computeLayout(
-  nodes: ParsedNode[],
-  edges: ParsedEdge[],
-  direction: string,
-): Map<string, { x: number; y: number }> {
-  const positions = new Map<string, { x: number; y: number }>()
-
-  if (nodes.length === 0) return positions
-
-  const graph = new dagre.graphlib.Graph()
-  graph.setDefaultEdgeLabel(() => ({}))
-  graph.setGraph({ rankdir: direction })
-
-  for (const node of nodes) {
-    graph.setNode(node.id, { width: 120, height: 80 })
-  }
-
-  for (const edge of edges) {
-    graph.setEdge(edge.sourceId, edge.targetId)
-  }
-
-  dagre.layout(graph)
-
-  for (const node of nodes) {
-    const dagreNode = graph.node(node.id)
-    if (dagreNode) {
-      positions.set(node.id, {
-        x: dagreNode.x - 60,
-        y: dagreNode.y - 40,
-      })
-    }
-  }
-
-  return positions
+export interface ParseResult {
+  model: DiagramModel
+  subgraphGroups: readonly SubgraphGroup[]
+  diagramType: 'flowchart' | 'sequence' | 'class' | 'state' | 'er' | 'block' | 'pie' | 'quadrant' | 'timeline' | 'userJourney' | 'gantt' | 'mindmap' | 'gitGraph' | 'requirement' | 'c4' | 'sankey' | 'xyChart' | 'packet' | 'venn' | 'ishikawa' | 'treeView' | 'kanban' | 'radar' | 'treemap' | 'architecture' | 'eventModeling' | 'swimlanes' | 'wardley' | 'cynefin' | 'zenuml'
+  sequenceData?: SequenceData
+  diagramData?: Record<string, unknown>
+  diagramColors?: Record<string, string>
 }
 
 export function parseMermaid(dsl: string): ParseResult {
@@ -306,108 +144,247 @@ export function parseMermaid(dsl: string): ParseResult {
   }
 
   if (isPieChart(trimmed)) {
-    const slices = parsePieChart(trimmed)
-    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'pie', diagramData: { slices } }
+    const data = parsePieChart(trimmed)
+    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'pie', diagramData: data as unknown as Record<string, unknown>, diagramColors: data.colors }
   }
 
   if (isQuadrant(trimmed)) {
     const data = parseQuadrant(trimmed)
-    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'quadrant', diagramData: data }
+    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'quadrant', diagramData: data as unknown as Record<string, unknown>, diagramColors: data.colors }
   }
 
   if (isTimeline(trimmed)) {
     const data = parseTimeline(trimmed)
-    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'timeline', diagramData: data }
+    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'timeline', diagramData: data as unknown as Record<string, unknown>, diagramColors: data.colors }
   }
 
   if (isUserJourney(trimmed)) {
     const data = parseUserJourney(trimmed)
-    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'userJourney', diagramData: data }
+    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'userJourney', diagramData: data as unknown as Record<string, unknown>, diagramColors: data.colors }
   }
+
 
   if (isGantt(trimmed)) {
     const data = parseGantt(trimmed)
-    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'gantt', diagramData: data }
+    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'gantt', diagramData: data as unknown as Record<string, unknown>, diagramColors: data.colors }
   }
 
   if (isMindmap(trimmed)) {
     const data = parseMindmap(trimmed)
-    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'mindmap', diagramData: data }
+    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'mindmap', diagramData: data as unknown as Record<string, unknown>, diagramColors: data.colors }
   }
 
   if (isGitGraph(trimmed)) {
     const data = parseGitGraph(trimmed)
-    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'gitGraph', diagramData: data }
+    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'gitGraph', diagramData: data as unknown as Record<string, unknown>, diagramColors: data.colors }
   }
 
-  const lines = trimmed.split('\n').filter(line => {
-    const t = line.trim()
-    return !t.startsWith('%%')
-  })
+  if (isRequirementDiagram(trimmed)) {
+    const model = parseRequirementDiagram(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'requirement' }
+  }
 
-  const direction = parseDirection(trimmed)
-  const nodes = parseNodes(lines)
-  const { edges, nodeIds: edgeNodeIds } = parseEdges(lines)
+  if (isC4Diagram(trimmed)) {
+    const model = parseC4Diagram(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'c4' }
+  }
 
-  for (const id of edgeNodeIds) {
-    if (!nodes.some(n => n.id === id)) {
-      nodes.push({ id, type: 'rectangle', text: id })
+  if (isSankey(trimmed)) {
+    const data = parseSankey(trimmed)
+    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'sankey', diagramData: data as unknown as Record<string, unknown>, diagramColors: data.colors }
+  }
+
+  if (isXYChart(trimmed)) {
+    const data = parseXYChart(trimmed)
+    return { model: new DiagramModel(), subgraphGroups: [], diagramType: 'xyChart', diagramData: data as unknown as Record<string, unknown>, diagramColors: data.colors }
+  }
+
+  if (isPacket(trimmed)) {
+    const model = parsePacket(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'packet' }
+  }
+
+  if (isVenn(trimmed)) {
+    const model = parseVenn(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'venn' }
+  }
+
+  if (isIshikawa(trimmed)) {
+    const model = parseIshikawa(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'ishikawa' }
+  }
+
+  if (isTreeView(trimmed)) {
+    const model = parseTreeView(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'treeView' }
+  }
+
+  if (isKanban(trimmed)) {
+    const model = parseKanban(trimmed)
+    const modelShapes = model.shapes
+    const conns = model.connections
+
+    const columnShapes = modelShapes.filter(s => s.position.y === 40)
+    const columns = columnShapes.map(s => ({ id: s.id, title: s.text.content }))
+
+    const taskShapes = modelShapes.filter(s => s.position.y !== 40)
+    const tasks: { id: string; title: string; columnId: string; modifiers: string[] }[] = []
+
+    const dslLines = trimmed.split('\n')
+    let baseIndent = -1
+    let colIdx = -1
+    let taskIdx = 0
+
+    for (const raw of dslLines) {
+      const t = raw.trim()
+      if (!t || t.startsWith('%%') || /^\s*kanban\b/i.test(t) || t.startsWith('---')) continue
+      const level = raw.length - raw.trimStart().length
+      if (baseIndent < 0) baseIndent = level
+
+      const cleaned = t.replace(/\b(crit|active|high|low|done)\b\s*/gi, '').replace(/@\{[^}]*\}\s*/g, '').trim()
+      const withBrackets = /^(\w[\w-]*)\s*\[([^\]]*)\]\s*$/.exec(cleaned)
+      const onlyBrackets = /^\[([^\]]+)\]\s*$/.exec(cleaned)
+      const bare = /^(\w[\w-]+)\s*$/.exec(cleaned)
+      const item = withBrackets ? { id: withBrackets[1]!, title: withBrackets[2]! }
+        : onlyBrackets ? { id: onlyBrackets[1]!, title: onlyBrackets[1]! }
+        : bare ? { id: bare[1]!, title: bare[1]! }
+        : null
+      if (!item) continue
+
+      if (level <= baseIndent) {
+        colIdx++
+      } else if (colIdx >= 0 && taskIdx < taskShapes.length) {
+        const modifiers: string[] = []
+        const lower = t.toLowerCase()
+        if (/\bcrit\b/.test(lower)) modifiers.push('crit')
+        if (/\bactive\b/.test(lower)) modifiers.push('active')
+        if (/\bdone\b/.test(lower)) modifiers.push('done')
+
+        const shape = taskShapes[taskIdx]!
+        const columnId = conns.find(c => c.sourceId === shape.id)?.targetId ?? ''
+        tasks.push({ id: shape.id, title: shape.text.content, columnId, modifiers })
+        taskIdx++
+      }
+    }
+
+    for (let i = taskIdx; i < taskShapes.length; i++) {
+      const shape = taskShapes[i]!
+      const columnId = conns.find(c => c.sourceId === shape.id)?.targetId ?? ''
+      tasks.push({ id: shape.id, title: shape.text.content, columnId, modifiers: [] })
+    }
+
+    return {
+      model,
+      subgraphGroups: [],
+      diagramType: 'kanban',
+      diagramData: { columns, tasks } as unknown as Record<string, unknown>,
     }
   }
 
-  const styles = parseStyles(lines)
-  const classDefs = parseClassDefs(lines)
-  const classAssignments = parseClassAssignments(lines)
+  if (isRadar(trimmed)) {
+    const model = parseRadar(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'radar' }
+  }
 
-  const positions = computeLayout(nodes, edges, direction)
+  if (isTreemap(trimmed)) {
+    const model = parseTreemap(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'treemap' }
+  }
 
+  if (isArchitecture(trimmed)) {
+    const model = parseArchitecture(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'architecture' }
+  }
+
+  if (isEventModeling(trimmed)) {
+    const model = parseEventModeling(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'eventModeling' }
+  }
+
+  if (isSwimlanes(trimmed)) {
+    const model = parseSwimlanes(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'swimlanes' }
+  }
+
+  if (isWardley(trimmed)) {
+    const { model } = parseWardley(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'wardley' }
+  }
+
+  if (isCynefin(trimmed)) {
+    const { model } = parseCynefin(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'cynefin' }
+  }
+
+  if (isZenUml(trimmed)) {
+    const { model } = parseZenUml(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'zenuml' }
+  }
+
+  const fd = parseFlowchart(trimmed)
   const model = new DiagramModel()
 
   const idMap = new Map<string, string>()
 
-  for (const node of nodes) {
-    const pos = positions.get(node.id) ?? { x: 0, y: 0 }
+  const graph = new dagre.graphlib.Graph()
+  graph.setDefaultEdgeLabel(() => ({}))
+  graph.setGraph({ rankdir: fd.direction })
+
+  for (const node of fd.nodes) {
+    graph.setNode(node.id, { width: 120, height: 80 })
+  }
+  for (const edge of fd.edges) {
+    graph.setEdge(edge.sourceId, edge.targetId)
+  }
+
+  dagre.layout(graph)
+
+  const styles = parseStyles(trimmed)
+  const classDefs = parseClassDefs(trimmed)
+  const classAssignments = parseClassAssignments(trimmed)
+
+  for (const node of fd.nodes) {
+    const dagreNode = graph.node(node.id)
+    const pos = dagreNode ? { x: dagreNode.x - 60, y: dagreNode.y - 40 } : { x: 0, y: 0 }
     const shape = model.addShape(node.type, pos, { width: 120, height: 80 })
     model.updateShapeText(shape.id, { content: node.text })
 
-    const resolvedStyle = resolveNodeStyle(node.id, styles, classDefs, classAssignments)
-    if (Object.keys(resolvedStyle).length > 0) {
-      const stylePatch: Record<string, string | number> = {}
-      if ('fill' in resolvedStyle) stylePatch['fill'] = resolvedStyle['fill'] as string
-      if ('stroke' in resolvedStyle) stylePatch['stroke'] = resolvedStyle['stroke'] as string
-      if ('strokeWidth' in resolvedStyle) stylePatch['strokeWidth'] = resolvedStyle['strokeWidth'] as number
-      model.updateShapeStyle(shape.id, stylePatch as Parameters<typeof model.updateShapeStyle>[1])
+    const className = classAssignments.get(node.id)
+    const classDef = className ? classDefs.find(d => d.className === className) : undefined
+    const directStyle = styles.find(s => s.nodeId === node.id)
+
+    const resolved: Record<string, string | number> = {}
+    if (classDef) {
+      for (const [key, value] of Object.entries(classDef.properties)) {
+        const applied = applyStyleProperty(key, value)
+        if (applied) Object.assign(resolved, applied)
+      }
+    }
+    if (directStyle) {
+      for (const [key, value] of Object.entries(directStyle.properties)) {
+        const applied = applyStyleProperty(key, value)
+        if (applied) Object.assign(resolved, applied)
+      }
+    }
+    if (Object.keys(resolved).length > 0) {
+      model.updateShapeStyle(shape.id, resolved as Parameters<typeof model.updateShapeStyle>[1])
     }
 
     idMap.set(node.id, shape.id)
   }
 
-  for (const edge of edges) {
-    const sourceShapeId = idMap.get(edge.sourceId)
-    const targetShapeId = idMap.get(edge.targetId)
-    if (sourceShapeId && targetShapeId) {
-      model.addConnection(sourceShapeId, targetShapeId)
+  for (const edge of fd.edges) {
+    const sourceId = idMap.get(edge.sourceId)
+    const targetId = idMap.get(edge.targetId)
+    if (sourceId && targetId) {
+      model.addConnection(sourceId, targetId)
     }
   }
 
-  const subgraphMap = new Map<string, string[]>()
-  for (const node of nodes) {
-    if (node.subgraph) {
-      const shapeId = idMap.get(node.id)
-      if (!shapeId) continue
-      let group = subgraphMap.get(node.subgraph)
-      if (!group) {
-        group = []
-        subgraphMap.set(node.subgraph, group)
-      }
-      group.push(shapeId)
-    }
-  }
-
-  const subgraphGroups: SubgraphGroup[] = []
-  for (const [title, shapeIds] of subgraphMap) {
-    subgraphGroups.push({ title, shapeIds })
-  }
+  const subgraphGroups: SubgraphGroup[] = fd.subgraphs.map(sg => ({
+    title: sg.title,
+    shapeIds: sg.nodeIds.map(id => idMap.get(id)).filter((id): id is string => !!id),
+  }))
 
   return { model, subgraphGroups, diagramType: 'flowchart' }
 }

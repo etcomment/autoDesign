@@ -7,9 +7,6 @@ const diamondPoints = (x: number, y: number, w: number, h: number): string => {
   return `${cx},${y} ${x + w},${cy} ${cx},${y + h} ${x},${cy}`
 }
 
-const cornerRadiusForDiamond = (w: number, h: number): number =>
-  Math.min(w, h) * 0.08
-
 function wrapText(content: string, maxWidth: number, fontSize: number): string[] {
   const explicitLines = content.split('\n')
   if (explicitLines.length > 1) {
@@ -144,6 +141,19 @@ function WrappedText({ content, x, y, width, fontSize, fontFamily, textAlign, fi
   )
 }
 
+const hexagonPoints = (x: number, y: number, w: number, h: number): string => {
+  const hw = w / 2
+  const hh = h / 2
+  const cx = x + hw
+  const cy = y + hh
+  const inset = w * 0.2
+  return `${cx - hw + inset},${y} ${cx + hw - inset},${y} ${cx + hw},${cy} ${cx + hw - inset},${y + h} ${cx - hw + inset},${y + h} ${x},${cy}`
+}
+
+const parallelogramPoints = (x: number, y: number, w: number, h: number, offset: number): string => {
+  return `${x + offset},${y} ${x + w},${y} ${x + w - offset},${y + h} ${x},${y + h}`
+}
+
 function renderShape(
   type: Shape['type'],
   x: number,
@@ -160,8 +170,8 @@ function renderShape(
           y={y}
           width={w}
           height={h}
-          rx={cornerRadiusForDiamond(w, h)}
-          ry={cornerRadiusForDiamond(w, h)}
+          rx={4}
+          ry={4}
           {...props}
         />
       )
@@ -181,6 +191,84 @@ function renderShape(
           points={diamondPoints(x, y, w, h)}
           {...props}
         />
+      )
+    case 'stadium':
+      return (
+        <rect
+          x={x}
+          y={y}
+          width={w}
+          height={h}
+          rx={h / 2}
+          ry={h / 2}
+          {...props}
+        />
+      )
+    case 'hexagon':
+      return (
+        <polygon
+          points={hexagonPoints(x, y, w, h)}
+          {...props}
+        />
+      )
+    case 'cylinder':
+      return (
+        <g>
+          <path
+            d={`M ${x} ${y + h * 0.2} C ${x} ${y}, ${x + w} ${y}, ${x + w} ${y + h * 0.2} L ${x + w} ${y + h * 0.8} C ${x + w} ${y + h}, ${x} ${y + h}, ${x} ${y + h * 0.8} Z`}
+            {...props}
+          />
+          <ellipse
+            cx={x + w / 2}
+            cy={y + h * 0.2}
+            rx={w / 2}
+            ry={h * 0.1}
+            fill={props.fill}
+            stroke={props.stroke}
+            strokeWidth={props.strokeWidth}
+            opacity={props.opacity}
+          />
+        </g>
+      )
+    case 'parallelogram':
+      return (
+        <polygon
+          points={parallelogramPoints(x, y, w, h, w * 0.25)}
+          {...props}
+        />
+      )
+    case 'parallelogramAlt':
+      return (
+        <polygon
+          points={parallelogramPoints(x, y, w, h, w * 0.25)}
+          {...props}
+        />
+      )
+    case 'trapezoid':
+      return (
+        <polygon
+          points={`${x + w * 0.2},${y} ${x + w - w * 0.2},${y} ${x + w},${y + h} ${x},${y + h}`}
+          {...props}
+        />
+      )
+    case 'trapezoidAlt':
+      return (
+        <polygon
+          points={`${x},${y} ${x + w},${y} ${x + w - w * 0.2},${y + h} ${x + w * 0.2},${y + h}`}
+          {...props}
+        />
+      )
+    case 'subroutine':
+      return (
+        <g>
+          <rect x={x} y={y} width={w} height={h} rx={4} ry={4} {...props} />
+          <line x1={x + 8} y1={y} x2={x + 8} y2={y + h} stroke={props.stroke} strokeWidth={props.strokeWidth} />
+          <line x1={x + w - 8} y1={y} x2={x + w - 8} y2={y + h} stroke={props.stroke} strokeWidth={props.strokeWidth} />
+        </g>
+      )
+    default:
+      return (
+        <rect x={x} y={y} width={w} height={h} rx={4} ry={4} {...props} />
       )
   }
 }
