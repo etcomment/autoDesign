@@ -1,4 +1,5 @@
 import { useDiagramStore } from '../store/diagramStore'
+import { snapToGrid } from '../core/grid'
 import type { ShapeType } from '../core/model/Shape'
 
 interface ShapeTemplate {
@@ -16,7 +17,7 @@ export function ShapeLibrary() {
   const addShape = useDiagramStore(s => s.addShape)
 
   const handleAddShape = (type: ShapeType) => {
-    addShape(type, { x: 100, y: 100 }, { width: 120, height: 80 })
+    addShape(type, { x: snapToGrid(100), y: snapToGrid(100) }, { width: 120, height: 80 })
   }
 
   return (

@@ -4,6 +4,12 @@ import { createDefaultStyle, createDefaultText } from './Shape'
 let nextId = 1
 let nextConnectionId = 1
 
+const MIN_DIMENSION = 10
+
+function clampDimension(value: number): number {
+  return Math.max(value, MIN_DIMENSION)
+}
+
 function generateId(): string {
   return `shape-${nextId++}`
 }
@@ -44,7 +50,7 @@ export class DiagramModel {
       id: generateId(),
       type,
       position: { ...position },
-      dimensions: { ...dimensions },
+      dimensions: { width: clampDimension(dimensions.width), height: clampDimension(dimensions.height) },
       style: createDefaultStyle(),
       text: createDefaultText(),
     }
@@ -135,7 +141,7 @@ export class DiagramModel {
     if (!shape) return
     this.shapeMap.set(id, {
       ...shape,
-      dimensions: { width: dimensions.width, height: dimensions.height },
+      dimensions: { width: clampDimension(dimensions.width), height: clampDimension(dimensions.height) },
     })
   }
 
@@ -163,7 +169,7 @@ export class DiagramModel {
     this.shapeMap.set(id, {
       ...shape,
       position: { x: position.x, y: position.y },
-      dimensions: { width: dimensions.width, height: dimensions.height },
+      dimensions: { width: clampDimension(dimensions.width), height: clampDimension(dimensions.height) },
     })
   }
 

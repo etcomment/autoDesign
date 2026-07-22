@@ -30,6 +30,12 @@ describe('DiagramModel', () => {
       expect(shape.style.stroke).toBe('#333333')
       expect(shape.style.strokeWidth).toBe(2)
     })
+
+    it('claque les dimensions negatives a la taille minimum', () => {
+      const shape = model.addShape('rectangle', { x: 100, y: 100 }, { width: -5, height: 0 })
+      expect(shape.dimensions.width).toBe(10)
+      expect(shape.dimensions.height).toBe(10)
+    })
   })
 
   describe('removeShape', () => {
@@ -65,6 +71,14 @@ describe('DiagramModel', () => {
       model.resizeShape(shape.id, { width: 160, height: 80 })
       const resized = model.getShape(shape.id)
       expect(resized?.dimensions).toEqual({ width: 160, height: 80 })
+    })
+
+    it('claque les dimensions negatives a la taille minimum', () => {
+      const shape = model.addShape('rectangle', { x: 0, y: 0 }, { width: 100, height: 100 })
+      model.resizeShape(shape.id, { width: -50, height: 0 })
+      const resized = model.getShape(shape.id)
+      expect(resized?.dimensions.width).toBeGreaterThanOrEqual(10)
+      expect(resized?.dimensions.height).toBeGreaterThanOrEqual(10)
     })
   })
 

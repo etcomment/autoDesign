@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react'
 import { useDiagramStore } from '../../store/diagramStore'
+import { snapToGrid } from '../../core/grid'
 import type { Shape } from '../../core/model/Shape'
 
 interface ResizeHandlesProps {
@@ -77,9 +78,23 @@ export function ResizeHandles({ shape }: ResizeHandlesProps) {
         }
 
         const minSize = 10
-        if (newW < minSize || newH < minSize) return
+        if (newW < minSize) {
+          if (hPos === 'top-left' || hPos === 'bottom-left') {
+            newX = pos.x + dim.width - minSize
+          }
+          newW = minSize
+        }
+        if (newH < minSize) {
+          if (hPos === 'top-left' || hPos === 'top-right') {
+            newY = pos.y + dim.height - minSize
+          }
+          newH = minSize
+        }
 
-        resizeShape(shape.id, { x: newX, y: newY }, { width: newW, height: newH })
+        resizeShape(shape.id,
+          { x: snapToGrid(newX), y: snapToGrid(newY) },
+          { width: snapToGrid(newW), height: snapToGrid(newH) },
+        )
       }
 
       const handleMouseUp = () => {

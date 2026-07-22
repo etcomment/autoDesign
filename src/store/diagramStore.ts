@@ -2,6 +2,10 @@ import { create } from 'zustand'
 import { DiagramModel } from '../core/model/DiagramModel'
 import { History } from '../core/commands/History'
 import { parseMermaid } from '../mermaid/parseMermaid'
+import type { SubgraphGroup } from '../mermaid/parseMermaid'
+import type { SequenceData } from '../mermaid/parseSequenceDiagram'
+import { createDefaultSubgraphStyle } from '../core/model/SubgraphStyle'
+import type { SubgraphStyle } from '../core/model/SubgraphStyle'
 import type { ConnectionType, Dimensions, Position, Shape, ShapeStyle, ShapeText, ShapeType } from '../core/model/Shape'
 
 interface ViewBox {
@@ -13,6 +17,11 @@ interface ViewBox {
 interface DiagramStore {
   readonly shapes: readonly Shape[]
   readonly connections: readonly ConnectionType[]
+  readonly subgraphGroups: readonly SubgraphGroup[]
+  readonly subgraphStyle: SubgraphStyle
+  readonly sequenceData: SequenceData | null
+  readonly diagramType: string
+  readonly diagramData: Record<string, unknown> | null
   readonly selectedShapeIds: ReadonlySet<string>
   readonly viewBox: ViewBox
   readonly isConnectMode: boolean
@@ -46,6 +55,7 @@ interface DiagramStore {
   mergeModel: (model: DiagramModel) => void
   mergeMermaid: (dsl: string) => void
   getModel: () => DiagramModel
+  updateSubgraphStyle: (style: Partial<SubgraphStyle>) => void
 }
 
 export const useDiagramStore = create<DiagramStore>((set, get) => {
@@ -64,6 +74,11 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
   return {
     shapes: [],
     connections: [],
+    subgraphGroups: [],
+    subgraphStyle: createDefaultSubgraphStyle(),
+    sequenceData: null,
+    diagramType: 'flowchart',
+    diagramData: null,
     selectedShapeIds: new Set(),
     viewBox: { x: 0, y: 0, scale: 1 },
     isConnectMode: false,
@@ -185,10 +200,9 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
     },
 
     mergeMermaid: (dsl) => {
-      const imported = parseMermaid(dsl)
+      const { model: imported, subgraphGroups, sequenceData, diagramType, diagramData } = parseMermaid(dsl)
       const existingShapes = model.shapes
 
-      // Build text → ID mapping from existing shapes
       const existingByText = new Map<string, string>()
       for (const shape of existingShapes) {
         if (shape.text.content) {
@@ -196,14 +210,12 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
         }
       }
 
-      // map imported shape IDs → existing/new shape IDs
       const idMap = new Map<string, string>()
 
       for (const importedShape of imported.shapes) {
         const existingId = existingByText.get(importedShape.text.content)
         if (existingId) {
           idMap.set(importedShape.id, existingId)
-          // Update style from imported if content matches
           model.updateShapeStyle(existingId, importedShape.style)
         } else {
           const newShape = model.mergeMermaidShape(importedShape)
@@ -211,12 +223,10 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
         }
       }
 
-      // Map connections
       for (const conn of imported.connections) {
         const sourceId = idMap.get(conn.sourceId)
         const targetId = idMap.get(conn.targetId)
         if (sourceId && targetId) {
-          // Check if connection already exists
           const exists = model.connections.some(
             c => c.sourceId === sourceId && c.targetId === targetId,
           )
@@ -226,9 +236,23 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
         }
       }
 
-      set({ ...syncState(), selectedShapeIds: new Set() })
+      const resolvedGroups: SubgraphGroup[] = []
+      for (const group of subgraphGroups) {
+        const shapeIds = group.shapeIds
+          .map(mermaidId => idMap.get(mermaidId))
+          .filter((id): id is string => id !== undefined)
+        if (shapeIds.length > 0) {
+          resolvedGroups.push({ title: group.title, shapeIds })
+        }
+      }
+
+      set({ ...syncState(), selectedShapeIds: new Set(), subgraphGroups: resolvedGroups, sequenceData: sequenceData ?? null, diagramType, diagramData: diagramData ?? null })
     },
 
     getModel: () => model,
+
+    updateSubgraphStyle: (style) => {
+      set(s => ({ subgraphStyle: { ...s.subgraphStyle, ...style } }))
+    },
   }
 })

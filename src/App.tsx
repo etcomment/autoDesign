@@ -4,6 +4,7 @@ import { ShapeLibrary } from './panels/ShapeLibrary'
 import { PropertiesPanel } from './panels/PropertiesPanel'
 import { Toolbar } from './panels/Toolbar'
 import { MermaidEditor } from './panels/MermaidEditor'
+import { SubgraphStylePanel } from './panels/SubgraphStylePanel'
 import { useDiagramStore } from './store/diagramStore'
 
 export function App() {
@@ -48,6 +49,7 @@ export function App() {
         <div style={styles.sidebar}>
           <ShapeLibrary />
           <MermaidEditor />
+          <SubgraphStylePanel />
         </div>
         <div style={styles.canvas}>
           <Canvas />

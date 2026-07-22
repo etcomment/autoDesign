@@ -11,6 +11,11 @@ const cornerRadiusForDiamond = (w: number, h: number): number =>
   Math.min(w, h) * 0.08
 
 function wrapText(content: string, maxWidth: number, fontSize: number): string[] {
+  const explicitLines = content.split('\n')
+  if (explicitLines.length > 1) {
+    return explicitLines
+  }
+
   const charWidth = fontSize * 0.6
   const maxChars = Math.max(1, Math.floor(maxWidth / charWidth) - 2)
 
@@ -119,6 +124,7 @@ function WrappedText({ content, x, y, width, fontSize, fontFamily, textAlign, fi
   return (
     <text
       x={x}
+      y={startY}
       textAnchor={textAlign}
       fontFamily={fontFamily}
       fontSize={fontSize}
@@ -129,7 +135,7 @@ function WrappedText({ content, x, y, width, fontSize, fontFamily, textAlign, fi
         <tspan
           key={i}
           x={x}
-          dy={i === 0 ? startY - y : lineHeight}
+          dy={i === 0 ? 0 : lineHeight}
         >
           {line}
         </tspan>

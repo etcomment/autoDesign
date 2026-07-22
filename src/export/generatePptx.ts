@@ -1,6 +1,7 @@
 import PptxGenJS from 'pptxgenjs'
 import type { DiagramModel } from '../core/model/DiagramModel'
 import type { Shape } from '../core/model/Shape'
+import { computeEdgePoints } from '../core/geometry'
 
 function mapHexToPptxColor(hex: string): string {
   return hex.startsWith('#') ? hex.replace('#', '') : hex
@@ -68,19 +69,22 @@ function addConnectionToSlide(
   const target = shapes.find(s => s.id === targetId)
   if (!source || !target) return
 
-  const sx = (source.position.x + source.dimensions.width / 2) / 96
-  const sy = (source.position.y + source.dimensions.height / 2) / 96
-  const tx = (target.position.x + target.dimensions.width / 2) / 96
-  const ty = (target.position.y + target.dimensions.height / 2) / 96
+  const { startX, startY, endX, endY } = computeEdgePoints(source, target)
+
+  const sx = startX / 96
+  const sy = startY / 96
+  const ex = endX / 96
+  const ey = endY / 96
 
   slide.addShape('line', {
     x: sx,
     y: sy,
-    w: tx - sx,
-    h: ty - sy,
+    w: ex - sx,
+    h: ey - sy,
     line: { color: '666666', width: 1 },
-    flipV: ty < sy,
-    flipH: tx < sx,
+    lineHead: 'triangle',
+    flipV: ey < sy,
+    flipH: ex < sx,
   })
 }
 

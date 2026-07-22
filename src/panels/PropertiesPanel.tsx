@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
 
 const PRESET_COLORS = [
@@ -15,11 +14,10 @@ export function PropertiesPanel() {
   const batchUpdateShapeStyle = useDiagramStore(s => s.batchUpdateShapeStyle)
   const updateShapeText = useDiagramStore(s => s.updateShapeText)
 
-  if (selectedShapeIds.size === 0) return null
-
-  const selectedIds = useMemo(() => [...selectedShapeIds], [selectedShapeIds])
+  const selectedIds = [...selectedShapeIds]
   const primaryShape = shapes.find(s => s.id === selectedIds[0])
-  if (!primaryShape) return null
+
+  if (selectedShapeIds.size === 0 || !primaryShape) return null
 
   const plural = selectedIds.length > 1
 

@@ -2,8 +2,9 @@ import { useCallback, useRef, useMemo, useState } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
 import { ShapeRenderer } from './shapes/ShapeRenderer'
 import { ConnectionLines } from './shapes/ConnectionLines'
-
-const GRID_SIZE = 20
+import { SubgraphRenderer } from './shapes/SubgraphRenderer'
+import { SequenceLifelines } from './shapes/SequenceLifelines'
+import { GRID_SIZE, snapToGrid } from '../core/grid'
 
 interface MarqueeRect {
   startX: number
@@ -28,7 +29,9 @@ export function Canvas() {
   const isPanning = useRef(false)
   const panStart = useRef({ x: 0, y: 0 })
   const dragTarget = useRef<string | null>(null)
-  const dragStart = useRef({ x: 0, y: 0 })
+  const dragStartMouse = useRef({ x: 0, y: 0 })
+  const dragStartPos = useRef({ x: 0, y: 0 })
+  const isDragging = useRef(false)
   const connectSourceId = useRef<string | null>(null)
 
   const [marquee, setMarquee] = useState<MarqueeRect | null>(null)
@@ -106,7 +109,11 @@ export function Canvas() {
         }
 
         dragTarget.current = shapeId
-        dragStart.current = { x: e.clientX, y: e.clientY }
+        dragStartMouse.current = { x: e.clientX, y: e.clientY }
+        const shape = shapes.find(s => s.id === shapeId)
+        if (shape) {
+          dragStartPos.current = { x: shape.position.x, y: shape.position.y }
+        }
         return
       }
 
@@ -119,7 +126,7 @@ export function Canvas() {
       const canvas = screenToCanvas(e.clientX, e.clientY)
       setMarquee({ startX: canvas.x, startY: canvas.y, endX: canvas.x, endY: canvas.y })
     },
-    [toggleSelection, clearSelection, viewBox, isConnectMode, addConnection, selectShape, selectedSet, screenToCanvas],
+    [toggleSelection, clearSelection, viewBox, isConnectMode, addConnection, selectShape, selectedSet, screenToCanvas, shapes],
   )
 
   const onMouseMove = useCallback(
@@ -138,22 +145,31 @@ export function Canvas() {
       }
 
       if (dragTarget.current && !isConnectMode) {
-        const dx = (e.clientX - dragStart.current.x) / viewBox.scale
-        const dy = (e.clientY - dragStart.current.y) / viewBox.scale
-        const shape = shapes.find(s => s.id === dragTarget.current)
-        if (!shape) return
+        const dx = (e.clientX - dragStartMouse.current.x) / viewBox.scale
+        const dy = (e.clientY - dragStartMouse.current.y) / viewBox.scale
+        isDragging.current = true
         moveShape(dragTarget.current, {
-          x: shape.position.x + dx,
-          y: shape.position.y + dy,
+          x: dragStartPos.current.x + dx,
+          y: dragStartPos.current.y + dy,
         })
-        dragStart.current = { x: e.clientX, y: e.clientY }
       }
     },
-    [viewBox, shapes, moveShape, setViewBox, isConnectMode, marquee, screenToCanvas],
+    [viewBox, moveShape, setViewBox, isConnectMode, marquee, screenToCanvas],
   )
 
   const onMouseUp = useCallback(() => {
     isPanning.current = false
+
+    if (isDragging.current && dragTarget.current) {
+      const shape = shapes.find(s => s.id === dragTarget.current)
+      if (shape) {
+        moveShape(dragTarget.current, {
+          x: snapToGrid(shape.position.x),
+          y: snapToGrid(shape.position.y),
+        })
+      }
+      isDragging.current = false
+    }
     dragTarget.current = null
 
     if (marquee) {
@@ -165,7 +181,7 @@ export function Canvas() {
       }
       setMarquee(null)
     }
-  }, [marquee, shapes, isShapeInsideMarquee, selectShape])
+  }, [marquee, shapes, isShapeInsideMarquee, selectShape, moveShape])
 
   const onWheel = useCallback(
     (e: React.WheelEvent<SVGSVGElement>) => {
@@ -218,6 +234,8 @@ export function Canvas() {
 
       <g transform={transform}>
         <rect x={-5000} y={-5000} width={10000} height={10000} fill="url(#grid)" />
+        <SubgraphRenderer />
+        <SequenceLifelines />
         <ConnectionLines />
 
         {shapes.map((shape) => (

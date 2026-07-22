@@ -42,10 +42,10 @@
 ## À faire
 
 ### Bugs
-- [ ] **Subgraphs Mermaid visuels** : `subgraph title ... end` — afficher un cadre groupé
-- [ ] **Snapping à la grille** : alignement des formes pendant drag/resize
-- [ ] **Coordonnées négatives** : les formes ne devraient pas pouvoir avoir de dimensions négatives
-- [ ] **Export PPTX** : les connexions en ligne simple, pas de vraies courbes — ajouter flèches PPTX
+- [x] **Subgraphs Mermaid visuels** : `subgraph title ... end` — afficher un cadre groupé
+- [x] **Snapping à la grille** : alignement des formes pendant drag/resize
+- [x] **Coordonnées négatives** : les formes ne devraient pas pouvoir avoir de dimensions négatives
+- [x] **Export PPTX** : les connexions en ligne simple, pas de vraies courbes — ajouter flèches PPTX
 
 ### Features — Éditeur
 - [ ] **Rotate** : poignée de rotation sur les formes sélectionnées
