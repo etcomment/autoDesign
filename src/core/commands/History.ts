@@ -1,5 +1,5 @@
 import type { Dimensions, Position, ShapeStyle, ShapeText } from '../model/Shape'
-import type { ShapeType} from '../model/Shape'
+import type { ConnectionType, ShapeType} from '../model/Shape'
 import type { DiagramModel } from '../model/DiagramModel'
 import type { Command } from './Command'
 
@@ -147,6 +147,37 @@ export class History {
       },
       undo: (model) => {
         model.moveAndResizeShape(id, previousPosition, previousDimensions)
+      },
+    })
+  }
+
+  addConnection(sourceId: string, targetId: string): ConnectionType {
+    const connection = this.model.addConnection(sourceId, targetId)
+    const snapshot = connection
+    this.push({
+      label: 'Ajouter connexion',
+      execute: (model) => {
+        model.restoreConnection(snapshot)
+      },
+      undo: (model) => {
+        model.removeConnection(snapshot.id)
+      },
+    })
+    return connection
+  }
+
+  removeConnection(connectionId: string): void {
+    const connection = this.model.connections.find(c => c.id === connectionId)
+    if (!connection) return
+    const snapshot = connection
+    this.model.removeConnection(connectionId)
+    this.push({
+      label: 'Supprimer connexion',
+      execute: (model) => {
+        model.removeConnection(connectionId)
+      },
+      undo: (model) => {
+        model.restoreConnection(snapshot)
       },
     })
   }

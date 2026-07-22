@@ -1,5 +1,11 @@
 export type ShapeType = 'rectangle' | 'ellipse' | 'diamond'
 
+export interface ConnectionType {
+  readonly id: string
+  readonly sourceId: string
+  readonly targetId: string
+}
+
 export interface Position {
   readonly x: number
   readonly y: number

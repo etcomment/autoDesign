@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { DiagramModel } from '../core/model/DiagramModel'
 import { History } from '../core/commands/History'
-import type { Dimensions, Position, Shape, ShapeStyle, ShapeText, ShapeType } from '../core/model/Shape'
+import type { ConnectionType, Dimensions, Position, Shape, ShapeStyle, ShapeText, ShapeType } from '../core/model/Shape'
 
 interface ViewBox {
   readonly x: number
@@ -11,8 +11,10 @@ interface ViewBox {
 
 interface DiagramStore {
   readonly shapes: readonly Shape[]
+  readonly connections: readonly ConnectionType[]
   readonly selectedShapeIds: ReadonlySet<string>
   readonly viewBox: ViewBox
+  readonly isConnectMode: boolean
 
   readonly canUndo: boolean
   readonly canRedo: boolean
@@ -28,6 +30,9 @@ interface DiagramStore {
   updateShapeText: (id: string, text: Partial<ShapeText>) => void
   moveAndResizeShape: (id: string, position: Position, dimensions: Dimensions) => void
 
+  addConnection: (sourceId: string, targetId: string) => void
+  removeConnection: (connectionId: string) => void
+
   selectShape: (id: string) => void
   deselectShape: (id: string) => void
   toggleSelection: (id: string) => void
@@ -35,6 +40,8 @@ interface DiagramStore {
   clearSelection: () => void
 
   setViewBox: (viewBox: ViewBox) => void
+  toggleConnectMode: () => void
+  mergeModel: (model: DiagramModel) => void
   getModel: () => DiagramModel
 }
 
@@ -45,6 +52,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
   function syncState(): Partial<DiagramStore> {
     return {
       shapes: model.shapes,
+      connections: model.connections,
       canUndo: history.canUndo,
       canRedo: history.canRedo,
     }
@@ -52,8 +60,10 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
 
   return {
     shapes: [],
+    connections: [],
     selectedShapeIds: new Set(),
     viewBox: { x: 0, y: 0, scale: 1 },
+    isConnectMode: false,
     canUndo: false,
     canRedo: false,
 
@@ -105,6 +115,16 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
       set(syncState())
     },
 
+    addConnection: (sourceId, targetId) => {
+      history.addConnection(sourceId, targetId)
+      set(syncState())
+    },
+
+    removeConnection: (connectionId) => {
+      history.removeConnection(connectionId)
+      set(syncState())
+    },
+
     selectShape: (id) => {
       const { selectedShapeIds } = get()
       if (selectedShapeIds.has(id)) return
@@ -143,6 +163,15 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
 
     setViewBox: (viewBox) => {
       set({ viewBox })
+    },
+
+    toggleConnectMode: () => {
+      set(s => ({ isConnectMode: !s.isConnectMode, selectedShapeIds: new Set() }))
+    },
+
+    mergeModel: (importedModel) => {
+      model.mergeModel(importedModel)
+      set({ ...syncState(), selectedShapeIds: new Set() })
     },
 
     getModel: () => model,

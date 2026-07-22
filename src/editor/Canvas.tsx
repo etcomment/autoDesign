@@ -1,6 +1,7 @@
 import { useCallback, useRef, useMemo } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
 import { ShapeRenderer } from './shapes/ShapeRenderer'
+import { ConnectionLines } from './shapes/ConnectionLines'
 
 const GRID_SIZE = 20
 
@@ -12,12 +13,16 @@ export function Canvas() {
   const clearSelection = useDiagramStore(s => s.clearSelection)
   const toggleSelection = useDiagramStore(s => s.toggleSelection)
   const moveShape = useDiagramStore(s => s.moveShape)
+  const isConnectMode = useDiagramStore(s => s.isConnectMode)
+  const addConnection = useDiagramStore(s => s.addConnection)
+  const selectShape = useDiagramStore(s => s.selectShape)
 
   const svgRef = useRef<SVGSVGElement>(null)
   const isPanning = useRef(false)
   const panStart = useRef({ x: 0, y: 0 })
   const dragTarget = useRef<string | null>(null)
   const dragStart = useRef({ x: 0, y: 0 })
+  const connectSourceId = useRef<string | null>(null)
 
   const selectedSet = useMemo(
     () => new Set(selectedShapeIds),
@@ -31,17 +36,33 @@ export function Canvas() {
       if (shapeElement) {
         const shapeId = shapeElement.getAttribute('data-shape-id')
         if (!shapeId) return
+
+        if (isConnectMode) {
+          if (connectSourceId.current === null) {
+            connectSourceId.current = shapeId
+            selectShape(shapeId)
+            return
+          }
+          if (connectSourceId.current !== shapeId) {
+            addConnection(connectSourceId.current, shapeId)
+          }
+          connectSourceId.current = null
+          clearSelection()
+          return
+        }
+
         toggleSelection(shapeId)
         dragTarget.current = shapeId
         dragStart.current = { x: e.clientX, y: e.clientY }
         return
       }
 
+      connectSourceId.current = null
       clearSelection()
       isPanning.current = true
       panStart.current = { x: e.clientX - viewBox.x, y: e.clientY - viewBox.y }
     },
-    [toggleSelection, clearSelection, viewBox],
+    [toggleSelection, clearSelection, viewBox, isConnectMode, addConnection, selectShape],
   )
 
   const onMouseMove = useCallback(
@@ -53,7 +74,7 @@ export function Canvas() {
         return
       }
 
-      if (dragTarget.current) {
+      if (dragTarget.current && !isConnectMode) {
         const dx = (e.clientX - dragStart.current.x) / viewBox.scale
         const dy = (e.clientY - dragStart.current.y) / viewBox.scale
         const shape = shapes.find(s => s.id === dragTarget.current)
@@ -65,7 +86,7 @@ export function Canvas() {
         dragStart.current = { x: e.clientX, y: e.clientY }
       }
     },
-    [viewBox, shapes, moveShape, setViewBox],
+    [viewBox, shapes, moveShape, setViewBox, isConnectMode],
   )
 
   const onMouseUp = useCallback(() => {
@@ -90,7 +111,11 @@ export function Canvas() {
       ref={svgRef}
       width="100%"
       height="100%"
-      style={{ display: 'block', background: '#f8f8f8', cursor: isPanning.current ? 'grabbing' : 'grab' }}
+      style={{
+        display: 'block',
+        background: isConnectMode ? '#f0f4ff' : '#f8f8f8',
+        cursor: isConnectMode ? 'crosshair' : isPanning.current ? 'grabbing' : 'grab',
+      }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
@@ -111,10 +136,21 @@ export function Canvas() {
             strokeWidth={0.5}
           />
         </pattern>
+        <marker
+          id="arrowhead"
+          markerWidth="10"
+          markerHeight="7"
+          refX="10"
+          refY="3.5"
+          orient="auto"
+        >
+          <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+        </marker>
       </defs>
 
       <g transform={transform}>
         <rect x={-5000} y={-5000} width={10000} height={10000} fill="url(#grid)" />
+        <ConnectionLines />
 
         {shapes.map((shape) => (
           <g

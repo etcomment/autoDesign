@@ -3,6 +3,7 @@ import { Canvas } from './editor/Canvas'
 import { ShapeLibrary } from './panels/ShapeLibrary'
 import { PropertiesPanel } from './panels/PropertiesPanel'
 import { Toolbar } from './panels/Toolbar'
+import { MermaidEditor } from './panels/MermaidEditor'
 import { useDiagramStore } from './store/diagramStore'
 
 export function App() {
@@ -44,7 +45,10 @@ export function App() {
     <div style={styles.container}>
       <Toolbar />
       <div style={styles.workspace}>
-        <ShapeLibrary />
+        <div style={styles.sidebar}>
+          <ShapeLibrary />
+          <MermaidEditor />
+        </div>
         <div style={styles.canvas}>
           <Canvas />
         </div>
@@ -62,6 +66,14 @@ const styles: Record<string, React.CSSProperties> = {
     width: '100vw',
     overflow: 'hidden',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif',
+  },
+  sidebar: {
+    display: 'flex',
+    flexDirection: 'column',
+    borderRight: '1px solid #ddd',
+    maxWidth: 220,
+    flexShrink: 0,
+    overflow: 'hidden',
   },
   workspace: {
     display: 'flex',

@@ -1,5 +1,5 @@
 import { useDiagramStore } from '../store/diagramStore'
-import { Undo2, Redo2, Trash2, MousePointer2, Download } from 'lucide-react'
+import { Undo2, Redo2, Trash2, MousePointer2, Download, Link2 } from 'lucide-react'
 import { downloadSvg } from '../export/generateSvg'
 
 export function Toolbar() {
@@ -11,6 +11,8 @@ export function Toolbar() {
   const removeShape = useDiagramStore(s => s.removeShape)
   const clearSelection = useDiagramStore(s => s.clearSelection)
   const getModel = useDiagramStore(s => s.getModel)
+  const isConnectMode = useDiagramStore(s => s.isConnectMode)
+  const toggleConnectMode = useDiagramStore(s => s.toggleConnectMode)
 
   const handleDelete = () => {
     for (const id of selectedShapeIds) {
@@ -27,6 +29,18 @@ export function Toolbar() {
     <div style={styles.bar}>
       <span style={styles.brand}>autoDesign</span>
       <div style={styles.spacer} />
+      <button
+        style={{
+          ...styles.button,
+          background: isConnectMode ? '#4a90d9' : 'transparent',
+          borderRadius: 4,
+        }}
+        onClick={toggleConnectMode}
+        title={isConnectMode ? 'Quitter mode connexion' : 'Mode connexion'}
+      >
+        <Link2 size={18} />
+      </button>
+      <div style={styles.separator} />
       <div style={styles.group}>
         <button
           style={{ ...styles.button, opacity: canUndo ? 1 : 0.4 }}
