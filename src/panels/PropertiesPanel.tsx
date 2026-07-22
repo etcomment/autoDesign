@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
 
 const PRESET_COLORS = [
@@ -11,22 +12,26 @@ const PRESET_COLORS = [
 export function PropertiesPanel() {
   const shapes = useDiagramStore(s => s.shapes)
   const selectedShapeIds = useDiagramStore(s => s.selectedShapeIds)
-  const updateShapeStyle = useDiagramStore(s => s.updateShapeStyle)
+  const batchUpdateShapeStyle = useDiagramStore(s => s.batchUpdateShapeStyle)
   const updateShapeText = useDiagramStore(s => s.updateShapeText)
 
   if (selectedShapeIds.size === 0) return null
 
-  const selectedId = [...selectedShapeIds][0]
-  const shape = shapes.find(s => s.id === selectedId)
-  if (!shape) return null
+  const selectedIds = useMemo(() => [...selectedShapeIds], [selectedShapeIds])
+  const primaryShape = shapes.find(s => s.id === selectedIds[0])
+  if (!primaryShape) return null
+
+  const plural = selectedIds.length > 1
 
   const handleStyleChange = (field: 'fill' | 'stroke' | 'strokeWidth', value: string | number) => {
-    updateShapeStyle(shape.id, { [field]: value })
+    batchUpdateShapeStyle(selectedIds, { [field]: value })
   }
 
   return (
     <div style={styles.panel}>
-      <h3 style={styles.title}>Properties</h3>
+      <h3 style={styles.title}>
+        {plural ? `${selectedIds.length} shapes` : 'Properties'}
+      </h3>
 
       <div style={styles.section}>
         <label style={styles.label}>Fill</label>
@@ -37,7 +42,7 @@ export function PropertiesPanel() {
               style={{
                 ...styles.colorButton,
                 backgroundColor: color,
-                border: shape.style.fill === color ? '2px solid #333' : '1px solid #ccc',
+                border: primaryShape.style.fill === color ? '2px solid #333' : '1px solid #ccc',
               }}
               onClick={() => handleStyleChange('fill', color)}
               title={color}
@@ -48,7 +53,7 @@ export function PropertiesPanel() {
           <label style={styles.label}>Custom</label>
           <input
             type="color"
-            value={shape.style.fill}
+            value={primaryShape.style.fill}
             onChange={(e) => handleStyleChange('fill', e.target.value)}
             style={styles.colorInput}
           />
@@ -64,7 +69,7 @@ export function PropertiesPanel() {
               style={{
                 ...styles.colorButton,
                 backgroundColor: color,
-                border: shape.style.stroke === color ? '2px solid #333' : '1px solid #ccc',
+                border: primaryShape.style.stroke === color ? '2px solid #333' : '1px solid #ccc',
               }}
               onClick={() => handleStyleChange('stroke', color)}
               title={color}
@@ -75,7 +80,7 @@ export function PropertiesPanel() {
           <label style={styles.label}>Custom</label>
           <input
             type="color"
-            value={shape.style.stroke}
+            value={primaryShape.style.stroke}
             onChange={(e) => handleStyleChange('stroke', e.target.value)}
             style={styles.colorInput}
           />
@@ -89,26 +94,28 @@ export function PropertiesPanel() {
             type="range"
             min={1}
             max={10}
-            value={shape.style.strokeWidth}
+            value={primaryShape.style.strokeWidth}
             onChange={(e) => handleStyleChange('strokeWidth', Number(e.target.value))}
             style={styles.range}
           />
-          <span style={styles.value}>{shape.style.strokeWidth}px</span>
+          <span style={styles.value}>{primaryShape.style.strokeWidth}px</span>
         </div>
       </div>
 
-      <div style={styles.section}>
-        <label style={styles.label}>Text</label>
-        <input
-          type="text"
-          value={shape.text.content}
-          onChange={(e) => {
-            updateShapeText(shape.id, { content: e.target.value })
-          }}
-          placeholder="Enter text..."
-          style={styles.textInput}
-        />
-      </div>
+      {!plural && (
+        <div style={styles.section}>
+          <label style={styles.label}>Text</label>
+          <input
+            type="text"
+            value={primaryShape.text.content}
+            onChange={(e) => {
+              updateShapeText(primaryShape.id, { content: e.target.value })
+            }}
+            placeholder="Enter text..."
+            style={styles.textInput}
+          />
+        </div>
+      )}
     </div>
   )
 }

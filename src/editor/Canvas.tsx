@@ -1,9 +1,16 @@
-import { useCallback, useRef, useMemo } from 'react'
+import { useCallback, useRef, useMemo, useState } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
 import { ShapeRenderer } from './shapes/ShapeRenderer'
 import { ConnectionLines } from './shapes/ConnectionLines'
 
 const GRID_SIZE = 20
+
+interface MarqueeRect {
+  startX: number
+  startY: number
+  endX: number
+  endY: number
+}
 
 export function Canvas() {
   const shapes = useDiagramStore(s => s.shapes)
@@ -12,10 +19,10 @@ export function Canvas() {
   const setViewBox = useDiagramStore(s => s.setViewBox)
   const clearSelection = useDiagramStore(s => s.clearSelection)
   const toggleSelection = useDiagramStore(s => s.toggleSelection)
+  const selectShape = useDiagramStore(s => s.selectShape)
   const moveShape = useDiagramStore(s => s.moveShape)
   const isConnectMode = useDiagramStore(s => s.isConnectMode)
   const addConnection = useDiagramStore(s => s.addConnection)
-  const selectShape = useDiagramStore(s => s.selectShape)
 
   const svgRef = useRef<SVGSVGElement>(null)
   const isPanning = useRef(false)
@@ -24,13 +31,53 @@ export function Canvas() {
   const dragStart = useRef({ x: 0, y: 0 })
   const connectSourceId = useRef<string | null>(null)
 
+  const [marquee, setMarquee] = useState<MarqueeRect | null>(null)
+
   const selectedSet = useMemo(
     () => new Set(selectedShapeIds),
     [selectedShapeIds],
   )
 
+  const screenToCanvas = useCallback(
+    (clientX: number, clientY: number) => {
+      const svgEl = svgRef.current
+      if (!svgEl) return { x: 0, y: 0 }
+      const rect = svgEl.getBoundingClientRect()
+      const mx = (clientX - rect.left - viewBox.x) / viewBox.scale
+      const my = (clientY - rect.top - viewBox.y) / viewBox.scale
+      return { x: mx, y: my }
+    },
+    [viewBox],
+  )
+
+  const isShapeInsideMarquee = useCallback(
+    (shape: { position: { x: number; y: number }; dimensions: { width: number; height: number } }, marqueeRect: MarqueeRect) => {
+      const minX = Math.min(marqueeRect.startX, marqueeRect.endX)
+      const maxX = Math.max(marqueeRect.startX, marqueeRect.endX)
+      const minY = Math.min(marqueeRect.startY, marqueeRect.endY)
+      const maxY = Math.max(marqueeRect.startY, marqueeRect.endY)
+
+      return (
+        shape.position.x < maxX &&
+        shape.position.x + shape.dimensions.width > minX &&
+        shape.position.y < maxY &&
+        shape.position.y + shape.dimensions.height > minY
+      )
+    },
+    [],
+  )
+
   const onMouseDown = useCallback(
     (e: React.MouseEvent<SVGSVGElement>) => {
+      // Middle-click → pan
+      if (e.button === 1) {
+        isPanning.current = true
+        panStart.current = { x: e.clientX - viewBox.x, y: e.clientY - viewBox.y }
+        return
+      }
+
+      if (e.button !== 0) return
+
       const target = e.target as HTMLElement
       const shapeElement = target.closest('[data-shape-id]')
       if (shapeElement) {
@@ -51,18 +98,28 @@ export function Canvas() {
           return
         }
 
-        toggleSelection(shapeId)
+        if (e.ctrlKey || e.metaKey) {
+          toggleSelection(shapeId)
+        } else if (!selectedSet.has(shapeId)) {
+          clearSelection()
+          selectShape(shapeId)
+        }
+
         dragTarget.current = shapeId
         dragStart.current = { x: e.clientX, y: e.clientY }
         return
       }
 
       connectSourceId.current = null
-      clearSelection()
-      isPanning.current = true
-      panStart.current = { x: e.clientX - viewBox.x, y: e.clientY - viewBox.y }
+
+      // Start marquee selection
+      if (!e.ctrlKey && !e.metaKey) {
+        clearSelection()
+      }
+      const canvas = screenToCanvas(e.clientX, e.clientY)
+      setMarquee({ startX: canvas.x, startY: canvas.y, endX: canvas.x, endY: canvas.y })
     },
-    [toggleSelection, clearSelection, viewBox, isConnectMode, addConnection, selectShape],
+    [toggleSelection, clearSelection, viewBox, isConnectMode, addConnection, selectShape, selectedSet, screenToCanvas],
   )
 
   const onMouseMove = useCallback(
@@ -71,6 +128,12 @@ export function Canvas() {
         const dx = e.clientX - panStart.current.x
         const dy = e.clientY - panStart.current.y
         setViewBox({ ...viewBox, x: dx, y: dy })
+        return
+      }
+
+      if (marquee) {
+        const canvas = screenToCanvas(e.clientX, e.clientY)
+        setMarquee({ ...marquee, endX: canvas.x, endY: canvas.y })
         return
       }
 
@@ -86,13 +149,23 @@ export function Canvas() {
         dragStart.current = { x: e.clientX, y: e.clientY }
       }
     },
-    [viewBox, shapes, moveShape, setViewBox, isConnectMode],
+    [viewBox, shapes, moveShape, setViewBox, isConnectMode, marquee, screenToCanvas],
   )
 
   const onMouseUp = useCallback(() => {
     isPanning.current = false
     dragTarget.current = null
-  }, [])
+
+    if (marquee) {
+      // Select shapes inside marquee
+      for (const shape of shapes) {
+        if (isShapeInsideMarquee(shape, marquee)) {
+          selectShape(shape.id)
+        }
+      }
+      setMarquee(null)
+    }
+  }, [marquee, shapes, isShapeInsideMarquee, selectShape])
 
   const onWheel = useCallback(
     (e: React.WheelEvent<SVGSVGElement>) => {
@@ -104,6 +177,10 @@ export function Canvas() {
     [viewBox, setViewBox],
   )
 
+  const onContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+  }, [])
+
   const transform = `translate(${viewBox.x}, ${viewBox.y}) scale(${viewBox.scale})`
 
   return (
@@ -114,13 +191,14 @@ export function Canvas() {
       style={{
         display: 'block',
         background: isConnectMode ? '#f0f4ff' : '#f8f8f8',
-        cursor: isConnectMode ? 'crosshair' : isPanning.current ? 'grabbing' : 'grab',
+        cursor: isConnectMode ? 'crosshair' : isPanning.current ? 'grabbing' : 'default',
       }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseUp}
       onWheel={onWheel}
+      onContextMenu={onContextMenu}
     >
       <defs>
         <pattern
@@ -136,16 +214,6 @@ export function Canvas() {
             strokeWidth={0.5}
           />
         </pattern>
-        <marker
-          id="arrowhead"
-          markerWidth="10"
-          markerHeight="7"
-          refX="10"
-          refY="3.5"
-          orient="auto"
-        >
-          <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
-        </marker>
       </defs>
 
       <g transform={transform}>
@@ -153,16 +221,26 @@ export function Canvas() {
         <ConnectionLines />
 
         {shapes.map((shape) => (
-          <g
-            key={shape.id}
-            data-shape-id={shape.id}
-          >
+          <g key={shape.id} data-shape-id={shape.id}>
             <ShapeRenderer
               shape={shape}
               isSelected={selectedSet.has(shape.id)}
             />
           </g>
         ))}
+
+        {marquee && (
+          <rect
+            x={Math.min(marquee.startX, marquee.endX)}
+            y={Math.min(marquee.startY, marquee.endY)}
+            width={Math.abs(marquee.endX - marquee.startX)}
+            height={Math.abs(marquee.endY - marquee.startY)}
+            fill="rgba(74, 144, 217, 0.1)"
+            stroke="#4a90d9"
+            strokeWidth={1}
+            strokeDasharray="4 2"
+          />
+        )}
       </g>
     </svg>
   )

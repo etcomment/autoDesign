@@ -10,6 +10,31 @@ const diamondPoints = (x: number, y: number, w: number, h: number): string => {
 const cornerRadiusForDiamond = (w: number, h: number): number =>
   Math.min(w, h) * 0.08
 
+function wrapText(content: string, maxWidth: number, fontSize: number): string[] {
+  const charWidth = fontSize * 0.6
+  const maxChars = Math.max(1, Math.floor(maxWidth / charWidth) - 2)
+
+  const words = content.split(/\s+/)
+  const lines: string[] = []
+  let currentLine = ''
+
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word
+    if (testLine.length <= maxChars || currentLine.length === 0) {
+      currentLine = testLine
+    } else {
+      lines.push(currentLine)
+      currentLine = word
+    }
+  }
+
+  if (currentLine) {
+    lines.push(currentLine)
+  }
+
+  return lines.length > 0 ? lines : [content]
+}
+
 interface ShapeRendererProps {
   readonly shape: Shape
   readonly isSelected: boolean
@@ -51,18 +76,16 @@ export function ShapeRenderer({ shape, isSelected }: ShapeRendererProps) {
         </>
       )}
       {text.content && (
-        <text
+        <WrappedText
+          content={text.content}
           x={x + w / 2}
           y={y + h / 2}
-          textAnchor={text.fontAlign === 'left' ? 'start' : text.fontAlign === 'right' ? 'end' : 'middle'}
-          dominantBaseline="central"
+          width={w - 12}
           fontSize={text.fontSize}
           fontFamily={text.fontFamily}
+          textAlign={text.fontAlign === 'left' ? 'start' : text.fontAlign === 'right' ? 'end' : 'middle'}
           fill={style.stroke}
-          pointerEvents="none"
-        >
-          {text.content}
-        </text>
+        />
       )}
     </g>
   )
@@ -74,6 +97,45 @@ interface CommonProps {
   strokeWidth: number
   opacity: number
   cursor: string
+}
+
+interface WrappedTextProps {
+  content: string
+  x: number
+  y: number
+  width: number
+  fontSize: number
+  fontFamily: string
+  textAlign: 'start' | 'middle' | 'end'
+  fill: string
+}
+
+function WrappedText({ content, x, y, width, fontSize, fontFamily, textAlign, fill }: WrappedTextProps) {
+  const lines = wrapText(content, width, fontSize)
+  const lineHeight = fontSize * 1.4
+  const totalHeight = lines.length * lineHeight
+  const startY = y - totalHeight / 2 + fontSize * 0.5
+
+  return (
+    <text
+      x={x}
+      textAnchor={textAlign}
+      fontFamily={fontFamily}
+      fontSize={fontSize}
+      fill={fill}
+      pointerEvents="none"
+    >
+      {lines.map((line, i) => (
+        <tspan
+          key={i}
+          x={x}
+          dy={i === 0 ? startY - y : lineHeight}
+        >
+          {line}
+        </tspan>
+      ))}
+    </text>
+  )
 }
 
 function renderShape(
