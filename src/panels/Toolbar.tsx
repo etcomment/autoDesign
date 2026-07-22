@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
 import { Undo2, Redo2, Trash2, MousePointer2, Download, Link2 } from 'lucide-react'
 import { downloadSvg } from '../export/generateSvg'
+import { downloadPptx } from '../export/generatePptx'
+import { generatePng, generateJpg, downloadBlob } from '../export/generateImage'
 
 export function Toolbar() {
   const canUndo = useDiagramStore(s => s.canUndo)
@@ -14,6 +17,8 @@ export function Toolbar() {
   const isConnectMode = useDiagramStore(s => s.isConnectMode)
   const toggleConnectMode = useDiagramStore(s => s.toggleConnectMode)
 
+  const [exportOpen, setExportOpen] = useState(false)
+
   const handleDelete = () => {
     for (const id of selectedShapeIds) {
       removeShape(id)
@@ -23,6 +28,24 @@ export function Toolbar() {
 
   const handleExportSvg = () => {
     downloadSvg(getModel())
+    setExportOpen(false)
+  }
+
+  const handleExportPng = async () => {
+    const blob = await generatePng(getModel())
+    downloadBlob(blob, 'diagram.png')
+    setExportOpen(false)
+  }
+
+  const handleExportJpg = async () => {
+    const blob = await generateJpg(getModel())
+    downloadBlob(blob, 'diagram.jpg')
+    setExportOpen(false)
+  }
+
+  const handleExportPptx = async () => {
+    await downloadPptx(getModel())
+    setExportOpen(false)
   }
 
   return (
@@ -77,13 +100,23 @@ export function Toolbar() {
         <MousePointer2 size={18} />
       </button>
       <div style={styles.separator} />
-      <button
-        style={styles.button}
-        onClick={handleExportSvg}
-        title="Export SVG"
-      >
-        <Download size={18} />
-      </button>
+      <div style={styles.dropdownContainer}>
+        <button
+          style={styles.button}
+          onClick={() => setExportOpen(!exportOpen)}
+          title="Export"
+        >
+          <Download size={18} />
+        </button>
+        {exportOpen && (
+          <div style={styles.dropdown}>
+            <button style={styles.dropdownItem} onClick={handleExportSvg}>SVG</button>
+            <button style={styles.dropdownItem} onClick={handleExportPng}>PNG</button>
+            <button style={styles.dropdownItem} onClick={handleExportJpg}>JPG</button>
+            <button style={styles.dropdownItem} onClick={handleExportPptx}>PPTX</button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -128,5 +161,30 @@ const styles: Record<string, React.CSSProperties> = {
     height: 20,
     backgroundColor: '#555',
     margin: '0 8px',
+  },
+  dropdownContainer: {
+    position: 'relative',
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 36,
+    right: 0,
+    background: '#333',
+    borderRadius: 4,
+    padding: '4px 0',
+    zIndex: 100,
+    minWidth: 80,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+  },
+  dropdownItem: {
+    display: 'block',
+    width: '100%',
+    padding: '6px 16px',
+    border: 'none',
+    background: 'transparent',
+    color: '#fff',
+    cursor: 'pointer',
+    textAlign: 'left',
+    fontSize: 13,
   },
 }
