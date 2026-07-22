@@ -1,5 +1,6 @@
 import { DiagramModel } from '../core/model/DiagramModel'
 import type { ShapeType } from '../core/model/Shape'
+import dagre from 'dagre'
 
 interface ParsedNode {
   id: string
@@ -91,34 +92,33 @@ function parseEdges(lines: string[]): { edges: ParsedEdge[]; nodeIds: Set<string
 
 function computeLayout(
   nodes: ParsedNode[],
+  edges: ParsedEdge[],
   direction: string,
 ): Map<string, { x: number; y: number }> {
   const positions = new Map<string, { x: number; y: number }>()
-  const gapX = 200
-  const gapY = 120
-  const startX = 50
-  const startY = 50
 
-  if (direction === 'TD' || direction === 'BT') {
-    const rows = Math.ceil(nodes.length / 3)
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i]!
-      const col = i % 3
-      const row = direction === 'BT' ? rows - 1 - Math.floor(i / 3) : Math.floor(i / 3)
+  if (nodes.length === 0) return positions
+
+  const graph = new dagre.graphlib.Graph()
+  graph.setDefaultEdgeLabel(() => ({}))
+  graph.setGraph({ rankdir: direction })
+
+  for (const node of nodes) {
+    graph.setNode(node.id, { width: 120, height: 80 })
+  }
+
+  for (const edge of edges) {
+    graph.setEdge(edge.sourceId, edge.targetId)
+  }
+
+  dagre.layout(graph)
+
+  for (const node of nodes) {
+    const dagreNode = graph.node(node.id)
+    if (dagreNode) {
       positions.set(node.id, {
-        x: startX + col * gapX,
-        y: startY + row * gapY,
-      })
-    }
-  } else {
-    const cols = Math.max(1, Math.ceil(nodes.length / 3))
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i]!
-      const row = i % 3
-      const col = direction === 'RL' ? cols - 1 - Math.floor(i / 3) : Math.floor(i / 3)
-      positions.set(node.id, {
-        x: startX + col * gapX,
-        y: startY + row * gapY,
+        x: dagreNode.x - 60,  // center → top-left
+        y: dagreNode.y - 40,
       })
     }
   }
@@ -143,7 +143,7 @@ export function parseMermaid(dsl: string): DiagramModel {
     }
   }
 
-  const positions = computeLayout(nodes, direction)
+  const positions = computeLayout(nodes, edges, direction)
 
   const model = new DiagramModel()
 

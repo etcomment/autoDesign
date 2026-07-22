@@ -1,20 +1,18 @@
 import { useState } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
-import { parseMermaid } from '../mermaid/parseMermaid'
 
 export function MermaidEditor() {
   const [dsl, setDsl] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [collapsed, setCollapsed] = useState(true)
 
-  const mergeModel = useDiagramStore(s => s.mergeModel)
+  const mergeMermaid = useDiagramStore(s => s.mergeMermaid)
 
   const handleImport = () => {
     if (!dsl.trim()) return
     try {
       setError(null)
-      const model = parseMermaid(dsl)
-      mergeModel(model)
+      mergeMermaid(dsl)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Invalid Mermaid syntax')
     }

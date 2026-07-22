@@ -89,9 +89,7 @@ export class DiagramModel {
     const idMap = new Map<string, string>()
 
     for (const shape of other.shapes) {
-      const newShape = this.addShape(shape.type, shape.position, shape.dimensions)
-      this.updateShapeStyle(newShape.id, shape.style)
-      this.updateShapeText(newShape.id, shape.text)
+      const newShape = this.mergeMermaidShape(shape)
       idMap.set(shape.id, newShape.id)
     }
 
@@ -104,6 +102,13 @@ export class DiagramModel {
     }
 
     return idMap
+  }
+
+  mergeMermaidShape(shape: Shape): Shape {
+    const newShape = this.addShape(shape.type, shape.position, shape.dimensions)
+    this.updateShapeStyle(newShape.id, shape.style)
+    this.updateShapeText(newShape.id, shape.text)
+    return newShape
   }
 
   restoreShape(shape: Shape): void {

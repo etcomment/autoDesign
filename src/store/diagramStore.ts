@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { DiagramModel } from '../core/model/DiagramModel'
 import { History } from '../core/commands/History'
+import { parseMermaid } from '../mermaid/parseMermaid'
 import type { ConnectionType, Dimensions, Position, Shape, ShapeStyle, ShapeText, ShapeType } from '../core/model/Shape'
 
 interface ViewBox {
@@ -42,6 +43,7 @@ interface DiagramStore {
   setViewBox: (viewBox: ViewBox) => void
   toggleConnectMode: () => void
   mergeModel: (model: DiagramModel) => void
+  mergeMermaid: (dsl: string) => void
   getModel: () => DiagramModel
 }
 
@@ -171,6 +173,51 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
 
     mergeModel: (importedModel) => {
       model.mergeModel(importedModel)
+      set({ ...syncState(), selectedShapeIds: new Set() })
+    },
+
+    mergeMermaid: (dsl) => {
+      const imported = parseMermaid(dsl)
+      const existingShapes = model.shapes
+
+      // Build text → ID mapping from existing shapes
+      const existingByText = new Map<string, string>()
+      for (const shape of existingShapes) {
+        if (shape.text.content) {
+          existingByText.set(shape.text.content, shape.id)
+        }
+      }
+
+      // map imported shape IDs → existing/new shape IDs
+      const idMap = new Map<string, string>()
+
+      for (const importedShape of imported.shapes) {
+        const existingId = existingByText.get(importedShape.text.content)
+        if (existingId) {
+          idMap.set(importedShape.id, existingId)
+          // Update style from imported if content matches
+          model.updateShapeStyle(existingId, importedShape.style)
+        } else {
+          const newShape = model.mergeMermaidShape(importedShape)
+          idMap.set(importedShape.id, newShape.id)
+        }
+      }
+
+      // Map connections
+      for (const conn of imported.connections) {
+        const sourceId = idMap.get(conn.sourceId)
+        const targetId = idMap.get(conn.targetId)
+        if (sourceId && targetId) {
+          // Check if connection already exists
+          const exists = model.connections.some(
+            c => c.sourceId === sourceId && c.targetId === targetId,
+          )
+          if (!exists) {
+            model.addConnection(sourceId, targetId)
+          }
+        }
+      }
+
       set({ ...syncState(), selectedShapeIds: new Set() })
     },
 
