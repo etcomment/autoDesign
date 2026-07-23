@@ -338,10 +338,10 @@ export function ArchitectureRenderer() {
   const archData = diagramData as ArchitectureData | null
 
   const layout = useMemo(() => {
-    const hasData = archData && (archData.groups.length > 0 || archData.services.length > 0)
     if (diagramType !== 'architecture') {
       return { groups: [] as LayoutGroup[], services: [] as LayoutService[], junctions: [] as LayoutJunction[], edgePaths: [] as EdgePath[] }
     }
+    const hasData = archData && Array.isArray(archData.groups) && (archData.groups.length > 0 || (Array.isArray(archData.services) ? archData.services.length > 0 : false))
     if (hasData) return layoutStructured(archData!)
     return layoutFromShapes(shapes, connections)
   }, [diagramType, archData, shapes, connections])
