@@ -155,6 +155,21 @@ export function SequenceLifelines() {
 
   const { actorIndexMap, diagramHeight, messages, notes, activations, boxes, participants } = layout
 
+  function getActorCenterFromStore(participantName: string): number {
+    const actorRect = getRect(`actor-${participantName}`)
+    return actorRect.x + actorRect.width / 2
+  }
+
+  function getActorLeftFromStore(participantName: string): number {
+    const actorRect = getRect(`actor-${participantName}`)
+    return actorRect.x
+  }
+
+  function getActorRightFromStore(participantName: string): number {
+    const actorRect = getRect(`actor-${participantName}`)
+    return actorRect.x + actorRect.width
+  }
+
   return (
     <g ref={svgRef}>
       <defs>
@@ -177,8 +192,11 @@ export function SequenceLifelines() {
 
         const minIndex = Math.min(...actorIndices)
         const maxIndex = Math.max(...actorIndices)
-        const leftX = getActorX(minIndex) - BOX_PADDING
-        const rightX = getActorX(maxIndex) + ACTOR_WIDTH + BOX_PADDING
+        const minActor = participants[minIndex]
+        const maxActor = participants[maxIndex]
+        if (!minActor || !maxActor) return null
+        const leftX = getActorLeftFromStore(minActor.name) - BOX_PADDING
+        const rightX = getActorRightFromStore(maxActor.name) + BOX_PADDING
         const startY = getBoxY(box.startMessageIndex)
         const endY = getBoxY(box.endMessageIndex)
         const elementId = `box-${index}`
@@ -206,8 +224,8 @@ export function SequenceLifelines() {
         )
       })}
 
-      {participants.map((participant, index) => {
-        const centerX = getActorCenterX(index)
+      {participants.map((participant) => {
+        const centerX = getActorCenterFromStore(participant.name)
         const elementId = `actor-${participant.name}`
         const isSelected = selectedIds.has(elementId)
         const color = diagramColors[elementId] ?? '#999'
@@ -232,15 +250,17 @@ export function SequenceLifelines() {
         const elementId = `activation-${index}`
         const rect = getRect(elementId)
         const isSelected = selectedIds.has(elementId)
+        const centerX = getActorCenterFromStore(activation.actorName)
+        const activationFill = diagramColors[elementId] ?? '#4a90d9'
         return (
           <rect
             key={elementId}
-            x={rect.x}
+            x={centerX - ACTIVATION_WIDTH / 2}
             y={rect.y}
-            width={rect.width}
+            width={ACTIVATION_WIDTH}
             height={rect.height}
             rx={2}
-            fill="#4a90d9"
+            fill={activationFill}
             opacity={0.3}
             stroke={isSelected ? '#4a90d9' : '#2c5aa0'}
             strokeWidth={isSelected ? 2 : 1}
@@ -257,8 +277,8 @@ export function SequenceLifelines() {
         const targetIndex = actorIndexMap.get(message.targetName)
         if (sourceIndex === undefined || targetIndex === undefined) return null
 
-        const sourceX = getActorCenterX(sourceIndex)
-        const targetX = getActorCenterX(targetIndex)
+        const sourceX = getActorCenterFromStore(message.sourceName)
+        const targetX = getActorCenterFromStore(message.targetName)
         const stroke = isSelected ? '#4a90d9' : '#333'
         const strokeWidth = isSelected ? 2.5 : 1.5
 
@@ -394,7 +414,7 @@ export function SequenceLifelines() {
               width={rect.width}
               height={rect.height}
               rx={3}
-              fill="#f5f5f5"
+              fill={diagramColors[elementId] ?? '#f5f5f5'}
               stroke={color}
               strokeWidth={isSelected ? 2.5 : 1}
             />
