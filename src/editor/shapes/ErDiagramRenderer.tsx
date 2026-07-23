@@ -166,7 +166,7 @@ export function ErDiagramRenderer() {
                     </text>
                   ))}
                   <text
-                    x={rect.x + attr.keys.length > 0 ? 24 : 8}
+                    x={rect.x + (attr.keys.length > 0 ? 24 : 8)}
                     y={y + ROW_HEIGHT / 2 + 4}
                     fontFamily="Arial, sans-serif"
                     fontSize={11}
