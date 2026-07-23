@@ -94,4 +94,47 @@ describe('parseSequenceDiagram', () => {
     expect(shapes[1]!.position.x).toBe(300)
     expect(shapes[2]!.position.x).toBe(500)
   })
+
+  it('gère les flèches d\'activation +', () => {
+    const dsl = `sequenceDiagram
+    participant Alice
+    participant Bob
+    Alice->>+Bob: Activate
+    Bob-->>-Alice: Deactivate`
+
+    const { sequenceData } = parseSequenceDiagram(dsl)
+    expect(sequenceData.messages).toHaveLength(2)
+    expect(sequenceData.messages[0]?.type).toBe('open')
+    expect(sequenceData.messages[1]?.type).toBe('dotted-open')
+    expect(sequenceData.activations).toHaveLength(1)
+    expect(sequenceData.activations[0]?.actorName).toBe('Bob')
+    expect(sequenceData.activations[0]?.startMessageIndex).toBe(0)
+    expect(sequenceData.activations[0]?.endMessageIndex).toBe(1)
+  })
+
+  it('gère les flèches de désactivation -', () => {
+    const dsl = `sequenceDiagram
+    participant A
+    participant B
+    A->>+B: Call
+    B->>-A: Return`
+
+    const { sequenceData } = parseSequenceDiagram(dsl)
+    expect(sequenceData.activations).toHaveLength(1)
+    expect(sequenceData.activations[0]?.actorName).toBe('B')
+    expect(sequenceData.activations[0]?.startMessageIndex).toBe(0)
+    expect(sequenceData.activations[0]?.endMessageIndex).toBe(1)
+  })
+
+  it('gère activate/deactivate manuel', () => {
+    const dsl = `sequenceDiagram
+    participant A
+    activate A
+    A->>A: Self
+    deactivate A`
+
+    const { sequenceData } = parseSequenceDiagram(dsl)
+    expect(sequenceData.activations).toHaveLength(1)
+    expect(sequenceData.activations[0]?.actorName).toBe('A')
+  })
 })

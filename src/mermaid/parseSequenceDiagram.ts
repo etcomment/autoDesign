@@ -243,12 +243,13 @@ export function parseSequenceDiagram(dsl: string): { model: DiagramModel; sequen
       continue
     }
 
-    const messageMatch = /^(\S+?)\s*(-->>|->>|--x|-x|-->|->)\s*(\S+)\s*:?\s*(.*)$/.exec(trimmed)
+    const messageMatch = /^(\S+?)\s*(-->>|->>|--x|-x|-->|->)([+-]?)\s*(\S+)\s*:?\s*(.*)$/.exec(trimmed)
     if (messageMatch) {
       const sourceName = messageMatch[1]!
       const arrow = messageMatch[2]!
-      let targetName = messageMatch[3]!
-      let label = (messageMatch[4] ?? '').trim()
+      const activationSuffix = messageMatch[3]!
+      let targetName = messageMatch[4]!
+      let label = (messageMatch[5] ?? '').trim()
 
       const colonInTarget = targetName.indexOf(':')
       if (colonInTarget >= 0) {
@@ -259,6 +260,12 @@ export function parseSequenceDiagram(dsl: string): { model: DiagramModel; sequen
 
       const sourceParticipant = getOrCreateParticipant(sourceName)
       const targetParticipant = getOrCreateParticipant(targetName)
+
+      if (activationSuffix === '+') {
+        startActivation(targetName, messages.length)
+      } else if (activationSuffix === '-') {
+        endActivation(sourceName, messages.length)
+      }
 
       model.addConnection(sourceParticipant.shapeId, targetParticipant.shapeId, label || undefined)
 
