@@ -134,8 +134,8 @@ export function parseMermaid(dsl: string): ParseResult {
   }
 
   if (isErDiagram(trimmed)) {
-    const model = parseErDiagram(trimmed)
-    return { model, subgraphGroups: [], diagramType: 'er' }
+    const { model, diagramData } = parseErDiagram(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'er', diagramData: diagramData as unknown as Record<string, unknown> }
   }
 
   if (isBlockDiagram(trimmed)) {
