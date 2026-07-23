@@ -162,12 +162,12 @@ export function parseStateDiagram(dsl: string): DiagramModel {
     stateIds.set(name, shape.id)
   }
 
-  for (const { source, target } of transitions) {
+  for (const { source, target, label } of transitions) {
     if (source === '[*]' || target === '[*]') continue
     const sourceId = stateIds.get(source)
     const targetId = stateIds.get(target)
     if (sourceId && targetId) {
-      model.addConnection(sourceId, targetId)
+      model.addConnection(sourceId, targetId, label)
     }
   }
 

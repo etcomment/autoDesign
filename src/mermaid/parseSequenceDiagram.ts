@@ -169,7 +169,7 @@ export function parseSequenceDiagram(dsl: string): { model: DiagramModel; sequen
       const sourceParticipant = participantsByName.get(sourceName)!
       const targetParticipant = participantsByName.get(targetName)!
 
-      model.addConnection(sourceParticipant.shapeId, targetParticipant.shapeId)
+      model.addConnection(sourceParticipant.shapeId, targetParticipant.shapeId, label || undefined)
 
       const message: SequenceMessage = {
         sourceId: sourceParticipant.shapeId,

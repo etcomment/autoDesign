@@ -1,6 +1,7 @@
 import { useDiagramStore } from '../../store/diagramStore'
 import type { Shape, ConnectionType } from '../../core/model/Shape'
-import { useMemo } from 'react'
+import { useMemo, type ReactElement } from 'react'
+import { DatabaseIcon, ServerIcon, DiskIcon, CloudIcon, InternetIcon, DefaultIcon } from './ArchitectureIcons'
 
 interface ArchitectureService {
   id: string
@@ -73,17 +74,16 @@ const GROUP_HEADER = 30
 const GROUP_GAP = 12
 const ITEM_GAP = 20
 const ARROW_SIZE = 10
-const ICON_VIEWBOX = '0 0 80 80'
 
 const GROUP_COLORS = ['#4a90d9', '#e91e63', '#4caf50', '#ff9800', '#9c27b0', '#00bcd4', '#ff5722', '#607d8b']
 const SERVICE_DEFAULT = '#087ebf'
 
-const ICONS: Record<string, string> = {
-  database: '<path d="M20,57.86c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14"/><path d="M20,45.95c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14"/><path d="M20,34.05c0,3.94,8.95,7.14,20,7.14s20-3.2,20-7.14"/><ellipse cx="40" cy="22.14" rx="20" ry="7.14"/><line x1="20" y1="57.86" x2="20" y2="22.14"/><line x1="60" y1="57.86" x2="60" y2="22.14"/>',
-  server: '<rect x="17.5" y="17.5" width="45" height="45" rx="2"/><line x1="17.5" y1="32.5" x2="62.5" y2="32.5"/><line x1="17.5" y1="47.5" x2="62.5" y2="47.5"/><circle cx="32.5" cy="25" r=".75"/><circle cx="27.5" cy="25" r=".75"/><circle cx="22.5" cy="25" r=".75"/>',
-  disk: '<rect x="20" y="15" width="40" height="50" rx="1"/><ellipse cx="40" cy="33.75" rx="14" ry="14.58"/><ellipse cx="40" cy="33.75" rx="4" ry="4.17"/>',
-  cloud: '<path d="M65,47.5c0,2.76-2.24,5-5,5H20c-2.76,0-5-2.24-5-5c0-1.87,1.03-3.51,2.56-4.36c-.04-.21-.06-.42-.06-.64c0-2.6,2.48-4.74,5.65-4.97c1.65-4.51,6.34-7.76,11.85-7.76c.86,0,1.69.08,2.5.23c2.09-1.57,4.69-2.5,7.5-2.5c6.1,0,11.19,4.38,12.28,10.17c2.14.56,3.72,2.51,3.72,4.83v.09c2.29.46,4.01,2.48,4.01,4.9Z"/>',
-  internet: '<circle cx="40" cy="40" r="22.5"/><line x1="40" y1="17.5" x2="40" y2="62.5"/><line x1="17.5" y1="40" x2="62.5" y2="40"/><path d="M39.99,17.51c-15.28,11.1-15.28,33.88,0,44.98"/><path d="M40.01,17.51c15.28,11.1,15.28,33.88,0,44.98"/>',
+const ARCHITECTURE_ICONS: Record<string, (props: { size: number; color: string }) => ReactElement> = {
+  database: DatabaseIcon,
+  server: ServerIcon,
+  disk: DiskIcon,
+  cloud: CloudIcon,
+  internet: InternetIcon,
 }
 
 function getAttachmentPoint(item: LayoutItem, dir: string): { x: number; y: number } {
@@ -326,12 +326,6 @@ function arrowHeadPoints(x: number, y: number, fromX: number, fromY: number, siz
   return `${x},${y} ${ax + nx},${ay + ny} ${ax - nx},${ay - ny}`
 }
 
-function getIconType(icon: string): 'svg' | 'text' | null {
-  if (ICONS[icon] !== undefined) return 'svg'
-  if (icon && !icon.startsWith('_')) return 'text'
-  return null
-}
-
 export function ArchitectureRenderer() {
   const diagramType = useDiagramStore(s => s.diagramType)
   const diagramData = useDiagramStore(s => s.diagramData)
@@ -462,10 +456,9 @@ export function ArchitectureRenderer() {
       {services.map(sv => {
         const color = diagramColors[`service-${sv.id}`] ?? SERVICE_DEFAULT
         const isSelected = selectedIds.has(sv.id)
-        const iconType = getIconType(sv.icon)
         const iconSize = 28
-        const showIcon = iconType === 'svg'
-        const showText = iconType === 'text' || (iconType === null && !!sv.iconText)
+        const IconComponent = ARCHITECTURE_ICONS[sv.icon] ?? DefaultIcon
+        const showText = !ARCHITECTURE_ICONS[sv.icon] && !!sv.iconText
 
         return (
           <g
@@ -483,18 +476,10 @@ export function ArchitectureRenderer() {
               stroke={isSelected ? '#2196F3' : `${color}cc`}
               strokeWidth={isSelected ? 2.5 : 1.5}
             />
-            {showIcon && (
-              <svg
-                x={sv.x + (sv.w - iconSize) / 2}
-                y={sv.y + 6}
-                width={iconSize}
-                height={iconSize}
-                viewBox={ICON_VIEWBOX}
-              >
-                <g fill="white" dangerouslySetInnerHTML={{ __html: ICONS[sv.icon]! }} />
-              </svg>
-            )}
-            {!showIcon && showText && (
+            <g transform={`translate(${sv.x + (sv.w - iconSize) / 2}, ${sv.y + 6})`}>
+              <IconComponent size={iconSize} color="white" />
+            </g>
+            {showText && (
               <text
                 x={sv.x + sv.w / 2}
                 y={sv.y + 30}

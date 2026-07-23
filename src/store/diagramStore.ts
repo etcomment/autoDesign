@@ -23,6 +23,7 @@ interface DiagramStore {
   readonly diagramType: string
   readonly diagramData: Record<string, unknown> | null
   readonly diagramColors: Record<string, string>
+  readonly diagramElementPositions: Record<string, { x: number; y: number; width: number; height: number }>
   readonly selectedShapeIds: ReadonlySet<string>
   readonly selectedDiagramElementIds: ReadonlySet<string>
   readonly viewBox: ViewBox
@@ -43,7 +44,7 @@ interface DiagramStore {
   moveAndResizeShape: (id: string, position: Position, dimensions: Dimensions) => void
   batchUpdateShapeStyle: (ids: string[], style: Partial<ShapeStyle>) => void
 
-  addConnection: (sourceId: string, targetId: string) => void
+  addConnection: (sourceId: string, targetId: string, label?: string) => void
   removeConnection: (connectionId: string) => void
 
   selectShape: (id: string) => void
@@ -56,6 +57,9 @@ interface DiagramStore {
   deselectDiagramElement: (id: string) => void
   toggleDiagramElement: (id: string) => void
   clearDiagramElementSelection: () => void
+
+  moveDiagramElement: (id: string, position: Position) => void
+  resizeDiagramElement: (id: string, size: Dimensions) => void
 
   updateDiagramColor: (elementId: string, color: string) => void
   setDiagramColors: (colors: Record<string, string>) => void
@@ -90,6 +94,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
     diagramType: 'flowchart',
     diagramData: null,
     diagramColors: {},
+    diagramElementPositions: {},
     selectedShapeIds: new Set(),
     selectedDiagramElementIds: new Set(),
     viewBox: { x: 0, y: 0, scale: 1 },
@@ -152,8 +157,8 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
       set(syncState())
     },
 
-    addConnection: (sourceId, targetId) => {
-      history.addConnection(sourceId, targetId)
+    addConnection: (sourceId, targetId, label) => {
+      history.addConnection(sourceId, targetId, label)
       set(syncState())
     },
 
@@ -229,6 +234,36 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
       set({ selectedDiagramElementIds: new Set() })
     },
 
+    moveDiagramElement: (id, position) => {
+      const { diagramElementPositions } = get()
+      const current = diagramElementPositions[id]
+      set({
+        diagramElementPositions: {
+          ...diagramElementPositions,
+          [id]: {
+            width: current?.width ?? 0,
+            height: current?.height ?? 0,
+            ...position,
+          },
+        },
+      })
+    },
+
+    resizeDiagramElement: (id, size) => {
+      const { diagramElementPositions } = get()
+      const current = diagramElementPositions[id]
+      set({
+        diagramElementPositions: {
+          ...diagramElementPositions,
+          [id]: {
+            x: current?.x ?? 0,
+            y: current?.y ?? 0,
+            ...size,
+          },
+        },
+      })
+    },
+
     updateDiagramColor: (elementId, color) => {
       const { diagramColors } = get()
       set({ diagramColors: { ...diagramColors, [elementId]: color } })
@@ -267,7 +302,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
         const sourceId = idMap.get(conn.sourceId)
         const targetId = idMap.get(conn.targetId)
         if (sourceId && targetId) {
-          model.addConnection(sourceId, targetId)
+          model.addConnection(sourceId, targetId, conn.label)
         }
       }
 

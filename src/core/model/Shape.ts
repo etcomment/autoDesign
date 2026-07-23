@@ -16,6 +16,7 @@ export interface ConnectionType {
   readonly id: string
   readonly sourceId: string
   readonly targetId: string
+  readonly label?: string
 }
 
 export interface Position {

@@ -377,7 +377,7 @@ export function parseMermaid(dsl: string): ParseResult {
     const sourceId = idMap.get(edge.sourceId)
     const targetId = idMap.get(edge.targetId)
     if (sourceId && targetId) {
-      model.addConnection(sourceId, targetId)
+      model.addConnection(sourceId, targetId, edge.label)
     }
   }
 

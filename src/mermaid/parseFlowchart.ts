@@ -9,6 +9,7 @@ export interface FlowNode {
 export interface FlowEdge {
   sourceId: string
   targetId: string
+  label?: string
 }
 
 export interface FlowSubgraph {
@@ -142,11 +143,22 @@ function removeNodeDeclarations(line: string): string {
   return result
 }
 
-function findEdges(cleanLine: string): { source: string; target: string }[] {
-  const result: { source: string; target: string }[] = []
+function extractPipeLabels(line: string): string[] {
+  const labels: string[] = []
+  const regex = /\|([^|]*)\|/g
+  let m: RegExpExecArray | null
+  while ((m = regex.exec(line)) !== null) {
+    labels.push(m[1]!)
+  }
+  return labels
+}
+
+function findEdges(cleanLine: string, labels: string[] = []): { source: string; target: string; label?: string }[] {
+  const result: { source: string; target: string; label?: string }[] = []
 
   const parts = cleanLine.split(/\s+/)
 
+  let edgeIndex = 0
   let i = 1
   while (i < parts.length - 1) {
     const left = i - 1
@@ -154,7 +166,8 @@ function findEdges(cleanLine: string): { source: string; target: string }[] {
     const right = i + 1
 
     if (parts[left] && parts[mid] && parts[right] && isArrowToken(parts[mid]!)) {
-      result.push({ source: parts[left]!, target: parts[right]! })
+      result.push({ source: parts[left]!, target: parts[right]!, label: labels[edgeIndex] })
+      edgeIndex++
       i += 2
     } else {
       i++
@@ -237,14 +250,15 @@ export function parseFlowchart(dsl: string): FlowchartData {
       addNode(node.id, node.type, node.text)
     }
 
+    const pipeLabels = extractPipeLabels(line)
     const cleanLine = removeNodeDeclarations(line)
-    const lineEdges = findEdges(cleanLine)
-    for (const { source, target } of lineEdges) {
+    const lineEdges = findEdges(cleanLine, pipeLabels)
+    for (const { source, target, label } of lineEdges) {
       ensureNode(source)
       ensureNode(target)
       const dup = edges.some(e => e.sourceId === source && e.targetId === target)
       if (!dup) {
-        edges.push({ sourceId: source, targetId: target })
+        edges.push({ sourceId: source, targetId: target, label })
       }
     }
   }

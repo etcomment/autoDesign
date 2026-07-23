@@ -72,7 +72,7 @@ export class DiagramModel {
     this.connectionMap.clear()
   }
 
-  addConnection(sourceId: string, targetId: string): ConnectionType {
+  addConnection(sourceId: string, targetId: string, label?: string): ConnectionType {
     if (!this.shapeMap.has(sourceId)) {
       throw new Error(`Source shape not found: ${sourceId}`)
     }
@@ -83,6 +83,7 @@ export class DiagramModel {
       id: generateConnectionId(),
       sourceId,
       targetId,
+      label,
     }
     this.connectionMap.set(connection.id, connection)
     return connection
@@ -108,7 +109,7 @@ export class DiagramModel {
       const sourceId = idMap.get(conn.sourceId)
       const targetId = idMap.get(conn.targetId)
       if (sourceId && targetId) {
-        this.addConnection(sourceId, targetId)
+        this.addConnection(sourceId, targetId, conn.label)
       }
     }
 

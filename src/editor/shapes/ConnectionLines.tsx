@@ -21,6 +21,9 @@ export function ConnectionLines() {
 
         const pathD = `M ${startX} ${startY} C ${startX + controlOffset} ${startY}, ${endX - controlOffset} ${endY}, ${endX} ${endY}`
 
+        const midX = (startX + 3 * (startX + controlOffset) + 3 * (endX - controlOffset) + endX) / 8
+        const midY = (startY + 3 * startY + 3 * endY + endY) / 8
+
         return (
           <g key={conn.id}>
             <path
@@ -35,6 +38,27 @@ export function ConnectionLines() {
               fill="#666"
               transform={`translate(${endX}, ${endY}) rotate(${Math.atan2(endY - startY, endX - startX) * (180 / Math.PI)})`}
             />
+            {conn.label ? (
+              <g transform={`translate(${midX}, ${midY - 6})`}>
+                <rect
+                  x={-conn.label.length * 3.5 - 4}
+                  y={-8}
+                  width={conn.label.length * 7 + 8}
+                  height={16}
+                  fill="white"
+                  rx={2}
+                />
+                <text
+                  textAnchor="middle"
+                  fontSize={11}
+                  fontFamily="Arial"
+                  fill="#333"
+                  dominantBaseline="central"
+                >
+                  {conn.label}
+                </text>
+              </g>
+            ) : null}
           </g>
         )
       })}

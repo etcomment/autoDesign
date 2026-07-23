@@ -151,8 +151,8 @@ export class History {
     })
   }
 
-  addConnection(sourceId: string, targetId: string): ConnectionType {
-    const connection = this.model.addConnection(sourceId, targetId)
+  addConnection(sourceId: string, targetId: string, label?: string): ConnectionType {
+    const connection = this.model.addConnection(sourceId, targetId, label)
     const snapshot = connection
     this.push({
       label: 'Ajouter connexion',
