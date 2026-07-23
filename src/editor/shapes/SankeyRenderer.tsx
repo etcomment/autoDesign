@@ -1,6 +1,7 @@
+import { useMemo, useRef, useEffect } from 'react'
 import { useDiagramStore } from '../../store/diagramStore'
+import { useDiagramDragResize } from '../../hooks/useDiagramDragResize'
 import type { SankeyLink } from '../../mermaid/parseSankey'
-import { useMemo } from 'react'
 
 const PALETTE = [
   '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
@@ -18,6 +19,13 @@ interface SankeyNode {
   value: number
 }
 
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 interface SankeyComputed {
   nodes: SankeyNode[]
   links: Array<{
@@ -30,10 +38,7 @@ interface SankeyComputed {
   height: number
 }
 
-function computeSankey(
-  nodeNames: string[],
-  links: SankeyLink[]
-): SankeyComputed {
+function computeSankey(nodeNames: string[], links: SankeyLink[]): SankeyComputed {
   const nodeValue = new Map<string, number>()
   const nodeLinks = new Map<string, { source: string; target: string; value: number }[]>()
   for (const n of nodeNames) {
@@ -97,30 +102,62 @@ function computeSankey(
     elementKey: `link-${i}`,
   }))
 
-  return {
-    nodes: layoutNodes,
-    links: computedLinks,
-    width: CHART_W,
-    height: CHART_H,
-  }
+  return { nodes: layoutNodes, links: computedLinks, width: CHART_W, height: CHART_H }
 }
 
 export function SankeyRenderer() {
+  const svgRef = useRef<SVGGElement>(null)
   const diagramType = useDiagramStore(s => s.diagramType)
   const diagramData = useDiagramStore(s => s.diagramData)
   const diagramColors = useDiagramStore(s => s.diagramColors)
+  const diagramElementPositions = useDiagramStore(s => s.diagramElementPositions)
+  const moveDiagramElement = useDiagramStore(s => s.moveDiagramElement)
+  const resizeDiagramElement = useDiagramStore(s => s.resizeDiagramElement)
   const selectedIds = useDiagramStore(s => s.selectedDiagramElementIds)
-  const toggleElement = useDiagramStore(s => s.toggleDiagramElement)
+
+  const { startDrag, renderHandles } = useDiagramDragResize(svgRef)
 
   const links = (diagramData?.links ?? []) as SankeyLink[]
   const nodes = (diagramData?.nodes as string[]) ?? []
 
   const layout = useMemo(() => computeSankey(nodes, links), [nodes, links])
 
+  const computedRects = useMemo(() => {
+    const map = new Map<string, Rect>()
+    for (const node of layout.nodes) {
+      const key = `node-${node.name}`
+      const h = node.y1 - node.y0
+      map.set(key, { x: node.x0, y: node.y0, width: node.x1 - node.x0, height: h })
+    }
+    return map
+  }, [layout])
+
+  useEffect(() => {
+    for (const [id, rect] of computedRects) {
+      if (diagramElementPositions[id]) continue
+      moveDiagramElement(id, { x: rect.x, y: rect.y })
+      resizeDiagramElement(id, { width: rect.width, height: rect.height })
+    }
+  }, [computedRects, diagramElementPositions, moveDiagramElement, resizeDiagramElement])
+
+  function getRect(id: string): Rect {
+    const stored = diagramElementPositions[id]
+    const computed = computedRects.get(id)
+    if (stored) {
+      return {
+        x: stored.x,
+        y: stored.y,
+        width: stored.width || computed?.width || 20,
+        height: stored.height || computed?.height || 20,
+      }
+    }
+    return computed ?? { x: 0, y: 0, width: 0, height: 0 }
+  }
+
   if (diagramType !== 'sankey' || links.length === 0) return null
 
   return (
-    <g>
+    <g ref={svgRef}>
       {layout.links.map((l, i) => {
         const { source, target, value } = l
         const color = PALETTE[i % PALETTE.length]!
@@ -138,60 +175,59 @@ export function SankeyRenderer() {
             stroke={isSelected ? '#4a90d9' : 'none'}
             strokeWidth={isSelected ? 1.5 : 0}
             strokeDasharray={isSelected ? '4 2' : undefined}
-            onClick={() => toggleElement(l.elementKey)}
             style={{ cursor: 'pointer' }}
           />
         )
       })}
 
       {layout.nodes.map((node, i) => {
-        const h = node.y1 - node.y0
         const elementKey = `node-${node.name}`
+        const rect = getRect(elementKey)
         const color = diagramColors[elementKey] ?? PALETTE[i % PALETTE.length]!
         const isSelected = selectedIds.has(elementKey)
-        const xText = node.x0 < 100 ? node.x1 + 6 : node.x0 - 6
+        const xText = rect.x < 100 ? rect.x + rect.width + 6 : rect.x - 6
 
         return (
-          <g key={elementKey}>
+          <g key={elementKey} onMouseDown={e => startDrag(e, elementKey, rect)} style={{ cursor: 'pointer' }}>
             <rect
-              x={node.x0}
-              y={node.y0}
-              width={node.x1 - node.x0}
-              height={h}
+              x={rect.x}
+              y={rect.y}
+              width={rect.width}
+              height={rect.height}
               rx={2}
               fill={color}
               opacity={0.85}
               stroke={isSelected ? '#4a90d9' : color}
               strokeWidth={isSelected ? 2 : 0.5}
               strokeDasharray={isSelected ? '4 2' : undefined}
-              onClick={() => toggleElement(elementKey)}
-              style={{ cursor: 'pointer' }}
             />
-            {h > 20 && (
+            {rect.height > 20 ? (
               <text
                 x={xText}
-                y={node.y0 + h / 2 + 4}
-                textAnchor={node.x0 < 100 ? 'start' : 'end'}
+                y={rect.y + rect.height / 2 + 4}
+                textAnchor={rect.x < 100 ? 'start' : 'end'}
                 fontFamily="Arial, sans-serif"
                 fontSize={10}
                 fill="#333"
                 fontWeight={600}
+                pointerEvents="none"
               >
                 {node.name}
               </text>
-            )}
-            {h <= 20 && (
+            ) : (
               <text
                 x={xText}
-                y={node.y0 + h / 2 + 4}
-                textAnchor={node.x0 < 100 ? 'start' : 'end'}
+                y={rect.y + rect.height / 2 + 4}
+                textAnchor={rect.x < 100 ? 'start' : 'end'}
                 fontFamily="Arial, sans-serif"
                 fontSize={9}
                 fill="#999"
+                pointerEvents="none"
               >
                 {node.name}
               </text>
             )}
+            {isSelected && renderHandles(rect, elementKey)}
           </g>
         )
       })}

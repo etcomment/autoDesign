@@ -1,4 +1,6 @@
+import { useRef, useEffect, useMemo } from 'react'
 import { useDiagramStore } from '../../store/diagramStore'
+import { useDiagramDragResize } from '../../hooks/useDiagramDragResize'
 import type { TimelineEvent } from '../../mermaid/parseTimeline'
 
 const PALETTE = [
@@ -14,23 +16,82 @@ const EVENT_GAP_X = 100
 const TIMELINE_Y = 120
 const SECTION_H = 60
 
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 export function TimelineRenderer() {
+  const svgRef = useRef<SVGGElement>(null)
   const diagramType = useDiagramStore(s => s.diagramType)
   const diagramData = useDiagramStore(s => s.diagramData)
   const diagramColors = useDiagramStore(s => s.diagramColors)
+  const diagramElementPositions = useDiagramStore(s => s.diagramElementPositions)
+  const moveDiagramElement = useDiagramStore(s => s.moveDiagramElement)
+  const resizeDiagramElement = useDiagramStore(s => s.resizeDiagramElement)
   const selectedIds = useDiagramStore(s => s.selectedDiagramElementIds)
-  const toggleElement = useDiagramStore(s => s.toggleDiagramElement)
 
-  if (diagramType !== 'timeline' || !diagramData?.events) return null
-  const events = diagramData.events as TimelineEvent[]
-  const sections = diagramData.sections as Record<string, TimelineEvent[]> | undefined
-  const title = diagramData.title as string | undefined
+  const { startDrag, renderHandles } = useDiagramDragResize(svgRef)
 
-  const totalWidth = Math.max(600, events.length * EVENT_GAP_X + SIDE_MARGIN * 2)
+  const events = (diagramType === 'timeline' && diagramData?.events) ? diagramData.events as TimelineEvent[] : null
+  const sections = (diagramType === 'timeline' && diagramData) ? diagramData.sections as Record<string, TimelineEvent[]> | undefined : undefined
+  const title = (diagramType === 'timeline' && diagramData) ? diagramData.title as string | undefined : undefined
+
+  const totalWidth = useMemo(() => Math.max(600, (events?.length ?? 0) * EVENT_GAP_X + SIDE_MARGIN * 2), [events])
+
+  const computedRects = useMemo(() => {
+    const map = new Map<string, Rect>()
+    if (!events) return map
+    const SIZE = EVENT_R * 2 + 4
+    let globalIndex = 0
+
+    if (sections) {
+      for (const [, sectionEvents] of Object.entries(sections)) {
+        for (const _event of sectionEvents) {
+          const ei = globalIndex++
+          const ex = SIDE_MARGIN + ei * EVENT_GAP_X
+          map.set(`event-${ei}`, { x: ex - SIZE / 2, y: TIMELINE_Y - SIZE / 2, width: SIZE, height: SIZE })
+        }
+      }
+    } else {
+      for (let i = 0; i < events.length; i++) {
+        const ex = SIDE_MARGIN + i * EVENT_GAP_X
+        map.set(`event-${i}`, { x: ex - SIZE / 2, y: TIMELINE_Y - SIZE / 2, width: SIZE, height: SIZE })
+      }
+    }
+    return map
+  }, [events, sections])
+
+  useEffect(() => {
+    for (const [id, rect] of computedRects) {
+      if (diagramElementPositions[id]) continue
+      moveDiagramElement(id, { x: rect.x, y: rect.y })
+      resizeDiagramElement(id, { width: rect.width, height: rect.height })
+    }
+  }, [computedRects, diagramElementPositions, moveDiagramElement, resizeDiagramElement])
+
+  if (diagramType !== 'timeline' || !events) return null
+
+  function getRect(id: string): Rect {
+    const stored = diagramElementPositions[id]
+    const computed = computedRects.get(id)
+    if (stored) {
+      return {
+        x: stored.x,
+        y: stored.y,
+        width: stored.width || computed?.width || (EVENT_R * 2 + 4),
+        height: stored.height || computed?.height || (EVENT_R * 2 + 4),
+      }
+    }
+    return computed ?? { x: 0, y: 0, width: 0, height: 0 }
+  }
+
   const midX = totalWidth / 2
 
   return (
-    <g>
+    <g ref={svgRef}>
       {title && (
         <text x={midX} y={30} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={17} fontWeight={700} fill="#333">
           {title}
@@ -41,25 +102,12 @@ export function TimelineRenderer() {
 
       {(() => {
         let globalIndex = 0
-        const sectionColors: Array<{ name: string; color: string }> = []
-        if (sections) {
-          const entries = Object.entries(sections)
-          for (let si = 0; si < entries.length; si++) {
-            const [sectionName] = entries[si]!
-            sectionColors.push({
-              name: sectionName,
-              color: PALETTE[si % PALETTE.length]!,
-            })
-          }
-        }
 
         if (sections) {
           return Object.entries(sections).map(([sectionName, sectionEvents], si) => {
             const secColor = PALETTE[si % PALETTE.length]!
-            const secKey = `section-${sectionName}`
-            const isSecSelected = selectedIds.has(secKey)
-            const startX = SIDE_MARGIN + sectionEvents.length * EVENT_GAP_X / 2
             const secY = TIMELINE_Y + 30
+            const startX = SIDE_MARGIN + sectionEvents.length * EVENT_GAP_X / 2
 
             return (
               <g key={sectionName}>
@@ -71,11 +119,6 @@ export function TimelineRenderer() {
                   rx={6}
                   fill={secColor}
                   opacity={0.08}
-                  stroke={isSecSelected ? '#4a90d9' : 'none'}
-                  strokeWidth={isSecSelected ? 1.5 : 0}
-                  strokeDasharray={isSecSelected ? '4 2' : undefined}
-                  onClick={() => toggleElement(secKey)}
-                  style={{ cursor: 'pointer' }}
                 />
                 <text
                   x={startX}
@@ -92,45 +135,32 @@ export function TimelineRenderer() {
                   const ei = globalIndex++
                   const ex = SIDE_MARGIN + ei * EVENT_GAP_X
                   const elementKey = `event-${ei}`
+                  const rect = getRect(elementKey)
                   const color = diagramColors[elementKey] ?? secColor
                   const isSelected = selectedIds.has(elementKey)
                   const isUp = ei % 2 === 0
+                  const centerX = rect.x + rect.width / 2
+                  const centerY = rect.y + rect.height / 2
 
                   return (
-                    <g key={`${sectionName}-${j}`}>
-                      <line x1={ex} y1={TIMELINE_Y} x2={ex} y2={isUp ? TIMELINE_Y - 16 : TIMELINE_Y + 16} stroke="#b0b0b0" strokeWidth={1} />
+                    <g key={`${sectionName}-${j}`} onMouseDown={e => startDrag(e, elementKey, rect)} style={{ cursor: 'pointer' }}>
+                      <line x1={centerX} y1={centerY} x2={ex} y2={isUp ? TIMELINE_Y - 16 : TIMELINE_Y + 16} stroke="#b0b0b0" strokeWidth={1} />
                       <circle
-                        cx={ex}
-                        cy={TIMELINE_Y}
+                        cx={centerX}
+                        cy={centerY}
                         r={EVENT_R}
                         fill={color}
                         stroke={isSelected ? '#4a90d9' : 'white'}
                         strokeWidth={isSelected ? 2.5 : 2}
                         strokeDasharray={isSelected ? '4 2' : undefined}
-                        onClick={() => toggleElement(elementKey)}
-                        style={{ cursor: 'pointer' }}
                       />
-                      <text
-                        x={ex}
-                        y={isUp ? TIMELINE_Y - 30 : TIMELINE_Y + 34}
-                        textAnchor="middle"
-                        fontFamily="Arial, sans-serif"
-                        fontSize={11}
-                        fontWeight={600}
-                        fill="#333"
-                      >
+                      <text x={ex} y={isUp ? TIMELINE_Y - 30 : TIMELINE_Y + 34} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#333">
                         {event.date}
                       </text>
-                      <text
-                        x={ex}
-                        y={isUp ? TIMELINE_Y - 44 : TIMELINE_Y + 48}
-                        textAnchor="middle"
-                        fontFamily="Arial, sans-serif"
-                        fontSize={10}
-                        fill="#666"
-                      >
+                      <text x={ex} y={isUp ? TIMELINE_Y - 44 : TIMELINE_Y + 48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#666">
                         {event.title}
                       </text>
+                      {isSelected && renderHandles(rect, elementKey)}
                     </g>
                   )
                 })}
@@ -142,45 +172,32 @@ export function TimelineRenderer() {
         return events.map((event, i) => {
           const ex = SIDE_MARGIN + i * EVENT_GAP_X
           const elementKey = `event-${i}`
+          const rect = getRect(elementKey)
           const color = diagramColors[elementKey] ?? PALETTE[i % PALETTE.length]!
           const isSelected = selectedIds.has(elementKey)
           const isUp = i % 2 === 0
+          const centerX = rect.x + rect.width / 2
+          const centerY = rect.y + rect.height / 2
 
           return (
-            <g key={i}>
-              <line x1={ex} y1={TIMELINE_Y} x2={ex} y2={isUp ? TIMELINE_Y - 16 : TIMELINE_Y + 16} stroke="#b0b0b0" strokeWidth={1} />
+            <g key={i} onMouseDown={e => startDrag(e, elementKey, rect)} style={{ cursor: 'pointer' }}>
+              <line x1={centerX} y1={centerY} x2={ex} y2={isUp ? TIMELINE_Y - 16 : TIMELINE_Y + 16} stroke="#b0b0b0" strokeWidth={1} />
               <circle
-                cx={ex}
-                cy={TIMELINE_Y}
+                cx={centerX}
+                cy={centerY}
                 r={EVENT_R}
                 fill={color}
                 stroke={isSelected ? '#4a90d9' : 'white'}
                 strokeWidth={isSelected ? 2.5 : 2}
                 strokeDasharray={isSelected ? '4 2' : undefined}
-                onClick={() => toggleElement(elementKey)}
-                style={{ cursor: 'pointer' }}
               />
-              <text
-                x={ex}
-                y={isUp ? TIMELINE_Y - 30 : TIMELINE_Y + 34}
-                textAnchor="middle"
-                fontFamily="Arial, sans-serif"
-                fontSize={11}
-                fontWeight={600}
-                fill="#333"
-              >
+              <text x={ex} y={isUp ? TIMELINE_Y - 30 : TIMELINE_Y + 34} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#333">
                 {event.date}
               </text>
-              <text
-                x={ex}
-                y={isUp ? TIMELINE_Y - 44 : TIMELINE_Y + 48}
-                textAnchor="middle"
-                fontFamily="Arial, sans-serif"
-                fontSize={10}
-                fill="#666"
-              >
+              <text x={ex} y={isUp ? TIMELINE_Y - 44 : TIMELINE_Y + 48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#666">
                 {event.title}
               </text>
+              {isSelected && renderHandles(rect, elementKey)}
             </g>
           )
         })
