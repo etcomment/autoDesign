@@ -108,7 +108,7 @@ export interface SubgraphGroup {
 export interface ParseResult {
   model: DiagramModel
   subgraphGroups: readonly SubgraphGroup[]
-  diagramType: 'flowchart' | 'sequence' | 'class' | 'state' | 'er' | 'block' | 'pie' | 'quadrant' | 'timeline' | 'userJourney' | 'gantt' | 'mindmap' | 'gitGraph' | 'requirement' | 'c4' | 'sankey' | 'xyChart' | 'packet' | 'venn' | 'ishikawa' | 'treeView' | 'kanban' | 'radar' | 'treemap' | 'architecture' | 'eventModeling' | 'swimlanes' | 'wardley' | 'cynefin' | 'zenuml'
+  diagramType: 'flowchart' | 'sequence' | 'class' | 'state' | 'er' | 'block' | 'pie' | 'quadrant' | 'timeline' | 'userJourney' | 'gantt' | 'mindmap' | 'gitGraph' | 'requirement' | 'c4' | 'sankey' | 'xyChart' | 'packet' | 'venn' | 'ishikawa' | 'treeView' | 'kanban' | 'radar' | 'treemap' | 'architecture' | 'eventModeling' | 'swimlane' | 'wardley' | 'cynefin' | 'zenuml'
   sequenceData?: SequenceData
   diagramData?: Record<string, unknown>
   diagramColors?: Record<string, string>
@@ -205,13 +205,13 @@ export function parseMermaid(dsl: string): ParseResult {
   }
 
   if (isVenn(trimmed)) {
-    const model = parseVenn(trimmed)
-    return { model, subgraphGroups: [], diagramType: 'venn' }
+    const { model, vennData } = parseVenn(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'venn', diagramData: vennData as unknown as Record<string, unknown> }
   }
 
   if (isIshikawa(trimmed)) {
-    const model = parseIshikawa(trimmed)
-    return { model, subgraphGroups: [], diagramType: 'ishikawa' }
+    const { model, ishikawaData } = parseIshikawa(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'ishikawa', diagramData: ishikawaData as unknown as Record<string, unknown> }
   }
 
   if (isTreeView(trimmed)) {
@@ -282,18 +282,18 @@ export function parseMermaid(dsl: string): ParseResult {
   }
 
   if (isRadar(trimmed)) {
-    const model = parseRadar(trimmed)
-    return { model, subgraphGroups: [], diagramType: 'radar' }
+    const { model, radarData } = parseRadar(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'radar', diagramData: radarData as unknown as Record<string, unknown> }
   }
 
   if (isTreemap(trimmed)) {
-    const model = parseTreemap(trimmed)
-    return { model, subgraphGroups: [], diagramType: 'treemap' }
+    const { model, treemapData } = parseTreemap(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'treemap', diagramData: treemapData as unknown as Record<string, unknown> }
   }
 
   if (isArchitecture(trimmed)) {
-    const model = parseArchitecture(trimmed)
-    return { model, subgraphGroups: [], diagramType: 'architecture' }
+    const { model, diagramData } = parseArchitecture(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'architecture', diagramData: diagramData as unknown as Record<string, unknown> }
   }
 
   if (isEventModeling(trimmed)) {
@@ -302,23 +302,23 @@ export function parseMermaid(dsl: string): ParseResult {
   }
 
   if (isSwimlanes(trimmed)) {
-    const model = parseSwimlanes(trimmed)
-    return { model, subgraphGroups: [], diagramType: 'swimlanes' }
+    const { model, swimlanesData } = parseSwimlanes(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'swimlane', diagramData: swimlanesData as unknown as Record<string, unknown> }
   }
 
   if (isWardley(trimmed)) {
-    const { model } = parseWardley(trimmed)
-    return { model, subgraphGroups: [], diagramType: 'wardley' }
+    const { model, wardleyData } = parseWardley(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'wardley', diagramData: wardleyData as unknown as Record<string, unknown> }
   }
 
   if (isCynefin(trimmed)) {
-    const { model } = parseCynefin(trimmed)
-    return { model, subgraphGroups: [], diagramType: 'cynefin' }
+    const { model, cynefinData } = parseCynefin(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'cynefin', diagramData: cynefinData as unknown as Record<string, unknown> }
   }
 
   if (isZenUml(trimmed)) {
-    const { model } = parseZenUml(trimmed)
-    return { model, subgraphGroups: [], diagramType: 'zenuml' }
+    const { model, zenUmlData } = parseZenUml(trimmed)
+    return { model, subgraphGroups: [], diagramType: 'zenuml', diagramData: zenUmlData as unknown as Record<string, unknown> }
   }
 
   const fd = parseFlowchart(trimmed)
@@ -377,7 +377,12 @@ export function parseMermaid(dsl: string): ParseResult {
     const sourceId = idMap.get(edge.sourceId)
     const targetId = idMap.get(edge.targetId)
     if (sourceId && targetId) {
-      model.addConnection(sourceId, targetId, edge.label)
+      model.addConnection(sourceId, targetId, {
+        label: edge.label,
+        arrowStyle: edge.arrowStyle,
+        arrowHead: edge.arrowHead,
+        arrowDirection: edge.arrowDirection,
+      })
     }
   }
 

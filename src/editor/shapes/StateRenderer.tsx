@@ -55,6 +55,19 @@ export function StateRenderer() {
               onClick={() => toggleElement(elementKey)}
               style={{ cursor: 'pointer' }}
             />
+            {conn.label && (
+              <text
+                x={(sx + tx) / 2}
+                y={(sy + ty) / 2 - 6}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={9}
+                fill="#555"
+                pointerEvents="none"
+              >
+                {conn.label}
+              </text>
+            )}
           </g>
         )
       })}

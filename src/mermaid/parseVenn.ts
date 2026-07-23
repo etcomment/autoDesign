@@ -1,5 +1,14 @@
 import { DiagramModel } from '../core/model/DiagramModel'
 
+export interface VennSet {
+  id: string
+  label: string
+}
+
+export interface VennData {
+  sets: VennSet[]
+}
+
 function extractLabel(text: string): string {
   const bracketMatch = /^(\w[\w-]*)\s*\["([^"]*)"\]/.exec(text)
   if (bracketMatch) return bracketMatch[2]!
@@ -14,11 +23,12 @@ function extractIdentifiers(text: string): string[] {
   return idsPart.split(',').map(s => s.trim()).filter(Boolean)
 }
 
-export function parseVenn(dsl: string): DiagramModel {
+export function parseVenn(dsl: string): { model: DiagramModel; vennData: VennData } {
   const model = new DiagramModel()
   const lines = dsl.split('\n')
 
   const setIds = new Map<string, string>()
+  const vennData: VennData = { sets: [] }
   const positions = [
     { x: 120, y: 100 },
     { x: 320, y: 100 },
@@ -45,6 +55,7 @@ export function parseVenn(dsl: string): DiagramModel {
       const shape = model.addShape('ellipse', pos, { width: 160, height: 120 })
       model.updateShapeText(shape.id, { content: label })
       setIds.set(id, shape.id)
+      vennData.sets.push({ id, label })
       continue
     }
 
@@ -53,7 +64,7 @@ export function parseVenn(dsl: string): DiagramModel {
       const raw = unionMatch[1]!
       const ids = extractIdentifiers(raw)
       const label = extractLabel(raw)
-      const shapeIds = ids.map(id => setIds.get(id)).filter(Boolean) as string[]
+      const shapeIds = ids.map(i => setIds.get(i)).filter(Boolean) as string[]
       for (let i = 1; i < shapeIds.length; i++) {
         try {
           model.addConnection(shapeIds[i - 1]!, shapeIds[i]!)
@@ -70,7 +81,7 @@ export function parseVenn(dsl: string): DiagramModel {
     if (/^text\s+/i.test(trimmed)) continue
   }
 
-  return model
+  return { model, vennData }
 }
 
 export function isVenn(dsl: string): boolean {

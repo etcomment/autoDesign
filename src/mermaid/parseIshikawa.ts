@@ -1,17 +1,28 @@
 import { DiagramModel } from '../core/model/DiagramModel'
 
+export interface IshikawaCategory {
+  name: string
+  causes: string[]
+}
+
+export interface IshikawaData {
+  problem: string
+  categories: IshikawaCategory[]
+}
+
 interface IshikawaNode {
   id: string
   text: string
   indent: number
 }
 
-export function parseIshikawa(dsl: string): DiagramModel {
+export function parseIshikawa(dsl: string): { model: DiagramModel; ishikawaData: IshikawaData } {
   const model = new DiagramModel()
   const lines = dsl.split('\n')
 
   const nodes: IshikawaNode[] = []
   const nodeIds = new Map<string, string>()
+  const ishikawaData: IshikawaData = { problem: '', categories: [] }
 
   for (const line of lines) {
     const trimmed = line.trim()
@@ -23,7 +34,11 @@ export function parseIshikawa(dsl: string): DiagramModel {
     nodes.push({ id: `ish-${Math.random().toString(36).slice(2, 8)}`, text: trimmed, indent })
   }
 
-  if (nodes.length === 0) return model
+  if (nodes.length > 0) {
+    ishikawaData.problem = nodes[0]!.text
+  }
+
+  if (nodes.length === 0) return { model, ishikawaData }
 
   const spineY = 200
   const head = model.addShape('rectangle', { x: 40, y: spineY - 30 }, { width: 160, height: 60 })
@@ -43,6 +58,7 @@ export function parseIshikawa(dsl: string): DiagramModel {
       nodeIds.set(node.id, shape.id)
       categoryNodeIds.push(shape.id)
       model.addConnection(head.id, shape.id)
+      ishikawaData.categories.push({ name: node.text, causes: [] })
       categoryIndex++
     } else {
       const categoryNode = nodes.slice(1, i).reverse().find(n => n.indent < node.indent)
@@ -53,11 +69,16 @@ export function parseIshikawa(dsl: string): DiagramModel {
         model.updateShapeText(shape.id, { content: node.text, fontSize: 11 })
         nodeIds.set(node.id, shape.id)
         model.addConnection(parentId, shape.id)
+        const categoryName = categoryNode?.text ?? ''
+        const categoryEntry = ishikawaData.categories.find(c => c.name === categoryName)
+        if (categoryEntry) {
+          categoryEntry.causes.push(node.text)
+        }
       }
     }
   }
 
-  return model
+  return { model, ishikawaData }
 }
 
 export function isIshikawa(dsl: string): boolean {

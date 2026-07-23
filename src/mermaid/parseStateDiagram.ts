@@ -167,7 +167,7 @@ export function parseStateDiagram(dsl: string): DiagramModel {
     const sourceId = stateIds.get(source)
     const targetId = stateIds.get(target)
     if (sourceId && targetId) {
-      model.addConnection(sourceId, targetId, label)
+      model.addConnection(sourceId, targetId, { label })
     }
   }
 

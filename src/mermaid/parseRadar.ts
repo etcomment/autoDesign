@@ -6,15 +6,21 @@ const RADIUS = 200
 const LABEL_OFFSET = 35
 const DOT_SIZE = 8
 
-interface RadarAxis {
+export interface RadarAxis {
   id: string
   label: string
 }
 
-interface RadarCurve {
+export interface RadarCurve {
   id: string
   label: string
   values: number[]
+}
+
+export interface RadarData {
+  axes: RadarAxis[]
+  curves: RadarCurve[]
+  globalMax: number
 }
 
 function parseAxisLine(trimmed: string): RadarAxis[] {
@@ -63,7 +69,7 @@ function parseCurveLine(trimmed: string): RadarCurve[] {
   return curves
 }
 
-export function parseRadar(dsl: string): DiagramModel {
+export function parseRadar(dsl: string): { model: DiagramModel; radarData: RadarData } {
   const model = new DiagramModel()
   const lines = dsl.split('\n')
 
@@ -101,7 +107,6 @@ export function parseRadar(dsl: string): DiagramModel {
   }
 
   const numAxes = axes.length
-  if (numAxes === 0) return model
 
   let globalMax = 0
   for (const curve of curves) {
@@ -110,6 +115,10 @@ export function parseRadar(dsl: string): DiagramModel {
     }
   }
   if (globalMax === 0) globalMax = 1
+
+  const radarData: RadarData = { axes, curves, globalMax }
+
+  if (numAxes === 0) return { model, radarData }
 
   const angleStep = (2 * Math.PI) / numAxes
 
@@ -147,7 +156,7 @@ export function parseRadar(dsl: string): DiagramModel {
     }
   }
 
-  return model
+  return { model, radarData }
 }
 
 export function isRadar(dsl: string): boolean {

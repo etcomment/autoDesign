@@ -1,9 +1,13 @@
 import { DiagramModel } from '../core/model/DiagramModel'
 
-interface TreeNode {
+export interface TreeNode {
   name: string
   value: number | null
   children: TreeNode[]
+}
+
+export interface TreemapData {
+  root: TreeNode[]
 }
 
 function parseTree(dsl: string): TreeNode[] {
@@ -96,7 +100,7 @@ function layoutNode(
   }
 }
 
-export function parseTreemap(dsl: string): DiagramModel {
+export function parseTreemap(dsl: string): { model: DiagramModel; treemapData: TreemapData } {
   const model = new DiagramModel()
   const root = parseTree(dsl)
 
@@ -109,7 +113,9 @@ export function parseTreemap(dsl: string): DiagramModel {
   }
 
   const totalValue = root.reduce((s, n) => s + (n.value ?? 0), 0)
-  if (totalValue === 0) return model
+  const treemapData: TreemapData = { root }
+
+  if (totalValue === 0) return { model, treemapData }
 
   let offsetY = PADDING
   for (const node of root) {
@@ -119,7 +125,7 @@ export function parseTreemap(dsl: string): DiagramModel {
     offsetY += h
   }
 
-  return model
+  return { model, treemapData }
 }
 
 export function isTreemap(dsl: string): boolean {

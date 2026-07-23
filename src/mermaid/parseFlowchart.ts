@@ -1,4 +1,4 @@
-import type { ShapeType } from '../core/model/Shape'
+import type { ArrowDirection, ArrowHead, ArrowStyle, ShapeType } from '../core/model/Shape'
 
 export interface FlowNode {
   id: string
@@ -10,6 +10,9 @@ export interface FlowEdge {
   sourceId: string
   targetId: string
   label?: string
+  arrowStyle?: ArrowStyle
+  arrowHead?: ArrowHead
+  arrowDirection?: ArrowDirection
 }
 
 export interface FlowSubgraph {
@@ -131,6 +134,34 @@ function isArrowToken(s: string): boolean {
   return /^(-->|==>|-.->|---|===|-\.-|-->>|--o|--x|<-->|o--o|x--x|o--|x--)$/.test(s)
 }
 
+interface ArrowInfo {
+  arrowStyle: ArrowStyle
+  arrowHead: ArrowHead
+  arrowDirection: ArrowDirection
+}
+
+const ARROW_INFO_MAP: Record<string, ArrowInfo> = {
+  '-->': { arrowStyle: 'solid', arrowHead: 'filled', arrowDirection: 'forward' },
+  '---': { arrowStyle: 'solid', arrowHead: 'none', arrowDirection: 'none' },
+  '-->>': { arrowStyle: 'solid', arrowHead: 'filled', arrowDirection: 'forward' },
+  '==>': { arrowStyle: 'thick', arrowHead: 'filled', arrowDirection: 'forward' },
+  '===': { arrowStyle: 'thick', arrowHead: 'none', arrowDirection: 'none' },
+  '-.->': { arrowStyle: 'dashed', arrowHead: 'filled', arrowDirection: 'forward' },
+  '-.-': { arrowStyle: 'dashed', arrowHead: 'none', arrowDirection: 'none' },
+  '--o': { arrowStyle: 'solid', arrowHead: 'circle', arrowDirection: 'forward' },
+  '--x': { arrowStyle: 'solid', arrowHead: 'cross', arrowDirection: 'forward' },
+  '<-->': { arrowStyle: 'solid', arrowHead: 'filled', arrowDirection: 'both' },
+  'o--o': { arrowStyle: 'solid', arrowHead: 'circle', arrowDirection: 'both' },
+  'x--x': { arrowStyle: 'solid', arrowHead: 'cross', arrowDirection: 'both' },
+  'o--': { arrowStyle: 'solid', arrowHead: 'circle', arrowDirection: 'backward' },
+  'x--': { arrowStyle: 'solid', arrowHead: 'cross', arrowDirection: 'backward' },
+  '???': { arrowStyle: 'solid', arrowHead: 'filled', arrowDirection: 'forward' },
+}
+
+function getArrowInfo(token: string): ArrowInfo {
+  return ARROW_INFO_MAP[token] ?? ARROW_INFO_MAP['???']!
+}
+
 function removeNodeDeclarations(line: string): string {
   let result = line
   for (const { regex } of SHAPE_PATTERNS) {
@@ -153,8 +184,8 @@ function extractPipeLabels(line: string): string[] {
   return labels
 }
 
-function findEdges(cleanLine: string, labels: string[] = []): { source: string; target: string; label?: string }[] {
-  const result: { source: string; target: string; label?: string }[] = []
+function findEdges(cleanLine: string, labels: string[] = []): { source: string; target: string; label?: string; arrowInfo: ArrowInfo }[] {
+  const result: { source: string; target: string; label?: string; arrowInfo: ArrowInfo }[] = []
 
   const parts = cleanLine.split(/\s+/)
 
@@ -166,7 +197,8 @@ function findEdges(cleanLine: string, labels: string[] = []): { source: string; 
     const right = i + 1
 
     if (parts[left] && parts[mid] && parts[right] && isArrowToken(parts[mid]!)) {
-      result.push({ source: parts[left]!, target: parts[right]!, label: labels[edgeIndex] })
+      const arrowInfo = getArrowInfo(parts[mid]!)
+      result.push({ source: parts[left]!, target: parts[right]!, label: labels[edgeIndex], arrowInfo })
       edgeIndex++
       i += 2
     } else {
@@ -253,12 +285,19 @@ export function parseFlowchart(dsl: string): FlowchartData {
     const pipeLabels = extractPipeLabels(line)
     const cleanLine = removeNodeDeclarations(line)
     const lineEdges = findEdges(cleanLine, pipeLabels)
-    for (const { source, target, label } of lineEdges) {
+    for (const { source, target, label, arrowInfo } of lineEdges) {
       ensureNode(source)
       ensureNode(target)
       const dup = edges.some(e => e.sourceId === source && e.targetId === target)
       if (!dup) {
-        edges.push({ sourceId: source, targetId: target, label })
+        edges.push({
+          sourceId: source,
+          targetId: target,
+          label,
+          arrowStyle: arrowInfo.arrowStyle,
+          arrowHead: arrowInfo.arrowHead,
+          arrowDirection: arrowInfo.arrowDirection,
+        })
       }
     }
   }

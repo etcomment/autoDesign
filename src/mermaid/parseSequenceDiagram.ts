@@ -267,7 +267,7 @@ export function parseSequenceDiagram(dsl: string): { model: DiagramModel; sequen
         endActivation(sourceName, messages.length)
       }
 
-      model.addConnection(sourceParticipant.shapeId, targetParticipant.shapeId, label || undefined)
+      model.addConnection(sourceParticipant.shapeId, targetParticipant.shapeId, { label: label || undefined })
 
       messages.push({
         sourceId: sourceParticipant.shapeId,

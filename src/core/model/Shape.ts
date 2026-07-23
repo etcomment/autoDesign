@@ -12,11 +12,19 @@ export type ShapeType =
   | 'document'
   | 'subroutine'
 
+export type ArrowStyle = 'solid' | 'dashed' | 'dotted' | 'thick'
+export type ArrowHead = 'filled' | 'open' | 'none' | 'cross' | 'circle' | 'diamond'
+export type ArrowDirection = 'forward' | 'backward' | 'both' | 'none'
+
 export interface ConnectionType {
   readonly id: string
   readonly sourceId: string
   readonly targetId: string
   readonly label?: string
+  readonly arrowStyle?: ArrowStyle
+  readonly arrowHead?: ArrowHead
+  readonly arrowDirection?: ArrowDirection
+  readonly lineColor?: string
 }
 
 export interface Position {

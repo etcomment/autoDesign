@@ -14,6 +14,17 @@ import { GitGraphRenderer } from './shapes/GitGraphRenderer'
 import { SankeyRenderer } from './shapes/SankeyRenderer'
 import { XYChartRenderer } from './shapes/XYChartRenderer'
 import { KanbanRenderer } from './shapes/KanbanRenderer'
+import { C4Renderer } from './shapes/C4Renderer'
+import { StateRenderer } from './shapes/StateRenderer'
+import { ArchitectureRenderer } from './shapes/ArchitectureRenderer'
+import { RadarRenderer } from './shapes/RadarRenderer'
+import { WardleyRenderer } from './shapes/WardleyRenderer'
+import { CynefinRenderer } from './shapes/CynefinRenderer'
+import { SwimlanesRenderer } from './shapes/SwimlanesRenderer'
+import { ZenUmlRenderer } from './shapes/ZenUmlRenderer'
+import { VennRenderer } from './shapes/VennRenderer'
+import { TreemapRenderer } from './shapes/TreemapRenderer'
+import { IshikawaRenderer } from './shapes/IshikawaRenderer'
 import { GRID_SIZE, snapToGrid } from '../core/grid'
 
 interface MarqueeRect {
@@ -258,9 +269,9 @@ export function Canvas() {
         <GitGraphRenderer />
         <SankeyRenderer />
         <XYChartRenderer />
-        {diagramType !== 'sequence' && <ConnectionLines />}
+        {diagramType !== 'sequence' && diagramType !== 'state' && diagramType !== 'architecture' && diagramType !== 'c4' && <ConnectionLines />}
 
-        {diagramType !== 'sequence' && shapes.map((shape) => (
+        {diagramType !== 'sequence' && diagramType !== 'state' && shapes.map((shape) => (
           <g key={shape.id} data-shape-id={shape.id}>
             <ShapeRenderer
               shape={shape}
@@ -269,7 +280,18 @@ export function Canvas() {
           </g>
         ))}
 
+        <C4Renderer />
+        <StateRenderer />
+        <ArchitectureRenderer />
         <KanbanRenderer />
+        <RadarRenderer />
+        <WardleyRenderer />
+        <CynefinRenderer />
+        <SwimlanesRenderer />
+        <ZenUmlRenderer />
+        <VennRenderer />
+        <TreemapRenderer />
+        <IshikawaRenderer />
 
         {marquee && (
           <rect

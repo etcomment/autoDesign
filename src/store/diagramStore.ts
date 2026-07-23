@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { DiagramModel } from '../core/model/DiagramModel'
+import type { ConnectionOptions } from '../core/model/DiagramModel'
 import { History } from '../core/commands/History'
 import { parseMermaid } from '../mermaid/parseMermaid'
 import type { SubgraphGroup } from '../mermaid/parseMermaid'
@@ -45,7 +46,7 @@ interface DiagramStore {
   moveAndResizeShape: (id: string, position: Position, dimensions: Dimensions) => void
   batchUpdateShapeStyle: (ids: string[], style: Partial<ShapeStyle>) => void
 
-  addConnection: (sourceId: string, targetId: string, label?: string) => void
+  addConnection: (sourceId: string, targetId: string, options?: ConnectionOptions) => void
   removeConnection: (connectionId: string) => void
 
   selectShape: (id: string) => void
@@ -160,8 +161,8 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
       set(syncState())
     },
 
-    addConnection: (sourceId, targetId, label) => {
-      history.addConnection(sourceId, targetId, label)
+    addConnection: (sourceId, targetId, options) => {
+      history.addConnection(sourceId, targetId, options)
       set(syncState())
     },
 
@@ -310,7 +311,13 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
         const sourceId = idMap.get(conn.sourceId)
         const targetId = idMap.get(conn.targetId)
         if (sourceId && targetId) {
-          model.addConnection(sourceId, targetId, conn.label)
+          model.addConnection(sourceId, targetId, {
+            label: conn.label,
+            arrowStyle: conn.arrowStyle,
+            arrowHead: conn.arrowHead,
+            arrowDirection: conn.arrowDirection,
+            lineColor: conn.lineColor,
+          })
         }
       }
 

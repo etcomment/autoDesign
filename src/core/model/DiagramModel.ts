@@ -1,5 +1,13 @@
-import type { ConnectionType, Dimensions, Position, Shape, ShapeStyle, ShapeText, ShapeType } from './Shape'
+import type { ArrowDirection, ArrowHead, ArrowStyle, ConnectionType, Dimensions, Position, Shape, ShapeStyle, ShapeText, ShapeType } from './Shape'
 import { createDefaultStyle, createDefaultText } from './Shape'
+
+export interface ConnectionOptions {
+  label?: string
+  arrowStyle?: ArrowStyle
+  arrowHead?: ArrowHead
+  arrowDirection?: ArrowDirection
+  lineColor?: string
+}
 
 let nextId = 1
 let nextConnectionId = 1
@@ -72,7 +80,7 @@ export class DiagramModel {
     this.connectionMap.clear()
   }
 
-  addConnection(sourceId: string, targetId: string, label?: string): ConnectionType {
+  addConnection(sourceId: string, targetId: string, options?: ConnectionOptions): ConnectionType {
     if (!this.shapeMap.has(sourceId)) {
       throw new Error(`Source shape not found: ${sourceId}`)
     }
@@ -83,7 +91,11 @@ export class DiagramModel {
       id: generateConnectionId(),
       sourceId,
       targetId,
-      label,
+      label: options?.label,
+      arrowStyle: options?.arrowStyle,
+      arrowHead: options?.arrowHead,
+      arrowDirection: options?.arrowDirection,
+      lineColor: options?.lineColor,
     }
     this.connectionMap.set(connection.id, connection)
     return connection
@@ -109,7 +121,13 @@ export class DiagramModel {
       const sourceId = idMap.get(conn.sourceId)
       const targetId = idMap.get(conn.targetId)
       if (sourceId && targetId) {
-        this.addConnection(sourceId, targetId, conn.label)
+        this.addConnection(sourceId, targetId, {
+          label: conn.label,
+          arrowStyle: conn.arrowStyle,
+          arrowHead: conn.arrowHead,
+          arrowDirection: conn.arrowDirection,
+          lineColor: conn.lineColor,
+        })
       }
     }
 

@@ -240,7 +240,7 @@ function renderShape(
     case 'parallelogramAlt':
       return (
         <polygon
-          points={parallelogramPoints(x, y, w, h, w * 0.25)}
+          points={parallelogramPoints(x, y, w, h, -w * 0.25)}
           {...props}
         />
       )
@@ -264,6 +264,27 @@ function renderShape(
           <rect x={x} y={y} width={w} height={h} rx={4} ry={4} {...props} />
           <line x1={x + 8} y1={y} x2={x + 8} y2={y + h} stroke={props.stroke} strokeWidth={props.strokeWidth} />
           <line x1={x + w - 8} y1={y} x2={x + w - 8} y2={y + h} stroke={props.stroke} strokeWidth={props.strokeWidth} />
+        </g>
+      )
+    case 'document':
+      return (
+        <g>
+          <path
+            d={`M ${x} ${y} L ${x + w} ${y} L ${x + w} ${y + h - 12} Q ${x + w},${y + h - 6} ${x + w - 12},${y + h - 6} L ${x},${y + h - 6} Q ${x - 6},${y + h - 6} ${x - 6},${y + h} L ${x - 6},${y} Z`}
+            fill={props.fill}
+            stroke={props.stroke}
+            strokeWidth={props.strokeWidth}
+            opacity={props.opacity}
+            strokeLinejoin="round"
+          />
+          <path
+            d={`M ${x + w - 12} ${y + h - 6} Q ${x + w - 6},${y + h - 3} ${x + w - 6},${y + h} Q ${x + w - 6},${y + h - 6} ${x + w},${y + h - 6}`}
+            fill={props.stroke}
+            stroke={props.stroke}
+            strokeWidth={1}
+            opacity={props.opacity}
+            strokeLinejoin="round"
+          />
         </g>
       )
     default:

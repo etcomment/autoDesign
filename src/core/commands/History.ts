@@ -1,6 +1,6 @@
 import type { Dimensions, Position, ShapeStyle, ShapeText } from '../model/Shape'
 import type { ConnectionType, ShapeType} from '../model/Shape'
-import type { DiagramModel } from '../model/DiagramModel'
+import type { ConnectionOptions, DiagramModel } from '../model/DiagramModel'
 import type { Command } from './Command'
 
 export class History {
@@ -151,8 +151,8 @@ export class History {
     })
   }
 
-  addConnection(sourceId: string, targetId: string, label?: string): ConnectionType {
-    const connection = this.model.addConnection(sourceId, targetId, label)
+  addConnection(sourceId: string, targetId: string, options?: ConnectionOptions): ConnectionType {
+    const connection = this.model.addConnection(sourceId, targetId, options)
     const snapshot = connection
     this.push({
       label: 'Ajouter connexion',
