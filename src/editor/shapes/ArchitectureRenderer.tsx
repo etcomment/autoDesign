@@ -67,8 +67,8 @@ interface EdgePath {
   title?: string
 }
 
-const SERVICE_W = 120
-const SERVICE_H = 80
+const SERVICE_W = 140
+const SERVICE_H = 90
 const GROUP_PAD = 16
 const GROUP_HEADER = 30
 const GROUP_GAP = 12
@@ -476,16 +476,16 @@ export function ArchitectureRenderer() {
               stroke={isSelected ? '#2196F3' : `${color}cc`}
               strokeWidth={isSelected ? 2.5 : 1.5}
             />
-            <g transform={`translate(${sv.x + (sv.w - iconSize) / 2}, ${sv.y + 6})`}>
+            <g transform={`translate(${sv.x + (sv.w - iconSize) / 2}, ${sv.y + 10})`}>
               <IconComponent size={iconSize} color="white" />
             </g>
             {showText && (
               <text
                 x={sv.x + sv.w / 2}
-                y={sv.y + 30}
+                y={sv.y + 36}
                 textAnchor="middle"
                 fontFamily="Arial, sans-serif"
-                fontSize={16}
+                fontSize={14}
                 fontWeight={700}
                 fill="white"
               >
@@ -494,7 +494,7 @@ export function ArchitectureRenderer() {
             )}
             <text
               x={sv.x + sv.w / 2}
-              y={sv.y + sv.h - 12}
+              y={sv.y + sv.h / 2 + (showText ? 22 : 18)}
               textAnchor="middle"
               fontFamily="Arial, sans-serif"
               fontSize={11}
