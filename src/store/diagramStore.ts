@@ -331,7 +331,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
         }
       }
 
-      set({ ...syncState(), selectedShapeIds: new Set(), selectedDiagramElementIds: new Set(), subgraphGroups: resolvedGroups, sequenceData: sequenceData ?? null, diagramType, diagramData: diagramData ?? null, diagramColors: diagramColors ?? {} })
+      set({ ...syncState(), selectedShapeIds: new Set(), selectedDiagramElementIds: new Set(), subgraphGroups: resolvedGroups, sequenceData: sequenceData ?? null, diagramType, diagramData: diagramData ?? null, diagramColors: diagramColors ?? {}, diagramElementPositions: {}, diagramStrokeColors: {} })
     },
 
     getModel: () => model,

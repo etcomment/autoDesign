@@ -166,15 +166,14 @@ export function ErDiagramRenderer() {
                     </text>
                   ))}
                   <text
-                    x={rect.x + attr.keys.length > 0 ? 24 : 6}
-                    y={y + ROW_HEIGHT - 9}
+                    x={rect.x + attr.keys.length > 0 ? 24 : 8}
+                    y={y + ROW_HEIGHT / 2 + 4}
                     fontFamily="Arial, sans-serif"
                     fontSize={11}
                     fill="#333"
                     pointerEvents="none"
                   >
-                    <tspan fontWeight={600}>{attr.name}</tspan>
-                    <tspan fontStyle="italic" fill="#666"> {attr.type}{attr.isOptional ? '?' : ''}</tspan>
+                    {attr.name}: {attr.type}{attr.isOptional ? '?' : ''}{attr.keys.length > 0 ? ` [${attr.keys.join(',')}]` : ''}
                   </text>
                   {attr.comment && (
                     <text
