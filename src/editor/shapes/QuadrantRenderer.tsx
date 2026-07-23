@@ -28,6 +28,7 @@ export function QuadrantRenderer() {
   const diagramType = useDiagramStore(s => s.diagramType)
   const diagramData = useDiagramStore(s => s.diagramData)
   const diagramColors = useDiagramStore(s => s.diagramColors)
+  const diagramStrokeColors = useDiagramStore(s => s.diagramStrokeColors)
   const diagramElementPositions = useDiagramStore(s => s.diagramElementPositions)
   const moveDiagramElement = useDiagramStore(s => s.moveDiagramElement)
   const resizeDiagramElement = useDiagramStore(s => s.resizeDiagramElement)
@@ -129,7 +130,7 @@ export function QuadrantRenderer() {
               cy={centerY}
               r={POINT_R}
               fill={color}
-              stroke={isSelected ? '#4a90d9' : 'white'}
+              stroke={diagramStrokeColors[elementKey] || (isSelected ? '#4a90d9' : 'white')}
               strokeWidth={isSelected ? 2.5 : 2}
               strokeDasharray={isSelected ? '4 2' : undefined}
             />

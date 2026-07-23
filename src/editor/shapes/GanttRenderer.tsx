@@ -44,6 +44,7 @@ export function GanttRenderer() {
   const diagramType = useDiagramStore(s => s.diagramType)
   const diagramData = useDiagramStore(s => s.diagramData)
   const diagramColors = useDiagramStore(s => s.diagramColors)
+  const diagramStrokeColors = useDiagramStore(s => s.diagramStrokeColors)
   const diagramElementPositions = useDiagramStore(s => s.diagramElementPositions)
   const moveDiagramElement = useDiagramStore(s => s.moveDiagramElement)
   const resizeDiagramElement = useDiagramStore(s => s.resizeDiagramElement)
@@ -209,7 +210,7 @@ export function GanttRenderer() {
                   <polygon
                     points={`${rect.x + rect.width / 4},${rect.y + rect.height / 2} ${rect.x + rect.width / 2},${rect.y} ${rect.x + rect.width * 3 / 4},${rect.y + rect.height / 2} ${rect.x + rect.width / 2},${rect.y + rect.height}`}
                     fill={color}
-                    stroke={isSelected ? '#4a90d9' : 'white'}
+                    stroke={diagramStrokeColors[elementKey] || (isSelected ? '#4a90d9' : 'white')}
                     strokeWidth={isSelected ? 2 : 1.5}
                     strokeDasharray={isSelected ? '4 2' : undefined}
                   />
@@ -222,7 +223,7 @@ export function GanttRenderer() {
                     rx={3}
                     fill={color}
                     opacity={0.85}
-                    stroke={isSelected ? '#4a90d9' : undefined}
+                    stroke={diagramStrokeColors[elementKey] || (isSelected ? '#4a90d9' : undefined)}
                     strokeWidth={isSelected ? 2 : undefined}
                     strokeDasharray={isSelected ? '4 2' : undefined}
                   />

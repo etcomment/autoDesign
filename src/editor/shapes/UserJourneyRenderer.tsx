@@ -24,6 +24,7 @@ export function UserJourneyRenderer() {
   const diagramType = useDiagramStore(s => s.diagramType)
   const diagramData = useDiagramStore(s => s.diagramData)
   const diagramColors = useDiagramStore(s => s.diagramColors)
+  const diagramStrokeColors = useDiagramStore(s => s.diagramStrokeColors)
   const diagramElementPositions = useDiagramStore(s => s.diagramElementPositions)
   const moveDiagramElement = useDiagramStore(s => s.moveDiagramElement)
   const resizeDiagramElement = useDiagramStore(s => s.resizeDiagramElement)
@@ -135,7 +136,7 @@ export function UserJourneyRenderer() {
                   rx={4}
                   fill={color}
                   opacity={0.75}
-                  stroke={isSelected ? '#4a90d9' : undefined}
+                  stroke={diagramStrokeColors[elementKey] || (isSelected ? '#4a90d9' : undefined)}
                   strokeWidth={isSelected ? 2 : undefined}
                   strokeDasharray={isSelected ? '4 2' : undefined}
                 />

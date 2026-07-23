@@ -35,6 +35,7 @@ export function PieRenderer() {
   const diagramType = useDiagramStore(s => s.diagramType)
   const diagramData = useDiagramStore(s => s.diagramData)
   const diagramColors = useDiagramStore(s => s.diagramColors)
+  const diagramStrokeColors = useDiagramStore(s => s.diagramStrokeColors)
   const diagramElementPositions = useDiagramStore(s => s.diagramElementPositions)
   const moveDiagramElement = useDiagramStore(s => s.moveDiagramElement)
   const resizeDiagramElement = useDiagramStore(s => s.resizeDiagramElement)
@@ -131,7 +132,7 @@ export function PieRenderer() {
               <path
                 d={d}
                 fill={color}
-                stroke={isSelected ? '#4a90d9' : 'white'}
+                stroke={diagramStrokeColors[elementKey] || (isSelected ? '#4a90d9' : 'white')}
                 strokeWidth={isSelected ? 2.5 : 1.5}
                 strokeDasharray={isSelected ? '4 2' : undefined}
                 style={{ cursor: 'pointer' }}

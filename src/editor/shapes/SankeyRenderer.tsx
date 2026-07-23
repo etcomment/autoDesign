@@ -110,6 +110,7 @@ export function SankeyRenderer() {
   const diagramType = useDiagramStore(s => s.diagramType)
   const diagramData = useDiagramStore(s => s.diagramData)
   const diagramColors = useDiagramStore(s => s.diagramColors)
+  const diagramStrokeColors = useDiagramStore(s => s.diagramStrokeColors)
   const diagramElementPositions = useDiagramStore(s => s.diagramElementPositions)
   const moveDiagramElement = useDiagramStore(s => s.moveDiagramElement)
   const resizeDiagramElement = useDiagramStore(s => s.resizeDiagramElement)
@@ -197,7 +198,7 @@ export function SankeyRenderer() {
               rx={2}
               fill={color}
               opacity={0.85}
-              stroke={isSelected ? '#4a90d9' : color}
+              stroke={isSelected ? '#4a90d9' : (diagramStrokeColors[elementKey] || color)}
               strokeWidth={isSelected ? 2 : 0.5}
               strokeDasharray={isSelected ? '4 2' : undefined}
             />

@@ -37,6 +37,7 @@ export function XYChartRenderer() {
   const diagramType = useDiagramStore(s => s.diagramType)
   const diagramData = useDiagramStore(s => s.diagramData)
   const diagramColors = useDiagramStore(s => s.diagramColors)
+  const diagramStrokeColors = useDiagramStore(s => s.diagramStrokeColors)
   const diagramElementPositions = useDiagramStore(s => s.diagramElementPositions)
   const moveDiagramElement = useDiagramStore(s => s.moveDiagramElement)
   const resizeDiagramElement = useDiagramStore(s => s.resizeDiagramElement)
@@ -143,7 +144,7 @@ export function XYChartRenderer() {
                       rx={2}
                       fill={color}
                       opacity={0.8}
-                      stroke={isSeriesSelected ? '#4a90d9' : undefined}
+                      stroke={diagramStrokeColors[elementKey] || (isSeriesSelected ? '#4a90d9' : undefined)}
                       strokeWidth={isSeriesSelected ? 2 : undefined}
                       strokeDasharray={isSeriesSelected ? '4 2' : undefined}
                       style={{ cursor: 'pointer' }}

@@ -147,6 +147,7 @@ export function KanbanRenderer() {
   const diagramType = useDiagramStore(s => s.diagramType)
   const diagramData = useDiagramStore(s => s.diagramData)
   const diagramColors = useDiagramStore(s => s.diagramColors)
+  const diagramStrokeColors = useDiagramStore(s => s.diagramStrokeColors)
   const diagramElementPositions = useDiagramStore(s => s.diagramElementPositions)
   const selectedIds = useDiagramStore(s => s.selectedDiagramElementIds)
   const moveDiagramElement = useDiagramStore(s => s.moveDiagramElement)
@@ -312,7 +313,7 @@ export function KanbanRenderer() {
                 rx={CARD_RADIUS}
                 ry={CARD_RADIUS}
                 fill="#fff"
-                stroke="#ddd"
+                stroke={diagramStrokeColors[taskId] || '#ddd'}
                 strokeWidth={1}
               />
               <rect

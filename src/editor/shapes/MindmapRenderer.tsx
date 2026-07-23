@@ -124,6 +124,7 @@ export function MindmapRenderer() {
   const diagramType = useDiagramStore(s => s.diagramType)
   const diagramData = useDiagramStore(s => s.diagramData)
   const diagramColors = useDiagramStore(s => s.diagramColors)
+  const diagramStrokeColors = useDiagramStore(s => s.diagramStrokeColors)
   const diagramElementPositions = useDiagramStore(s => s.diagramElementPositions)
   const selectedIds = useDiagramStore(s => s.selectedDiagramElementIds)
   const toggleElement = useDiagramStore(s => s.toggleDiagramElement)
@@ -351,7 +352,7 @@ export function MindmapRenderer() {
                 rx={rect.height / 2}
                 ry={rect.height / 2}
                 fill={color}
-                stroke={isSelected ? '#2196F3' : '#333'}
+                stroke={diagramStrokeColors[elementId] || (isSelected ? '#2196F3' : '#333')}
                 strokeWidth={isSelected ? 2.5 : 1.5}
                 strokeDasharray={isSelected ? '6 3' : 'none'}
               />
@@ -364,7 +365,7 @@ export function MindmapRenderer() {
                 rx={6}
                 ry={6}
                 fill={color}
-                stroke={isSelected ? '#2196F3' : color}
+                stroke={diagramStrokeColors[elementId] || (isSelected ? '#2196F3' : color)}
                 strokeWidth={isSelected ? 2.5 : 1}
                 strokeDasharray={isSelected ? '6 3' : 'none'}
               />
