@@ -34,7 +34,7 @@ describe('parseSequenceDiagram', () => {
     const { model, sequenceData } = parseSequenceDiagram(dsl)
     expect(sequenceData.messages).toHaveLength(1)
     expect(sequenceData.messages[0]?.label).toBe('Hello')
-    expect(sequenceData.messages[0]?.type).toBe('solid')
+    expect(sequenceData.messages[0]?.type).toBe('open')
     expect(model.connections).toHaveLength(1)
   })
 
@@ -42,7 +42,7 @@ describe('parseSequenceDiagram', () => {
     const dsl = `sequenceDiagram
     participant A
     participant B
-    A-->>B: Response`
+    A-->B: Response`
 
     const { sequenceData } = parseSequenceDiagram(dsl)
     expect(sequenceData.messages[0]?.type).toBe('dashed')

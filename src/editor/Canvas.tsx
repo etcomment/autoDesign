@@ -26,6 +26,7 @@ interface MarqueeRect {
 export function Canvas() {
   const shapes = useDiagramStore(s => s.shapes)
   const selectedShapeIds = useDiagramStore(s => s.selectedShapeIds)
+  const diagramType = useDiagramStore(s => s.diagramType)
   const viewBox = useDiagramStore(s => s.viewBox)
   const setViewBox = useDiagramStore(s => s.setViewBox)
   const clearSelection = useDiagramStore(s => s.clearSelection)
@@ -257,9 +258,9 @@ export function Canvas() {
         <GitGraphRenderer />
         <SankeyRenderer />
         <XYChartRenderer />
-        <ConnectionLines />
+        {diagramType !== 'sequence' && <ConnectionLines />}
 
-        {shapes.map((shape) => (
+        {diagramType !== 'sequence' && shapes.map((shape) => (
           <g key={shape.id} data-shape-id={shape.id}>
             <ShapeRenderer
               shape={shape}
