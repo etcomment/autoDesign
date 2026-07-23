@@ -198,7 +198,7 @@ export function SankeyRenderer() {
               rx={2}
               fill={color}
               opacity={0.85}
-              stroke={isSelected ? '#4a90d9' : (diagramStrokeColors[elementKey] || color)}
+              stroke={diagramStrokeColors[elementKey] || (isSelected ? '#4a90d9' : color)}
               strokeWidth={isSelected ? 2 : 0.5}
               strokeDasharray={isSelected ? '4 2' : undefined}
             />
