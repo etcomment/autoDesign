@@ -174,69 +174,68 @@ function diagramElementLabel(elementId: string): string {
 
 function DiagramElementColorPanel({ selectedIds, diagramColors, diagramStrokeColors, updateDiagramColor, updateDiagramStrokeColor }: DiagramElementColorPanelProps) {
   const elements = [...selectedIds]
+  const isMulti = elements.length > 1
+  const primaryId = elements[0]!
+  const primaryFill = diagramColors[primaryId] ?? ''
+  const primaryStroke = diagramStrokeColors[primaryId] ?? ''
 
   return (
     <div style={styles.panel}>
       <h3 style={styles.title}>
-        {elements.length > 1 ? `${elements.length} elements` : 'Element Colors'}
+        {isMulti ? `${elements.length} elements` : `Element Colors`}
       </h3>
-      {elements.map(elementId => {
-        const currentFill = diagramColors[elementId] ?? ''
-        const currentStroke = diagramStrokeColors[elementId] ?? ''
-        return (
-          <div key={elementId} style={styles.section}>
-            <label style={styles.label}>{diagramElementLabel(elementId)}</label>
 
-            <label style={styles.subLabel}>Fill</label>
-            <div style={styles.colorGrid}>
-              {PRESET_COLORS.map((color) => (
-                <button
-                  key={`fill-${color}`}
-                  style={{
-                    ...styles.colorButton,
-                    backgroundColor: color,
-                    border: currentFill === color ? '2px solid #333' : '1px solid #ccc',
-                  }}
-                  onClick={() => updateDiagramColor(elementId, color)}
-                  title={color}
-                />
-              ))}
-            </div>
-            <div style={styles.row}>
-              <input
-                type="color"
-                value={currentFill || '#ffffff'}
-                onChange={(e) => updateDiagramColor(elementId, e.target.value)}
-                style={styles.colorInput}
-              />
-            </div>
+      <div style={styles.section}>
+        <label style={styles.label}>{isMulti ? 'Fill (all selected)' : `Fill — ${diagramElementLabel(primaryId)}`}</label>
+        <div style={styles.colorGrid}>
+          {PRESET_COLORS.map((color) => (
+            <button
+              key={`fill-${color}`}
+              style={{
+                ...styles.colorButton,
+                backgroundColor: color,
+                border: primaryFill === color ? '2px solid #333' : '1px solid #ccc',
+              }}
+              onClick={() => elements.forEach(id => updateDiagramColor(id, color))}
+              title={color}
+            />
+          ))}
+        </div>
+        <div style={styles.row}>
+          <input
+            type="color"
+            value={primaryFill || '#ffffff'}
+            onChange={(e) => elements.forEach(id => updateDiagramColor(id, e.target.value))}
+            style={styles.colorInput}
+          />
+        </div>
+      </div>
 
-            <label style={{ ...styles.subLabel, marginTop: 8 }}>Stroke</label>
-            <div style={styles.colorGrid}>
-              {PRESET_COLORS.map((color) => (
-                <button
-                  key={`stroke-${color}`}
-                  style={{
-                    ...styles.colorButton,
-                    backgroundColor: color,
-                    border: currentStroke === color ? '2px solid #333' : '1px solid #ccc',
-                  }}
-                  onClick={() => updateDiagramStrokeColor(elementId, color)}
-                  title={color}
-                />
-              ))}
-            </div>
-            <div style={styles.row}>
-              <input
-                type="color"
-                value={currentStroke || '#000000'}
-                onChange={(e) => updateDiagramStrokeColor(elementId, e.target.value)}
-                style={styles.colorInput}
-              />
-            </div>
-          </div>
-        )
-      })}
+      <div style={styles.section}>
+        <label style={styles.label}>{isMulti ? 'Stroke (all selected)' : `Stroke — ${diagramElementLabel(primaryId)}`}</label>
+        <div style={styles.colorGrid}>
+          {PRESET_COLORS.map((color) => (
+            <button
+              key={`stroke-${color}`}
+              style={{
+                ...styles.colorButton,
+                backgroundColor: color,
+                border: primaryStroke === color ? '2px solid #333' : '1px solid #ccc',
+              }}
+              onClick={() => elements.forEach(id => updateDiagramStrokeColor(id, color))}
+              title={color}
+            />
+          ))}
+        </div>
+        <div style={styles.row}>
+          <input
+            type="color"
+            value={primaryStroke || '#000000'}
+            onChange={(e) => elements.forEach(id => updateDiagramStrokeColor(id, e.target.value))}
+            style={styles.colorInput}
+          />
+        </div>
+      </div>
     </div>
   )
 }

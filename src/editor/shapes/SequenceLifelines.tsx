@@ -417,7 +417,7 @@ export function SequenceLifelines() {
         const customColor = diagramColors[elementId]
         const fillColor = customColor ?? '#f5f5f5'
         const customStroke = diagramStrokeColors[elementId]
-        const strokeColor = isSelected ? '#4a90d9' : (customStroke || (customColor ? darken(customColor) : '#999'))
+        const strokeColor = customStroke || (isSelected ? '#4a90d9' : (customColor ? darken(customColor) : '#999'))
         return (
           <g key={elementId} onMouseDown={e => startDrag(e, elementId, rect)} style={{ cursor: 'pointer' }}>
             <rect
