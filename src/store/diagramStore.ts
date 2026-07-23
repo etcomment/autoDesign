@@ -23,6 +23,7 @@ interface DiagramStore {
   readonly diagramType: string
   readonly diagramData: Record<string, unknown> | null
   readonly diagramColors: Record<string, string>
+  readonly diagramStrokeColors: Record<string, string>
   readonly diagramElementPositions: Record<string, { x: number; y: number; width: number; height: number }>
   readonly selectedShapeIds: ReadonlySet<string>
   readonly selectedDiagramElementIds: ReadonlySet<string>
@@ -62,6 +63,7 @@ interface DiagramStore {
   resizeDiagramElement: (id: string, size: Dimensions) => void
 
   updateDiagramColor: (elementId: string, color: string) => void
+  updateDiagramStrokeColor: (elementId: string, color: string) => void
   setDiagramColors: (colors: Record<string, string>) => void
 
   setViewBox: (viewBox: ViewBox) => void
@@ -94,6 +96,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
     diagramType: 'flowchart',
     diagramData: null,
     diagramColors: {},
+    diagramStrokeColors: {},
     diagramElementPositions: {},
     selectedShapeIds: new Set(),
     selectedDiagramElementIds: new Set(),
@@ -267,6 +270,11 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
     updateDiagramColor: (elementId, color) => {
       const { diagramColors } = get()
       set({ diagramColors: { ...diagramColors, [elementId]: color } })
+    },
+
+    updateDiagramStrokeColor: (elementId, color) => {
+      const { diagramStrokeColors } = get()
+      set({ diagramStrokeColors: { ...diagramStrokeColors, [elementId]: color } })
     },
 
     setDiagramColors: (colors) => {

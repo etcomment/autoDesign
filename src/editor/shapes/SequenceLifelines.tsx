@@ -81,6 +81,7 @@ export function SequenceLifelines() {
   const diagramType = useDiagramStore(s => s.diagramType)
   const sequenceData = useDiagramStore(s => s.sequenceData)
   const diagramColors = useDiagramStore(s => s.diagramColors)
+  const diagramStrokeColors = useDiagramStore(s => s.diagramStrokeColors)
   const diagramElementPositions = useDiagramStore(s => s.diagramElementPositions)
   const moveDiagramElement = useDiagramStore(s => s.moveDiagramElement)
   const resizeDiagramElement = useDiagramStore(s => s.resizeDiagramElement)
@@ -415,7 +416,8 @@ export function SequenceLifelines() {
         const isSelected = selectedIds.has(elementId)
         const customColor = diagramColors[elementId]
         const fillColor = customColor ?? '#f5f5f5'
-        const strokeColor = isSelected ? '#4a90d9' : (customColor ? darken(customColor) : '#999')
+        const customStroke = diagramStrokeColors[elementId]
+        const strokeColor = isSelected ? '#4a90d9' : (customStroke || (customColor ? darken(customColor) : '#999'))
         return (
           <g key={elementId} onMouseDown={e => startDrag(e, elementId, rect)} style={{ cursor: 'pointer' }}>
             <rect

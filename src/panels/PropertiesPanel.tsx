@@ -16,6 +16,8 @@ export function PropertiesPanel() {
   const batchUpdateShapeStyle = useDiagramStore(s => s.batchUpdateShapeStyle)
   const updateShapeText = useDiagramStore(s => s.updateShapeText)
   const updateDiagramColor = useDiagramStore(s => s.updateDiagramColor)
+  const diagramStrokeColors = useDiagramStore(s => s.diagramStrokeColors)
+  const updateDiagramStrokeColor = useDiagramStore(s => s.updateDiagramStrokeColor)
 
   const selectedIds = [...selectedShapeIds]
   const primaryShape = shapes.find(s => s.id === selectedIds[0])
@@ -26,7 +28,9 @@ export function PropertiesPanel() {
     return <DiagramElementColorPanel
       selectedIds={selectedDiagramElementIds}
       diagramColors={diagramColors}
+      diagramStrokeColors={diagramStrokeColors}
       updateDiagramColor={updateDiagramColor}
+      updateDiagramStrokeColor={updateDiagramStrokeColor}
     />
   }
 
@@ -134,7 +138,9 @@ export function PropertiesPanel() {
 interface DiagramElementColorPanelProps {
   selectedIds: ReadonlySet<string>
   diagramColors: Record<string, string>
+  diagramStrokeColors: Record<string, string>
   updateDiagramColor: (elementId: string, color: string) => void
+  updateDiagramStrokeColor: (elementId: string, color: string) => void
 }
 
 function diagramElementLabel(elementId: string): string {
@@ -159,27 +165,30 @@ function diagramElementLabel(elementId: string): string {
   return `${typeLabel[prefix] ?? prefix}: ${name}`
 }
 
-function DiagramElementColorPanel({ selectedIds, diagramColors, updateDiagramColor }: DiagramElementColorPanelProps) {
+function DiagramElementColorPanel({ selectedIds, diagramColors, diagramStrokeColors, updateDiagramColor, updateDiagramStrokeColor }: DiagramElementColorPanelProps) {
   const elements = [...selectedIds]
 
   return (
     <div style={styles.panel}>
       <h3 style={styles.title}>
-        {elements.length > 1 ? `${elements.length} elements` : 'Element Color'}
+        {elements.length > 1 ? `${elements.length} elements` : 'Element Colors'}
       </h3>
       {elements.map(elementId => {
-        const currentColor = diagramColors[elementId] ?? PRESET_COLORS[0]
+        const currentFill = diagramColors[elementId] ?? ''
+        const currentStroke = diagramStrokeColors[elementId] ?? ''
         return (
           <div key={elementId} style={styles.section}>
             <label style={styles.label}>{diagramElementLabel(elementId)}</label>
+
+            <label style={styles.subLabel}>Fill</label>
             <div style={styles.colorGrid}>
               {PRESET_COLORS.map((color) => (
                 <button
-                  key={color}
+                  key={`fill-${color}`}
                   style={{
                     ...styles.colorButton,
                     backgroundColor: color,
-                    border: currentColor === color ? '2px solid #333' : '1px solid #ccc',
+                    border: currentFill === color ? '2px solid #333' : '1px solid #ccc',
                   }}
                   onClick={() => updateDiagramColor(elementId, color)}
                   title={color}
@@ -187,11 +196,34 @@ function DiagramElementColorPanel({ selectedIds, diagramColors, updateDiagramCol
               ))}
             </div>
             <div style={styles.row}>
-              <label style={styles.label}>Custom</label>
               <input
                 type="color"
-                value={currentColor}
+                value={currentFill || '#ffffff'}
                 onChange={(e) => updateDiagramColor(elementId, e.target.value)}
+                style={styles.colorInput}
+              />
+            </div>
+
+            <label style={{ ...styles.subLabel, marginTop: 8 }}>Stroke</label>
+            <div style={styles.colorGrid}>
+              {PRESET_COLORS.map((color) => (
+                <button
+                  key={`stroke-${color}`}
+                  style={{
+                    ...styles.colorButton,
+                    backgroundColor: color,
+                    border: currentStroke === color ? '2px solid #333' : '1px solid #ccc',
+                  }}
+                  onClick={() => updateDiagramStrokeColor(elementId, color)}
+                  title={color}
+                />
+              ))}
+            </div>
+            <div style={styles.row}>
+              <input
+                type="color"
+                value={currentStroke || '#000000'}
+                onChange={(e) => updateDiagramStrokeColor(elementId, e.target.value)}
                 style={styles.colorInput}
               />
             </div>
