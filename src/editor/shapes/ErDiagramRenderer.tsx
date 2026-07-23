@@ -47,7 +47,7 @@ export function ErDiagramRenderer() {
     data.entities.forEach((entity, index) => {
       const col = index % cols
       const row = Math.floor(index / cols)
-      const x = 100 + col * (COL_W + 30)
+      const x = 100 + col * (COL_W + 60)
       const y = 40 + row * 200
       const rowCount = 1 + entity.attributes.length
       const height = HEADER_HEIGHT + rowCount * ROW_HEIGHT
@@ -220,9 +220,9 @@ export function ErDiagramRenderer() {
         const midY = (sy + ty) / 2
         const dd = rel.lineStyle === 'dashed' ? '6 3' : undefined
 
-        const labelText = rel.sourceCardinality && rel.targetCardinality
-          ? `${rel.sourceCardinality}  ${rel.label ? `${rel.label}  ` : ''}${rel.targetCardinality}`
-          : rel.label ?? ''
+        const labelText = rel.label
+        const sourceCard = rel.sourceCardinality
+        const targetCard = rel.targetCardinality
 
         return (
           <g key={`rel-${index}`}>
@@ -234,17 +234,45 @@ export function ErDiagramRenderer() {
               strokeDasharray={dd}
               markerEnd="url(#erArrowFilled)"
             />
+            {sourceCard && (
+              <text
+                x={sx + 4}
+                y={midY - 6}
+                textAnchor="start"
+                fontFamily="Arial, sans-serif"
+                fontSize={9}
+                fontWeight={700}
+                fill="#555"
+                pointerEvents="none"
+              >
+                {sourceCard}
+              </text>
+            )}
             {labelText && (
               <text
                 x={midX}
-                y={midY - 8}
+                y={midY - 6}
                 textAnchor="middle"
                 fontFamily="Arial, sans-serif"
-                fontSize={10}
+                fontSize={9}
                 fill="#555"
                 pointerEvents="none"
               >
                 {labelText}
+              </text>
+            )}
+            {targetCard && (
+              <text
+                x={tx - 4}
+                y={midY - 6}
+                textAnchor="end"
+                fontFamily="Arial, sans-serif"
+                fontSize={9}
+                fontWeight={700}
+                fill="#555"
+                pointerEvents="none"
+              >
+                {targetCard}
               </text>
             )}
           </g>
