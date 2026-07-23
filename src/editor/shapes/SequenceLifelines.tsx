@@ -221,7 +221,7 @@ export function SequenceLifelines() {
               height={boxRect.height}
               rx={8}
               fill={isSelected ? '#e8f0fe' : '#f8f8f8'}
-              stroke={isSelected ? '#4a90d9' : '#bbb'}
+              stroke={diagramStrokeColors[elementId] || (isSelected ? '#4a90d9' : '#bbb')}
               strokeWidth={isSelected ? 2 : 1}
               strokeDasharray={isSelected ? '4 2' : undefined}
             />
@@ -237,7 +237,7 @@ export function SequenceLifelines() {
         const centerX = getActorCenterFromStore(participant.name)
         const elementId = `actor-${participant.name}`
         const isSelected = selectedIds.has(elementId)
-        const color = diagramColors[elementId] ?? '#999'
+        const color = diagramStrokeColors[elementId] || diagramColors[elementId] || '#999'
         return (
           <line
             key={`lifeline-${participant.name}`}
@@ -271,7 +271,7 @@ export function SequenceLifelines() {
             rx={2}
             fill={activationFill}
             opacity={0.3}
-            stroke={isSelected ? '#4a90d9' : '#2c5aa0'}
+            stroke={diagramStrokeColors[elementId] || (isSelected ? '#4a90d9' : '#2c5aa0')}
             strokeWidth={isSelected ? 2 : 1}
             style={{ cursor: 'pointer' }}
           />
@@ -288,7 +288,7 @@ export function SequenceLifelines() {
 
         const sourceX = getActorCenterFromStore(message.sourceName)
         const targetX = getActorCenterFromStore(message.targetName)
-        const stroke = isSelected ? '#4a90d9' : '#333'
+        const stroke = diagramStrokeColors[elementId] || (isSelected ? '#4a90d9' : '#333')
         const strokeWidth = isSelected ? 2.5 : 1.5
 
         if (sourceIndex === targetIndex) {
@@ -392,7 +392,7 @@ export function SequenceLifelines() {
               height={noteRect.height}
               rx={4}
               fill={isSelected ? '#fff68f' : '#fffacd'}
-              stroke={isSelected ? '#4a90d9' : '#999'}
+              stroke={diagramStrokeColors[elementId] || (isSelected ? '#4a90d9' : '#999')}
               strokeWidth={isSelected ? 2 : 1}
             />
             <text
