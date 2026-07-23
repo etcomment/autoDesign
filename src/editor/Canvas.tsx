@@ -26,6 +26,7 @@ import { VennRenderer } from './shapes/VennRenderer'
 import { TreemapRenderer } from './shapes/TreemapRenderer'
 import { IshikawaRenderer } from './shapes/IshikawaRenderer'
 import { ErDiagramRenderer } from './shapes/ErDiagramRenderer'
+import { TemplateRenderer } from '../templates/TemplateRenderer'
 import { GRID_SIZE, snapToGrid } from '../core/grid'
 
 interface MarqueeRect {
@@ -294,6 +295,7 @@ export function Canvas() {
         <TreemapRenderer />
         <IshikawaRenderer />
         <ErDiagramRenderer />
+        <TemplateRenderer />
 
         {marquee && (
           <rect

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Canvas } from './editor/Canvas'
 import { ShapeLibrary } from './panels/ShapeLibrary'
 import { PropertiesPanel } from './panels/PropertiesPanel'
+import { TemplatePanel } from './templates/panels/TemplatePanel'
 import { Toolbar } from './panels/Toolbar'
 import { MermaidEditor } from './panels/MermaidEditor'
 import { SubgraphStylePanel } from './panels/SubgraphStylePanel'
@@ -55,6 +56,7 @@ export function App() {
           <Canvas />
         </div>
         <PropertiesPanel />
+        <TemplatePanel />
       </div>
     </div>
   )
