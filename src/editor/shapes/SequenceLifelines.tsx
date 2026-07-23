@@ -68,6 +68,14 @@ function messageStyle(type: SequenceMessageType): { strokeDasharray: string | un
   }
 }
 
+function darken(hex: string, amount = 40): string {
+  const h = hex.replace('#', '')
+  const r = Math.max(0, parseInt(h.slice(0, 2), 16) - amount)
+  const g = Math.max(0, parseInt(h.slice(2, 4), 16) - amount)
+  const b = Math.max(0, parseInt(h.slice(4, 6), 16) - amount)
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+}
+
 export function SequenceLifelines() {
   const svgRef = useRef<SVGGElement>(null)
   const diagramType = useDiagramStore(s => s.diagramType)
@@ -405,7 +413,9 @@ export function SequenceLifelines() {
         const rect = getRect(`actor-${participant.name}`)
         const elementId = `actor-${participant.name}`
         const isSelected = selectedIds.has(elementId)
-        const color = diagramColors[elementId] ?? '#999'
+        const customColor = diagramColors[elementId]
+        const fillColor = customColor ?? '#f5f5f5'
+        const strokeColor = isSelected ? '#4a90d9' : (customColor ? darken(customColor) : '#999')
         return (
           <g key={elementId} onMouseDown={e => startDrag(e, elementId, rect)} style={{ cursor: 'pointer' }}>
             <rect
@@ -414,8 +424,8 @@ export function SequenceLifelines() {
               width={rect.width}
               height={rect.height}
               rx={3}
-              fill={diagramColors[elementId] ?? '#f5f5f5'}
-              stroke={color}
+              fill={fillColor}
+              stroke={strokeColor}
               strokeWidth={isSelected ? 2.5 : 1}
             />
             <text
