@@ -5,7 +5,7 @@ import type { ErEntity, ErData } from '../../mermaid/parseErDiagram'
 
 const ROW_HEIGHT = 26
 const HEADER_HEIGHT = 32
-const COL_W = 190
+const COL_W = 200
 const LINE_COLOR = '#555'
 const HEADER_FILL = '#5a7d9a'
 const ROW_ODD = '#fcfcfc'
@@ -134,6 +134,8 @@ export function ErDiagramRenderer() {
 
             {entity.attributes.map((attr, attrIndex) => {
               const y = rect.y + HEADER_HEIGHT + attrIndex * ROW_HEIGHT
+              const hasKeys = attr.keys.length > 0
+              const midX = rect.x + rect.width * 0.58
               return (
                 <g key={`${entity.name}-${attr.name}`}>
                   <line
@@ -144,43 +146,61 @@ export function ErDiagramRenderer() {
                     stroke={SEPARATOR_COLOR}
                     strokeWidth={0.5}
                   />
+                  <line
+                    x1={midX}
+                    y1={y}
+                    x2={midX}
+                    y2={y + ROW_HEIGHT}
+                    stroke={SEPARATOR_COLOR}
+                    strokeWidth={0.5}
+                  />
                   <rect
                     x={rect.x + 1}
-                    y={y}
+                    y={y + 1}
                     width={rect.width - 2}
-                    height={ROW_HEIGHT}
+                    height={ROW_HEIGHT - 1}
                     fill={attrIndex % 2 === 0 ? ROW_ODD : ROW_EVEN}
                   />
-                  {attr.keys.map((key, ki) => (
+                  {hasKeys && (
                     <text
-                      key={ki}
                       x={rect.x + 6}
-                      y={y + ROW_HEIGHT * (1 - 0.2 * (attr.keys.length - ki - 1)) - 6}
+                      y={y + ROW_HEIGHT / 2 + 4}
                       fontFamily="Arial, sans-serif"
                       fontSize={7}
                       fontWeight={900}
                       fill={KEY_COLOR}
                       pointerEvents="none"
                     >
-                      {key}
+                      {attr.keys.join(',')}
                     </text>
-                  ))}
+                  )}
                   <text
-                    x={rect.x + (attr.keys.length > 0 ? 24 : 8)}
+                    x={rect.x + (hasKeys ? 26 : 8)}
                     y={y + ROW_HEIGHT / 2 + 4}
                     fontFamily="Arial, sans-serif"
                     fontSize={11}
+                    fontWeight={600}
                     fill="#333"
                     pointerEvents="none"
                   >
-                    {attr.name}: {attr.type}{attr.isOptional ? '?' : ''}{attr.keys.length > 0 ? ` [${attr.keys.join(',')}]` : ''}
+                    {attr.name}
+                  </text>
+                  <text
+                    x={midX + 8}
+                    y={y + ROW_HEIGHT / 2 + 4}
+                    fontFamily="Arial, sans-serif"
+                    fontSize={10}
+                    fill="#666"
+                    pointerEvents="none"
+                  >
+                    {attr.type}{attr.isOptional ? '?' : ''}
                   </text>
                   {attr.comment && (
                     <text
-                      x={rect.x + 6}
-                      y={y + 14}
+                      x={midX + 8}
+                      y={y + 16}
                       fontFamily="Arial, sans-serif"
-                      fontSize={9}
+                      fontSize={8}
                       fill="#999"
                       pointerEvents="none"
                     >
