@@ -272,7 +272,7 @@ export function Canvas() {
         <XYChartRenderer />
         {diagramType !== 'sequence' && diagramType !== 'state' && diagramType !== 'architecture' && diagramType !== 'c4' && diagramType !== 'er' && <ConnectionLines />}
 
-        {diagramType !== 'sequence' && diagramType !== 'state' && diagramType !== 'er' && shapes.map((shape) => (
+        {diagramType !== 'sequence' && diagramType !== 'state' && diagramType !== 'er' && diagramType !== 'architecture' && diagramType !== 'c4' && shapes.map((shape) => (
           <g key={shape.id} data-shape-id={shape.id}>
             <ShapeRenderer
               shape={shape}
