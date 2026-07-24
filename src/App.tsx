@@ -90,6 +90,7 @@ export function App() {
       <div style={styles.workspace}>
         <div style={{ ...styles.sidebar, width: sidebarWidth, maxWidth: 'none' }}>
           <ShapeLibrary />
+          <div style={{ flex: 1 }} />
           <MermaidEditor />
           <SubgraphStylePanel />
           <TemplatePanel />

@@ -7,7 +7,10 @@ import { MIGSO_PALETTE } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#3498db']
 const W = 1000
-const H = 600
+const MAX_PER_ROW = 5
+const ROW_HEIGHT = 220
+const BASE_TIMELINE_Y = 260
+const BASE_CANVAS_H = 600
 
 interface Rect {
   x: number
@@ -20,6 +23,8 @@ interface LayoutMilestone {
   id: string
   circleId: string
   index: number
+  rowIndex: number
+  rowY: number
   centerX: number
   rectX: number
   rectY: number
@@ -39,7 +44,7 @@ function getRect(
   if (layout) {
     if (elementId.startsWith('circle-')) {
       if (stored) return { x: stored.x, y: stored.y, width: stored.width || 20, height: stored.height || 20 }
-      return { x: layout.centerX - 14, y: 260 - 14, width: 28, height: 28 }
+      return { x: layout.centerX - 14, y: layout.rowY - 14, width: 28, height: 28 }
     }
     if (stored) {
       return { x: stored.x, y: stored.y, width: stored.width || layout.rectW, height: Math.max(stored.height || layout.rectH, layout.rectH) }
@@ -66,7 +71,6 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   const resizeTemplateElement = useTemplateStore(s => s.resizeTemplateElement)
 
   const { title, milestones, startLabel = 'START', finishLabel = 'FINISH' } = data
-  const timelineY = 260
   const circleR = 14
   const marginX = 100
   const rectW = 140
@@ -75,52 +79,72 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   const gap = 12
   const LINE_HEIGHT = 14
 
+  const totalRows = Math.ceil(milestones.length / MAX_PER_ROW) || 1
+  const H = BASE_CANVAS_H + (totalRows - 1) * ROW_HEIGHT
+
   const layoutMap = useMemo(() => {
     const map = new Map<string, LayoutMilestone>()
     const availableW = W - marginX * 2
-    const milestoneSpacing = milestones.length > 1 ? availableW / (milestones.length - 1) : availableW / 2
-    milestones.forEach((milestone, index) => {
-      const elementId = `milestone-${index}`
-      const circleId = `circle-${index}`
-      const centerX = marginX + index * milestoneSpacing
-      const isAbove = index % 2 === 0
-      const styleW = milestone.style?.boxWidth ?? rectW
-      const baseStyleH = milestone.style?.boxHeight ?? baselineRectH
-      const subtitleLines = milestone.subtitle ? milestone.subtitle.split('\n').filter(Boolean).length : 0
-      const titleLines = milestone.title ? Math.max(1, milestone.title.split('\n').filter(Boolean).length) : 1
-      const effectiveHeaderH = Math.max(headerH, titleLines * LINE_HEIGHT + 8)
-      const subtitleTextH = subtitleLines * LINE_HEIGHT
-      const computedH = Math.max(baseStyleH, effectiveHeaderH + 16 + subtitleTextH)
-      const rx = centerX - styleW / 2
-      const ry = isAbove ? timelineY - circleR - gap - computedH : timelineY + circleR + gap
-      map.set(elementId, { id: elementId, circleId, index, centerX, rectX: rx, rectY: ry, rectW: styleW, rectH: computedH, isAbove })
-      map.set(circleId, { id: circleId, circleId, index, centerX, rectX: rx, rectY: ry, rectW: styleW, rectH: computedH, isAbove })
-    })
+    for (let rowIndex = 0; rowIndex < totalRows; rowIndex++) {
+      const rowStartIndex = rowIndex * MAX_PER_ROW
+      const rowMilestones = milestones.slice(rowStartIndex, rowStartIndex + MAX_PER_ROW)
+      const rowY = BASE_TIMELINE_Y + rowIndex * ROW_HEIGHT
+      const milestoneSpacing = rowMilestones.length > 1 ? availableW / (rowMilestones.length - 1) : availableW / 2
+      rowMilestones.forEach((milestone, rowLocalIndex) => {
+        const globalIndex = rowStartIndex + rowLocalIndex
+        const elementId = `milestone-${globalIndex}`
+        const circleId = `circle-${globalIndex}`
+        const centerX = marginX + rowLocalIndex * milestoneSpacing
+        const isAbove = rowLocalIndex % 2 === 0
+        const styleW = milestone.style?.boxWidth ?? rectW
+        const baseStyleH = milestone.style?.boxHeight ?? baselineRectH
+        const subtitleLines = milestone.subtitle ? milestone.subtitle.split('\n').filter(Boolean).length : 0
+        const titleLines = milestone.title ? Math.max(1, milestone.title.split('\n').filter(Boolean).length) : 1
+        const effectiveHeaderH = Math.max(headerH, titleLines * LINE_HEIGHT + 8)
+        const subtitleTextH = subtitleLines * LINE_HEIGHT
+        const computedH = Math.max(baseStyleH, effectiveHeaderH + 16 + subtitleTextH)
+        const rx = centerX - styleW / 2
+        const ry = isAbove ? rowY - circleR - gap - computedH : rowY + circleR + gap
+        map.set(elementId, { id: elementId, circleId, index: globalIndex, rowIndex, rowY, centerX, rectX: rx, rectY: ry, rectW: styleW, rectH: computedH, isAbove })
+        map.set(circleId, { id: circleId, circleId, index: globalIndex, rowIndex, rowY, centerX, rectX: rx, rectY: ry, rectW: styleW, rectH: computedH, isAbove })
+      })
+    }
     return map
-  }, [milestones])
+  }, [milestones, totalRows])
 
   const greyDefaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
-    map.set('timeline-line', { x: marginX, y: timelineY, width: W - marginX * 2, height: 2 })
-    map.set('start-label', { x: marginX - 56, y: timelineY - 34, width: 40, height: 16 })
-    map.set('finish-label', { x: W - marginX + 16, y: timelineY - 34, width: 40, height: 16 })
-    map.set('start-circle', { x: marginX - 6, y: timelineY - 6, width: 12, height: 12 })
-    map.set('finish-circle', { x: W - marginX - 6, y: timelineY - 6, width: 12, height: 12 })
-    for (let i = 0; i < milestones.length - 1; i++) {
-      const fromLayout = layoutMap.get(`milestone-${i}`)
-      const toLayout = layoutMap.get(`milestone-${i + 1}`)
-      if (fromLayout && toLayout) {
-        const spacing = toLayout.centerX - fromLayout.centerX
-        map.set(`chevron-${i}`, {
-          x: fromLayout.centerX + circleR + 3,
-          y: timelineY - 6,
-          width: Math.max(spacing - circleR * 2 - 6, 10),
-          height: 12,
-        })
+    for (let rowIndex = 0; rowIndex < totalRows; rowIndex++) {
+      const rowY = BASE_TIMELINE_Y + rowIndex * ROW_HEIGHT
+      map.set(`timeline-line-${rowIndex}`, { x: marginX, y: rowY, width: W - marginX * 2, height: 2 })
+    }
+    const firstRowY = BASE_TIMELINE_Y
+    const lastRowY = BASE_TIMELINE_Y + (totalRows - 1) * ROW_HEIGHT
+    map.set('start-label', { x: marginX - 56, y: firstRowY - 34, width: 40, height: 16 })
+    map.set('finish-label', { x: W - marginX + 16, y: lastRowY - 34, width: 40, height: 16 })
+    map.set('start-circle', { x: marginX - 6, y: firstRowY - 6, width: 12, height: 12 })
+    map.set('finish-circle', { x: W - marginX - 6, y: lastRowY - 6, width: 12, height: 12 })
+
+    for (let rowIndex = 0; rowIndex < totalRows; rowIndex++) {
+      const rowStartIndex = rowIndex * MAX_PER_ROW
+      const rowMilestones = milestones.slice(rowStartIndex, rowStartIndex + MAX_PER_ROW)
+      const rowY = BASE_TIMELINE_Y + rowIndex * ROW_HEIGHT
+      for (let i = 0; i < rowMilestones.length - 1; i++) {
+        const fromLayout = layoutMap.get(`milestone-${rowStartIndex + i}`)
+        const toLayout = layoutMap.get(`milestone-${rowStartIndex + i + 1}`)
+        if (fromLayout && toLayout) {
+          const spacing = toLayout.centerX - fromLayout.centerX
+          map.set(`chevron-${rowIndex}-${i}`, {
+            x: fromLayout.centerX + circleR + 3,
+            y: rowY - 6,
+            width: Math.max(spacing - circleR * 2 - 6, 10),
+            height: 12,
+          })
+        }
       }
     }
     return map
-  }, [milestones.length, layoutMap])
+  }, [milestones.length, totalRows, layoutMap])
 
   useEffect(() => {
     const ids = [...layoutMap.keys(), ...greyDefaultPositions.keys()]
@@ -148,17 +172,19 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         </text>
       )}
 
-      {(() => {
-        const r = elementRects.get('timeline-line')!
-        const isSel = selectedIds.has('timeline-line')
-        const stroke = tplStrokeColors['timeline-line'] ?? '#bbb'
+      {Array.from({ length: totalRows }, (_, rowIndex) => {
+        const timelineId = `timeline-line-${rowIndex}`
+        const r = elementRects.get(timelineId)
+        if (!r) return null
+        const isSel = selectedIds.has(timelineId)
+        const stroke = tplStrokeColors[timelineId] ?? '#bbb'
         return (
-          <g onMouseDown={e => startDrag(e, 'timeline-line', r)} style={{ cursor: 'pointer' }}>
+          <g key={timelineId} onMouseDown={e => startDrag(e, timelineId, r)} style={{ cursor: 'pointer' }}>
             <line x1={r.x} y1={r.y} x2={r.x + r.width} y2={r.y} stroke={stroke} strokeWidth={2} />
-            {isSel && renderHandles(r, 'timeline-line')}
+            {isSel && renderHandles(r, timelineId)}
           </g>
         )
-      })()}
+      })}
 
       {(() => {
         const r = elementRects.get('start-label')!
@@ -217,9 +243,13 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
       {milestones.map((milestone, index) => {
         const elementId = `milestone-${index}`
         const circleId = `circle-${index}`
-        const chevronId = `chevron-${index}`
         const layout = layoutMap.get(elementId)
         if (!layout) return null
+        const rowIndex = layout.rowIndex
+        const nextMilestoneInSameRow = index < milestones.length - 1 && Math.floor((index + 1) / MAX_PER_ROW) === rowIndex
+        const localIndex = index % MAX_PER_ROW
+        const chevronId = `chevron-${rowIndex}-${localIndex}`
+
         const color = tplColors[elementId] ?? milestone.style?.fill ?? PALETTE[index % PALETTE.length]!
         const circleColor = tplColors[circleId] ?? milestone.style?.fill ?? color
         const customStroke = tplStrokeColors[elementId]
@@ -233,8 +263,8 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const circleX = circleRect.x + circleRect.width / 2
         const circleY = circleRect.y + circleRect.height / 2
         const circleRadius = Math.max(5, Math.min(circleRect.width, circleRect.height) / 2)
-        const isAbove = index % 2 === 0
-        const lineY1 = timelineY
+        const isAbove = layout.isAbove
+        const lineY1 = layout.rowY
         const lineY2 = isAbove ? rect.y + rect.height : rect.y
         const titleLineArray = milestone.title.split('\n').filter(Boolean)
         const styleFontSize = milestone.style?.fontSize ?? 12
@@ -271,7 +301,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
               {isCircleSelected && renderHandles(circleRect, circleId)}
             </g>
 
-            {index < milestones.length - 1 && (() => {
+            {nextMilestoneInSameRow && (() => {
               const chevronRect = elementRects.get(chevronId)
               if (!chevronRect) return null
               const isChevronSel = selectedIds.has(chevronId)
