@@ -34,6 +34,8 @@ import type {
   IcebergSection,
   DecisionTreeNode,
   GoalsMetric,
+  CircleData,
+  CircleSegment,
 } from '../types'
 
 function stripQuotes(s: string): string {
@@ -82,7 +84,7 @@ function tokenizeLine(line: string): QuotedTokens {
 
 function parseHeader(trimmed: string): { type: string; title?: string } | null {
   const firstLine = trimmed.split('\n')[0]!.trim()
-  const match = /^@(\w+?)(\d*)\s+"?([^"]*)"?\s*$/.exec(firstLine)
+  const match = /^@(\w+?)(\d*)\s*"?([^"]*)"?\s*$/.exec(firstLine)
   if (!match) return null
   const [, baseType, variantNum, rawTitle] = match
   const type = variantNum ? `${baseType}${variantNum}` : baseType
@@ -151,6 +153,9 @@ export function parseTemplateDsl(dsl: string): TemplateData | null {
       break
     case 'iceberg':
       result = parseIceberg(trimmed)
+      break
+    case 'circle':
+      result = parseCircle(trimmed)
       break
   }
 
@@ -773,6 +778,33 @@ function parseIceberg(dsl: string): IcebergData {
   return { type: 'iceberg', title, sections }
 }
 
+function parseCircle(dsl: string): CircleData {
+  const lines = getLines(dsl)
+  let title: string | undefined
+  const segments: CircleSegment[] = []
+
+  for (const line of lines) {
+    if (line.startsWith('@circle')) {
+      const m = /^@circle\s*"?([^"]*)"?\s*$/.exec(line)
+      if (m && m[1]) title = stripQuotes(m[1])
+      continue
+    }
+
+    const segmentMatch = /^segment\s+"([^"]*)"\s+"([^"]*)"\s+"([^"]*)"(\s+(\S+))?\s*$/.exec(line)
+    if (segmentMatch) {
+      segments.push({
+        number: segmentMatch[1]!,
+        title: segmentMatch[2]!,
+        description: segmentMatch[3]!,
+        icon: segmentMatch[5] ?? '',
+      })
+      continue
+    }
+  }
+
+  return { type: 'circle', title, segments }
+}
+
 export function generateDslText(type: string, data: TemplateData): string {
   const d = data as unknown as Record<string, unknown>
   let out = `@${type}`
@@ -809,6 +841,9 @@ export function generateDslText(type: string, data: TemplateData): string {
 
   const items = list('items')
   if (items) for (const it of items) out += `  item "${it.number}" "${it.title}"${it.subtitle ? ' "' + it.subtitle + '"' : ''}\n`
+
+  const segments = list('segments')
+  if (segments) for (const s of segments) out += `  segment "${s.number}" "${s.title}" "${s.description ?? ''}"${s.icon ? ' ' + s.icon : ''}\n`
 
   const stations = list('stations')
   if (stations) for (const s of stations) out += `  station "${s.title}"${s.subtitle ? ' "' + s.subtitle + '"' : ''}\n`

@@ -443,17 +443,17 @@ export interface ValueChainData {
   support: ValueChainActivity[]
 }
 
-export interface Circle2Item {
+export interface CircleSegment {
   number: string
   title: string
   description: string
   icon: string
 }
 
-export interface Circle2Data {
-  type: 'circle2'
+export interface CircleData {
+  type: 'circle'
   title?: string
-  items: Circle2Item[]
+  segments: CircleSegment[]
 }
 
 export type TemplateData =
@@ -543,9 +543,9 @@ export type TemplateData =
   | Manufacturing8Data
   | ValueChainData
   | ValueChain2Data
-  | Circle2Data
+  | CircleData
 
-export type TemplateType = TemplateData['type'] | 'roadmap2' | 'roadmap3' | 'roadmap4' | 'roadmap5' | 'roadmap6' | 'roadmap7' | 'roadmap8' | 'roadmap9' | 'roadmap10' | 'roadmap11' | 'roadmap12' | 'roadmap13' | 'roadmap14' | 'roadmap15' | 'roadmap16' | 'process1' | 'process2' | 'process4' | 'process5' | 'strategy2' | 'strategy3' | 'strategy4' | 'strategy5' | 'strategy6' | 'strategy7' | 'strategy8' | 'puzzle2' | 'puzzle3' | 'puzzle4' | 'puzzle5' | 'puzzle6' | 'puzzle7' | 'funnel2' | 'funnel3' | 'funnel4' | 'funnel5' | 'dashboard2' | 'dashboard3' | 'dashboard4' | 'dashboard5' | 'iceberg2' | 'business2' | 'business3' | 'business4' | 'business5' | 'business6' | 'business7' | 'business8' | 'business9' | 'business10' | 'business11' | 'brain2' | 'brain3' | 'brain4' | 'budget2' | 'budget3' | 'budget4' | 'budget5' | 'decision2' | 'goals1' | 'goals2' | 'goals3' | 'goals4' | 'goals5' | 'manufacturing2' | 'manufacturing3' | 'manufacturing4' | 'manufacturing5' | 'manufacturing6' | 'manufacturing7' | 'manufacturing8' | 'valueChain2' | 'table2' | 'table3' | 'table4' | 'table5' | 'table6' | 'agenda2' | 'agenda3' | 'agenda4' | 'comparison2' | 'comparison3' | 'comparison4' | 'comparison5' | 'comparison6' | 'comparison7' | 'productRoadmap7' | 'productRoadmap8' | 'productRoadmap9' | 'productRoadmap10' | 'productRoadmap11' | 'productRoadmap12' | 'circle2'
+export type TemplateType = TemplateData['type'] | 'roadmap2' | 'roadmap3' | 'roadmap4' | 'roadmap5' | 'roadmap6' | 'roadmap7' | 'roadmap8' | 'roadmap9' | 'roadmap10' | 'roadmap11' | 'roadmap12' | 'roadmap13' | 'roadmap14' | 'roadmap15' | 'roadmap16' | 'process1' | 'process2' | 'process4' | 'process5' | 'strategy2' | 'strategy3' | 'strategy4' | 'strategy5' | 'strategy6' | 'strategy7' | 'strategy8' | 'puzzle2' | 'puzzle3' | 'puzzle4' | 'puzzle5' | 'puzzle6' | 'puzzle7' | 'funnel2' | 'funnel3' | 'funnel4' | 'funnel5' | 'dashboard2' | 'dashboard3' | 'dashboard4' | 'dashboard5' | 'iceberg2' | 'business2' | 'business3' | 'business4' | 'business5' | 'business6' | 'business7' | 'business8' | 'business9' | 'business10' | 'business11' | 'brain2' | 'brain3' | 'brain4' | 'budget2' | 'budget3' | 'budget4' | 'budget5' | 'decision2' | 'goals1' | 'goals2' | 'goals3' | 'goals4' | 'goals5' | 'manufacturing2' | 'manufacturing3' | 'manufacturing4' | 'manufacturing5' | 'manufacturing6' | 'manufacturing7' | 'manufacturing8' | 'valueChain2' | 'table2' | 'table3' | 'table4' | 'table5' | 'table6' | 'agenda2' | 'agenda3' | 'agenda4' | 'comparison2' | 'comparison3' | 'comparison4' | 'comparison5' | 'comparison6' | 'comparison7' | 'productRoadmap7' | 'productRoadmap8' | 'productRoadmap9' | 'productRoadmap10' | 'productRoadmap11' | 'productRoadmap12' | 'circle'
 
 export interface TemplateDefinition {
   type: TemplateType
