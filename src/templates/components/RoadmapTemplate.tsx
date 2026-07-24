@@ -121,6 +121,8 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const circleRect = elementRects.get(circleId)!
         const num = String(index + 1)
         const centerX = rect.x + rect.width / 2
+        const circleX = circleRect.x + circleRect.width / 2
+        const circleY = circleRect.y + circleRect.height / 2
         const circleRadius = Math.max(5, Math.min(circleRect.width, circleRect.height) / 2)
         const isAbove = index % 2 === 0
         const lineY1 = timelineY
