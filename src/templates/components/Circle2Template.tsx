@@ -3,52 +3,71 @@ import type { CircleData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 
-const PALETTE = ['#2D2B55', '#4169E1', '#FF6347', '#E74C3C', '#2ECC71', '#F39C12', '#9B59B6', '#1ABC9C']
+const PALETTE = ['#2D2C59', '#3768D6', '#FF5338']
 
-function segmentWithArrowPath(
+function segmentArrowPath(
   cx: number,
   cy: number,
   innerR: number,
   outerR: number,
   startAngle: number,
   endAngle: number,
-  arrowSize: number,
 ): string {
   const cos = Math.cos
   const sin = Math.sin
 
-  const outerStart = { x: cx + outerR * cos(startAngle), y: cy + outerR * sin(startAngle) }
-  const innerStart = { x: cx + innerR * cos(startAngle), y: cy + innerR * sin(startAngle) }
-  const outerEnd = { x: cx + outerR * cos(endAngle), y: cy + outerR * sin(endAngle) }
-  const innerEnd = { x: cx + innerR * cos(endAngle), y: cy + innerR * sin(endAngle) }
+  // Chevron arrow geometry matching page55-055.png:
+  // - Body is an arc ring from startAngle to baseAngle (where the arrow head begins).
+  // - At baseAngle, the arrow head flares BOTH outward (to outerR + 25) and inward (to innerR - 18).
+  // - The arrow tip is at endAngle, centered on the middle radius midR = (innerR + outerR) / 2.
+  
+  const midR = (innerR + outerR) / 2
+  const headSpan = 0.25 // angular span of arrow head
+  const baseAngle = endAngle - headSpan
 
-  const arrowTip = {
-    x: cx + (outerR + arrowSize) * cos(endAngle),
-    y: cy + (outerR + arrowSize) * sin(endAngle),
-  }
-  const arrowBaseOffset = 0.25
-  const arrowBaseAngle = endAngle - arrowBaseOffset
-  const arrowBaseOuter = {
-    x: cx + outerR * cos(arrowBaseAngle),
-    y: cy + outerR * sin(arrowBaseAngle),
-  }
-  const arrowBaseInner = {
-    x: cx + innerR * cos(arrowBaseAngle),
-    y: cy + innerR * sin(arrowBaseAngle),
-  }
+  const outerFlareR = outerR + 25
+  const innerFlareR = innerR - 18
 
-  const large = endAngle - startAngle > Math.PI ? 1 : 0
+  // 1. Straight radial tail at startAngle (from innerR to outerR)
+  const xStartOuter = cx + outerR * cos(startAngle)
+  const yStartOuter = cy + outerR * sin(startAngle)
+
+  const xStartInner = cx + innerR * cos(startAngle)
+  const yStartInner = cy + innerR * sin(startAngle)
+
+  // 2. Main outer circular arc from startAngle to baseAngle
+  const xBaseOuter = cx + outerR * cos(baseAngle)
+  const yBaseOuter = cy + outerR * sin(baseAngle)
+
+  // 3. Arrowhead outer wing point (flared outward)
+  const xWingOuter = cx + outerFlareR * cos(baseAngle)
+  const yWingOuter = cy + outerFlareR * sin(baseAngle)
+
+  // 4. Arrow tip pointing forward at endAngle centered on midR
+  const xTip = cx + midR * cos(endAngle)
+  const yTip = cy + midR * sin(endAngle)
+
+  // 5. Arrowhead inner wing point (flared inward)
+  const xWingInner = cx + innerFlareR * cos(baseAngle)
+  const yWingInner = cy + innerFlareR * sin(baseAngle)
+
+  // 6. Body inner base point at baseAngle on innerR
+  const xBaseInner = cx + innerR * cos(baseAngle)
+  const yBaseInner = cy + innerR * sin(baseAngle)
+
+  const largeArcOuter = baseAngle - startAngle > Math.PI ? 1 : 0
+  const largeArcInner = baseAngle - startAngle > Math.PI ? 1 : 0
 
   return [
-    `M ${outerStart.x.toFixed(1)} ${outerStart.y.toFixed(1)}`,
-    `A ${outerR} ${outerR} 0 0 1 ${outerEnd.x.toFixed(1)} ${outerEnd.y.toFixed(1)}`,
-    `L ${cx + (outerR + 45) * cos(endAngle)} ${cy + (outerR + 45) * sin(endAngle)}`,
-    `L ${arrowBaseOuter.x.toFixed(1)} ${arrowBaseOuter.y.toFixed(1)}`,
-    `L ${cx + innerR * cos(arrowBaseAngle)} ${cy + innerR * sin(arrowBaseAngle)}`,
-    `A ${innerR} ${innerR} 0 0 0 ${innerStart.x.toFixed(1)} ${innerStart.y.toFixed(1)}`,
+    `M ${xStartOuter.toFixed(1)} ${yStartOuter.toFixed(1)}`,
+    `A ${outerR} ${outerR} 0 ${largeArcOuter} 1 ${xBaseOuter.toFixed(1)} ${yBaseOuter.toFixed(1)}`,
+    `L ${xWingOuter.toFixed(1)} ${yWingOuter.toFixed(1)}`,
+    `L ${xTip.toFixed(1)} ${yTip.toFixed(1)}`,
+    `L ${xWingInner.toFixed(1)} ${yWingInner.toFixed(1)}`,
+    `L ${xBaseInner.toFixed(1)} ${yBaseInner.toFixed(1)}`,
+    `A ${innerR} ${innerR} 0 ${largeArcInner} 0 ${xStartInner.toFixed(1)} ${yStartInner.toFixed(1)}`,
     `Z`,
   ].join(' ')
-}
 }
 
 export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
@@ -60,10 +79,8 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
   const H = 600
   const cx = W / 2
   const cy = H / 2 + 20
-  const innerR = 65
-  const outerR = 170
-  const arrowSize = 50
-  const labelR = outerR + arrowSize + 40
+  const innerR = 75
+  const outerR = 180
 
   const segments = data.segments
   const n = segments.length
@@ -77,92 +94,112 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
       </g>
     )
 
-  const segmentAngle = (Math.PI * 2) / n
+  const angleStep = (Math.PI * 2) / n
+  // Angles aligned with page55-055.png:
+  // 01 (Dark Blue): Bottom-Left (approx PI/2 + 0.3 to PI + 0.8)
+  // 02 (Bright Blue): Top
+  // 03 (Red): Right
+  const baseStartAngle = Math.PI * 0.65
 
   return (
     <g ref={svgRef}>
       <rect width={W} height={H} fill="white" rx={8} />
       {data.title && (
         <>
-          <text x={50} y={42} fontFamily="Arial, sans-serif" fontSize={28} fontWeight={700} fill="#2D2B55">
+          <text x={50} y={50} fontFamily="Arial, sans-serif" fontSize={32} fontWeight={700} fill="#2D2B55">
             {data.title}
           </text>
-          <rect x={50} y={52} width={60} height={5} fill="#2D2B55" rx={2} />
+          <rect x={50} y={62} width={70} height={5} fill="#2D2B55" rx={2} />
         </>
       )}
 
-      <circle cx={cx} cy={cy} r={innerR} fill="white" stroke="#ddd" strokeWidth={1} />
+      {/* Center hole circle under the ring */}
+      <circle cx={cx} cy={cy} r={innerR - 1} fill="white" />
 
+      {/* Render segments */}
       {segments.map((item, i) => {
         const elementId = `segment-${i}`
-        const startAngle = i * segmentAngle
-        const endAngle = (i + 1) * segmentAngle
-        const midAngle = (startAngle + endAngle) / 2
-        const color = PALETTE[i % PALETTE.length] ?? '#4169E1'
+        const startAngle = baseStartAngle + i * angleStep
+        const endAngle = startAngle + angleStep
+        const midAngle = startAngle + angleStep / 2
+        const color = PALETTE[i % PALETTE.length] ?? '#3768D6'
         const isSelected = selectedIds.has(elementId)
 
-        const midR = innerR + (outerR - innerR) / 2
-        const iconX = cx + midR * Math.cos(midAngle)
-        const iconY = cy + midR * Math.sin(midAngle)
-        const numberX = cx + (outerR - 22) * Math.cos(midAngle)
-        const numberY = cy + (outerR - 22) * Math.sin(midAngle)
+        const cosMid = Math.cos(midAngle)
+        const sinMid = Math.sin(midAngle)
 
-        const labelX = cx + labelR * Math.cos(midAngle)
-        const labelY = cy + labelR * Math.sin(midAngle)
-        const normalized = ((midAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
-        const labelAlign = normalized < Math.PI ? 'end' : ('start' as const)
+        const iconRadius = (innerR + outerR) / 2
+        const iconX = cx + iconRadius * cosMid
+        const iconY = cy + iconRadius * sinMid
+
+        const numberRadius = outerR - 25
+        const numberX = cx + numberRadius * cosMid
+        const numberY = cy + numberRadius * sinMid
+
+        let labelAnchor: 'start' | 'end' | 'middle' = 'start'
+        if (cosMid < -0.2) {
+          labelAnchor = 'end'
+        } else if (cosMid > 0.2) {
+          labelAnchor = 'start'
+        } else {
+          labelAnchor = 'middle'
+        }
+
+        const labelRadius = outerR + 55
+        const labelX = cx + labelRadius * cosMid
+        const labelY = cy + labelRadius * sinMid
 
         const bbox = {
-          x: cx - outerR - arrowSize,
-          y: cy - outerR - arrowSize,
-          width: (outerR + arrowSize) * 2,
-          height: (outerR + arrowSize) * 2,
+          x: cx - outerR,
+          y: cy - outerR,
+          width: outerR * 2,
+          height: outerR * 2,
         }
 
         return (
           <g key={i}>
             <path
-              d={segmentWithArrowPath(cx, cy, innerR, outerR, startAngle, endAngle, arrowSize)}
+              d={segmentArrowPath(cx, cy, innerR, outerR, startAngle, endAngle)}
               fill={color}
               stroke={isSelected ? '#4a90d9' : 'none'}
               strokeWidth={isSelected ? 3 : 0}
               onMouseDown={e => startDrag(e, elementId, bbox)}
               style={{ cursor: 'pointer' }}
             />
+            {item.icon && (
+              <text x={iconX} y={iconY + 7} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={28} fill="white">
+                {item.icon}
+              </text>
+            )}
             <text
               x={numberX}
-              y={numberY + 8}
+              y={numberY + 7}
               textAnchor="middle"
               fontFamily="Arial, sans-serif"
-              fontSize={22}
+              fontSize={24}
               fontWeight={700}
               fill="white"
             >
               {item.number}
             </text>
-            {item.icon && (
-              <text x={iconX} y={iconY + 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={26} fill="white">
-                {item.icon}
-              </text>
-            )}
             <text
               x={labelX}
-              y={labelY - 12}
-              textAnchor={labelAlign}
+              y={labelY - 6}
+              textAnchor={labelAnchor}
               fontFamily="Arial, sans-serif"
               fontSize={16}
               fontWeight={700}
-              fill="#222"
+              fill="#111"
             >
               {item.title}
             </text>
             <text
               x={labelX}
-              y={labelY + 8}
-              textAnchor={labelAlign}
+              y={labelY + 14}
+              textAnchor={labelAnchor}
               fontFamily="Arial, sans-serif"
               fontSize={12}
-              fill="#444"
+              fill="#555"
             >
               {item.description.length > 45 ? item.description.slice(0, 42) + '...' : item.description}
             </text>
