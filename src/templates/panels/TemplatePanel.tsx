@@ -17,6 +17,7 @@ export function TemplatePanel() {
     () => new Set(categoryNames.length > 0 ? [categoryNames[0]!] : [])
   )
   const [showIcons, setShowIcons] = useState(false)
+  const [tplCollapsed, setTplCollapsed] = useState(false)
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => {
@@ -37,8 +38,13 @@ export function TemplatePanel() {
         }
       `}</style>
 
-      <h3 style={styles.title}>Templates</h3>
+      <h3 style={{ ...styles.title, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={() => setTplCollapsed(!tplCollapsed)}>
+        <span>{tplCollapsed ? '▶' : '▼'}</span>
+        Templates
+      </h3>
 
+      {!tplCollapsed && (
+        <>
       {categoryNames.map((category) => {
         const templates = categories.get(category)!
         const isExpanded = expandedCategories.has(category)
@@ -102,6 +108,8 @@ export function TemplatePanel() {
         <button style={styles.clearButton} onClick={clearTemplate}>
           Clear
         </button>
+      )}
+        </>
       )}
     </div>
   )

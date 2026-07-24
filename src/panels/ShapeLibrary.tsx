@@ -120,9 +120,10 @@ function ShapeIcon({ type }: { readonly type: ShapeType }) {
 const styles: Record<string, React.CSSProperties> = {
   panel: {
     background: '#ffffff',
-    borderRight: '1px solid #ddd',
     padding: 8,
     overflowY: 'auto',
+    flex: 1,
+    minHeight: 0,
   },
   title: {
     fontSize: 13,
@@ -132,7 +133,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))',
     gap: 6,
   },
   shapeButton: {
