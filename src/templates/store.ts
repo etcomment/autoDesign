@@ -11,6 +11,7 @@ interface TemplateStore {
   readonly templateElementPositions: Record<string, { x: number; y: number; width: number; height: number }>
 
   selectTemplate: (type: TemplateType) => void
+  selectTemplateWithData: (type: TemplateType, data: TemplateData) => void
   clearTemplate: () => void
   updateTemplateData: (data: TemplateData) => void
   toggleTemplateElement: (id: string) => void
@@ -33,6 +34,17 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     set({
       activeTemplate: type,
       templateData: def?.defaultData ?? null,
+      selectedTemplateElementIds: new Set(),
+      templateElementColors: {},
+      templateStrokeColors: {},
+      templateElementPositions: {},
+    })
+  },
+
+  selectTemplateWithData: (type, data) => {
+    set({
+      activeTemplate: type,
+      templateData: data,
       selectedTemplateElementIds: new Set(),
       templateElementColors: {},
       templateStrokeColors: {},
