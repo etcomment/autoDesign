@@ -5,56 +5,53 @@ import { useTemplateStore } from '../store'
 
 const PALETTE = ['#2D2B55', '#4169E1', '#FF6347', '#E74C3C', '#2ECC71', '#F39C12', '#9B59B6', '#1ABC9C']
 
-function createSegmentPath(
+function donutSegmentPath(
   cx: number,
   cy: number,
   innerR: number,
   outerR: number,
   startAngle: number,
   endAngle: number,
-  arrowSize: number,
 ): string {
-  const cos = Math.cos
-  const sin = Math.sin
+  const outerStart = { x: cx + outerR * Math.cos(startAngle), y: cy + outerR * Math.sin(startAngle) }
+  const outerEnd = { x: cx + outerR * Math.cos(endAngle), y: cy + outerR * Math.sin(endAngle) }
+  const innerEnd = { x: cx + innerR * Math.cos(endAngle), y: cy + innerR * Math.sin(endAngle) }
+  const innerStart = { x: cx + innerR * Math.cos(startAngle), y: cy + innerR * Math.sin(startAngle) }
 
-  const outerStart = { x: cx + outerR * cos(startAngle), y: cy + outerR * sin(startAngle) }
-  const outerEnd = { x: cx + outerR * cos(endAngle), y: cy + outerR * sin(endAngle) }
-  const innerStart = { x: cx + innerR * cos(startAngle), y: cy + innerR * sin(startAngle) }
-
-  const arrowTip = {
-    x: cx + (outerR + arrowSize) * cos(endAngle),
-    y: cy + (outerR + arrowSize) * sin(endAngle),
-  }
-  const arrowBaseAngle = endAngle - 0.1
-  const arrowBaseOuter = {
-    x: cx + outerR * cos(arrowBaseAngle),
-    y: cy + outerR * sin(arrowBaseAngle),
-  }
-  const arrowBaseInner = {
-    x: cx + innerR * cos(arrowBaseAngle),
-    y: cy + innerR * sin(arrowBaseAngle),
-  }
-
-  const sweep = 1
   const large = endAngle - startAngle > Math.PI ? 1 : 0
 
   return [
     `M ${outerStart.x.toFixed(1)} ${outerStart.y.toFixed(1)}`,
-    `A ${outerR} ${outerR} 0 ${large} ${sweep} ${outerEnd.x.toFixed(1)} ${outerEnd.y.toFixed(1)}`,
-    `L ${arrowTip.x.toFixed(1)} ${arrowTip.y.toFixed(1)}`,
-    `L ${arrowBaseOuter.x.toFixed(1)} ${arrowBaseOuter.y.toFixed(1)}`,
-    `L ${arrowBaseInner.x.toFixed(1)} ${arrowBaseInner.y.toFixed(1)}`,
+    `A ${outerR} ${outerR} 0 ${large} 1 ${outerEnd.x.toFixed(1)} ${outerEnd.y.toFixed(1)}`,
+    `L ${innerEnd.x.toFixed(1)} ${innerEnd.y.toFixed(1)}`,
     `A ${innerR} ${innerR} 0 ${large} 0 ${innerStart.x.toFixed(1)} ${innerStart.y.toFixed(1)}`,
     'Z',
   ].join(' ')
 }
 
-function labelSide(angle: number): { align: 'start' | 'end'; offsetX: number } {
-  const normalized = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
-  if (normalized < Math.PI) {
-    return { align: 'end', offsetX: -20 }
+function arrowPolygon(
+  cx: number,
+  cy: number,
+  outerR: number,
+  angle: number,
+  arrowSize: number,
+): string {
+  const tip = {
+    x: cx + (outerR + arrowSize) * Math.cos(angle),
+    y: cy + (outerR + arrowSize) * Math.sin(angle),
   }
-  return { align: 'start', offsetX: 20 }
+  const baseOffset = 0.14
+  const leftAngle = angle - baseOffset
+  const rightAngle = angle + baseOffset
+
+  const left = { x: cx + outerR * Math.cos(leftAngle), y: cy + outerR * Math.sin(leftAngle) }
+  const right = { x: cx + outerR * Math.cos(rightAngle), y: cy + outerR * Math.sin(rightAngle) }
+
+  return [
+    `${left.x.toFixed(1)},${left.y.toFixed(1)}`,
+    `${tip.x.toFixed(1)},${tip.y.toFixed(1)}`,
+    `${right.x.toFixed(1)},${right.y.toFixed(1)}`,
+  ].join(' ')
 }
 
 export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
@@ -73,10 +70,18 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
 
   const segments = data.segments
   const n = segments.length
-  if (n < 2) return <g><rect width={W} height={H} fill="white" rx={8} /><text x={cx} y={cy} textAnchor="middle" fontSize={16} fill="#999">Minimum 2 segments</text></g>
+  if (n < 2)
+    return (
+      <g>
+        <rect width={W} height={H} fill="white" rx={8} />
+        <text x={cx} y={cy} textAnchor="middle" fontSize={16} fill="#999">
+          Minimum 2 segments
+        </text>
+      </g>
+    )
 
   const segmentAngle = (Math.PI * 2) / n
-  const gap = 0.1
+  const gap = 0.14
 
   return (
     <g ref={svgRef}>
@@ -108,23 +113,30 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
 
         const labelX = cx + labelDistance * Math.cos(midAngle)
         const labelY = cy + labelDistance * Math.sin(midAngle)
-        const side = labelSide(midAngle)
+        const normalized = ((midAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
+        const labelAlign = normalized < Math.PI ? 'end' : ('start' as const)
+
+        const bbox = {
+          x: cx - outerR - arrowSize,
+          y: cy - outerR - arrowSize,
+          width: (outerR + arrowSize) * 2,
+          height: (outerR + arrowSize) * 2,
+        }
 
         return (
           <g key={i}>
             <path
-              d={createSegmentPath(cx, cy, innerR, outerR, startAngle, endAngle, arrowSize)}
+              d={donutSegmentPath(cx, cy, innerR, outerR, startAngle, endAngle)}
               fill={color}
               stroke={isSelected ? '#4a90d9' : 'none'}
               strokeWidth={isSelected ? 3 : 0}
-              onMouseDown={e =>
-                startDrag(e, elementId, {
-                  x: cx - outerR - arrowSize,
-                  y: cy - outerR - arrowSize,
-                  width: (outerR + arrowSize) * 2,
-                  height: (outerR + arrowSize) * 2,
-                })
-              }
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            />
+            <polygon
+              points={arrowPolygon(cx, cy, outerR, endAngle, arrowSize)}
+              fill={color}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
               style={{ cursor: 'pointer' }}
             />
             <text
@@ -146,7 +158,7 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
             <text
               x={labelX}
               y={labelY - 14}
-              textAnchor={side.align}
+              textAnchor={labelAlign}
               fontFamily="Arial, sans-serif"
               fontSize={16}
               fontWeight={700}
@@ -157,23 +169,14 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
             <text
               x={labelX}
               y={labelY + 6}
-              textAnchor={side.align}
+              textAnchor={labelAlign}
               fontFamily="Arial, sans-serif"
               fontSize={12}
               fill="#444"
             >
               {item.description.length > 45 ? item.description.slice(0, 42) + '...' : item.description}
             </text>
-            {isSelected &&
-              renderHandles(
-                {
-                  x: cx - outerR - arrowSize,
-                  y: cy - outerR - arrowSize,
-                  width: (outerR + arrowSize) * 2,
-                  height: (outerR + arrowSize) * 2,
-                },
-                elementId,
-              )}
+            {isSelected && renderHandles(bbox, elementId)}
           </g>
         )
       })}

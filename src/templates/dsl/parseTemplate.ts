@@ -84,7 +84,7 @@ function tokenizeLine(line: string): QuotedTokens {
 
 function parseHeader(trimmed: string): { type: string; title?: string } | null {
   const firstLine = trimmed.split('\n')[0]!.trim()
-  const match = /^@(\w+?)(\d*)\s*"?([^"]*)"?\s*$/.exec(firstLine)
+  const match = /^@(\w+)(\d*)\s*"?([^"]*)"?\s*$/.exec(firstLine)
   if (!match) return null
   const [, baseType, variantNum, rawTitle] = match
   const type = variantNum ? `${baseType}${variantNum}` : baseType
