@@ -121,16 +121,18 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const circleRect = elementRects.get(circleId)!
         const num = String(index + 1)
         const centerX = rect.x + rect.width / 2
-        const circleX = circleRect.x + circleRect.width / 2
-        const circleY = circleRect.y + circleRect.height / 2
+        const circleRadius = Math.max(5, Math.min(circleRect.width, circleRect.height) / 2)
+        const isAbove = index % 2 === 0
+        const lineY1 = timelineY
+        const lineY2 = isAbove ? rect.y + rect.height : rect.y
         const availableW = W - marginX * 2
         const milestoneSpacing = milestones.length > 1 ? availableW / (milestones.length - 1) : availableW / 2
 
         return (
           <g key={index}>
             <line
-              x1={layout.centerX} y1={isSelected ? timelineY - circleR : timelineY + circleR}
-              x2={centerX} y2={isSelected ? rect.y + rect.height : rect.y}
+              x1={circleX} y1={lineY1}
+              x2={centerX} y2={lineY2}
               stroke={color} strokeWidth={1.5} opacity={0.6}
             />
 
@@ -138,14 +140,16 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
               <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={10} fill="white" stroke={customStroke || (isSelected ? '#4a90d9' : color)} strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
               <path d={`M ${rect.x + 10} ${rect.y} L ${rect.x + rect.width - 10} ${rect.y} Q ${rect.x + rect.width} ${rect.y} ${rect.x + rect.width} ${rect.y + 10} L ${rect.x + rect.width} ${rect.y + headerH} L ${rect.x} ${rect.y + headerH} L ${rect.x} ${rect.y + 10} Q ${rect.x} ${rect.y} ${rect.x + 10} ${rect.y} Z`} fill={color} />
               <text x={rect.x + rect.width / 2} y={rect.y + headerH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">{milestone.title}</text>
-              {milestone.subtitle && (
-                <text x={rect.x + rect.width / 2} y={rect.y + headerH + 28} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#555">{milestone.subtitle.length > 28 ? milestone.subtitle.slice(0, 25) + '...' : milestone.subtitle}</text>
-              )}
+              {milestone.subtitle && milestone.subtitle.split('\n').slice(0, 3).map((line, li) => (
+                <text key={li} x={rect.x + rect.width / 2} y={rect.y + headerH + 16 + li * 14} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#555">
+                  {line.length > 38 ? line.slice(0, 35) + '...' : line}
+                </text>
+              ))}
               {isSelected && renderHandles(rect, elementId)}
             </g>
 
             <g onMouseDown={e => startDrag(e, circleId, circleRect)} style={{ cursor: 'pointer' }}>
-              <CircleBadge cx={circleX} cy={circleY} r={circleR} fill={circleColor} label={num} />
+              <CircleBadge cx={circleX} cy={circleY} r={circleRadius} fill={circleColor} label={num} />
               {isCircleSelected && renderHandles(circleRect, circleId)}
             </g>
 

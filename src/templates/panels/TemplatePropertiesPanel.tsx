@@ -110,12 +110,12 @@ export function TemplatePropertiesPanel() {
       {!isMulti && (
         <div style={styles.section}>
           <label style={styles.sectionLabel}>Title</label>
-          <input
-            type="text"
+          <textarea
             value={currentTitle}
             onChange={(e) => handleFieldChange('title', e.target.value)}
             placeholder="Title..."
-            style={styles.textInput}
+            style={styles.textarea}
+            rows={2}
           />
         </div>
       )}
@@ -123,12 +123,12 @@ export function TemplatePropertiesPanel() {
       {!isMulti && paramsAllowSubtitle.has(prefix) && (
         <div style={styles.section}>
           <label style={styles.sectionLabel}>Description</label>
-          <input
-            type="text"
+          <textarea
             value={currentSubtitle}
             onChange={(e) => handleFieldChange('subtitle', e.target.value)}
             placeholder="Description..."
-            style={styles.textInput}
+            style={styles.textarea}
+            rows={3}
           />
         </div>
       )}
@@ -252,5 +252,15 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
     fontSize: 12,
     boxSizing: 'border-box' as const,
+  },
+  textarea: {
+    width: '100%',
+    padding: '4px 8px',
+    border: '1px solid #ccc',
+    borderRadius: 4,
+    fontSize: 12,
+    boxSizing: 'border-box' as const,
+    resize: 'vertical' as const,
+    fontFamily: 'inherit',
   },
 }
