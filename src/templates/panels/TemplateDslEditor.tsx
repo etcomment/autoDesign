@@ -4,6 +4,7 @@ import { parseTemplateDsl } from '../dsl/parseTemplate'
 
 export function TemplateDslEditor() {
   const selectTemplateWithData = useTemplateStore(s => s.selectTemplateWithData)
+  const [collapsed, setCollapsed] = useState(true)
 
   const [dsl, setDsl] = useState(`@roadmap "Product Launch"
   start "Kickoff"
@@ -32,8 +33,13 @@ export function TemplateDslEditor() {
 
   return (
     <div style={styles.panel}>
-      <h3 style={styles.title}>Template DSL</h3>
-      <textarea
+      <div style={{ ...styles.title, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => setCollapsed(!collapsed)}>
+        <span>{collapsed ? '▶' : '▼'}</span>
+        Template DSL
+      </div>
+      {!collapsed && (
+        <>
+          <textarea
         value={dsl}
         onChange={e => setDsl(e.target.value)}
         style={styles.textarea}
@@ -49,7 +55,9 @@ export function TemplateDslEditor() {
         <strong>Grid:</strong> quarters lanes milestone Q:Lane "Title"<br />
         <strong>Style:</strong> style boxWidth 150 | style fontSize 13 | style fill #4a90d9<br />
         <strong>Line break:</strong> use \n in quoted text
-      </div>
+        </div>
+        </>
+      )}
     </div>
   )
 }

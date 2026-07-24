@@ -111,12 +111,7 @@ const styles: Record<string, React.CSSProperties> = {
   panel: {
     background: '#ffffff',
     padding: 12,
-    overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 0,
-    flex: 1,
-    minHeight: 0,
+    flexShrink: 0,
   },
   title: {
     fontSize: 14,

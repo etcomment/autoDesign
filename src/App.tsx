@@ -145,6 +145,8 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
     overflowY: 'auto',
     overflowX: 'hidden',
+    position: 'relative',
+    maxHeight: '100%',
   },
   workspace: {
     display: 'flex',
