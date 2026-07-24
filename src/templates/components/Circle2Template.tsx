@@ -115,19 +115,7 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
         </>
       )}
 
-      {/* Render all segment ring bodies first - slightly overlapping into arrowhead base to prevent white seam line */}
-      {segments.map((_, i) => {
-        const startAngle = baseStartAngle + i * angleStep
-        const endAngle = baseStartAngle + (i + 1) * angleStep + gapAngle
-        const color = PALETTE[i % PALETTE.length] ?? '#3768D6'
-
-        return <path key={`body-${i}`} d={ringArcPath(cx, cy, innerR, outerR, startAngle, endAngle)} fill={color} />
-      })}
-
-      {/* Center hole circle rendered BEFORE arrowheads so inner wing doesn't clip */}
-      <circle cx={cx} cy={cy} r={innerR - 1} fill="white" />
-
-      {/* Render all arrowheads ON TOP of ring bodies & center hole */}
+      {/* Render each unified segment (Ring Body + Overlapping Triangular Arrowhead + Text/Icons) */}
       {segments.map((item, i) => {
         const elementId = `segment-${i}`
         const startAngle = baseStartAngle + i * angleStep
@@ -167,11 +155,21 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
           height: outerR * 2,
         }
 
-        const baseAngle = endAngle
+        // Shift baseAngle slightly backward (~0.03 rad / ~2-3px) inside the segment body to remove any trait
+        const baseAngle = endAngle - 0.03
 
         return (
           <g key={i}>
-            {/* Triangular Arrowhead starting at endAngle and extending forward over next segment */}
+            {/* Segment Body */}
+            <path
+              d={ringArcPath(cx, cy, innerR, outerR, startAngle, endAngle + gapAngle)}
+              fill={color}
+              stroke={isSelected ? '#4a90d9' : 'none'}
+              strokeWidth={isSelected ? 3 : 0}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            />
+            {/* Triangular Arrowhead starting ~2-3px inside end of body and extending forward */}
             <path
               d={arrowheadPath(cx, cy, innerR, outerR, baseAngle, baseAngle + arrowOverlap)}
               fill={color}
