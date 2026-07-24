@@ -25,7 +25,7 @@ function segmentWithArrowPath(
     x: cx + (outerR + arrowSize) * cos(endAngle),
     y: cy + (outerR + arrowSize) * sin(endAngle),
   }
-  const arrowBaseOffset = 0.35
+  const arrowBaseOffset = 0.25
   const arrowBaseAngle = endAngle - arrowBaseOffset
   const arrowBaseOuter = {
     x: cx + outerR * cos(arrowBaseAngle),
@@ -58,10 +58,10 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
   const H = 600
   const cx = W / 2
   const cy = H / 2 + 20
-  const innerR = 75
-  const outerR = 150
-  const arrowSize = 60
-  const labelR = outerR + arrowSize + 50
+  const innerR = 70
+  const outerR = 165
+  const arrowSize = 45
+  const labelR = outerR + arrowSize + 45
 
   const segments = data.segments
   const n = segments.length
@@ -76,7 +76,6 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
     )
 
   const segmentAngle = (Math.PI * 2) / n
-  const gap = 0.05
 
   return (
     <g ref={svgRef}>
@@ -94,8 +93,8 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
 
       {segments.map((item, i) => {
         const elementId = `segment-${i}`
-        const startAngle = i * segmentAngle + gap
-        const endAngle = (i + 1) * segmentAngle - gap
+        const startAngle = i * segmentAngle
+        const endAngle = (i + 1) * segmentAngle
         const midAngle = (startAngle + endAngle) / 2
         const color = PALETTE[i % PALETTE.length] ?? '#4169E1'
         const isSelected = selectedIds.has(elementId)
