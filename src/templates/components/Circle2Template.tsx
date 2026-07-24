@@ -18,8 +18,9 @@ function segmentWithArrowPath(
   const sin = Math.sin
 
   const outerStart = { x: cx + outerR * cos(startAngle), y: cy + outerR * sin(startAngle) }
-  const outerEnd = { x: cx + outerR * cos(endAngle), y: cy + outerR * sin(endAngle) }
   const innerStart = { x: cx + innerR * cos(startAngle), y: cy + innerR * sin(startAngle) }
+  const outerEnd = { x: cx + outerR * cos(endAngle), y: cy + outerR * sin(endAngle) }
+  const innerEnd = { x: cx + innerR * cos(endAngle), y: cy + innerR * sin(endAngle) }
 
   const arrowTip = {
     x: cx + (outerR + arrowSize) * cos(endAngle),
@@ -40,13 +41,14 @@ function segmentWithArrowPath(
 
   return [
     `M ${outerStart.x.toFixed(1)} ${outerStart.y.toFixed(1)}`,
-    `A ${outerR} ${outerR} 0 ${large} 1 ${outerEnd.x.toFixed(1)} ${outerEnd.y.toFixed(1)}`,
-    `L ${arrowTip.x.toFixed(1)} ${arrowTip.y.toFixed(1)}`,
+    `A ${outerR} ${outerR} 0 0 1 ${outerEnd.x.toFixed(1)} ${outerEnd.y.toFixed(1)}`,
+    `L ${cx + (outerR + 45) * cos(endAngle)} ${cy + (outerR + 45) * sin(endAngle)}`,
     `L ${arrowBaseOuter.x.toFixed(1)} ${arrowBaseOuter.y.toFixed(1)}`,
-    `L ${arrowBaseInner.x.toFixed(1)} ${arrowBaseInner.y.toFixed(1)}`,
-    `A ${innerR} ${innerR} 0 ${large} 0 ${innerStart.x.toFixed(1)} ${innerStart.y.toFixed(1)}`,
-    'Z',
+    `L ${cx + innerR * cos(arrowBaseAngle)} ${cy + innerR * sin(arrowBaseAngle)}`,
+    `A ${innerR} ${innerR} 0 0 0 ${innerStart.x.toFixed(1)} ${innerStart.y.toFixed(1)}`,
+    `Z`,
   ].join(' ')
+}
 }
 
 export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
@@ -58,10 +60,10 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
   const H = 600
   const cx = W / 2
   const cy = H / 2 + 20
-  const innerR = 70
-  const outerR = 165
-  const arrowSize = 45
-  const labelR = outerR + arrowSize + 45
+  const innerR = 65
+  const outerR = 170
+  const arrowSize = 50
+  const labelR = outerR + arrowSize + 40
 
   const segments = data.segments
   const n = segments.length
