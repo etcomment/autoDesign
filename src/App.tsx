@@ -28,8 +28,8 @@ export function App() {
   const removeShape = useDiagramStore(s => s.removeShape)
   const clearSelection = useDiagramStore(s => s.clearSelection)
 
-  const [sidebarWidth, setSidebarWidth] = useState(220)
-  const [rightPanelWidth, setRightPanelWidth] = useState(220)
+  const [sidebarWidth, setSidebarWidth] = useState(280)
+  const [rightPanelWidth, setRightPanelWidth] = useState(280)
   const [hoveredHandle, setHoveredHandle] = useState<string | null>(null)
 
   const isResizing = useRef<'sidebar' | 'rightPanel' | null>(null)
@@ -258,8 +258,8 @@ const styles: Record<string, React.CSSProperties> = {
   rightPanels: {
     display: 'flex',
     flexDirection: 'column',
-    minWidth: 220,
-    maxWidth: 220,
+    minWidth: 280,
+    maxWidth: 280,
     overflow: 'auto',
     borderLeft: '1px solid #ddd',
     position: 'relative',
