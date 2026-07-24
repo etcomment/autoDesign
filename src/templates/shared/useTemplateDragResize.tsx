@@ -17,6 +17,7 @@ interface Interaction {
   startMouse: { x: number; y: number }
   startRect: Rect
   hasMoved: boolean
+  allStartRects?: Record<string, Rect>
 }
 
 const DRAG_THRESHOLD = 3
@@ -29,6 +30,7 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
   const moveElement = useTemplateStore(s => s.moveTemplateElement)
   const resizeElement = useTemplateStore(s => s.resizeTemplateElement)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const onMouseMoveRef = useRef<(e: MouseEvent) => void>(() => {})
   const onMouseUpRef = useRef<() => void>(() => {})
@@ -71,23 +73,20 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
         if (Math.hypot(dx, dy) <= DRAG_THRESHOLD) return
         interaction.hasMoved = true
       }
-      if (e.ctrlKey || e.metaKey) {
-        moveElement(interaction.id, {
-          x: interaction.startRect.x + dx,
-          y: interaction.startRect.y,
-        })
-        return
-      }
-      if (e.shiftKey) {
-        moveElement(interaction.id, {
-          x: interaction.startRect.x,
-          y: interaction.startRect.y + dy,
-        })
-        return
+      const useX = (e.ctrlKey || e.metaKey) ? dx : (e.shiftKey ? 0 : dx)
+      const useY = e.shiftKey ? dy : (e.ctrlKey || e.metaKey) ? 0 : dy
+
+      if (interaction.allStartRects) {
+        for (const [sid, startR] of Object.entries(interaction.allStartRects)) {
+          moveElement(sid, {
+            x: startR.x + useX,
+            y: startR.y + useY,
+          })
+        }
       }
       moveElement(interaction.id, {
-        x: interaction.startRect.x + dx,
-        y: interaction.startRect.y + dy,
+        x: interaction.startRect.x + useX,
+        y: interaction.startRect.y + useY,
       })
       return
     }
@@ -134,6 +133,18 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
     const mouseEvent = e.nativeEvent
     const { x, y } = toSvgPoint(mouseEvent)
 
+    let allStartRects: Record<string, Rect> | undefined
+    if (kind === 'drag' && selectedIds.size > 1 && selectedIds.has(id)) {
+      allStartRects = {}
+      for (const sid of selectedIds) {
+        if (sid === id) continue
+        const pos = templateElementPositions[sid]
+        if (pos) {
+          allStartRects[sid] = { x: pos.x, y: pos.y, width: pos.width || 20, height: pos.height || 20 }
+        }
+      }
+    }
+
     interactionRef.current = {
       id,
       kind,
@@ -141,10 +152,11 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
       startMouse: { x, y },
       startRect: rect,
       hasMoved: kind === 'resize',
+      allStartRects,
     }
     window.addEventListener('mousemove', stableOnMouseMove)
     window.addEventListener('mouseup', stableOnMouseUp)
-  }, [toSvgPoint, stableOnMouseMove, stableOnMouseUp])
+  }, [toSvgPoint, stableOnMouseMove, stableOnMouseUp, selectedIds, templateElementPositions])
 
   const startDrag = useCallback((e: React.MouseEvent, id: string, rect: Rect) => {
     startInteraction(e, id, rect, 'drag')

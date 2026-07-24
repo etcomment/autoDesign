@@ -17,6 +17,7 @@ interface Interaction {
   startMouse: { x: number; y: number }
   startRect: Rect
   hasMoved: boolean
+  allStartRects?: Record<string, Rect>
 }
 
 const DRAG_THRESHOLD = 3
@@ -29,6 +30,7 @@ export function useDiagramDragResize(svgRef: React.RefObject<SVGGElement | null>
   const moveDiagramElement = useDiagramStore(s => s.moveDiagramElement)
   const resizeDiagramElement = useDiagramStore(s => s.resizeDiagramElement)
   const selectedIds = useDiagramStore(s => s.selectedDiagramElementIds)
+  const diagramElementPositions = useDiagramStore(s => s.diagramElementPositions)
 
   const onMouseMoveRef = useRef<(e: MouseEvent) => void>(() => {})
   const onMouseUpRef = useRef<() => void>(() => {})
@@ -76,23 +78,20 @@ export function useDiagramDragResize(svgRef: React.RefObject<SVGGElement | null>
         if (Math.hypot(dx, dy) <= DRAG_THRESHOLD) return
         interaction.hasMoved = true
       }
-      if (e.ctrlKey || e.metaKey) {
-        moveDiagramElement(interaction.id, {
-          x: interaction.startRect.x + dx,
-          y: interaction.startRect.y,
-        })
-        return
-      }
-      if (e.shiftKey) {
-        moveDiagramElement(interaction.id, {
-          x: interaction.startRect.x,
-          y: interaction.startRect.y + dy,
-        })
-        return
+      const useX = (e.ctrlKey || e.metaKey) ? dx : (e.shiftKey ? 0 : dx)
+      const useY = e.shiftKey ? dy : (e.ctrlKey || e.metaKey) ? 0 : dy
+
+      if (interaction.allStartRects) {
+        for (const [sid, startR] of Object.entries(interaction.allStartRects)) {
+          moveDiagramElement(sid, {
+            x: startR.x + useX,
+            y: startR.y + useY,
+          })
+        }
       }
       moveDiagramElement(interaction.id, {
-        x: interaction.startRect.x + dx,
-        y: interaction.startRect.y + dy,
+        x: interaction.startRect.x + useX,
+        y: interaction.startRect.y + useY,
       })
       return
     }
@@ -137,16 +136,30 @@ export function useDiagramDragResize(svgRef: React.RefObject<SVGGElement | null>
     e.preventDefault()
     if (interactionRef.current) return
     const { x, y } = toSvgPoint(e)
+
+    let allStartRects: Record<string, Rect> | undefined
+    if (selectedIds.size > 1 && selectedIds.has(id)) {
+      allStartRects = {}
+      for (const sid of selectedIds) {
+        if (sid === id) continue
+        const pos = diagramElementPositions[sid]
+        if (pos) {
+          allStartRects[sid] = { x: pos.x, y: pos.y, width: pos.width || 20, height: pos.height || 20 }
+        }
+      }
+    }
+
     interactionRef.current = {
       id,
       kind: 'drag',
       startMouse: { x, y },
       startRect: rect,
       hasMoved: false,
+      allStartRects,
     }
     window.addEventListener('mousemove', stableOnMouseMove)
     window.addEventListener('mouseup', stableOnMouseUp)
-  }, [toSvgPoint, stableOnMouseMove, stableOnMouseUp])
+  }, [toSvgPoint, stableOnMouseMove, stableOnMouseUp, selectedIds, diagramElementPositions])
 
   const startResize = useCallback((e: React.MouseEvent, id: string, corner: Corner, rect: Rect) => {
     e.stopPropagation()
