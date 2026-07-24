@@ -3,6 +3,7 @@ import { Canvas } from './editor/Canvas'
 import { ShapeLibrary } from './panels/ShapeLibrary'
 import { PropertiesPanel } from './panels/PropertiesPanel'
 import { TemplatePanel } from './templates/panels/TemplatePanel'
+import { TemplatePropertiesPanel } from './templates/panels/TemplatePropertiesPanel'
 import { Toolbar } from './panels/Toolbar'
 import { MermaidEditor } from './panels/MermaidEditor'
 import { SubgraphStylePanel } from './panels/SubgraphStylePanel'
@@ -51,13 +52,14 @@ export function App() {
           <ShapeLibrary />
           <MermaidEditor />
           <SubgraphStylePanel />
+          <TemplatePanel />
         </div>
         <div style={styles.canvas}>
           <Canvas />
         </div>
         <div style={styles.rightPanels}>
           <PropertiesPanel />
-          <TemplatePanel />
+          <TemplatePropertiesPanel />
         </div>
       </div>
     </div>
