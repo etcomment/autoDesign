@@ -172,13 +172,11 @@ const styles: Record<string, React.CSSProperties> = {
   panel: {
     width: 220,
     background: '#ffffff',
-    borderLeft: '1px solid #ddd',
     padding: 12,
     overflowY: 'auto',
     display: 'flex',
     flexDirection: 'column',
     gap: 0,
-    maxHeight: '100vh',
   },
   title: {
     fontSize: 14,

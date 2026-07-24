@@ -55,8 +55,10 @@ export function App() {
         <div style={styles.canvas}>
           <Canvas />
         </div>
-        <PropertiesPanel />
-        <TemplatePanel />
+        <div style={styles.rightPanels}>
+          <PropertiesPanel />
+          <TemplatePanel />
+        </div>
       </div>
     </div>
   )
@@ -88,5 +90,13 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     overflow: 'hidden',
     position: 'relative',
+  },
+  rightPanels: {
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 220,
+    maxWidth: 220,
+    overflow: 'auto',
+    borderLeft: '1px solid #ddd',
   },
 }
