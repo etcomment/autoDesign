@@ -18,7 +18,7 @@ import type {
 export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'roadmap',
-    label: 'Roadmap',
+    label: 'Roadmap 1',
     category: 'Roadmaps',
     defaultData: {
       type: 'roadmap',
@@ -278,7 +278,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'productRoadmap',
-    label: 'Product Roadmap',
+    label: 'Product Roadmap 1',
     category: 'Roadmaps',
     defaultData: {
       type: 'productRoadmap',
@@ -434,7 +434,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'strategy',
-    label: 'Strategy',
+    label: 'Strategy 1',
     category: 'Strategy',
     defaultData: {
       type: 'strategy',
@@ -511,7 +511,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'process',
-    label: 'Process',
+    label: 'Process 1',
     category: 'Process',
     defaultData: {
       type: 'process',
@@ -572,7 +572,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'puzzle',
-    label: 'Puzzle',
+    label: 'Puzzle 1',
     category: 'Business',
     defaultData: {
       type: 'puzzle',
@@ -672,7 +672,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'funnel',
-    label: 'Funnel',
+    label: 'Funnel 1',
     category: 'Funnels',
     defaultData: {
       type: 'funnel',
@@ -742,7 +742,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'iceberg',
-    label: 'Iceberg',
+    label: 'Iceberg 1',
     category: 'Icebergs',
     defaultData: {
       type: 'iceberg',
@@ -770,7 +770,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'dashboard',
-    label: 'Dashboard',
+    label: 'Dashboard 1',
     category: 'Dashboards',
     defaultData: {
       type: 'dashboard',
@@ -842,7 +842,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'table',
-    label: 'Table',
+    label: 'Table 1',
     category: 'Tables',
     defaultData: {
       type: 'table',
@@ -856,7 +856,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'agenda',
-    label: 'Agenda',
+    label: 'Agenda 1',
     category: 'Agendas',
     defaultData: {
       type: 'agenda',
@@ -870,7 +870,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'comparison',
-    label: 'Comparison',
+    label: 'Comparison 1',
     category: 'Comparisons',
     defaultData: {
       type: 'comparison',
@@ -886,7 +886,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'brain',
-    label: 'Brain',
+    label: 'Brain 1',
     category: 'Brains',
     defaultData: {
       type: 'brain',
@@ -951,7 +951,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'budget',
-    label: 'Budget',
+    label: 'Budget 1',
     category: 'Budgets',
     defaultData: {
       type: 'budget',
@@ -1033,7 +1033,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'business',
-    label: 'Business',
+    label: 'Business 1',
     category: 'Business',
     defaultData: {
       type: 'business',
@@ -1226,7 +1226,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'decisionTree',
-    label: 'Decision Tree',
+    label: 'Decision Tree 1',
     category: 'Decision trees',
     defaultData: {
       type: 'decisionTree',
@@ -1262,7 +1262,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'goals',
-    label: 'Goals',
+    label: 'Goals 1',
     category: 'Goals',
     defaultData: {
       type: 'goals',
@@ -1353,7 +1353,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'manufacturing',
-    label: 'Manufacturing',
+    label: 'Manufacturing 1',
     category: 'Manufacturing',
     defaultData: {
       type: 'manufacturing',
@@ -1368,7 +1368,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'valueChain',
-    label: 'Value Chain',
+    label: 'Value Chain 1',
     category: 'Value Chain',
     defaultData: {
       type: 'valueChain',
@@ -1606,7 +1606,7 @@ export const TEMPLATES: TemplateDefinition[] = [
       columns: ['Status', 'Owner', 'Deadline'],
       rows: [
         { label: 'Login Page', cells: ['Done', 'Alice', 'Mar 15'] },
-        { label: 'Dashboard', cells: ['In Progress', 'Bob', 'Mar 30'] },
+        { label: 'Dashboard 1', cells: ['In Progress', 'Bob', 'Mar 30'] },
         { label: 'API Layer', cells: ['Pending', 'Charlie', 'Apr 10'] },
         { label: 'Database', cells: ['Done', 'Diana', 'Mar 20'] },
       ],

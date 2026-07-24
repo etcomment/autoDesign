@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { TemplateData, TemplateType } from './types'
 import { getTemplateByType } from './registry'
+import { generateDslText } from './dsl/parseTemplate'
 
 interface TemplateStore {
   readonly activeTemplate: TemplateType | null
@@ -9,6 +10,7 @@ interface TemplateStore {
   readonly templateElementColors: Record<string, string>
   readonly templateStrokeColors: Record<string, string>
   readonly templateElementPositions: Record<string, { x: number; y: number; width: number; height: number }>
+  readonly dslText: string
 
   selectTemplate: (type: TemplateType) => void
   selectTemplateWithData: (type: TemplateType, data: TemplateData) => void
@@ -28,12 +30,15 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
   templateElementColors: {},
   templateStrokeColors: {},
   templateElementPositions: {},
+  dslText: '',
 
   selectTemplate: (type) => {
     const def = getTemplateByType(type)
+    const data = def?.defaultData ?? null
     set({
       activeTemplate: type,
-      templateData: def?.defaultData ?? null,
+      templateData: data,
+      dslText: data ? generateDslText(type, data) : '',
       selectedTemplateElementIds: new Set(),
       templateElementColors: {},
       templateStrokeColors: {},
@@ -45,6 +50,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     set({
       activeTemplate: type,
       templateData: data,
+      dslText: generateDslText(type, data),
       selectedTemplateElementIds: new Set(),
       templateElementColors: {},
       templateStrokeColors: {},

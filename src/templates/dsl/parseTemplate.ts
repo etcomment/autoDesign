@@ -772,3 +772,74 @@ function parseIceberg(dsl: string): IcebergData {
 
   return { type: 'iceberg', title, sections }
 }
+
+export function generateDslText(type: string, data: TemplateData): string {
+  const d = data as unknown as Record<string, unknown>
+  let out = `@${type}`
+  if (d.title) out += ` "${d.title}"`
+  out += '\n'
+
+  if (d.startLabel) out += `  start "${d.startLabel}"\n`
+  if (d.finishLabel) out += `  finish "${d.finishLabel}"\n`
+
+  const list = (key: string) => (d[key] as Array<Record<string, unknown>> | undefined)
+
+  const quarters = list('quarters')
+  if (quarters?.length) out += `  quarters ${quarters.map((q: Record<string,unknown>) => q.label).join(' ')}\n`
+  const lanes = list('lanes')
+  if (lanes?.length) out += `  lanes ${lanes.map((l: Record<string,unknown>) => l.label).join(' ')}\n`
+
+  const milestones = list('milestones')
+  if (milestones) for (const m of milestones) out += `  milestone${m.quarter ? ' ' + m.quarter + ':' + (m.lane ?? '') : ''} "${m.title}"${m.subtitle ? ' "' + m.subtitle + '"' : ''}\n`
+
+  const steps = list('steps')
+  if (steps) for (const s of steps) out += `  step "${s.title}"${s.subtitle ? ' "' + s.subtitle + '"' : ''}\n`
+
+  const blocks = list('blocks')
+  if (blocks) for (const b of blocks) out += `  block "${b.number}" "${b.title}"${b.subtitle ? ' "' + b.subtitle + '"' : ''}\n`
+
+  const pieces = list('pieces')
+  if (pieces) for (const p of pieces) out += `  piece "${p.title}"${p.subtitle ? ' "' + p.subtitle + '"' : ''}${p.color ? ' ' + p.color : ''}\n`
+
+  const levels = list('levels')
+  if (levels) for (const l of levels) out += `  level "${l.title}" ${l.percentage ?? ''}${l.color ? ' ' + l.color : ''}\n`
+
+  const metrics = list('metrics')
+  if (metrics) for (const m of metrics) out += `  metric "${m.label}" "${m.value}"${m.change ? ' "' + m.change + '"' : ''}\n`
+
+  const items = list('items')
+  if (items) for (const it of items) out += `  item "${it.number}" "${it.title}"${it.subtitle ? ' "' + it.subtitle + '"' : ''}\n`
+
+  const stations = list('stations')
+  if (stations) for (const s of stations) out += `  station "${s.title}"${s.subtitle ? ' "' + s.subtitle + '"' : ''}\n`
+
+  const rows = list('rows')
+  if (rows) {
+    const cols = d.columns as string[] | undefined
+    if (cols?.length) out += '  columns ' + cols.map((c: string) => '"' + c + '"').join(' ') + '\n'
+    for (const r of rows) {
+      const cells = r.cells as string[] | undefined
+      out += '  row "' + r.label + '"' + (cells ? cells.map((c: string) => ' "' + c + '"').join('') : '') + '\n'
+    }
+  }
+
+  const branches = list('branches')
+  if (branches) { if (d.centerLabel) out += '  center "' + d.centerLabel + '"\n'; for (const b of branches) out += '  branch "' + b.title + '"' + (b.subtitle ? ' "' + b.subtitle + '"' : '') + '\n' }
+
+  const nodes = list('nodes')
+  if (nodes) { if (d.centerLabel) out += '  center "' + d.centerLabel + '"\n'; out += '  nodes ' + nodes.map((n: Record<string,unknown>) => '"' + n.title + '"').join(' ') + '\n' }
+
+  const sections = list('sections')
+  if (sections) for (const s of sections) out += '  ' + (s.isAbove ? 'above' : 'below') + ' "' + s.title + '"' + (s.subtitle ? ' "' + s.subtitle + '"' : '') + '\n'
+
+  const primaries = list('primary')
+  if (primaries) for (const p of primaries) out += '  primary "' + p.title + '"' + (p.subtitle ? ' "' + p.subtitle + '"' : '') + '\n'
+
+  const supports = list('support')
+  if (supports) for (const s of supports) out += '  support "' + s.title + '"' + (s.subtitle ? ' "' + s.subtitle + '"' : '') + '\n'
+
+  if (d.rootQuestion) out += '  question "' + d.rootQuestion + '"\n'
+  if (d.centerGoal) out += '  center "' + d.centerGoal + '"\n'
+
+  return out
+}
