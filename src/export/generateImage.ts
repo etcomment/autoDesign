@@ -1,4 +1,4 @@
-import { generateSvg } from './generateSvg'
+import { generateSvg, exportCanvasToSvg } from './generateSvg'
 import type { DiagramModel } from '../core/model/DiagramModel'
 
 export async function generatePng(model: DiagramModel): Promise<Blob> {
@@ -8,6 +8,16 @@ export async function generatePng(model: DiagramModel): Promise<Blob> {
 
 export async function generateJpg(model: DiagramModel): Promise<Blob> {
   const svg = generateSvg(model)
+  return rasterizeSvg(svg, 'image/jpeg', 0.9)
+}
+
+export async function generateCanvasPng(): Promise<Blob> {
+  const svg = exportCanvasToSvg()
+  return rasterizeSvg(svg, 'image/png')
+}
+
+export async function generateCanvasJpg(): Promise<Blob> {
+  const svg = exportCanvasToSvg()
   return rasterizeSvg(svg, 'image/jpeg', 0.9)
 }
 

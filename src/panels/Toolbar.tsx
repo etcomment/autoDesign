@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
 import { Undo2, Redo2, Trash2, MousePointer2, Download, Link2 } from 'lucide-react'
-import { downloadSvg } from '../export/generateSvg'
-import { downloadPptx } from '../export/generatePptx'
-import { generatePng, generateJpg, downloadBlob } from '../export/generateImage'
+import { downloadCanvasSvg } from '../export/generateSvg'
+import { downloadCanvasPptx } from '../export/generatePptx'
+import { generateCanvasPng, generateCanvasJpg, downloadBlob } from '../export/generateImage'
 
 export function Toolbar() {
   const canUndo = useDiagramStore(s => s.canUndo)
@@ -13,7 +13,6 @@ export function Toolbar() {
   const selectedShapeIds = useDiagramStore(s => s.selectedShapeIds)
   const removeShape = useDiagramStore(s => s.removeShape)
   const clearSelection = useDiagramStore(s => s.clearSelection)
-  const getModel = useDiagramStore(s => s.getModel)
   const isConnectMode = useDiagramStore(s => s.isConnectMode)
   const toggleConnectMode = useDiagramStore(s => s.toggleConnectMode)
 
@@ -27,24 +26,28 @@ export function Toolbar() {
   }
 
   const handleExportSvg = () => {
-    downloadSvg(getModel())
+    try {
+      downloadCanvasSvg()
+    } catch {
+      return
+    }
     setExportOpen(false)
   }
 
   const handleExportPng = async () => {
-    const blob = await generatePng(getModel())
+    const blob = await generateCanvasPng()
     downloadBlob(blob, 'diagram.png')
     setExportOpen(false)
   }
 
   const handleExportJpg = async () => {
-    const blob = await generateJpg(getModel())
+    const blob = await generateCanvasJpg()
     downloadBlob(blob, 'diagram.jpg')
     setExportOpen(false)
   }
 
   const handleExportPptx = async () => {
-    await downloadPptx(getModel())
+    await downloadCanvasPptx()
     setExportOpen(false)
   }
 

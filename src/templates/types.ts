@@ -51,6 +51,46 @@ export interface ProductRoadmapData {
   milestones: TemplateMilestone[]
 }
 
+export interface ProductRoadmap2Data {
+  type: 'productRoadmap2'
+  title?: string
+  quarters: TemplateQuarter[]
+  lanes: TemplateLane[]
+  milestones: TemplateMilestone[]
+}
+
+export interface ProductRoadmap3Data {
+  type: 'productRoadmap3'
+  title?: string
+  quarters: TemplateQuarter[]
+  lanes: TemplateLane[]
+  milestones: TemplateMilestone[]
+}
+
+export interface ProductRoadmap4Data {
+  type: 'productRoadmap4'
+  title?: string
+  quarters: TemplateQuarter[]
+  lanes: TemplateLane[]
+  milestones: TemplateMilestone[]
+}
+
+export interface ProductRoadmap5Data {
+  type: 'productRoadmap5'
+  title?: string
+  quarters: TemplateQuarter[]
+  lanes: TemplateLane[]
+  milestones: TemplateMilestone[]
+}
+
+export interface ProductRoadmap6Data {
+  type: 'productRoadmap6'
+  title?: string
+  quarters: TemplateQuarter[]
+  lanes: TemplateLane[]
+  milestones: TemplateMilestone[]
+}
+
 export interface StrategyBlock {
   number: string
   title: string
@@ -63,6 +103,30 @@ export interface StrategyData {
   blocks: StrategyBlock[]
 }
 
+export interface Strategy2Data {
+  type: 'strategy2'
+  title?: string
+  blocks: StrategyBlock[]
+}
+
+export interface Strategy3Data {
+  type: 'strategy3'
+  title?: string
+  blocks: StrategyBlock[]
+}
+
+export interface Strategy4Data {
+  type: 'strategy4'
+  title?: string
+  blocks: StrategyBlock[]
+}
+
+export interface Strategy5Data {
+  type: 'strategy5'
+  title?: string
+  blocks: StrategyBlock[]
+}
+
 export interface ProcessStep {
   number: number
   title: string
@@ -71,6 +135,27 @@ export interface ProcessStep {
 
 export interface ProcessData {
   type: 'process'
+  title?: string
+  steps: ProcessStep[]
+  outcome?: string
+}
+
+export interface Process2Data {
+  type: 'process2'
+  title?: string
+  steps: ProcessStep[]
+  outcome?: string
+}
+
+export interface Process4Data {
+  type: 'process4'
+  title?: string
+  steps: ProcessStep[]
+  outcome?: string
+}
+
+export interface Process5Data {
+  type: 'process5'
   title?: string
   steps: ProcessStep[]
   outcome?: string
@@ -248,8 +333,20 @@ export interface ValueChainData {
 export type TemplateData =
   | RoadmapData
   | ProductRoadmapData
+  | ProductRoadmap2Data
+  | ProductRoadmap3Data
+  | ProductRoadmap4Data
+  | ProductRoadmap5Data
+  | ProductRoadmap6Data
   | StrategyData
   | ProcessData
+  | Process2Data
+  | Process4Data
+  | Process5Data
+  | Strategy2Data
+  | Strategy3Data
+  | Strategy4Data
+  | Strategy5Data
   | PuzzleData
   | FunnelData
   | IcebergData
@@ -265,7 +362,7 @@ export type TemplateData =
   | ManufacturingData
   | ValueChainData
 
-export type TemplateType = TemplateData['type']
+export type TemplateType = TemplateData['type'] | 'roadmap2' | 'roadmap3' | 'roadmap4' | 'roadmap5' | 'roadmap6' | 'process2' | 'process4' | 'process5' | 'strategy2' | 'strategy3' | 'strategy4' | 'strategy5'
 
 export interface TemplateDefinition {
   type: TemplateType

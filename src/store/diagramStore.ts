@@ -37,7 +37,7 @@ interface DiagramStore {
   undo: () => void
   redo: () => void
 
-  addShape: (type: ShapeType, position: Position, dimensions: Dimensions) => void
+  addShape: (type: ShapeType, position: Position, dimensions: Dimensions) => Shape
   removeShape: (id: string) => void
   moveShape: (id: string, position: Position) => void
   resizeShape: (id: string, dimensions: Dimensions) => void
@@ -122,6 +122,7 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
         ...syncState(),
         selectedShapeIds: new Set([shape.id]),
       })
+      return shape
     },
 
     removeShape: (id) => {

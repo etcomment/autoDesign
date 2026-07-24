@@ -124,3 +124,77 @@ export async function downloadPptx(model: DiagramModel, filename: string = 'diag
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
 }
+
+export async function generateCanvasPptx(): Promise<Blob> {
+  const svgElement = document.querySelector('svg')
+  if (!svgElement) throw new Error('No SVG element found on canvas')
+  const svgString = new XMLSerializer().serializeToString(svgElement)
+
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(svgBlob)
+
+    img.onload = async () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        URL.revokeObjectURL(url)
+        return reject(new Error('Canvas context not available'))
+      }
+      ctx.drawImage(img, 0, 0)
+      const dataUrl = canvas.toDataURL('image/png')
+      URL.revokeObjectURL(url)
+
+      const pres = new PptxGenJS()
+      pres.layout = 'LAYOUT_WIDE'
+      pres.author = 'autoDesign'
+      pres.title = 'Diagram'
+      const slide = pres.addSlide()
+
+      const slideW = 13.33
+      const slideH = 7.5
+      const aspect = img.width / img.height
+      let imgW: number
+      let imgH: number
+      if (aspect > slideW / slideH) {
+        imgW = slideW
+        imgH = slideW / aspect
+      } else {
+        imgH = slideH
+        imgW = slideH * aspect
+      }
+
+      const x = (slideW - imgW) / 2
+      const y = (slideH - imgH) / 2
+
+      slide.addImage({ data: dataUrl, x, y, w: imgW, h: imgH })
+
+      const data = await pres.write({ outputType: 'arraybuffer' })
+      resolve(new Blob([data as ArrayBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      }))
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('Failed to load SVG'))
+    }
+
+    img.src = url
+  })
+}
+
+export async function downloadCanvasPptx(filename: string = 'diagram.pptx'): Promise<void> {
+  const blob = await generateCanvasPptx()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}

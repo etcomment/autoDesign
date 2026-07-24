@@ -106,3 +106,22 @@ export function downloadSvg(model: DiagramModel, filename: string = 'diagram.svg
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
 }
+
+export function exportCanvasToSvg(): string {
+  const svgElement = document.querySelector('svg')
+  if (!svgElement) throw new Error('No SVG element found on canvas')
+  return new XMLSerializer().serializeToString(svgElement)
+}
+
+export function downloadCanvasSvg(filename: string = 'diagram.svg'): void {
+  const svg = exportCanvasToSvg()
+  const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}

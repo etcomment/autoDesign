@@ -122,8 +122,6 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#ffffff',
     padding: 8,
     flexShrink: 0,
-    overflowY: 'auto',
-    maxHeight: '60%',
   },
   title: {
     fontSize: 13,

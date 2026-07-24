@@ -9,6 +9,17 @@ import { Toolbar } from './panels/Toolbar'
 import { MermaidEditor } from './panels/MermaidEditor'
 import { SubgraphStylePanel } from './panels/SubgraphStylePanel'
 import { useDiagramStore } from './store/diagramStore'
+import type { Shape, ShapeStyle, ShapeText, ShapeType, Position, Dimensions } from './core/model/Shape'
+
+interface ClipboardShape {
+  type: ShapeType
+  position: Position
+  dimensions: Dimensions
+  style: ShapeStyle
+  text: ShapeText
+}
+
+let clipboardShapes: ClipboardShape[] | null = null
 
 export function App() {
   const undo = useDiagramStore(s => s.undo)
@@ -84,13 +95,99 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [undo, redo, selectedShapeIds, removeShape, clearSelection])
 
+  useEffect(() => {
+    function isEditingTarget(el: HTMLElement): boolean {
+      return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable
+    }
+
+    function handleCopyPaste(e: KeyboardEvent) {
+      const isMod = e.ctrlKey || e.metaKey
+      const target = e.target as HTMLElement
+      if (isEditingTarget(target)) return
+
+      if (isMod && e.key === 'c') {
+        const state = useDiagramStore.getState()
+        const { selectedShapeIds, selectedDiagramElementIds } = state
+        const model = state.getModel()
+
+        const allIds = [...new Set([...selectedShapeIds, ...selectedDiagramElementIds])]
+        const shapes = allIds
+          .map(id => model.getShape(id))
+          .filter((s): s is Shape => s !== undefined)
+
+        if (shapes.length === 0) return
+
+        e.preventDefault()
+
+        const shapesData: ClipboardShape[] = shapes.map(s => ({
+          type: s.type,
+          position: { x: s.position.x, y: s.position.y },
+          dimensions: { width: s.dimensions.width, height: s.dimensions.height },
+          style: { ...s.style },
+          text: { ...s.text },
+        }))
+
+        clipboardShapes = shapesData
+        const json = JSON.stringify({ source: 'autoDesign', shapes: shapesData })
+        navigator.clipboard.writeText(json).catch(() => {})
+        return
+      }
+
+      if (isMod && e.key === 'v') {
+        const state = useDiagramStore.getState()
+
+        const pasteFromData = (shapesData: ClipboardShape[]) => {
+          for (const s of shapesData) {
+            const shape = state.addShape(
+              s.type,
+              { x: s.position.x + 30, y: s.position.y + 30 },
+              s.dimensions,
+            )
+            state.updateShapeStyle(shape.id, s.style)
+            state.updateShapeText(shape.id, s.text)
+          }
+        }
+
+        const parseAndPaste = (text: string): boolean => {
+          let data: { source?: string; shapes?: ClipboardShape[] }
+          try {
+            data = JSON.parse(text)
+          } catch {
+            return false
+          }
+          if (data.source !== 'autoDesign' || !data.shapes || data.shapes.length === 0) return false
+          pasteFromData(data.shapes)
+          return true
+        }
+
+        e.preventDefault()
+
+        navigator.clipboard.readText()
+          .then(text => {
+            if (!parseAndPaste(text) && clipboardShapes) {
+              pasteFromData(clipboardShapes)
+            }
+          })
+          .catch(() => {
+            if (clipboardShapes) {
+              pasteFromData(clipboardShapes)
+            }
+          })
+
+        return
+      }
+    }
+
+    window.addEventListener('keydown', handleCopyPaste)
+    return () => window.removeEventListener('keydown', handleCopyPaste)
+  }, [])
+
   return (
     <div style={styles.container}>
       <Toolbar />
       <div style={styles.workspace}>
         <div style={{ ...styles.sidebar, width: sidebarWidth, maxWidth: 'none' }}>
           <ShapeLibrary />
-          <div style={{ flex: 1 }} />
           <MermaidEditor />
           <SubgraphStylePanel />
           <TemplatePanel />
