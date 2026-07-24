@@ -10,6 +10,12 @@ function parseStyleValue(value: string): string | number {
   return value.replace(/^["']|["']$/g, '')
 }
 
+function styleObj(record: Record<string, string | number>): TemplateElementStyle | undefined {
+  const keys = Object.keys(record)
+  if (keys.length === 0) return undefined
+  return record as unknown as TemplateElementStyle
+}
+
 export function parseTemplateDsl(dsl: string): TemplateData | null {
   const trimmed = dsl.trim()
   if (!trimmed) return null
@@ -29,8 +35,23 @@ function parseRoadmap(dsl: string): RoadmapData | ProductRoadmapData {
   const milestones: TemplateMilestone[] = []
   const quarters: string[] = []
   const lanes: string[] = []
-  const defaultStyle: Record<string, string | number> = {}
-  let currentStyle: Record<string, string | number> | null = null
+  const globalStyles: Record<string, string | number> = {}
+  let pendingStyle: Record<string, string | number> = {}
+  let hasPendingStyle = false
+  let pendingMilestone: { quarter?: string; lane?: string; title: string; subtitle?: string } | null = null
+
+  function flushMilestone() {
+    if (pendingMilestone) {
+      const merged = { ...globalStyles, ...(hasPendingStyle ? pendingStyle : {}) }
+      milestones.push({
+        ...pendingMilestone,
+        style: styleObj(merged),
+      })
+      pendingMilestone = null
+      pendingStyle = {}
+      hasPendingStyle = false
+    }
+  }
 
   for (const line of lines) {
     if (line.startsWith('@roadmap')) {
@@ -40,62 +61,48 @@ function parseRoadmap(dsl: string): RoadmapData | ProductRoadmapData {
     }
 
     const startMatch = /^start\s+"([^"]*)"\s*$/.exec(line)
-    if (startMatch) {
-      startLabel = startMatch[1]!
-      continue
-    }
+    if (startMatch) { startLabel = startMatch[1]!; continue }
 
     const finishMatch = /^finish\s+"([^"]*)"\s*$/.exec(line)
-    if (finishMatch) {
-      finishLabel = finishMatch[1]!
-      continue
-    }
+    if (finishMatch) { finishLabel = finishMatch[1]!; continue }
 
     const quartersMatch = /^quarters\s+(.+)$/.exec(line)
-    if (quartersMatch) {
-      quarters.push(...quartersMatch[1]!.split(/\s+/).filter(Boolean))
-      continue
-    }
+    if (quartersMatch) { quarters.push(...quartersMatch[1]!.split(/\s+/).filter(Boolean)); continue }
 
     const lanesMatch = /^lanes\s+(.+)$/.exec(line)
-    if (lanesMatch) {
-      lanes.push(...lanesMatch[1]!.split(/\s+/).filter(Boolean))
-      continue
-    }
+    if (lanesMatch) { lanes.push(...lanesMatch[1]!.split(/\s+/).filter(Boolean)); continue }
 
     const styleMatch = /^style\s+(\S+)\s+(.+)$/.exec(line)
     if (styleMatch) {
       const key = styleMatch[1]!
       const value = parseStyleValue(styleMatch[2]!)
-      if (currentStyle) {
-        currentStyle[key] = value
+      if (pendingMilestone) {
+        pendingStyle[key] = value
+        hasPendingStyle = true
       } else {
-        defaultStyle[key] = value
+        globalStyles[key] = value
       }
       continue
     }
 
     const milestoneMatch = /^milestone(?:\s+(\S+):(\S+))?\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
     if (milestoneMatch) {
-      const style: TemplateElementStyle = {}
-      if (currentStyle) {
-        for (const [k, v] of Object.entries(currentStyle)) {
-          ;(style as Record<string, unknown>)[k] = v
-        }
-      }
-      milestones.push({
+      flushMilestone()
+      pendingMilestone = {
         quarter: milestoneMatch[1],
         lane: milestoneMatch[2],
         title: milestoneMatch[3]!,
         subtitle: milestoneMatch[4] ? stripQuotes(milestoneMatch[4]) : undefined,
-        style: Object.keys(style).length > 0 ? style : undefined,
-      })
-      currentStyle = {}
+      }
+      pendingStyle = {}
+      hasPendingStyle = false
       continue
     }
   }
 
-  const defaultStyleObj: TemplateElementStyle | undefined = Object.keys(defaultStyle).length > 0 ? defaultStyle as unknown as TemplateElementStyle : undefined
+  flushMilestone()
+
+  const globalStyle = styleObj(globalStyles)
 
   if (quarters.length > 0 || lanes.length > 0) {
     const defaultQuarters = quarters.length > 0 ? quarters : ['Q1', 'Q2', 'Q3', 'Q4']
@@ -111,7 +118,7 @@ function parseRoadmap(dsl: string): RoadmapData | ProductRoadmapData {
         subtitle: m.subtitle,
         quarter: m.quarter ?? defaultQuarters[0],
         lane: m.lane ?? defaultLanes[0],
-        style: m.style ?? (Object.keys(defaultStyle).length > 0 ? defaultStyleObj : undefined),
+        style: m.style ?? globalStyle,
       })),
     }
   }
@@ -124,7 +131,7 @@ function parseRoadmap(dsl: string): RoadmapData | ProductRoadmapData {
     milestones: milestones.map(m => ({
       title: m.title,
       subtitle: m.subtitle,
-      style: m.style ?? (Object.keys(defaultStyle).length > 0 ? defaultStyleObj : undefined),
+      style: m.style ?? globalStyle,
     })),
   }
 }
