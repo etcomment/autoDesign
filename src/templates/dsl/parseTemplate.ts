@@ -82,9 +82,10 @@ function tokenizeLine(line: string): QuotedTokens {
 
 function parseHeader(trimmed: string): { type: string; title?: string } | null {
   const firstLine = trimmed.split('\n')[0]!.trim()
-  const match = /^@(\w+)\s+"?([^"]*)"?\s*$/.exec(firstLine)
+  const match = /^@(\w+?)(\d*)\s+"?([^"]*)"?\s*$/.exec(firstLine)
   if (!match) return null
-  const [, type, rawTitle] = match
+  const [, baseType, variantNum, rawTitle] = match
+  const type = variantNum ? `${baseType}${variantNum}` : baseType
   return { type: type!, title: rawTitle ? stripQuotes(rawTitle) : undefined }
 }
 
@@ -95,44 +96,68 @@ export function parseTemplateDsl(dsl: string): TemplateData | null {
   const header = parseHeader(trimmed)
   if (!header) return null
 
-  switch (header.type) {
+  const baseType = header.type.replace(/\d+$/, '')
+  let result: TemplateData | null = null
+
+  switch (baseType) {
     case 'roadmap':
-      return parseRoadmap(trimmed)
+    case 'productRoadmap':
+      result = parseRoadmap(trimmed)
+      break
     case 'process':
-      return parseProcess(trimmed)
+      result = parseProcess(trimmed)
+      break
     case 'strategy':
-      return parseStrategy(trimmed)
+      result = parseStrategy(trimmed)
+      break
     case 'puzzle':
-      return parsePuzzle(trimmed)
+      result = parsePuzzle(trimmed)
+      break
     case 'funnel':
-      return parseFunnel(trimmed)
+      result = parseFunnel(trimmed)
+      break
     case 'dashboard':
-      return parseDashboard(trimmed)
+      result = parseDashboard(trimmed)
+      break
     case 'table':
-      return parseTable(trimmed)
+      result = parseTable(trimmed)
+      break
     case 'agenda':
-      return parseAgenda(trimmed)
+      result = parseAgenda(trimmed)
+      break
     case 'comparison':
-      return parseComparison(trimmed)
+      result = parseComparison(trimmed)
+      break
     case 'business':
-      return parseBusiness(trimmed)
+      result = parseBusiness(trimmed)
+      break
     case 'brain':
-      return parseBrain(trimmed)
+      result = parseBrain(trimmed)
+      break
     case 'budget':
-      return parseBudget(trimmed)
+      result = parseBudget(trimmed)
+      break
     case 'decision':
-      return parseDecision(trimmed)
+      result = parseDecision(trimmed)
+      break
     case 'goals':
-      return parseGoals(trimmed)
+      result = parseGoals(trimmed)
+      break
     case 'manufacturing':
-      return parseManufacturing(trimmed)
+      result = parseManufacturing(trimmed)
+      break
     case 'valueChain':
-      return parseValueChain(trimmed)
+      result = parseValueChain(trimmed)
+      break
     case 'iceberg':
-      return parseIceberg(trimmed)
-    default:
-      return null
+      result = parseIceberg(trimmed)
+      break
   }
+
+  if (result) {
+    (result as Record<string, unknown>).type = header.type
+  }
+  return result
 }
 
 function getLines(dsl: string): string[] {

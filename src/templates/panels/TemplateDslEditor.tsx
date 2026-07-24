@@ -2,29 +2,32 @@ import { useState } from 'react'
 import { useTemplateStore } from '../store'
 import { parseTemplateDsl } from '../dsl/parseTemplate'
 
-const DEFAULT_DSL = `@roadmap "Product Launch"
-  start "Kickoff"
-  finish "GA Release"
+const HINT = `@roadmap (ou @roadmap2..16) : start finish milestone quarters lanes style
+@productRoadmap (@productRoadmap2..12) : quarters lanes milestone Q:Lane "Titre"
+@process (@process1..5) : step "Titre" "Description"
+@strategy (@strategy2..8) : block "01" "Titre" "Description"
+@puzzle (@puzzle2..7) : piece "Titre" "Description" #couleur
+@funnel (@funnel2..5) : level "Titre" pourcentage #couleur
+@dashboard (@dashboard2..5) : metric "Label" "Valeur" "Variation"
+@table (@table2..6) : columns "C1" "C2" | row "Label" "A" "B"
+@agenda (@agenda2..4) : item "01" "Titre" "Durée"
+@comparison (@comparison2..7) : left/right "Titre" | comp "Label" "L" "R"
+@business (@business2..11) : center "Core" | nodes "A" "B" "C"
+@brain (@brain2..4) : center "Main" | branch "Topic" "Desc"
+@budget (@budget2..5) : total "$X" | line "Label" "Montant" %
+@decision (@decision2) : question "Q?" | yes/no "X" -> "Target"
+@goals (@goals1..5) : center "Vision" | metric "L" "Now" "Target"
+@manufacturing (@manufacturing2..8) : station "Nom" "Description"
+@valueChain (@valueChain2) : primary/support "Titre" "Description"
+@iceberg (@iceberg2) : above/below "Titre" "Description"
 
-  style boxWidth 150
-  style fontSize 13
-
-  milestone "Alpha" "Internal testing\\nphase 1 of 2"
-    style fill #4a90d9
-
-  milestone "Beta" "Early access"
-    style fill #2ecc71
-    style boxWidth 180
-
-  milestone "RC1" "Release candidate"
-
-  milestone "GA" "Go live"`
+Style: style boxWidth 150 | style fontSize 14 | style fill #4a90d9 | style stroke #333
+Line break: \\n in quoted text`
 
 export function TemplateDslEditor() {
   const selectTemplateWithData = useTemplateStore(s => s.selectTemplateWithData)
   const [collapsed, setCollapsed] = useState(true)
-
-  const [dsl, setDsl] = useState(DEFAULT_DSL)
+  const [dsl, setDsl] = useState('')
 
   const handleParse = () => {
     const data = parseTemplateDsl(dsl)
@@ -42,36 +45,17 @@ export function TemplateDslEditor() {
       {!collapsed && (
         <>
           <textarea
-        value={dsl}
-        onChange={e => setDsl(e.target.value)}
-        style={styles.textarea}
-        rows={10}
-        placeholder={`@roadmap "My Roadmap"\\n  start "Begin"\\n  finish "End"\\n\\n  milestone "Step 1" "Description"\\n  milestone "Step 2"`}
-        spellCheck={false}
-      />
-      <button style={styles.button} onClick={handleParse}>
-        Parse & Render
-      </button>
-      <div style={styles.hint}>
-        <strong>Roadmap:</strong> @roadmap start finish milestone quarters lanes style<br />
-        <strong>Process:</strong> @process step "Title" "Subtitle"<br />
-        <strong>Strategy:</strong> @strategy block "01" "Title" "Subtitle"<br />
-        <strong>Puzzle:</strong> @puzzle piece "Title" "Subtitle" #color<br />
-        <strong>Funnel:</strong> @funnel level "Title" percentage #color<br />
-        <strong>Dashboard:</strong> @dashboard metric "Label" "Value" "Change"<br />
-        <strong>Table:</strong> @table columns "C1" "C2" | row "Label" "A" "B"<br />
-        <strong>Agenda:</strong> @agenda item "01" "Title" "Duration"<br />
-        <strong>Comparison:</strong> @comparison left "A" | right "B" | comp "Label" "L" "R"<br />
-        <strong>Business:</strong> @business nodes "A" "B" "C" | center "Core"<br />
-        <strong>Brain:</strong> @brain center "Main" | branch "Topic" "Desc"<br />
-        <strong>Budget:</strong> @budget total "$500K" | line "Label" "Amount" 40<br />
-        <strong>Decision:</strong> @decision question "Start?" | yes/no/leaf "Q" -\u003E "Target"<br />
-        <strong>Goals:</strong> @goals center "Vision" | metric "Label" "Now" "Target"<br />
-        <strong>Manufacturing:</strong> @manufacturing station "Name" "Desc"<br />
-        <strong>Value Chain:</strong> @valueChain primary/support "Title" "Desc"<br />
-        <strong>Iceberg:</strong> @iceberg above/below "Title" "Desc"<br />
-        <strong>Line break:</strong> use \\n in quoted text
-        </div>
+            value={dsl}
+            onChange={e => setDsl(e.target.value)}
+            style={styles.textarea}
+            rows={8}
+            placeholder={`Tapez votre DSL ici...\nEx: @roadmap "Mon plan"\n  milestone "Etape 1" "Description"`}
+            spellCheck={false}
+          />
+          <div style={styles.hint}>{HINT}</div>
+          <button style={styles.button} onClick={handleParse}>
+            Parse & Render
+          </button>
         </>
       )}
     </div>
@@ -92,7 +76,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   textarea: {
     width: '100%',
-    height: 140,
+    height: 120,
     padding: 6,
     border: '1px solid #ccc',
     borderRadius: 4,
@@ -102,6 +86,15 @@ const styles: Record<string, React.CSSProperties> = {
     boxSizing: 'border-box' as const,
     marginBottom: 6,
     background: '#fafafa',
+  },
+  hint: {
+    fontSize: 8,
+    color: '#999',
+    lineHeight: 1.5,
+    marginBottom: 6,
+    maxHeight: 200,
+    overflowY: 'auto',
+    whiteSpace: 'pre-line' as const,
   },
   button: {
     width: '100%',
@@ -113,11 +106,6 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     background: '#4a90d9',
     color: 'white',
-    marginBottom: 6,
-  },
-  hint: {
-    fontSize: 9,
-    color: '#999',
-    lineHeight: 1.4,
+    marginBottom: 4,
   },
 }
