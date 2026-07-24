@@ -78,9 +78,9 @@ export function TemplatePanel() {
         </div>
       ))}
 
-      {hasSelection && (
+      {activeTemplate && (
         <div style={styles.colorSection}>
-          <h4 style={styles.subTitle}>{elements.length > 1 ? `${elements.length} selected` : elementLabel(primaryId)}</h4>
+          <h4 style={styles.subTitle}>{hasSelection ? (elements.length > 1 ? `${elements.length} selected` : elementLabel(primaryId)) : 'Click an element to select'}</h4>
 
           <label style={styles.label}>Fill</label>
           <div style={styles.colorGrid}>

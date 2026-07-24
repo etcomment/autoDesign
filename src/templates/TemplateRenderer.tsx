@@ -75,7 +75,7 @@ export function TemplateRenderer(): ReactElement | null {
   if (!Component) return null
 
   return (
-    <g>
+    <g pointerEvents="all">
       <Component data={templateData} />
     </g>
   )

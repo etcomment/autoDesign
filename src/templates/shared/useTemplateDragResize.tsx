@@ -36,19 +36,14 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
   const stableOnMouseMove = useCallback((e: MouseEvent) => onMouseMoveRef.current(e), [])
   const stableOnMouseUp = useCallback(() => onMouseUpRef.current(), [])
 
-  const toSvgPoint = useCallback((e: React.MouseEvent | MouseEvent): { x: number; y: number } => {
+  const toSvgPoint = useCallback((e: MouseEvent): { x: number; y: number } => {
     const svg = svgRef.current?.ownerSVGElement
     if (!svg) return { x: 0, y: 0 }
     const ctm = svg.getScreenCTM()
     if (!ctm) return { x: 0, y: 0 }
     const pt = svg.createSVGPoint()
-    if ('nativeEvent' in e) {
-      pt.x = e.nativeEvent.clientX
-      pt.y = e.nativeEvent.clientY
-    } else {
-      pt.x = e.clientX
-      pt.y = e.clientY
-    }
+    pt.x = e.clientX
+    pt.y = e.clientY
     const p = pt.matrixTransform(ctm.inverse())
     return { x: p.x, y: p.y }
   }, [svgRef])
@@ -118,36 +113,32 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
     }
   }
 
-  const startDrag = useCallback((e: React.MouseEvent, id: string, rect: Rect) => {
+  const startInteraction = useCallback((e: React.MouseEvent, id: string, rect: Rect, kind: 'drag' | 'resize', corner?: Corner) => {
     e.stopPropagation()
+    e.preventDefault()
     if (interactionRef.current) return
-    const { x, y } = toSvgPoint(e)
+    const mouseEvent = e.nativeEvent
+    const { x, y } = toSvgPoint(mouseEvent)
+
     interactionRef.current = {
       id,
-      kind: 'drag',
+      kind,
+      corner,
       startMouse: { x, y },
       startRect: rect,
-      hasMoved: false,
+      hasMoved: kind === 'resize',
     }
     window.addEventListener('mousemove', stableOnMouseMove)
     window.addEventListener('mouseup', stableOnMouseUp)
   }, [toSvgPoint, stableOnMouseMove, stableOnMouseUp])
 
+  const startDrag = useCallback((e: React.MouseEvent, id: string, rect: Rect) => {
+    startInteraction(e, id, rect, 'drag')
+  }, [startInteraction])
+
   const startResize = useCallback((e: React.MouseEvent, id: string, corner: Corner, rect: Rect) => {
-    e.stopPropagation()
-    if (interactionRef.current) return
-    const { x, y } = toSvgPoint(e)
-    interactionRef.current = {
-      id,
-      kind: 'resize',
-      corner,
-      startMouse: { x, y },
-      startRect: rect,
-      hasMoved: true,
-    }
-    window.addEventListener('mousemove', stableOnMouseMove)
-    window.addEventListener('mouseup', stableOnMouseUp)
-  }, [toSvgPoint, stableOnMouseMove, stableOnMouseUp])
+    startInteraction(e, id, rect, 'resize', corner)
+  }, [startInteraction])
 
   const renderHandles = useCallback((visualRect: Rect, id: string) => {
     if (!selectedIds.has(id)) return null
