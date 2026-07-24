@@ -110,7 +110,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const layout = layoutMilestones.find(l => l.id === elementId)
         if (!layout) return null
         const color = tplColors[elementId] ?? PALETTE[index % PALETTE.length]!
-        const stroke = tplStrokeColors[elementId] || color
+        const customStroke = tplStrokeColors[elementId]
         const isSelected = selectedIds.has(elementId)
         const isAbove = index % 2 === 0
         const rect = elementRects.get(elementId)!
@@ -130,16 +130,19 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
             />
 
             <g onMouseDown={e => startDrag(e, elementId, rect)} style={{ cursor: 'pointer' }}>
-              <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={10} fill="white" stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
+              <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={10} fill="white" stroke={customStroke || (isSelected ? '#4a90d9' : color)} strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
               <path d={`M ${rect.x + 10} ${rect.y} L ${rect.x + rect.width - 10} ${rect.y} Q ${rect.x + rect.width} ${rect.y} ${rect.x + rect.width} ${rect.y + 10} L ${rect.x + rect.width} ${rect.y + headerH} L ${rect.x} ${rect.y + headerH} L ${rect.x} ${rect.y + 10} Q ${rect.x} ${rect.y} ${rect.x + 10} ${rect.y} Z`} fill={color} />
               <text x={rect.x + rect.width / 2} y={rect.y + headerH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">{milestone.title}</text>
               {milestone.subtitle && (
                 <text x={rect.x + rect.width / 2} y={rect.y + headerH + 28} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#555">{milestone.subtitle.length > 28 ? milestone.subtitle.slice(0, 25) + '...' : milestone.subtitle}</text>
               )}
               {isSelected && renderHandles(rect, elementId)}
+              {/* invisible click target - keeps selection working when dragging */}
             </g>
 
-            <CircleBadge cx={layout.centerX} cy={timelineY} r={circleR} fill={color} label={num} />
+            <g style={{ cursor: 'pointer' }} onClick={e => { e.stopPropagation(); const s = useTemplateStore.getState(); s.toggleTemplateElement(elementId); }}>
+              <CircleBadge cx={layout.centerX} cy={timelineY} r={circleR} fill={color} label={num} />
+            </g>
 
             {index < milestones.length - 1 && (
               <ChevronArrow x={layout.centerX + circleR + 3} y={timelineY - 6} width={milestoneSpacing - circleR * 2 - 6} height={12} fill="#ddd" />

@@ -91,13 +91,12 @@ export function TemplatePanel() {
             return (
               <div
                 key={name}
-                className="ad-icon-item"
                 style={styles.iconItem}
                 onClick={() => handleCopyIcon(name)}
                 title={name}
               >
-                <svg width={ICON_SIZE} height={ICON_SIZE} viewBox={`0 0 ${ICON_SIZE} ${ICON_SIZE}`}>
-                  <Icon size={ICON_SIZE} color="#555" />
+                <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" style={{ display: 'block', overflow: 'visible' }}>
+                  <Icon size={24} color="#555" />
                 </svg>
                 <div style={styles.iconLabel}>{name}</div>
               </div>

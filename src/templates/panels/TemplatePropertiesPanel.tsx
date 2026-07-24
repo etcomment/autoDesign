@@ -22,13 +22,32 @@ function elementLabel(elementId: string): string {
   return `${labels[prefix] ?? prefix}: ${name}`
 }
 
+const collectionKeys: Record<string, string> = {
+  milestone: 'milestones',
+  block: 'blocks',
+  step: 'steps',
+  piece: 'pieces',
+  level: 'levels',
+  section: 'sections',
+  metric: 'metrics',
+  row: 'rows',
+  item: 'items',
+  node: 'nodes',
+  branch: 'branches',
+  station: 'stations',
+  primary: 'primary',
+  support: 'support',
+}
+
 export function TemplatePropertiesPanel() {
   const activeTemplate = useTemplateStore(s => s.activeTemplate)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const templateColors = useTemplateStore(s => s.templateElementColors)
   const templateStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const templateData = useTemplateStore(s => s.templateData)
   const updateTemplateColor = useTemplateStore(s => s.updateTemplateColor)
   const updateTemplateStrokeColor = useTemplateStore(s => s.updateTemplateStrokeColor)
+  const updateTemplateData = useTemplateStore(s => s.updateTemplateData)
 
   if (!activeTemplate || selectedIds.size === 0) return null
 
@@ -37,6 +56,34 @@ export function TemplatePropertiesPanel() {
   const isMulti = elements.length > 1
   const primaryFill = templateColors[primaryId] ?? ''
   const primaryStroke = templateStrokeColors[primaryId] ?? ''
+
+  const handleTextChange = (elementId: string, newTitle: string) => {
+    if (!templateData) return
+    const data = templateData as unknown as Record<string, unknown>
+    const prefix = elementId.split('-')[0]!
+    const index = parseInt(elementId.split('-')[1]!, 10)
+    if (isNaN(index)) return
+    const collectionKey = collectionKeys[prefix]
+    if (!collectionKey) return
+    const items = (data as Record<string, unknown>)[collectionKey] as Record<string, unknown>[] | undefined
+    if (!items || !items[index]) return
+    const item: Record<string, unknown> = { ...items[index] }
+    item.title = newTitle
+    const newItems = [...items]
+    newItems[index] = item as never
+    ;(data as Record<string, unknown>)[collectionKey] = newItems
+    updateTemplateData(data as never)
+  }
+
+  const currentIndex = parseInt(primaryId.split('-')[1]!, 10)
+  const collectionKey = collectionKeys[primaryId.split('-')[0]!]
+  let currentTitle = ''
+  if (templateData && collectionKey && !isNaN(currentIndex)) {
+    const items = (templateData as unknown as Record<string, unknown>)[collectionKey] as Record<string, unknown>[] | undefined
+    if (items && items[currentIndex]) {
+      currentTitle = (items[currentIndex].title || items[currentIndex].label || '') as string
+    }
+  }
 
   return (
     <div style={styles.panel}>
@@ -47,6 +94,19 @@ export function TemplatePropertiesPanel() {
           {isMulti ? `${elements.length} elements` : elementLabel(primaryId)}
         </label>
       </div>
+
+      {!isMulti && currentTitle !== undefined && (
+        <div style={styles.section}>
+          <label style={styles.sectionLabel}>Text</label>
+          <input
+            type="text"
+            value={currentTitle}
+            onChange={(e) => handleTextChange(primaryId, e.target.value)}
+            placeholder="Edit text..."
+            style={styles.textInput}
+          />
+        </div>
+      )}
 
       <div style={styles.section}>
         <label style={styles.sectionLabel}>Fill</label>
@@ -157,5 +217,13 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 0,
     border: 'none',
     cursor: 'pointer',
+  },
+  textInput: {
+    width: '100%',
+    padding: '4px 8px',
+    border: '1px solid #ccc',
+    borderRadius: 4,
+    fontSize: 12,
+    boxSizing: 'border-box' as const,
   },
 }
