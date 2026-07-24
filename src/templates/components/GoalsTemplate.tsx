@@ -1,7 +1,13 @@
-import type { ReactElement } from 'react'
+import { useRef, type ReactElement } from 'react'
 import type { GoalsData } from '../types'
+import { useTemplateDragResize } from '../shared/useTemplateDragResize'
+import { useTemplateStore } from '../store'
 
 export function GoalsTemplate({ data }: { data: GoalsData }): ReactElement {
+  const svgRef = useRef<SVGGElement>(null)
+  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+
   const { title, centerGoal, metrics } = data
   const W = 900
   const H = 600
@@ -10,7 +16,7 @@ export function GoalsTemplate({ data }: { data: GoalsData }): ReactElement {
   const ringColors = ['#e8f4fd', '#cce5ff', '#99ccff', '#66b2ff', '#3399ff']
 
   return (
-    <g>
+    <g ref={svgRef}>
       <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={46} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
@@ -38,21 +44,31 @@ export function GoalsTemplate({ data }: { data: GoalsData }): ReactElement {
       <polygon points={`${cx - 6},${cy - 240} ${cx + 6},${cy - 240} ${cx},${cy - 256}`} fill="#4a90d9" />
 
       {metrics.map((metric, i) => {
+        const elementId = `metric-${i}`
         const angle = -1.2 + (i / Math.max(metrics.length - 1, 1)) * 2.4
         const r = 75 + i * 50
         const labelX = cx + r * Math.cos(angle)
         const labelY = cy + r * Math.sin(angle)
+        const boxW = 104
+        const boxH = 48
+        const boxX = labelX - boxW / 2
+        const boxY = labelY - boxH / 2
+        const visualRect = { x: boxX, y: boxY, width: boxW, height: boxH }
+        const isSelected = selectedIds.has(elementId)
 
         return (
           <g key={`label-${i}`}>
             <line x1={cx} y1={cy} x2={labelX} y2={labelY} stroke="#aaa" strokeWidth={1} strokeDasharray="3 3" opacity={0.5} />
-            <rect x={labelX - 52} y={labelY - 24} width={104} height={48} rx={6} fill="white" stroke="#4a90d9" strokeWidth={1.5} />
-            <text x={labelX} y={labelY - 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill="#333">
-              {metric.label}
-            </text>
-            <text x={labelX} y={labelY + 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#888">
-              {metric.value} / {metric.target}
-            </text>
+            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+              <rect x={boxX} y={boxY} width={boxW} height={boxH} rx={6} fill="white" stroke={isSelected ? '#4a90d9' : '#4a90d9'} strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
+              <text x={labelX} y={labelY - 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill="#333">
+                {metric.label}
+              </text>
+              <text x={labelX} y={labelY + 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#888">
+                {metric.value} / {metric.target}
+              </text>
+              {isSelected && renderHandles(visualRect, elementId)}
+            </g>
           </g>
         )
       })}

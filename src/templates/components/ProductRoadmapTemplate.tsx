@@ -1,9 +1,17 @@
-import type { ReactElement } from 'react'
+import { useRef, type ReactElement } from 'react'
 import type { ProductRoadmapData } from '../types'
+import { useTemplateDragResize } from '../shared/useTemplateDragResize'
+import { useTemplateStore } from '../store'
 
 const PALETTE = ['#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db', '#e91e63', '#00bcd4']
 
 export function ProductRoadmapTemplate({ data }: { data: ProductRoadmapData }): ReactElement {
+  const svgRef = useRef<SVGGElement>(null)
+  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+
   const { title, quarters, lanes, milestones } = data
   const W = 1000
   const H = 600
@@ -20,7 +28,7 @@ export function ProductRoadmapTemplate({ data }: { data: ProductRoadmapData }): 
   const rowHeight = gridHeight / lanes.length
 
   return (
-    <g>
+    <g ref={svgRef}>
       <rect width={W} height={H} fill="white" rx={8} />
 
       {title && (
@@ -79,7 +87,10 @@ export function ProductRoadmapTemplate({ data }: { data: ProductRoadmapData }): 
         const laneIndex = lanes.findIndex(l => l.label === milestone.lane)
         if (quarterIndex < 0 || laneIndex < 0) return null
 
-        const color = PALETTE[mi % PALETTE.length]!
+        const elementId = `milestone-${mi}`
+        const color = tplColors[elementId] ?? PALETTE[mi % PALETTE.length]!
+        const stroke = tplStrokeColors[elementId] || color
+        const isSelected = selectedIds.has(elementId)
         const cellX = gridLeft + quarterIndex * colWidth
         const cellY = gridTop + 40 + laneIndex * rowHeight
         const padding = 12
@@ -87,15 +98,19 @@ export function ProductRoadmapTemplate({ data }: { data: ProductRoadmapData }): 
         const badgeH = 38
         const badgeX = cellX + padding
         const badgeY = cellY + (rowHeight - badgeH) / 2
+        const visualRect = { x: badgeX, y: badgeY, width: badgeW, height: badgeH }
 
         return (
           <g key={`${milestone.quarter}-${milestone.lane}-${milestone.title}`}>
-            <rect x={badgeX} y={badgeY} width={badgeW} height={badgeH} rx={6} fill={color} opacity={0.12} />
-            <rect x={badgeX} y={badgeY} width={4} height={badgeH} fill={color} rx={2} />
-            <rect x={badgeX} y={badgeY} width={badgeW} height={badgeH} rx={6} fill="none" stroke={color} strokeWidth={1} opacity={0.4} />
-            <text x={badgeX + 14} y={badgeY + badgeH / 2 + 4} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill={color}>
-              {milestone.title.length > 22 ? milestone.title.slice(0, 20) + '...' : milestone.title}
-            </text>
+            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+              <rect x={badgeX} y={badgeY} width={badgeW} height={badgeH} rx={6} fill={color} opacity={isSelected ? 0.2 : 0.12} />
+              <rect x={badgeX} y={badgeY} width={4} height={badgeH} fill={color} rx={2} />
+              <rect x={badgeX} y={badgeY} width={badgeW} height={badgeH} rx={6} fill="none" stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 2.5 : 1} opacity={isSelected ? 1 : 0.4} strokeDasharray={isSelected ? '4 2' : undefined} />
+              <text x={badgeX + 14} y={badgeY + badgeH / 2 + 4} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill={color}>
+                {milestone.title.length > 22 ? milestone.title.slice(0, 20) + '...' : milestone.title}
+              </text>
+              {isSelected && renderHandles(visualRect, elementId)}
+            </g>
           </g>
         )
       })}

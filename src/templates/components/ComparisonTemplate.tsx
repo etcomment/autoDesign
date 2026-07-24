@@ -1,5 +1,7 @@
-import type { ReactElement } from 'react'
+import { useRef, type ReactElement } from 'react'
 import type { ComparisonData } from '../types'
+import { useTemplateDragResize } from '../shared/useTemplateDragResize'
+import { useTemplateStore } from '../store'
 
 const LEFT_COLOR = '#2563eb'
 const RIGHT_COLOR = '#dc2626'
@@ -7,6 +9,10 @@ const LEFT_BG = '#eff6ff'
 const RIGHT_BG = '#fef2f2'
 
 export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactElement {
+  const svgRef = useRef<SVGGElement>(null)
+  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+
   const { title, leftTitle, rightTitle, items } = data
   const W = 900
   const H = 600
@@ -25,7 +31,7 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
   const rightColX = labelColX + labelW + dividerW
 
   return (
-    <g>
+    <g ref={svgRef}>
       <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
@@ -48,28 +54,35 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
       </text>
 
       {items.map((item, i) => {
+        const elementId = `item-${i}`
+        const isSelected = selectedIds.has(elementId)
         const rowY = tableY + headerH + i * rowH
         const isEven = i % 2 === 0
+        const visualRect = { x: leftColX, y: rowY, width: totalW, height: rowH }
 
         return (
           <g key={i}>
-            <rect x={leftColX} y={rowY} width={colW} height={rowH} fill={isEven ? LEFT_BG : 'white'} />
-            <rect x={rightColX} y={rowY} width={colW} height={rowH} fill={isEven ? RIGHT_BG : 'white'} />
-            <rect x={labelColX + dividerW / 2} y={rowY} width={labelW} height={rowH} fill={isEven ? '#f8fafc' : '#f1f5f9'} />
+            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+              <rect x={leftColX} y={rowY} width={colW} height={rowH} fill={isEven ? LEFT_BG : 'white'} />
+              <rect x={rightColX} y={rowY} width={colW} height={rowH} fill={isEven ? RIGHT_BG : 'white'} />
+              <rect x={labelColX + dividerW / 2} y={rowY} width={labelW} height={rowH} fill={isEven ? '#f8fafc' : '#f1f5f9'} />
 
-            <text x={leftColX + colW / 2} y={rowY + rowH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={500} fill={LEFT_COLOR}>
-              {item.left}
-            </text>
+              <text x={leftColX + colW / 2} y={rowY + rowH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={500} fill={LEFT_COLOR}>
+                {item.left}
+              </text>
 
-            <text x={rightColX + colW / 2} y={rowY + rowH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={500} fill={RIGHT_COLOR}>
-              {item.right}
-            </text>
+              <text x={rightColX + colW / 2} y={rowY + rowH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={500} fill={RIGHT_COLOR}>
+                {item.right}
+              </text>
 
-            <text x={labelColX + labelW / 2 + dividerW / 2} y={rowY + rowH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#475569">
-              {item.label}
-            </text>
+              <text x={labelColX + labelW / 2 + dividerW / 2} y={rowY + rowH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#475569">
+                {item.label}
+              </text>
 
-            <line x1={leftColX} y1={rowY + rowH} x2={rightColX + colW} y2={rowY + rowH} stroke="#e2e8f0" strokeWidth={1} />
+              <line x1={leftColX} y1={rowY + rowH} x2={rightColX + colW} y2={rowY + rowH} stroke="#e2e8f0" strokeWidth={1} />
+
+              {isSelected && renderHandles(visualRect, elementId)}
+            </g>
           </g>
         )
       })}

@@ -1,11 +1,18 @@
-import type { ReactElement } from 'react'
+import { useRef, type ReactElement } from 'react'
 import type { ManufacturingData } from '../types'
 import { Arrow } from '../shared/primitives'
 import { GearIcon, StarIcon } from '../shared/icons'
+import { useTemplateDragResize } from '../shared/useTemplateDragResize'
+import { useTemplateStore } from '../store'
 
 const PALETTE = ['#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c']
 
 export function ManufacturingTemplate({ data }: { data: ManufacturingData }): ReactElement {
+  const svgRef = useRef<SVGGElement>(null)
+  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const tplColors = useTemplateStore(s => s.templateElementColors)
+
   const { title, stations } = data
   const W = 1000
   const H = 500
@@ -19,7 +26,7 @@ export function ManufacturingTemplate({ data }: { data: ManufacturingData }): Re
   const firstBoxX = (W - totalWidth) / 2
 
   return (
-    <g>
+    <g ref={svgRef}>
       <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
@@ -34,7 +41,9 @@ export function ManufacturingTemplate({ data }: { data: ManufacturingData }): Re
       <circle cx={startX + 10} cy={y + boxH / 2} r={8} fill="#4a90d9" />
 
       {stations.map((station, i) => {
-        const color = PALETTE[i % PALETTE.length]!
+        const elementId = `station-${i}`
+        const color = tplColors[elementId] ?? PALETTE[i % PALETTE.length]!
+        const isSelected = selectedIds.has(elementId)
         const bx = firstBoxX + i * (boxW + gap)
 
         if (station.isQuality) {
@@ -44,41 +53,51 @@ export function ManufacturingTemplate({ data }: { data: ManufacturingData }): Re
           const dy = y + (boxH - diamondH) / 2
           const dmx = dx + diamondW / 2
           const dmy = dy + diamondH / 2
+          const visualRect = { x: dx, y: dy, width: diamondW, height: diamondH }
 
           return (
             <g key={i}>
-              <polygon
-                points={`${dmx},${dy} ${dx + diamondW},${dmy} ${dmx},${dy + diamondH} ${dx},${dmy}`}
-                fill="#fff3e0"
-                stroke="#e67e22"
-                strokeWidth={2}
-              />
-              <text x={dmx} y={dmy - 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="#e67e22">
-                {station.title}
-              </text>
-              {station.subtitle && (
-                <text x={dmx} y={dmy + 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#888">
-                  {station.subtitle}
+              <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+                <polygon
+                  points={`${dmx},${dy} ${dx + diamondW},${dmy} ${dmx},${dy + diamondH} ${dx},${dmy}`}
+                  fill="#fff3e0"
+                  stroke={isSelected ? '#4a90d9' : '#e67e22'}
+                  strokeWidth={isSelected ? 2.5 : 2}
+                  strokeDasharray={isSelected ? '4 2' : undefined}
+                />
+                <text x={dmx} y={dmy - 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="#e67e22">
+                  {station.title}
                 </text>
-              )}
+                {station.subtitle && (
+                  <text x={dmx} y={dmy + 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#888">
+                    {station.subtitle}
+                  </text>
+                )}
+                {isSelected && renderHandles(visualRect, elementId)}
+              </g>
             </g>
           )
         }
 
+        const visualRect = { x: bx, y, width: boxW, height: boxH }
+
         return (
           <g key={i}>
-            <rect x={bx} y={y} width={boxW} height={boxH} rx={8} fill="white" stroke={color} strokeWidth={2} />
-            <g transform={`translate(${bx + boxW / 2 - 12}, ${y + 10})`}>
-              <GearIcon size={24} color={color} />
-            </g>
-            <text x={bx + boxW / 2} y={y + boxH - 18} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill={color}>
-              {station.title.length > 16 ? station.title.slice(0, 14) + '..' : station.title}
-            </text>
-            {station.subtitle && (
-              <text x={bx + boxW / 2} y={y + boxH + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#777">
-                {station.subtitle.length > 20 ? station.subtitle.slice(0, 18) + '..' : station.subtitle}
+            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+              <rect x={bx} y={y} width={boxW} height={boxH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} />
+              <g transform={`translate(${bx + boxW / 2 - 12}, ${y + 10})`}>
+                <GearIcon size={24} color={color} />
+              </g>
+              <text x={bx + boxW / 2} y={y + boxH - 18} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill={color}>
+                {station.title.length > 16 ? station.title.slice(0, 14) + '..' : station.title}
               </text>
-            )}
+              {station.subtitle && (
+                <text x={bx + boxW / 2} y={y + boxH + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#777">
+                  {station.subtitle.length > 20 ? station.subtitle.slice(0, 18) + '..' : station.subtitle}
+                </text>
+              )}
+              {isSelected && renderHandles(visualRect, elementId)}
+            </g>
           </g>
         )
       })}

@@ -1,5 +1,7 @@
-import type { ReactElement } from 'react'
+import { useRef, type ReactElement } from 'react'
 import type { IcebergData } from '../types'
+import { useTemplateDragResize } from '../shared/useTemplateDragResize'
+import { useTemplateStore } from '../store'
 
 const ABOVE_COLOR = '#e3f2fd'
 const BELOW_COLOR = '#0f2b46'
@@ -31,6 +33,12 @@ function buildWaveLine(W: number, waterY: number): string {
 }
 
 export function IcebergTemplate({ data }: { data: IcebergData }): ReactElement {
+  const svgRef = useRef<SVGGElement>(null)
+  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+
   const { title, sections } = data
   const W = 900
   const H = 600
@@ -57,7 +65,7 @@ export function IcebergTemplate({ data }: { data: IcebergData }): ReactElement {
   const waveLine = buildWaveLine(W, waterY)
 
   return (
-    <g>
+    <g ref={svgRef}>
       <rect width={W} height={waterY} fill={ABOVE_COLOR} />
       <rect y={waterY} width={W} height={H - waterY} fill={BELOW_COLOR} />
 
@@ -71,43 +79,59 @@ export function IcebergTemplate({ data }: { data: IcebergData }): ReactElement {
       )}
 
       {aboveSections.map((section, i) => {
+        const si = sections.indexOf(section)
+        const elementId = `section-${si}`
+        const color = tplColors[elementId] ?? SECTION_COLORS[si % SECTION_COLORS.length]!
+        const stroke = tplStrokeColors[elementId] || color
+        const isSelected = selectedIds.has(elementId)
         const y = aboveStartY + i * aboveSlotH
         const baseW = 160 + i * 30
         const x = (W - baseW) / 2
-        const color = SECTION_COLORS[i % SECTION_COLORS.length]!
+        const visualRect = { x, y, width: baseW, height: aboveSectionH }
 
         return (
           <g key={'above-' + i}>
-            <rect x={x} y={y} width={baseW} height={aboveSectionH} rx={6} fill={color} opacity={0.85} />
-            <text x={x + 16} y={y + aboveSectionH / 2 + 5} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
-              {section.title}
-            </text>
-            {section.subtitle && (
-              <text x={x + baseW - 16} y={y + aboveSectionH / 2 + 5} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={11} fill="rgba(255,255,255,0.8)">
-                {section.subtitle}
+            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+              <rect x={x} y={y} width={baseW} height={aboveSectionH} rx={6} fill={color} opacity={0.85} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 2.5 : 0} />
+              <text x={x + 16} y={y + aboveSectionH / 2 + 5} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
+                {section.title}
               </text>
-            )}
+              {section.subtitle && (
+                <text x={x + baseW - 16} y={y + aboveSectionH / 2 + 5} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={11} fill="rgba(255,255,255,0.8)">
+                  {section.subtitle}
+                </text>
+              )}
+              {isSelected && renderHandles(visualRect, elementId)}
+            </g>
           </g>
         )
       })}
 
       {belowSections.map((section, i) => {
+        const si = sections.indexOf(section)
+        const elementId = `section-${si}`
+        const color = tplColors[elementId] ?? SECTION_COLORS[si % SECTION_COLORS.length]!
+        const stroke = tplStrokeColors[elementId] || color
+        const isSelected = selectedIds.has(elementId)
         const y = belowStartY + i * belowSlotH
         const baseW = 340 + i * 50
         const x = (W - baseW) / 2
-        const color = SECTION_COLORS[(i + aboveSections.length) % SECTION_COLORS.length]!
+        const visualRect = { x, y, width: baseW, height: belowSectionH }
 
         return (
           <g key={'below-' + i}>
-            <rect x={x} y={y} width={baseW} height={belowSectionH} rx={6} fill={color} opacity={0.9} />
-            <text x={x + 16} y={y + belowSectionH / 2 + 5} fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
-              {section.title}
-            </text>
-            {section.subtitle && (
-              <text x={x + baseW - 16} y={y + belowSectionH / 2 + 5} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={11} fill="rgba(255,255,255,0.8)">
-                {section.subtitle}
+            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+              <rect x={x} y={y} width={baseW} height={belowSectionH} rx={6} fill={color} opacity={0.9} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 2.5 : 0} />
+              <text x={x + 16} y={y + belowSectionH / 2 + 5} fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
+                {section.title}
               </text>
-            )}
+              {section.subtitle && (
+                <text x={x + baseW - 16} y={y + belowSectionH / 2 + 5} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={11} fill="rgba(255,255,255,0.8)">
+                  {section.subtitle}
+                </text>
+              )}
+              {isSelected && renderHandles(visualRect, elementId)}
+            </g>
           </g>
         )
       })}

@@ -1,11 +1,18 @@
-import type { ReactElement } from 'react'
+import { useRef, type ReactElement } from 'react'
 import type { ProcessData } from '../types'
 import { CurvedPath, CircleBadge } from '../shared/primitives'
 import { StarIcon } from '../shared/icons'
+import { useTemplateDragResize } from '../shared/useTemplateDragResize'
+import { useTemplateStore } from '../store'
 
 const COLORS = ['#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db']
 
 export function ProcessTemplate({ data }: { data: ProcessData }): ReactElement {
+  const svgRef = useRef<SVGGElement>(null)
+  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const tplColors = useTemplateStore(s => s.templateElementColors)
+
   const { title, steps, outcome } = data
   const W = 1000
   const H = 600
@@ -47,22 +54,16 @@ export function ProcessTemplate({ data }: { data: ProcessData }): ReactElement {
   const curvePoints: { x: number; y: number }[] = [startPoint]
 
   if (topPositions.length > 0) {
-    for (const p of topPositions) {
-      curvePoints.push({ x: p.x, y: p.y })
-    }
+    for (const p of topPositions) curvePoints.push({ x: p.x, y: p.y })
     const lastTop = topPositions[topPositions.length - 1]!
     if (bottomPositions.length > 0) {
       const firstBottom = bottomPositions[0]!
       curvePoints.push({ x: lastTop.x + 50, y: lastTop.y })
       curvePoints.push({ x: firstBottom.x + 50, y: (lastTop.y + firstBottom.y) / 2 })
       curvePoints.push({ x: firstBottom.x, y: firstBottom.y - 50 })
-      for (const p of bottomPositions) {
-        curvePoints.push({ x: p.x, y: p.y })
-      }
+      for (const p of bottomPositions) curvePoints.push({ x: p.x, y: p.y })
     }
-    const finalPos = bottomPositions.length > 0
-      ? bottomPositions[bottomPositions.length - 1]!
-      : lastTop
+    const finalPos = bottomPositions.length > 0 ? bottomPositions[bottomPositions.length - 1]! : lastTop
     curvePoints.push({ x: finalPos.x - 50, y: finalPos.y })
     curvePoints.push({ x: outcomeX - 50, y: (finalPos.y + outcomeY) / 2 })
   } else {
@@ -72,7 +73,7 @@ export function ProcessTemplate({ data }: { data: ProcessData }): ReactElement {
   curvePoints.push({ x: outcomeX, y: outcomeY })
 
   return (
-    <g>
+    <g ref={svgRef}>
       <rect width={W} height={H} fill="white" rx={8} />
 
       {title && (
@@ -87,24 +88,42 @@ export function ProcessTemplate({ data }: { data: ProcessData }): ReactElement {
         START
       </text>
 
-      {allPositions.map((pos, i) => {
+      {allPositions.map((pos) => {
         const step = steps[pos.stepIndex]!
-        const color = COLORS[i % COLORS.length]!
-        const labelOffsetY = topPositions.some(tp => tp.stepIndex === pos.stepIndex) ? 28 : -28
+        const elementId = `step-${pos.stepIndex}`
+        const defaultColor = COLORS[pos.stepIndex % COLORS.length]!
+        const color = tplColors[elementId] ?? defaultColor
+        
+        const isSelected = selectedIds.has(elementId)
+        const isTop = topPositions.some(tp => tp.stepIndex === pos.stepIndex)
+        const labelOffsetY = isTop ? 28 : -28
+        const visualRect = isTop
+          ? { x: pos.x - 55, y: pos.y - 20, width: 110, height: 64 }
+          : { x: pos.x - 55, y: pos.y - 50, width: 110, height: 64 }
 
         return (
           <g key={pos.stepIndex}>
-            <CircleBadge cx={pos.x} cy={pos.y} r={16} fill={color} label={String(step.number)} fontSize={12} />
+            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+              <CircleBadge cx={pos.x} cy={pos.y} r={16} fill={color} label={String(step.number)} fontSize={12} />
+              {isSelected && (
+                <>
+                  <circle cx={pos.x} cy={pos.y} r={18} fill="none" stroke="#4a90d9" strokeWidth={2.5} strokeDasharray="4 2" />
+                  <rect x={visualRect.x} y={visualRect.y} width={visualRect.width} height={visualRect.height} rx={4} fill="none" stroke="#4a90d9" strokeWidth={1} strokeDasharray="4 2" opacity={0.5} />
+                </>
+              )}
 
-            <text x={pos.x} y={pos.y + labelOffsetY} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="#333">
-              {step.title}
-            </text>
-
-            {step.subtitle && (
-              <text x={pos.x} y={pos.y + labelOffsetY + 15} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#777">
-                {step.subtitle.length > 24 ? step.subtitle.slice(0, 22) + '...' : step.subtitle}
+              <text x={pos.x} y={pos.y + labelOffsetY} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="#333">
+                {step.title}
               </text>
-            )}
+
+              {step.subtitle && (
+                <text x={pos.x} y={pos.y + labelOffsetY + 15} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#777">
+                  {step.subtitle.length > 24 ? step.subtitle.slice(0, 22) + '...' : step.subtitle}
+                </text>
+              )}
+
+              {isSelected && renderHandles(visualRect, elementId)}
+            </g>
           </g>
         )
       })}

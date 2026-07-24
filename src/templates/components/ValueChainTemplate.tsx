@@ -1,11 +1,18 @@
-import type { ReactElement } from 'react'
+import { useRef, type ReactElement } from 'react'
 import type { ValueChainData } from '../types'
 import { Arrow } from '../shared/primitives'
+import { useTemplateDragResize } from '../shared/useTemplateDragResize'
+import { useTemplateStore } from '../store'
 
 const PALETTE = ['#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c']
 const SUPPORT_PALETTE = ['#8eacbb', '#9db5c4', '#acbdcb', '#bbc6d2', '#cad0d9']
 
 export function ValueChainTemplate({ data }: { data: ValueChainData }): ReactElement {
+  const svgRef = useRef<SVGGElement>(null)
+  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const tplColors = useTemplateStore(s => s.templateElementColors)
+
   const { title, primary, support } = data
   const W = 1000
   const H = 580
@@ -20,7 +27,7 @@ export function ValueChainTemplate({ data }: { data: ValueChainData }): ReactEle
   const supportY = 320
 
   return (
-    <g>
+    <g ref={svgRef}>
       <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
@@ -33,26 +40,34 @@ export function ValueChainTemplate({ data }: { data: ValueChainData }): ReactEle
       </text>
 
       {primary.map((act, i) => {
-        const color = PALETTE[i % PALETTE.length]!
+        const elementId = `primary-${i}`
+        const color = tplColors[elementId] ?? PALETTE[i % PALETTE.length]!
+        const isSelected = selectedIds.has(elementId)
         const bx = startX + i * primaryW
         const aw = primaryW - 4
         const ah = primaryH
+        const visualRect = { x: bx, y: primaryY, width: primaryW, height: primaryH }
 
         return (
           <g key={`p-${i}`}>
-            <path
-              d={`M ${bx + 2} ${primaryY} L ${bx + aw - chevronArrow} ${primaryY} L ${bx + aw} ${primaryY + ah / 2} L ${bx + aw - chevronArrow} ${primaryY + ah} L ${bx + 2} ${primaryY + ah} L ${bx + chevronArrow + 2} ${primaryY + ah / 2} Z`}
-              fill={color}
-              opacity={0.85}
-            />
-            <text x={bx + primaryW / 2} y={primaryY + ah / 2 - 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
-              {act.title}
-            </text>
-            {act.subtitle && (
-              <text x={bx + primaryW / 2} y={primaryY + ah / 2 + 14} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="rgba(255,255,255,0.8)">
-                {act.subtitle.length > 28 ? act.subtitle.slice(0, 26) + '..' : act.subtitle}
+            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+              <path
+                d={`M ${bx + 2} ${primaryY} L ${bx + aw - chevronArrow} ${primaryY} L ${bx + aw} ${primaryY + ah / 2} L ${bx + aw - chevronArrow} ${primaryY + ah} L ${bx + 2} ${primaryY + ah} L ${bx + chevronArrow + 2} ${primaryY + ah / 2} Z`}
+                fill={color}
+                opacity={isSelected ? 1 : 0.85}
+                stroke={isSelected ? '#4a90d9' : undefined}
+                strokeWidth={isSelected ? 2.5 : undefined}
+              />
+              <text x={bx + primaryW / 2} y={primaryY + ah / 2 - 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
+                {act.title}
               </text>
-            )}
+              {act.subtitle && (
+                <text x={bx + primaryW / 2} y={primaryY + ah / 2 + 14} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="rgba(255,255,255,0.8)">
+                  {act.subtitle.length > 28 ? act.subtitle.slice(0, 26) + '..' : act.subtitle}
+                </text>
+              )}
+              {isSelected && renderHandles(visualRect, elementId)}
+            </g>
           </g>
         )
       })}
@@ -62,21 +77,27 @@ export function ValueChainTemplate({ data }: { data: ValueChainData }): ReactEle
       </text>
 
       {support.map((act, i) => {
-        const color = SUPPORT_PALETTE[i % SUPPORT_PALETTE.length]!
+        const elementId = `support-${i}`
+        const color = tplColors[elementId] ?? SUPPORT_PALETTE[i % SUPPORT_PALETTE.length]!
+        const isSelected = selectedIds.has(elementId)
         const bx = startX + i * supportW
         const aw = supportW - 4
+        const visualRect = { x: bx + 2, y: supportY, width: aw, height: supportH }
 
         return (
           <g key={`s-${i}`}>
-            <rect x={bx + 2} y={supportY} width={aw} height={supportH} rx={6} fill={color} opacity={0.75} stroke={color} strokeWidth={1} />
-            <text x={bx + supportW / 2} y={supportY + supportH / 2 - 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
-              {act.title}
-            </text>
-            {act.subtitle && (
-              <text x={bx + supportW / 2} y={supportY + supportH / 2 + 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={8} fill="rgba(255,255,255,0.75)">
-                {act.subtitle.length > 30 ? act.subtitle.slice(0, 28) + '..' : act.subtitle}
+            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+              <rect x={bx + 2} y={supportY} width={aw} height={supportH} rx={6} fill={color} opacity={isSelected ? 0.9 : 0.75} stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 1} strokeDasharray={isSelected ? '4 2' : undefined} />
+              <text x={bx + supportW / 2} y={supportY + supportH / 2 - 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
+                {act.title}
               </text>
-            )}
+              {act.subtitle && (
+                <text x={bx + supportW / 2} y={supportY + supportH / 2 + 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={8} fill="rgba(255,255,255,0.75)">
+                  {act.subtitle.length > 30 ? act.subtitle.slice(0, 28) + '..' : act.subtitle}
+                </text>
+              )}
+              {isSelected && renderHandles(visualRect, elementId)}
+            </g>
           </g>
         )
       })}

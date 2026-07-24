@@ -1,5 +1,7 @@
-import type { ReactElement } from 'react'
+import { useRef, type ReactElement } from 'react'
 import type { DecisionTreeData } from '../types'
+import { useTemplateDragResize } from '../shared/useTemplateDragResize'
+import { useTemplateStore } from '../store'
 
 interface NodePosition {
   x: number
@@ -10,6 +12,10 @@ interface NodePosition {
 }
 
 export function DecisionTreeTemplate({ data }: { data: DecisionTreeData }): ReactElement {
+  const svgRef = useRef<SVGGElement>(null)
+  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+
   const { title, rootQuestion, branches } = data
   const W = 900
   const H = 600
@@ -75,7 +81,7 @@ export function DecisionTreeTemplate({ data }: { data: DecisionTreeData }): Reac
   }
 
   return (
-    <g>
+    <g ref={svgRef}>
       <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={36} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
@@ -103,24 +109,30 @@ export function DecisionTreeTemplate({ data }: { data: DecisionTreeData }): Reac
       ))}
 
       {nodes.map((node, i) => {
+        const elementId = `node-${i}`
+        const isSelected = selectedIds.has(elementId)
+        const visualRect = { x: node.x, y: node.y, width: nodeW, height: nodeH }
         const isRoot = i === 0
         const isLeaf = node.outcome !== undefined
         const fill = isRoot ? '#1a1a2e' : isLeaf ? '#f0f4ff' : '#f8f9fa'
         const textFill = isRoot ? 'white' : isLeaf ? '#1a56db' : '#333'
-        const stroke = isRoot ? '#1a1a2e' : isLeaf ? '#4a90d9' : '#ccc'
+        const stroke = isSelected ? '#4a90d9' : isRoot ? '#1a1a2e' : isLeaf ? '#4a90d9' : '#ccc'
         const rx = isLeaf ? 4 : 8
 
         return (
           <g key={`n-${i}`}>
-            <rect x={node.x} y={node.y} width={nodeW} height={nodeH} rx={rx} fill={fill} stroke={stroke} strokeWidth={1.5} />
-            <text x={node.x + nodeW / 2} y={node.y + nodeH / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill={textFill}>
-              {node.label.length > 22 ? node.label.slice(0, 20) + '..' : node.label}
-            </text>
-            {node.outcome && (
-              <text x={node.x + nodeW / 2} y={node.y + nodeH + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill="#2ecc71">
-                {node.outcome}
+            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+              <rect x={node.x} y={node.y} width={nodeW} height={nodeH} rx={rx} fill={fill} stroke={stroke} strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
+              <text x={node.x + nodeW / 2} y={node.y + nodeH / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill={textFill}>
+                {node.label.length > 22 ? node.label.slice(0, 20) + '..' : node.label}
               </text>
-            )}
+              {node.outcome && (
+                <text x={node.x + nodeW / 2} y={node.y + nodeH + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill="#2ecc71">
+                  {node.outcome}
+                </text>
+              )}
+              {isSelected && renderHandles(visualRect, elementId)}
+            </g>
           </g>
         )
       })}

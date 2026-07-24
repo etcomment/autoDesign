@@ -1,10 +1,17 @@
-import type { ReactElement } from 'react'
+import { useRef, type ReactElement } from 'react'
 import type { BusinessData } from '../types'
 import { CircleBadge } from '../shared/primitives'
+import { useTemplateDragResize } from '../shared/useTemplateDragResize'
+import { useTemplateStore } from '../store'
 
 const PALETTE = ['#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c']
 
 export function BusinessTemplate({ data }: { data: BusinessData }): ReactElement {
+  const svgRef = useRef<SVGGElement>(null)
+  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const tplColors = useTemplateStore(s => s.templateElementColors)
+
   const { title, centerLabel, nodes } = data
   const W = 900
   const H = 600
@@ -17,7 +24,7 @@ export function BusinessTemplate({ data }: { data: BusinessData }): ReactElement
   const count = Math.min(nodes.length, 6)
 
   return (
-    <g>
+    <g ref={svgRef}>
       <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
@@ -31,12 +38,15 @@ export function BusinessTemplate({ data }: { data: BusinessData }): ReactElement
       </text>
 
       {nodes.slice(0, count).map((node, i) => {
+        const elementId = `node-${i}`
         const angle = (i / count) * 2 * Math.PI - Math.PI / 2
         const nx = cx + orbitR * Math.cos(angle)
         const ny = cy + orbitR * Math.sin(angle)
-        const color = PALETTE[i % PALETTE.length]!
+        const color = tplColors[elementId] ?? PALETTE[i % PALETTE.length]!
+        const isSelected = selectedIds.has(elementId)
         const boxX = nx - nodeW / 2
         const boxY = ny - nodeH / 2
+        const visualRect = { x: boxX, y: boxY, width: nodeW, height: nodeH }
 
         const dx = nx - cx
         const dy = ny - cy
@@ -54,17 +64,20 @@ export function BusinessTemplate({ data }: { data: BusinessData }): ReactElement
           <g key={i}>
             <line x1={edgeX} y1={edgeY} x2={nodeEdgeX} y2={nodeEdgeY} stroke={color} strokeWidth={2} opacity={0.5} />
 
-            <rect x={boxX} y={boxY} width={nodeW} height={nodeH} rx={8} fill="white" stroke={color} strokeWidth={2} />
-            <CircleBadge cx={boxX + 20} cy={boxY + nodeH / 2} r={12} fill={color} label={String(i + 1)} fontSize={10} />
+            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+              <rect x={boxX} y={boxY} width={nodeW} height={nodeH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} />
+              <CircleBadge cx={boxX + 20} cy={boxY + nodeH / 2} r={12} fill={color} label={String(i + 1)} fontSize={10} />
 
-            <text x={boxX + 42} y={boxY + nodeH / 2 - 6} fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="#333">
-              {node.title.length > 22 ? node.title.slice(0, 20) + '...' : node.title}
-            </text>
-            {node.subtitle && (
-              <text x={boxX + 42} y={boxY + nodeH / 2 + 10} fontFamily="Arial, sans-serif" fontSize={9} fill="#777">
-                {node.subtitle.length > 24 ? node.subtitle.slice(0, 22) + '...' : node.subtitle}
+              <text x={boxX + 42} y={boxY + nodeH / 2 - 6} fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="#333">
+                {node.title.length > 22 ? node.title.slice(0, 20) + '...' : node.title}
               </text>
-            )}
+              {node.subtitle && (
+                <text x={boxX + 42} y={boxY + nodeH / 2 + 10} fontFamily="Arial, sans-serif" fontSize={9} fill="#777">
+                  {node.subtitle.length > 24 ? node.subtitle.slice(0, 22) + '...' : node.subtitle}
+                </text>
+              )}
+              {isSelected && renderHandles(visualRect, elementId)}
+            </g>
           </g>
         )
       })}
