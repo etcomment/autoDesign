@@ -155,7 +155,7 @@ export function parseTemplateDsl(dsl: string): TemplateData | null {
   }
 
   if (result) {
-    (result as Record<string, unknown>).type = header.type
+    (result as unknown as Record<string, unknown>).type = header.type
   }
   return result
 }
