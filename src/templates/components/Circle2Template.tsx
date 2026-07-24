@@ -25,7 +25,8 @@ function segmentWithArrowPath(
     x: cx + (outerR + arrowSize) * cos(endAngle),
     y: cy + (outerR + arrowSize) * sin(endAngle),
   }
-  const arrowBaseAngle = endAngle - 0.15
+  const arrowBaseOffset = 0.22
+  const arrowBaseAngle = endAngle - arrowBaseOffset
   const arrowBaseOuter = {
     x: cx + outerR * cos(arrowBaseAngle),
     y: cy + outerR * sin(arrowBaseAngle),
@@ -57,10 +58,10 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
   const H = 600
   const cx = W / 2
   const cy = H / 2 + 20
-  const innerR = 70
-  const outerR = 160
-  const arrowSize = 25
-  const labelR = outerR + arrowSize + 50
+  const innerR = 75
+  const outerR = 155
+  const arrowSize = 35
+  const labelR = outerR + arrowSize + 55
 
   const segments = data.segments
   const n = segments.length
@@ -75,7 +76,7 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
     )
 
   const segmentAngle = (Math.PI * 2) / n
-  const gap = 0.12
+  const gap = 0.08
 
   return (
     <g ref={svgRef}>
@@ -102,8 +103,8 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
         const midR = innerR + (outerR - innerR) / 2
         const iconX = cx + midR * Math.cos(midAngle)
         const iconY = cy + midR * Math.sin(midAngle)
-        const numberX = cx + (outerR - 25) * Math.cos(midAngle)
-        const numberY = cy + (outerR - 25) * Math.sin(midAngle)
+        const numberX = cx + (outerR - 22) * Math.cos(midAngle)
+        const numberY = cy + (outerR - 22) * Math.sin(midAngle)
 
         const labelX = cx + labelR * Math.cos(midAngle)
         const labelY = cy + labelR * Math.sin(midAngle)
