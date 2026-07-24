@@ -241,7 +241,8 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     borderRight: '1px solid #ddd',
     flexShrink: 0,
-    overflow: 'hidden',
+    overflowY: 'auto',
+    overflowX: 'hidden',
     position: 'relative',
   },
   workspace: {
