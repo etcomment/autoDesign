@@ -3,8 +3,9 @@ import type { BrainData } from '../types'
 import { CurvedPath } from '../shared/primitives'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = ['#4a90d9', '#2ecc71', '#e67e22', '#e74c3c']
+const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#e74c3c']
 
 export function BrainTemplate({ data }: { data: BrainData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)

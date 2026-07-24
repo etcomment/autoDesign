@@ -4,8 +4,9 @@ import { CurvedPath, CircleBadge } from '../shared/primitives'
 import { StarIcon } from '../shared/icons'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const COLORS = ['#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db']
+const COLORS = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db']
 
 export function ProcessTemplate({ data }: { data: ProcessData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)

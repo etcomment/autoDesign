@@ -2,8 +2,9 @@ import { useRef, type ReactElement } from 'react'
 import type { TableData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = ['#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db']
+const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db']
 
 export function TableTemplate({ data }: { data: TableData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)

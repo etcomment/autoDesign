@@ -3,8 +3,9 @@ import type { RoadmapData } from '../types'
 import { CircleBadge, ChevronArrow } from '../shared/primitives'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = ['#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db']
+const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#3498db']
 const W = 1000
 const H = 600
 
@@ -27,7 +28,12 @@ interface LayoutMilestone {
   isAbove: boolean
 }
 
-function getRect(elementId: string, positions: Record<string, Rect>, layoutMap: Map<string, LayoutMilestone>): Rect {
+function getRect(
+  elementId: string,
+  positions: Record<string, Rect>,
+  layoutMap: Map<string, LayoutMilestone>,
+  greyDefaultPositions: Map<string, Rect>
+): Rect {
   const stored = positions[elementId]
   const layout = layoutMap.get(elementId)
   if (layout) {
@@ -39,6 +45,11 @@ function getRect(elementId: string, positions: Record<string, Rect>, layoutMap: 
       return { x: stored.x, y: stored.y, width: stored.width || layout.rectW, height: Math.max(stored.height || layout.rectH, layout.rectH) }
     }
     return { x: layout.rectX, y: layout.rectY, width: layout.rectW, height: layout.rectH }
+  }
+  const greyDefault = greyDefaultPositions.get(elementId)
+  if (greyDefault) {
+    if (stored) return { x: stored.x, y: stored.y, width: stored.width || greyDefault.width, height: stored.height || greyDefault.height }
+    return greyDefault
   }
   if (stored) return { ...stored, width: stored.width || 20, height: stored.height || 20 }
   return { x: 0, y: 0, width: 0, height: 0 }
@@ -88,19 +99,43 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
     return map
   }, [milestones])
 
+  const greyDefaultPositions = useMemo(() => {
+    const map = new Map<string, Rect>()
+    map.set('timeline-line', { x: marginX, y: timelineY, width: W - marginX * 2, height: 2 })
+    map.set('start-label', { x: marginX - 56, y: timelineY - 34, width: 40, height: 16 })
+    map.set('finish-label', { x: W - marginX + 16, y: timelineY - 34, width: 40, height: 16 })
+    map.set('start-circle', { x: marginX - 6, y: timelineY - 6, width: 12, height: 12 })
+    map.set('finish-circle', { x: W - marginX - 6, y: timelineY - 6, width: 12, height: 12 })
+    for (let i = 0; i < milestones.length - 1; i++) {
+      const fromLayout = layoutMap.get(`milestone-${i}`)
+      const toLayout = layoutMap.get(`milestone-${i + 1}`)
+      if (fromLayout && toLayout) {
+        const spacing = toLayout.centerX - fromLayout.centerX
+        map.set(`chevron-${i}`, {
+          x: fromLayout.centerX + circleR + 3,
+          y: timelineY - 6,
+          width: Math.max(spacing - circleR * 2 - 6, 10),
+          height: 12,
+        })
+      }
+    }
+    return map
+  }, [milestones.length, layoutMap])
+
   useEffect(() => {
-    const ids = [...layoutMap.keys()]
+    const ids = [...layoutMap.keys(), ...greyDefaultPositions.keys()]
     for (const id of ids) {
       if (templateElementPositions[id]) continue
-      const rect = getRect(id, templateElementPositions, layoutMap)
+      const rect = getRect(id, templateElementPositions, layoutMap, greyDefaultPositions)
       moveTemplateElement(id, { x: rect.x, y: rect.y })
       resizeTemplateElement(id, { width: rect.width, height: rect.height })
     }
-  }, [layoutMap, templateElementPositions, moveTemplateElement, resizeTemplateElement])
+  }, [layoutMap, greyDefaultPositions, templateElementPositions, moveTemplateElement, resizeTemplateElement])
 
   const elementRects = new Map<string, Rect>()
-  for (const id of layoutMap.keys()) {
-    elementRects.set(id, getRect(id, templateElementPositions, layoutMap))
+  const allIds = [...layoutMap.keys(), ...greyDefaultPositions.keys()]
+  for (const id of allIds) {
+    elementRects.set(id, getRect(id, templateElementPositions, layoutMap, greyDefaultPositions))
   }
 
   return (
@@ -113,15 +148,76 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         </text>
       )}
 
-      <line x1={marginX} y1={timelineY} x2={W - marginX} y2={timelineY} stroke="#bbb" strokeWidth={2} />
-      <text x={marginX - 16} y={timelineY - 18} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#888">{startLabel}</text>
-      <text x={W - marginX + 16} y={timelineY - 18} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#888">{finishLabel}</text>
-      <circle cx={marginX} cy={timelineY} r={6} fill="#bbb" />
-      <circle cx={W - marginX} cy={timelineY} r={6} fill="#bbb" />
+      {(() => {
+        const r = elementRects.get('timeline-line')!
+        const isSel = selectedIds.has('timeline-line')
+        const stroke = tplStrokeColors['timeline-line'] ?? '#bbb'
+        return (
+          <g onMouseDown={e => startDrag(e, 'timeline-line', r)} style={{ cursor: 'pointer' }}>
+            <line x1={r.x} y1={r.y} x2={r.x + r.width} y2={r.y} stroke={stroke} strokeWidth={2} />
+            {isSel && renderHandles(r, 'timeline-line')}
+          </g>
+        )
+      })()}
+
+      {(() => {
+        const r = elementRects.get('start-label')!
+        const isSel = selectedIds.has('start-label')
+        const fill = tplColors['start-label'] ?? '#888'
+        return (
+          <g onMouseDown={e => startDrag(e, 'start-label', r)} style={{ cursor: 'pointer' }}>
+            <text x={r.x + r.width} y={r.y + r.height} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill={fill}>{startLabel}</text>
+            {isSel && renderHandles(r, 'start-label')}
+          </g>
+        )
+      })()}
+
+      {(() => {
+        const r = elementRects.get('finish-label')!
+        const isSel = selectedIds.has('finish-label')
+        const fill = tplColors['finish-label'] ?? '#888'
+        return (
+          <g onMouseDown={e => startDrag(e, 'finish-label', r)} style={{ cursor: 'pointer' }}>
+            <text x={r.x} y={r.y + r.height} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill={fill}>{finishLabel}</text>
+            {isSel && renderHandles(r, 'finish-label')}
+          </g>
+        )
+      })()}
+
+      {(() => {
+        const r = elementRects.get('start-circle')!
+        const isSel = selectedIds.has('start-circle')
+        const fill = tplColors['start-circle'] ?? '#bbb'
+        const cx = r.x + r.width / 2
+        const cy = r.y + r.height / 2
+        const radius = Math.max(1, Math.min(r.width, r.height) / 2)
+        return (
+          <g onMouseDown={e => startDrag(e, 'start-circle', r)} style={{ cursor: 'pointer' }}>
+            <circle cx={cx} cy={cy} r={radius} fill={fill} />
+            {isSel && renderHandles(r, 'start-circle')}
+          </g>
+        )
+      })()}
+
+      {(() => {
+        const r = elementRects.get('finish-circle')!
+        const isSel = selectedIds.has('finish-circle')
+        const fill = tplColors['finish-circle'] ?? '#bbb'
+        const cx = r.x + r.width / 2
+        const cy = r.y + r.height / 2
+        const radius = Math.max(1, Math.min(r.width, r.height) / 2)
+        return (
+          <g onMouseDown={e => startDrag(e, 'finish-circle', r)} style={{ cursor: 'pointer' }}>
+            <circle cx={cx} cy={cy} r={radius} fill={fill} />
+            {isSel && renderHandles(r, 'finish-circle')}
+          </g>
+        )
+      })()}
 
       {milestones.map((milestone, index) => {
         const elementId = `milestone-${index}`
         const circleId = `circle-${index}`
+        const chevronId = `chevron-${index}`
         const layout = layoutMap.get(elementId)
         if (!layout) return null
         const color = tplColors[elementId] ?? milestone.style?.fill ?? PALETTE[index % PALETTE.length]!
@@ -140,8 +236,6 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const isAbove = index % 2 === 0
         const lineY1 = timelineY
         const lineY2 = isAbove ? rect.y + rect.height : rect.y
-        const availableW = W - marginX * 2
-        const milestoneSpacing = milestones.length > 1 ? availableW / (milestones.length - 1) : availableW / 2
         const titleLineArray = milestone.title.split('\n').filter(Boolean)
         const styleFontSize = milestone.style?.fontSize ?? 12
         const styleFontWeight = milestone.style?.fontWeight ?? 700
@@ -177,9 +271,18 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
               {isCircleSelected && renderHandles(circleRect, circleId)}
             </g>
 
-            {index < milestones.length - 1 && (
-              <ChevronArrow x={layout.centerX + circleR + 3} y={timelineY - 6} width={milestoneSpacing - circleR * 2 - 6} height={12} fill="#ddd" />
-            )}
+            {index < milestones.length - 1 && (() => {
+              const chevronRect = elementRects.get(chevronId)
+              if (!chevronRect) return null
+              const isChevronSel = selectedIds.has(chevronId)
+              const chevronFill = tplColors[chevronId] ?? '#ddd'
+              return (
+                <g onMouseDown={e => startDrag(e, chevronId, chevronRect)} style={{ cursor: 'pointer' }}>
+                  <ChevronArrow x={chevronRect.x} y={chevronRect.y} width={chevronRect.width} height={chevronRect.height} fill={chevronFill} />
+                  {isChevronSel && renderHandles(chevronRect, chevronId)}
+                </g>
+              )
+            })()}
           </g>
         )
       })}

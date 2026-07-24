@@ -95,8 +95,10 @@ export function TemplatePanel() {
                 onClick={() => handleCopyIcon(name)}
                 title={name}
               >
-                <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" style={{ display: 'block', overflow: 'visible' }}>
-                  <Icon size={24} color="#555" />
+                <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" style={{ display: 'block', border: '1px solid #eee', borderRadius: 3, background: 'white' }}>
+                  <g stroke="#333" strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <Icon size={24} color="currentColor" />
+                  </g>
                 </svg>
                 <div style={styles.iconLabel}>{name}</div>
               </div>

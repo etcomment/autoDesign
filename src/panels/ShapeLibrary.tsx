@@ -49,7 +49,7 @@ export function ShapeLibrary() {
 }
 
 function ShapeIcon({ type }: { readonly type: ShapeType }) {
-  const size = 40
+  const size = 32
   const half = size / 2
   switch (type) {
     case 'rectangle':
@@ -119,36 +119,35 @@ function ShapeIcon({ type }: { readonly type: ShapeType }) {
 
 const styles: Record<string, React.CSSProperties> = {
   panel: {
-    width: 200,
     background: '#ffffff',
     borderRight: '1px solid #ddd',
-    padding: 12,
+    padding: 8,
     overflowY: 'auto',
   },
   title: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 600,
-    margin: '0 0 12px 0',
+    margin: '0 0 8px 0',
     color: '#333',
   },
   grid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: 8,
+    gap: 6,
   },
   shapeButton: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 4,
-    padding: 8,
+    gap: 2,
+    padding: 6,
     border: '1px solid #e0e0e0',
     borderRadius: 6,
     background: '#fafafa',
     cursor: 'grab',
   },
   label: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#666',
   },
 }

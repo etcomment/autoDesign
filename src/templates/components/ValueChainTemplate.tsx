@@ -3,8 +3,9 @@ import type { ValueChainData } from '../types'
 import { Arrow } from '../shared/primitives'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = ['#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c']
+const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c']
 const SUPPORT_PALETTE = ['#8eacbb', '#9db5c4', '#acbdcb', '#bbc6d2', '#cad0d9']
 
 export function ValueChainTemplate({ data }: { data: ValueChainData }): ReactElement {

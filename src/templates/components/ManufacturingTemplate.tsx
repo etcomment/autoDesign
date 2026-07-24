@@ -4,8 +4,9 @@ import { Arrow } from '../shared/primitives'
 import { GearIcon, StarIcon } from '../shared/icons'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = ['#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c']
+const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c']
 
 export function ManufacturingTemplate({ data }: { data: ManufacturingData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)

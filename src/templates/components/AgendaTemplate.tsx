@@ -2,8 +2,9 @@ import { useRef, type ReactElement } from 'react'
 import type { AgendaData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = ['#4a90d9', '#e91e63', '#4caf50', '#ff9800', '#9c27b0', '#00bcd4', '#607d8b', '#795548']
+const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50', '#ff9800', '#9c27b0', '#00bcd4', '#607d8b', '#795548']
 
 export function AgendaTemplate({ data }: { data: AgendaData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)

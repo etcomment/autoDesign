@@ -2,8 +2,9 @@ import { useRef, type ReactElement } from 'react'
 import type { ProductRoadmapData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = ['#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db', '#e91e63', '#00bcd4']
+const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db', '#e91e63', '#00bcd4']
 
 export function ProductRoadmapTemplate({ data }: { data: ProductRoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)

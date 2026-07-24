@@ -1,6 +1,8 @@
 import { useTemplateStore } from '../store'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
 const PRESET_COLORS = [
+  ...MIGSO_PALETTE,
   '#ffffff', '#f44336', '#e91e63', '#9c27b0', '#673ab7',
   '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688',
   '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107',
@@ -18,6 +20,7 @@ function elementLabel(elementId: string): string {
     level: 'Level', section: 'Section', metric: 'Metric', row: 'Row',
     item: 'Item', node: 'Node', station: 'Station', branch: 'Branch',
     primary: 'Activity', support: 'Support',
+    timeline: 'Timeline', start: 'Start', finish: 'Finish', chevron: 'Chevron',
   }
   return `${labels[prefix] ?? prefix}: ${name}`
 }
@@ -38,6 +41,10 @@ const collectionKeys: Record<string, string> = {
   station: 'stations',
   primary: 'primary',
   support: 'support',
+  timeline: 'timeline',
+  start: 'start',
+  finish: 'finish',
+  chevron: 'chevron',
 }
 
 function updateElementField(
