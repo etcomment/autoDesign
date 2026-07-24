@@ -5,7 +5,7 @@ import { useTemplateStore } from '../store'
 
 const PALETTE = ['#2D2C59', '#3768D6', '#FF5338']
 
-function segmentArrowPath(
+function ringArcPath(
   cx: number,
   cy: number,
   innerR: number,
@@ -16,56 +16,60 @@ function segmentArrowPath(
   const cos = Math.cos
   const sin = Math.sin
 
-  // Chevron arrow geometry matching page55-055.png:
-  // - Body is an arc ring from startAngle to baseAngle (where the arrow head begins).
-  // - At baseAngle, the arrow head flares BOTH outward (to outerR + 25) and inward (to innerR - 18).
-  // - The arrow tip is at endAngle, centered on the middle radius midR = (innerR + outerR) / 2.
-  
-  const midR = (innerR + outerR) / 2
-  const headSpan = 0.25 // angular span of arrow head
-  const baseAngle = endAngle - headSpan
-
-  const outerFlareR = outerR + 25
-  const innerFlareR = innerR - 18
-
-  // 1. Straight radial tail at startAngle (from innerR to outerR)
   const xStartOuter = cx + outerR * cos(startAngle)
   const yStartOuter = cy + outerR * sin(startAngle)
+
+  const xEndOuter = cx + outerR * cos(endAngle)
+  const yEndOuter = cy + outerR * sin(endAngle)
+
+  const xEndInner = cx + innerR * cos(endAngle)
+  const yEndInner = cy + innerR * sin(endAngle)
 
   const xStartInner = cx + innerR * cos(startAngle)
   const yStartInner = cy + innerR * sin(startAngle)
 
-  // 2. Main outer circular arc from startAngle to baseAngle
-  const xBaseOuter = cx + outerR * cos(baseAngle)
-  const yBaseOuter = cy + outerR * sin(baseAngle)
-
-  // 3. Arrowhead outer wing point (flared outward)
-  const xWingOuter = cx + outerFlareR * cos(baseAngle)
-  const yWingOuter = cy + outerFlareR * sin(baseAngle)
-
-  // 4. Arrow tip pointing forward at endAngle centered on midR
-  const xTip = cx + midR * cos(endAngle)
-  const yTip = cy + midR * sin(endAngle)
-
-  // 5. Arrowhead inner wing point (flared inward)
-  const xWingInner = cx + innerFlareR * cos(baseAngle)
-  const yWingInner = cy + innerFlareR * sin(baseAngle)
-
-  // 6. Body inner base point at baseAngle on innerR
-  const xBaseInner = cx + innerR * cos(baseAngle)
-  const yBaseInner = cy + innerR * sin(baseAngle)
-
-  const largeArcOuter = baseAngle - startAngle > Math.PI ? 1 : 0
-  const largeArcInner = baseAngle - startAngle > Math.PI ? 1 : 0
+  const largeArc = endAngle - startAngle > Math.PI ? 1 : 0
 
   return [
     `M ${xStartOuter.toFixed(1)} ${yStartOuter.toFixed(1)}`,
-    `A ${outerR} ${outerR} 0 ${largeArcOuter} 1 ${xBaseOuter.toFixed(1)} ${yBaseOuter.toFixed(1)}`,
-    `L ${xWingOuter.toFixed(1)} ${yWingOuter.toFixed(1)}`,
+    `A ${outerR} ${outerR} 0 ${largeArc} 1 ${xEndOuter.toFixed(1)} ${yEndOuter.toFixed(1)}`,
+    `L ${xEndInner.toFixed(1)} ${yEndInner.toFixed(1)}`,
+    `A ${innerR} ${innerR} 0 ${largeArc} 0 ${xStartInner.toFixed(1)} ${yStartInner.toFixed(1)}`,
+    `Z`,
+  ].join(' ')
+}
+
+function arrowheadPath(
+  cx: number,
+  cy: number,
+  innerR: number,
+  outerR: number,
+  baseAngle: number,
+  tipAngle: number,
+): string {
+  const cos = Math.cos
+  const sin = Math.sin
+  const midR = (innerR + outerR) / 2
+
+  const outerFlareR = outerR + 28
+  const innerFlareR = innerR - 18
+
+  // Base outer wing
+  const xWingOuter = cx + outerFlareR * cos(baseAngle)
+  const yWingOuter = cy + outerFlareR * sin(baseAngle)
+
+  // Arrow tip pointing along midR at tipAngle
+  const xTip = cx + midR * cos(tipAngle)
+  const yTip = cy + midR * sin(tipAngle)
+
+  // Base inner wing
+  const xWingInner = cx + innerFlareR * cos(baseAngle)
+  const yWingInner = cy + innerFlareR * sin(baseAngle)
+
+  return [
+    `M ${xWingOuter.toFixed(1)} ${yWingOuter.toFixed(1)}`,
     `L ${xTip.toFixed(1)} ${yTip.toFixed(1)}`,
     `L ${xWingInner.toFixed(1)} ${yWingInner.toFixed(1)}`,
-    `L ${xBaseInner.toFixed(1)} ${yBaseInner.toFixed(1)}`,
-    `A ${innerR} ${innerR} 0 ${largeArcInner} 0 ${xStartInner.toFixed(1)} ${yStartInner.toFixed(1)}`,
     `Z`,
   ].join(' ')
 }
@@ -95,11 +99,9 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
     )
 
   const angleStep = (Math.PI * 2) / n
-  // Angles aligned with page55-055.png:
-  // 01 (Dark Blue): Bottom-Left (approx PI/2 + 0.3 to PI + 0.8)
-  // 02 (Bright Blue): Top
-  // 03 (Red): Right
-  const baseStartAngle = Math.PI * 0.65
+  const gapAngle = 0.005
+  const arrowOverlap = 0.35 // Arrowhead tip extends 0.35 rad into the next segment
+  const baseStartAngle = -Math.PI / 2 + 0.15
 
   return (
     <g ref={svgRef}>
@@ -113,15 +115,24 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
         </>
       )}
 
-      {/* Center hole circle under the ring */}
+      {/* Render all segment ring bodies first - slightly overlapping into arrowhead base to prevent white seam line */}
+      {segments.map((_, i) => {
+        const startAngle = baseStartAngle + i * angleStep
+        const endAngle = baseStartAngle + (i + 1) * angleStep + gapAngle
+        const color = PALETTE[i % PALETTE.length] ?? '#3768D6'
+
+        return <path key={`body-${i}`} d={ringArcPath(cx, cy, innerR, outerR, startAngle, endAngle)} fill={color} />
+      })}
+
+      {/* Center hole circle rendered BEFORE arrowheads so inner wing doesn't clip */}
       <circle cx={cx} cy={cy} r={innerR - 1} fill="white" />
 
-      {/* Render segments */}
+      {/* Render all arrowheads ON TOP of ring bodies & center hole */}
       {segments.map((item, i) => {
         const elementId = `segment-${i}`
         const startAngle = baseStartAngle + i * angleStep
-        const endAngle = startAngle + angleStep
-        const midAngle = startAngle + angleStep / 2
+        const endAngle = baseStartAngle + (i + 1) * angleStep
+        const midAngle = (startAngle + endAngle) / 2
         const color = PALETTE[i % PALETTE.length] ?? '#3768D6'
         const isSelected = selectedIds.has(elementId)
 
@@ -156,10 +167,13 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
           height: outerR * 2,
         }
 
+        const baseAngle = endAngle
+
         return (
           <g key={i}>
+            {/* Triangular Arrowhead starting at endAngle and extending forward over next segment */}
             <path
-              d={segmentArrowPath(cx, cy, innerR, outerR, startAngle, endAngle)}
+              d={arrowheadPath(cx, cy, innerR, outerR, baseAngle, baseAngle + arrowOverlap)}
               fill={color}
               stroke={isSelected ? '#4a90d9' : 'none'}
               strokeWidth={isSelected ? 3 : 0}
