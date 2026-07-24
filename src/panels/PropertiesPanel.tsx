@@ -2,13 +2,49 @@ import { useDiagramStore } from '../store/diagramStore'
 import { MIGSO_PALETTE } from '../lib/theme'
 
 const PRESET_COLORS = [
-  ...MIGSO_PALETTE,
   '#ffffff', '#f44336', '#e91e63', '#9c27b0', '#673ab7',
   '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688',
   '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107',
   '#ff9800', '#ff5722', '#795548', '#9e9e9e', '#607d8b',
   '#333333', '#000000',
 ]
+
+function ColorGrid({ currentColor, onPick, prefix }: { currentColor: string; onPick: (color: string) => void; prefix: string }) {
+  return (
+    <>
+      <label style={{ fontSize: 9, color: '#999', marginBottom: 3, display: 'block' }}>MIGSO-PCUBED</label>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(6, 1fr)`, gap: 3, marginBottom: 6 }}>
+        {MIGSO_PALETTE.map((color) => (
+          <button
+            key={`${prefix}${color}`}
+            style={{
+              ...styles.colorButton,
+              backgroundColor: color,
+              border: currentColor === color ? '2px solid #333' : '1px solid #ccc',
+            }}
+            onClick={() => onPick(color)}
+            title={color}
+          />
+        ))}
+      </div>
+      <label style={{ fontSize: 9, color: '#999', marginBottom: 3, display: 'block' }}>Standard</label>
+      <div style={styles.colorGrid}>
+        {PRESET_COLORS.map((color) => (
+          <button
+            key={`${prefix}${color}`}
+            style={{
+              ...styles.colorButton,
+              backgroundColor: color,
+              border: currentColor === color ? '2px solid #333' : '1px solid #ccc',
+            }}
+            onClick={() => onPick(color)}
+            title={color}
+          />
+        ))}
+      </div>
+    </>
+  )
+}
 
 export function PropertiesPanel() {
   const shapes = useDiagramStore(s => s.shapes)
@@ -52,20 +88,7 @@ export function PropertiesPanel() {
 
       <div style={styles.section}>
         <label style={styles.label}>Fill</label>
-        <div style={styles.colorGrid}>
-          {PRESET_COLORS.map((color) => (
-            <button
-              key={color}
-              style={{
-                ...styles.colorButton,
-                backgroundColor: color,
-                border: primaryShape.style.fill === color ? '2px solid #333' : '1px solid #ccc',
-              }}
-              onClick={() => handleStyleChange('fill', color)}
-              title={color}
-            />
-          ))}
-        </div>
+        <ColorGrid currentColor={primaryShape.style.fill} onPick={(c) => handleStyleChange('fill', c)} prefix="shape-f-" />
         <div style={styles.row}>
           <label style={styles.label}>Custom</label>
           <input
@@ -79,20 +102,7 @@ export function PropertiesPanel() {
 
       <div style={styles.section}>
         <label style={styles.label}>Stroke</label>
-        <div style={styles.colorGrid}>
-          {PRESET_COLORS.map((color) => (
-            <button
-              key={color}
-              style={{
-                ...styles.colorButton,
-                backgroundColor: color,
-                border: primaryShape.style.stroke === color ? '2px solid #333' : '1px solid #ccc',
-              }}
-              onClick={() => handleStyleChange('stroke', color)}
-              title={color}
-            />
-          ))}
-        </div>
+        <ColorGrid currentColor={primaryShape.style.stroke} onPick={(c) => handleStyleChange('stroke', c)} prefix="shape-s-" />
         <div style={styles.row}>
           <label style={styles.label}>Custom</label>
           <input
@@ -189,20 +199,7 @@ function DiagramElementColorPanel({ selectedIds, diagramColors, diagramStrokeCol
 
       <div style={styles.section}>
         <label style={styles.label}>{isMulti ? 'Fill (all selected)' : `Fill — ${diagramElementLabel(primaryId)}`}</label>
-        <div style={styles.colorGrid}>
-          {PRESET_COLORS.map((color) => (
-            <button
-              key={`fill-${color}`}
-              style={{
-                ...styles.colorButton,
-                backgroundColor: color,
-                border: primaryFill === color ? '2px solid #333' : '1px solid #ccc',
-              }}
-              onClick={() => elements.forEach(id => updateDiagramColor(id, color))}
-              title={color}
-            />
-          ))}
-        </div>
+        <ColorGrid currentColor={primaryFill} onPick={(c) => elements.forEach(id => updateDiagramColor(id, c))} prefix="de-f-" />
         <div style={styles.row}>
           <input
             type="color"
@@ -215,20 +212,7 @@ function DiagramElementColorPanel({ selectedIds, diagramColors, diagramStrokeCol
 
       <div style={styles.section}>
         <label style={styles.label}>{isMulti ? 'Stroke (all selected)' : `Stroke — ${diagramElementLabel(primaryId)}`}</label>
-        <div style={styles.colorGrid}>
-          {PRESET_COLORS.map((color) => (
-            <button
-              key={`stroke-${color}`}
-              style={{
-                ...styles.colorButton,
-                backgroundColor: color,
-                border: primaryStroke === color ? '2px solid #333' : '1px solid #ccc',
-              }}
-              onClick={() => elements.forEach(id => updateDiagramStrokeColor(id, color))}
-              title={color}
-            />
-          ))}
-        </div>
+        <ColorGrid currentColor={primaryStroke} onPick={(c) => elements.forEach(id => updateDiagramStrokeColor(id, c))} prefix="de-s-" />
         <div style={styles.row}>
           <input
             type="color"

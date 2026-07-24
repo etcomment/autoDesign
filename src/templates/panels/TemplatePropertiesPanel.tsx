@@ -2,13 +2,49 @@ import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
 const PRESET_COLORS = [
-  ...MIGSO_PALETTE,
   '#ffffff', '#f44336', '#e91e63', '#9c27b0', '#673ab7',
   '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688',
   '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107',
   '#ff9800', '#ff5722', '#795548', '#9e9e9e', '#607d8b',
   '#333333', '#000000',
 ]
+
+function ColorGrid({ currentColor, onPick, prefix }: { currentColor: string; onPick: (color: string) => void; prefix: string }) {
+  return (
+    <>
+      <label style={{ fontSize: 9, color: '#999', marginBottom: 3, display: 'block' }}>MIGSO-PCUBED</label>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(6, 1fr)`, gap: 3, marginBottom: 6 }}>
+        {MIGSO_PALETTE.map((color) => (
+          <button
+            key={`${prefix}m-${color}`}
+            style={{
+              ...styles.colorButton,
+              backgroundColor: color,
+              border: currentColor === color ? '2px solid #333' : '1px solid #ccc',
+            }}
+            onClick={() => onPick(color)}
+            title={color}
+          />
+        ))}
+      </div>
+      <label style={{ fontSize: 9, color: '#999', marginBottom: 3, display: 'block' }}>Standard</label>
+      <div style={styles.colorGrid}>
+        {PRESET_COLORS.map((color) => (
+          <button
+            key={`${prefix}s-${color}`}
+            style={{
+              ...styles.colorButton,
+              backgroundColor: color,
+              border: currentColor === color ? '2px solid #333' : '1px solid #ccc',
+            }}
+            onClick={() => onPick(color)}
+            title={color}
+          />
+        ))}
+      </div>
+    </>
+  )
+}
 
 function elementLabel(elementId: string): string {
   const dash = elementId.indexOf('-')
@@ -142,20 +178,7 @@ export function TemplatePropertiesPanel() {
 
       <div style={styles.section}>
         <label style={styles.sectionLabel}>Fill</label>
-        <div style={styles.colorGrid}>
-          {PRESET_COLORS.map((color) => (
-            <button
-              key={`fill-${color}`}
-              style={{
-                ...styles.colorButton,
-                backgroundColor: color,
-                border: primaryFill === color ? '2px solid #333' : '1px solid #ccc',
-              }}
-              onClick={() => elements.forEach(id => updateTemplateColor(id, color))}
-              title={color}
-            />
-          ))}
-        </div>
+        <ColorGrid currentColor={primaryFill} onPick={(c) => elements.forEach(id => updateTemplateColor(id, c))} prefix="tpl-f-" />
         <div style={styles.row}>
           <input
             type="color"
@@ -168,20 +191,7 @@ export function TemplatePropertiesPanel() {
 
       <div style={styles.section}>
         <label style={styles.sectionLabel}>Stroke</label>
-        <div style={styles.colorGrid}>
-          {PRESET_COLORS.map((color) => (
-            <button
-              key={`stroke-${color}`}
-              style={{
-                ...styles.colorButton,
-                backgroundColor: color,
-                border: primaryStroke === color ? '2px solid #333' : '1px solid #ccc',
-              }}
-              onClick={() => elements.forEach(id => updateTemplateStrokeColor(id, color))}
-              title={color}
-            />
-          ))}
-        </div>
+        <ColorGrid currentColor={primaryStroke} onPick={(c) => elements.forEach(id => updateTemplateStrokeColor(id, c))} prefix="tpl-s-" />
         <div style={styles.row}>
           <input
             type="color"
