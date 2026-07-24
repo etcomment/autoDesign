@@ -233,7 +233,7 @@ function parseRoadmap(dsl: string): RoadmapData | ProductRoadmapData {
       continue
     }
 
-    const milestoneMatch = /^milestone(?:\s+(\S+):(\S+))?\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
+    const milestoneMatch = /^milestone(?:\s+([\w.-]+):([\w.-]*))?\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
     if (milestoneMatch) {
       flushMilestone()
       pendingMilestone = {
@@ -252,33 +252,24 @@ function parseRoadmap(dsl: string): RoadmapData | ProductRoadmapData {
 
   const globalStyle = styleObj(globalStyles)
 
-  if (quarters.length > 0 || lanes.length > 0) {
-    const defaultQuarters = quarters.length > 0 ? quarters : ['Q1', 'Q2', 'Q3', 'Q4']
-    const defaultLanes = lanes.length > 0 ? lanes : ['Default']
-
-    return {
-      type: 'productRoadmap',
-      title,
-      quarters: defaultQuarters.map(q => ({ label: q })),
-      lanes: defaultLanes.map(l => ({ label: l })),
-      milestones: milestones.map(m => ({
-        title: m.title,
-        subtitle: m.subtitle,
-        quarter: m.quarter ?? defaultQuarters[0],
-        lane: m.lane ?? defaultLanes[0],
-        style: m.style ?? globalStyle,
-      })),
-    }
-  }
+  const resolvedQuarters = quarters.length > 0 ? quarters.map(q => {
+    const [label, year] = q.split(':')
+    return { label: label!, year }
+  }) : undefined
+  const resolvedLanes = lanes.length > 0 ? lanes.map(l => ({ label: l })) : undefined
 
   return {
-    type: 'roadmap',
+    type: 'roadmap' as const,
     title,
     startLabel,
     finishLabel,
+    quarters: resolvedQuarters,
+    lanes: resolvedLanes,
     milestones: milestones.map(m => ({
       title: m.title,
       subtitle: m.subtitle,
+      quarter: m.quarter ?? resolvedQuarters?.[0]?.label,
+      lane: m.lane ?? resolvedLanes?.[0]?.label,
       style: m.style ?? globalStyle,
     })),
   }
@@ -824,7 +815,7 @@ export function generateDslText(type: string, data: TemplateData): string {
   const list = (key: string) => (d[key] as Array<Record<string, unknown>> | undefined)
 
   const quarters = list('quarters')
-  if (quarters?.length) out += `  quarters ${quarters.map((q: Record<string,unknown>) => q.label).join(' ')}\n`
+  if (quarters?.length) out += `  quarters ${quarters.map((q: Record<string,unknown>) => q.label + (q.year ? ':' + q.year : '')).join(' ')}\n`
   const lanes = list('lanes')
   if (lanes?.length) out += `  lanes ${lanes.map((l: Record<string,unknown>) => l.label).join(' ')}\n`
 
