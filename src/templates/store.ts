@@ -9,6 +9,7 @@ interface TemplateStore {
   readonly selectedTemplateElementIds: ReadonlySet<string>
   readonly templateElementColors: Record<string, string>
   readonly templateStrokeColors: Record<string, string>
+  readonly templateStrokeWidths: Record<string, number>
   readonly templateElementPositions: Record<string, { x: number; y: number; width: number; height: number }>
   readonly dslText: string
 
@@ -19,6 +20,7 @@ interface TemplateStore {
   toggleTemplateElement: (id: string) => void
   updateTemplateColor: (id: string, color: string) => void
   updateTemplateStrokeColor: (id: string, color: string) => void
+  updateTemplateStrokeWidth: (id: string, width: number) => void
   moveTemplateElement: (id: string, pos: { x: number; y: number }) => void
   resizeTemplateElement: (id: string, size: { width: number; height: number }) => void
 }
@@ -29,6 +31,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
   selectedTemplateElementIds: new Set(),
   templateElementColors: {},
   templateStrokeColors: {},
+  templateStrokeWidths: {},
   templateElementPositions: {},
   dslText: '',
 
@@ -42,6 +45,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
       selectedTemplateElementIds: new Set(),
       templateElementColors: {},
       templateStrokeColors: {},
+      templateStrokeWidths: {},
       templateElementPositions: {},
     })
   },
@@ -54,6 +58,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
       selectedTemplateElementIds: new Set(),
       templateElementColors: {},
       templateStrokeColors: {},
+      templateStrokeWidths: {},
       templateElementPositions: {},
     })
   },
@@ -65,6 +70,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
       selectedTemplateElementIds: new Set(),
       templateElementColors: {},
       templateStrokeColors: {},
+      templateStrokeWidths: {},
       templateElementPositions: {},
     })
   },
@@ -89,6 +95,11 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
   updateTemplateStrokeColor: (id, color) => {
     const { templateStrokeColors } = get()
     set({ templateStrokeColors: { ...templateStrokeColors, [id]: color } })
+  },
+
+  updateTemplateStrokeWidth: (id, width) => {
+    const { templateStrokeWidths } = get()
+    set({ templateStrokeWidths: { ...templateStrokeWidths, [id]: width } })
   },
 
   moveTemplateElement: (id, pos) => {

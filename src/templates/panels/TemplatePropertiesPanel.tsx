@@ -77,10 +77,19 @@ const collectionKeys: Record<string, string> = {
   station: 'stations',
   primary: 'primary',
   support: 'support',
-  timeline: 'timeline',
-  start: 'start',
-  finish: 'finish',
-  chevron: 'chevron',
+  dot: 'milestones',
+  card: 'milestones',
+  tick: 'milestones',
+  segment: 'segments',
+  ring: 'rings',
+  bar: 'bars',
+  gauge: 'gauges',
+  entry: 'entries',
+  thermo: 'thermos',
+  prod: 'products',
+  q: 'quarters',
+  qa: 'qaItems',
+  quadrant: 'quadrants',
 }
 
 function updateElementField(
@@ -108,9 +117,11 @@ export function TemplatePropertiesPanel() {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const templateColors = useTemplateStore(s => s.templateElementColors)
   const templateStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const templateStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const templateData = useTemplateStore(s => s.templateData)
   const updateTemplateColor = useTemplateStore(s => s.updateTemplateColor)
   const updateTemplateStrokeColor = useTemplateStore(s => s.updateTemplateStrokeColor)
+  const updateTemplateStrokeWidth = useTemplateStore(s => s.updateTemplateStrokeWidth)
   const updateTemplateData = useTemplateStore(s => s.updateTemplateData)
 
   if (!activeTemplate || selectedIds.size === 0) return null
@@ -120,6 +131,7 @@ export function TemplatePropertiesPanel() {
   const isMulti = elements.length > 1
   const primaryFill = templateColors[primaryId] ?? ''
   const primaryStroke = templateStrokeColors[primaryId] ?? ''
+  const primaryStrokeWidth = templateStrokeWidths[primaryId] ?? 1
 
   const prefix = primaryId.split('-')[0]!
   const paramIndex = parseInt(primaryId.split('-')[1]!, 10)
@@ -199,13 +211,23 @@ export function TemplatePropertiesPanel() {
             onChange={(e) => elements.forEach(id => updateTemplateStrokeColor(id, e.target.value))}
             style={styles.colorInput}
           />
+          <label style={{ fontSize: 11, color: '#666', minWidth: 30 }}>Width</label>
+          <input
+            type="number"
+            value={primaryStrokeWidth}
+            onChange={(e) => elements.forEach(id => updateTemplateStrokeWidth(id, Number(e.target.value) || 1))}
+            min={0}
+            max={20}
+            step={0.5}
+            style={{ ...styles.textInput, width: 50 }}
+          />
         </div>
       </div>
     </div>
   )
 }
 
-const paramsAllowSubtitle = new Set(['milestone', 'block', 'step', 'piece', 'level', 'section', 'item', 'node', 'branch', 'station', 'primary', 'support'])
+const paramsAllowSubtitle = new Set(['milestone', 'block', 'step', 'piece', 'level', 'section', 'item', 'node', 'branch', 'station', 'primary', 'support', 'dot', 'card', 'segment'])
 
 const styles: Record<string, React.CSSProperties> = {
   panel: {
