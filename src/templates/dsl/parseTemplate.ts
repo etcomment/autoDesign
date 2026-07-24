@@ -42,6 +42,11 @@ function stripQuotes(s: string): string {
   return s.replace(/^["']|["']$/g, '').trim().replace(/\\n/g, '\n')
 }
 
+function escapeField(v: unknown): string {
+  if (typeof v !== 'string' || !v) return String(v ?? '')
+  return v.replace(/\n/g, '\\n')
+}
+
 function parseStyleValue(value: string): string | number {
   const num = Number(value)
   if (!isNaN(num)) return num
@@ -140,6 +145,7 @@ export function parseTemplateDsl(dsl: string): TemplateData | null {
       result = parseBudget(trimmed)
       break
     case 'decision':
+    case 'decisionTree':
       result = parseDecision(trimmed)
       break
     case 'goals':
@@ -807,12 +813,13 @@ function parseCircle(dsl: string): CircleData {
 
 export function generateDslText(type: string, data: TemplateData): string {
   const d = data as unknown as Record<string, unknown>
+  const esc = escapeField
   let out = `@${type}`
-  if (d.title) out += ` "${d.title}"`
+  if (d.title) out += ` "${esc(d.title)}"`
   out += '\n'
 
-  if (d.startLabel) out += `  start "${d.startLabel}"\n`
-  if (d.finishLabel) out += `  finish "${d.finishLabel}"\n`
+  if (d.startLabel) out += `  start "${esc(d.startLabel)}"\n`
+  if (d.finishLabel) out += `  finish "${esc(d.finishLabel)}"\n`
 
   const list = (key: string) => (d[key] as Array<Record<string, unknown>> | undefined)
 
@@ -822,59 +829,85 @@ export function generateDslText(type: string, data: TemplateData): string {
   if (lanes?.length) out += `  lanes ${lanes.map((l: Record<string,unknown>) => l.label).join(' ')}\n`
 
   const milestones = list('milestones')
-  if (milestones) for (const m of milestones) out += `  milestone${m.quarter ? ' ' + m.quarter + ':' + (m.lane ?? '') : ''} "${m.title}"${m.subtitle ? ' "' + m.subtitle + '"' : ''}\n`
+  if (milestones) for (const m of milestones) out += `  milestone${m.quarter ? ' ' + m.quarter + ':' + (m.lane ?? '') : ''} "${esc(m.title)}"${m.subtitle ? ' "' + esc(m.subtitle) + '"' : ''}\n`
 
   const steps = list('steps')
-  if (steps) for (const s of steps) out += `  step "${s.title}"${s.subtitle ? ' "' + s.subtitle + '"' : ''}\n`
+  if (steps) for (const s of steps) out += `  step "${esc(s.title)}"${s.subtitle ? ' "' + esc(s.subtitle) + '"' : ''}\n`
 
   const blocks = list('blocks')
-  if (blocks) for (const b of blocks) out += `  block "${b.number}" "${b.title}"${b.subtitle ? ' "' + b.subtitle + '"' : ''}\n`
+  if (blocks) for (const b of blocks) out += `  block "${esc(b.number)}" "${esc(b.title)}"${b.subtitle ? ' "' + esc(b.subtitle) + '"' : ''}\n`
 
   const pieces = list('pieces')
-  if (pieces) for (const p of pieces) out += `  piece "${p.title}"${p.subtitle ? ' "' + p.subtitle + '"' : ''}${p.color ? ' ' + p.color : ''}\n`
+  if (pieces) for (const p of pieces) out += `  piece "${esc(p.title)}"${p.subtitle ? ' "' + esc(p.subtitle) + '"' : ''}${p.color ? ' ' + p.color : ''}\n`
 
   const levels = list('levels')
-  if (levels) for (const l of levels) out += `  level "${l.title}" ${l.percentage ?? ''}${l.color ? ' ' + l.color : ''}\n`
+  if (levels) for (const l of levels) out += `  level "${esc(l.title)}" ${l.percentage ?? ''}${l.color ? ' ' + l.color : ''}\n`
 
   const metrics = list('metrics')
-  if (metrics) for (const m of metrics) out += `  metric "${m.label}" "${m.value}"${m.change ? ' "' + m.change + '"' : ''}\n`
+  if (metrics) for (const m of metrics) out += `  metric "${esc(m.label)}" "${esc(m.value)}"${m.change ? ' "' + esc(m.change) + '"' : ''}\n`
 
   const items = list('items')
-  if (items) for (const it of items) out += `  item "${it.number}" "${it.title}"${it.subtitle ? ' "' + it.subtitle + '"' : ''}\n`
+  if (items) for (const it of items) out += `  item "${esc(it.number)}" "${esc(it.title)}"${it.subtitle ? ' "' + esc(it.subtitle) + '"' : ''}\n`
 
   const segments = list('segments')
-  if (segments) for (const s of segments) out += `  segment "${s.number}" "${s.title}" "${s.description ?? ''}"${s.icon ? ' ' + s.icon : ''}\n`
+  if (segments) for (const s of segments) out += `  segment "${esc(s.number)}" "${esc(s.title)}" "${esc(s.description ?? '')}"${s.icon ? ' ' + s.icon : ''}\n`
 
   const stations = list('stations')
-  if (stations) for (const s of stations) out += `  station "${s.title}"${s.subtitle ? ' "' + s.subtitle + '"' : ''}\n`
+  if (stations) for (const s of stations) out += `  station "${esc(s.title)}"${s.subtitle ? ' "' + esc(s.subtitle) + '"' : ''}\n`
 
   const rows = list('rows')
   if (rows) {
     const cols = d.columns as string[] | undefined
-    if (cols?.length) out += '  columns ' + cols.map((c: string) => '"' + c + '"').join(' ') + '\n'
+    if (cols?.length) out += '  columns ' + cols.map((c: string) => '"' + esc(c) + '"').join(' ') + '\n'
     for (const r of rows) {
       const cells = r.cells as string[] | undefined
-      out += '  row "' + r.label + '"' + (cells ? cells.map((c: string) => ' "' + c + '"').join('') : '') + '\n'
+      out += '  row "' + esc(r.label) + '"' + (cells ? cells.map((c: string) => ' "' + esc(c) + '"').join('') : '') + '\n'
     }
   }
 
   const branches = list('branches')
-  if (branches) { if (d.centerLabel) out += '  center "' + d.centerLabel + '"\n'; for (const b of branches) out += '  branch "' + b.title + '"' + (b.subtitle ? ' "' + b.subtitle + '"' : '') + '\n' }
+  if (branches) {
+    if (d.centerLabel) out += '  center "' + esc(d.centerLabel) + '"\n'
+    if (branches.length > 0 && 'answer' in (branches[0] ?? {})) {
+      function emitDecisionNodes(nodes: Array<Record<string, unknown>>) {
+        for (const n of nodes) {
+          const ans = String(n.answer ?? 'yes')
+          const lbl = String(n.label ?? '')
+          if (n.outcome) {
+            out += `  leaf "${esc(lbl)}" -> "${esc(String(n.outcome))}"\n`
+          }
+          if (n.children && Array.isArray(n.children)) {
+            for (const child of n.children as Array<Record<string, unknown>>) {
+              const childAns = String(child.answer ?? 'yes')
+              const childLbl = String(child.label ?? '')
+              out += `  ${childAns} "${esc(lbl)}" -> "${esc(childLbl)}"\n`
+            }
+            emitDecisionNodes(n.children as Array<Record<string, unknown>>)
+          } else if (!n.outcome) {
+            out += `  ${ans} "${esc(lbl)}" -> ""\n`
+          }
+        }
+      }
+      emitDecisionNodes(branches)
+    } else {
+      for (const b of branches) out += '  branch "' + esc(b.title) + '"' + (b.subtitle ? ' "' + esc(b.subtitle) + '"' : '') + '\n'
+    }
+  }
 
   const nodes = list('nodes')
-  if (nodes) { if (d.centerLabel) out += '  center "' + d.centerLabel + '"\n'; out += '  nodes ' + nodes.map((n: Record<string,unknown>) => '"' + n.title + '"').join(' ') + '\n' }
+  if (nodes) { if (d.centerLabel) out += '  center "' + esc(d.centerLabel) + '"\n'; out += '  nodes ' + nodes.map((n: Record<string,unknown>) => '"' + esc(n.title) + '"').join(' ') + '\n' }
 
   const sections = list('sections')
-  if (sections) for (const s of sections) out += '  ' + (s.isAbove ? 'above' : 'below') + ' "' + s.title + '"' + (s.subtitle ? ' "' + s.subtitle + '"' : '') + '\n'
+  if (sections) for (const s of sections) out += '  ' + (s.isAbove ? 'above' : 'below') + ' "' + esc(s.title) + '"' + (s.subtitle ? ' "' + esc(s.subtitle) + '"' : '') + '\n'
 
   const primaries = list('primary')
-  if (primaries) for (const p of primaries) out += '  primary "' + p.title + '"' + (p.subtitle ? ' "' + p.subtitle + '"' : '') + '\n'
+  if (primaries) for (const p of primaries) out += '  primary "' + esc(p.title) + '"' + (p.subtitle ? ' "' + esc(p.subtitle) + '"' : '') + '\n'
 
   const supports = list('support')
-  if (supports) for (const s of supports) out += '  support "' + s.title + '"' + (s.subtitle ? ' "' + s.subtitle + '"' : '') + '\n'
+  if (supports) for (const s of supports) out += '  support "' + esc(s.title) + '"' + (s.subtitle ? ' "' + esc(s.subtitle) + '"' : '') + '\n'
 
-  if (d.rootQuestion) out += '  question "' + d.rootQuestion + '"\n'
-  if (d.centerGoal) out += '  center "' + d.centerGoal + '"\n'
+  if (d.rootQuestion) out += '  question "' + esc(d.rootQuestion) + '"\n'
+  if (d.centerGoal) out += '  center "' + esc(d.centerGoal) + '"\n'
 
   return out
 }
