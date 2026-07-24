@@ -1,11 +1,10 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useTemplateStore } from '../store'
 import { getTemplatesByCategory } from '../registry'
 import { TEMPLATE_ICONS } from '../shared/icons'
 import type { TemplateType } from '../types'
 
-const ICONS_PER_ROW = 4
-const ICON_SIZE = 32
+const ICON_SIZE = 40
 
 export function TemplatePanel() {
   const activeTemplate = useTemplateStore(s => s.activeTemplate)
@@ -22,20 +21,13 @@ export function TemplatePanel() {
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => {
       const next = new Set(prev)
-      if (next.has(category)) {
-        next.delete(category)
-      } else {
-        next.add(category)
-      }
+      if (next.has(category)) next.delete(category)
+      else next.add(category)
       return next
     })
   }
 
-  const handleCopyIcon = (iconName: string) => {
-    navigator.clipboard?.writeText(`Icon:${iconName}`).catch(() => {})
-  }
-
-  const iconNames = Object.keys(TEMPLATE_ICONS).sort()
+  const iconNames = useMemo(() => Object.keys(TEMPLATE_ICONS).sort(), [])
 
   return (
     <div style={styles.panel}>
@@ -92,12 +84,11 @@ export function TemplatePanel() {
               <div
                 key={name}
                 style={styles.iconItem}
-                onClick={() => handleCopyIcon(name)}
                 title={name}
               >
-                <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" style={{ display: 'block', border: '1px solid #eee', borderRadius: 3, background: 'white' }}>
+                <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" style={{ display: 'block', border: '1px solid #eee', borderRadius: 4, background: 'white', padding: 2 }}>
                   <g stroke="#333" strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round">
-                    <Icon size={24} color="currentColor" />
+                    <Icon size={20} color="currentColor" />
                   </g>
                 </svg>
                 <div style={styles.iconLabel}>{name}</div>
@@ -118,10 +109,9 @@ export function TemplatePanel() {
 
 const styles: Record<string, React.CSSProperties> = {
   panel: {
-    width: 220,
     background: '#ffffff',
     padding: 12,
-    overflowY: 'auto',
+    overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
     gap: 0,
@@ -131,11 +121,12 @@ const styles: Record<string, React.CSSProperties> = {
   title: {
     fontSize: 14,
     fontWeight: 600,
-    margin: '0 0 12px 0',
+    margin: '0 0 8px 0',
     color: '#333',
+    flexShrink: 0,
   },
   category: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   categoryHeader: {
     fontSize: 11,
@@ -184,33 +175,33 @@ const styles: Record<string, React.CSSProperties> = {
   },
   iconGrid: {
     display: 'grid',
-    gridTemplateColumns: `repeat(${ICONS_PER_ROW}, 1fr)`,
+    gridTemplateColumns: 'repeat(auto-fill, minmax(52px, 1fr))',
     gap: 4,
     marginBottom: 10,
     padding: 6,
     background: '#f9f9f9',
     borderRadius: 4,
-    maxHeight: 320,
+    maxHeight: 280,
     overflowY: 'auto',
   },
   iconItem: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
-    padding: 4,
+    padding: 3,
     cursor: 'pointer',
     borderRadius: 4,
     transition: 'background 0.15s',
   },
   iconLabel: {
-    fontSize: 7,
-    color: '#999',
+    fontSize: 8,
+    color: '#666',
     marginTop: 2,
     textAlign: 'center' as const,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
-    maxWidth: '100%',
+    maxWidth: 52,
   },
   clearButton: {
     width: '100%',

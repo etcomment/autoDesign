@@ -142,10 +142,9 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     borderRight: '1px solid #ddd',
-    maxWidth: 220,
     flexShrink: 0,
-    overflow: 'hidden',
-    position: 'relative',
+    overflowY: 'auto',
+    overflowX: 'hidden',
   },
   workspace: {
     display: 'flex',
