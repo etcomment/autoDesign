@@ -78,6 +78,7 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
   const W = 900
   const H = 600
@@ -115,7 +116,39 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
         </>
       )}
 
-      {/* Render each unified segment (Ring Body + Overlapping Triangular Arrowhead + Text/Icons) */}
+      {/* 1. Render all segment ring bodies first */}
+      {segments.map((_, i) => {
+        const elementId = `segment-${i}`
+        const startAngle = baseStartAngle + i * angleStep
+        const endAngle = baseStartAngle + (i + 1) * angleStep + gapAngle
+        const color = PALETTE[i % PALETTE.length] ?? '#3768D6'
+        const pos = positions[elementId]
+
+        const defaultBbox = {
+          x: cx - outerR,
+          y: cy - outerR,
+          width: outerR * 2,
+          height: outerR * 2,
+        }
+
+        const transform = pos
+          ? `translate(${pos.x - defaultBbox.x}, ${pos.y - defaultBbox.y}) scale(${pos.width / defaultBbox.width}, ${pos.height / defaultBbox.height})`
+          : undefined
+
+        return (
+          <path
+            key={`body-${i}`}
+            d={ringArcPath(cx, cy, innerR, outerR, startAngle, endAngle)}
+            fill={color}
+            transform={transform}
+          />
+        )
+      })}
+
+      {/* 2. White center hole circle rendered BEFORE arrowheads */}
+      <circle cx={cx} cy={cy} r={innerR - 1} fill="white" />
+
+      {/* 3. Render all arrowheads ON TOP of all bodies with unified interaction & transform */}
       {segments.map((item, i) => {
         const elementId = `segment-${i}`
         const startAngle = baseStartAngle + i * angleStep
@@ -123,6 +156,7 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
         const midAngle = (startAngle + endAngle) / 2
         const color = PALETTE[i % PALETTE.length] ?? '#3768D6'
         const isSelected = selectedIds.has(elementId)
+        const pos = positions[elementId]
 
         const cosMid = Math.cos(midAngle)
         const sinMid = Math.sin(midAngle)
@@ -148,28 +182,33 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
         const labelX = cx + labelRadius * cosMid
         const labelY = cy + labelRadius * sinMid
 
-        const bbox = {
+        const defaultBbox = {
           x: cx - outerR,
           y: cy - outerR,
           width: outerR * 2,
           height: outerR * 2,
         }
 
-        // Shift baseAngle slightly backward (~0.03 rad / ~2-3px) inside the segment body to remove any trait
+        const bbox = pos
+          ? { x: pos.x, y: pos.y, width: pos.width, height: pos.height }
+          : defaultBbox
+
+        const transform = pos
+          ? `translate(${pos.x - defaultBbox.x}, ${pos.y - defaultBbox.y}) scale(${pos.width / defaultBbox.width}, ${pos.height / defaultBbox.height})`
+          : undefined
+
         const baseAngle = endAngle - 0.03
 
         return (
-          <g key={i}>
-            {/* Segment Body */}
+          <g key={i} transform={transform}>
+            {/* Invisible clickable layer over body for unified selection */}
             <path
               d={ringArcPath(cx, cy, innerR, outerR, startAngle, endAngle + gapAngle)}
-              fill={color}
-              stroke={isSelected ? '#4a90d9' : 'none'}
-              strokeWidth={isSelected ? 3 : 0}
+              fill="transparent"
               onMouseDown={e => startDrag(e, elementId, bbox)}
               style={{ cursor: 'pointer' }}
             />
-            {/* Triangular Arrowhead starting ~2-3px inside end of body and extending forward */}
+            {/* Visible Triangular Arrowhead extending forward over next segment */}
             <path
               d={arrowheadPath(cx, cy, innerR, outerR, baseAngle, baseAngle + arrowOverlap)}
               fill={color}
