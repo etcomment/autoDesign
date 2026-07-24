@@ -11,6 +11,7 @@ export function StrategyTemplate({ data }: { data: StrategyData }): ReactElement
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const toggleElement = useTemplateStore(s => s.toggleTemplateElement)
   const tplColors = useTemplateStore(s => s.templateElementColors)
 
   const { title, blocks } = data
@@ -50,7 +51,7 @@ export function StrategyTemplate({ data }: { data: StrategyData }): ReactElement
               </g>
             )}
 
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
               <ChevronArrow x={bx} y={blockY} width={blockW} height={blockH} fill={color} />
               {isSelected && (
                 <rect x={bx} y={blockY} width={blockW} height={blockH} rx={2} fill="none" stroke="#4a90d9" strokeWidth={2.5} strokeDasharray="4 2" />
