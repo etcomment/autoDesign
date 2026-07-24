@@ -13,6 +13,7 @@ import type {
   Comparison7Data,
   ManufacturingData,
   ValueChainData,
+  Circle2Data,
 } from './types'
 
 export const TEMPLATES: TemplateDefinition[] = [
@@ -1911,6 +1912,20 @@ export const TEMPLATES: TemplateDefinition[] = [
         { title: 'Procurement', subtitle: 'Sourcing' },
       ],
     } as ValueChainData,
+  },
+  {
+    type: 'circle2',
+    label: 'Circle 2 (3-Step Cycle)',
+    category: 'Cycles',
+    defaultData: {
+      type: 'circle2',
+      title: 'Circle 2',
+      items: [
+        { number: '01', title: 'Your title 01', description: 'Content and words to be added here as required', icon: '💬' },
+        { number: '02', title: 'Your title 02', description: 'Content and words to be added here as required', icon: '' },
+        { number: '03', title: 'Your title 03', description: 'Content and words to be added here as required', icon: '💼' },
+      ],
+    } as Circle2Data,
   },
 ]
 

@@ -36,6 +36,7 @@ import type {
   GoalsData,
   ManufacturingData,
   ValueChainData,
+  Circle2Data,
 } from './types'
 import { useTemplateStore } from './store'
 
@@ -154,6 +155,7 @@ import { Manufacturing7Template } from './components/Manufacturing7Template'
 import { Manufacturing8Template } from './components/Manufacturing8Template'
 import { ValueChainTemplate } from './components/ValueChainTemplate'
 import { ValueChain2Template } from './components/ValueChain2Template'
+import { Circle2Template } from './components/Circle2Template'
 
 type TemplateComponent = (props: { data: TemplateData }) => ReactElement
 
@@ -273,6 +275,7 @@ const TEMPLATE_MAP: Record<TemplateType, TemplateComponent> = {
   manufacturing8: ({ data }) => <Manufacturing8Template data={data as ManufacturingData} />,
   valueChain: ({ data }) => <ValueChainTemplate data={data as ValueChainData} />,
   valueChain2: ({ data }) => <ValueChain2Template data={data as ValueChainData} />,
+  circle2: ({ data }) => <Circle2Template data={data as Circle2Data} />,
 }
 
 export function TemplateRenderer(): ReactElement | null {
