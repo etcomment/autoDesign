@@ -76,6 +76,20 @@ export function useDiagramDragResize(svgRef: React.RefObject<SVGGElement | null>
         if (Math.hypot(dx, dy) <= DRAG_THRESHOLD) return
         interaction.hasMoved = true
       }
+      if (e.ctrlKey || e.metaKey) {
+        moveDiagramElement(interaction.id, {
+          x: interaction.startRect.x + dx,
+          y: interaction.startRect.y,
+        })
+        return
+      }
+      if (e.shiftKey) {
+        moveDiagramElement(interaction.id, {
+          x: interaction.startRect.x,
+          y: interaction.startRect.y + dy,
+        })
+        return
+      }
       moveDiagramElement(interaction.id, {
         x: interaction.startRect.x + dx,
         y: interaction.startRect.y + dy,

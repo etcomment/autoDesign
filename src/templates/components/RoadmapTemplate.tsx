@@ -29,14 +29,18 @@ interface LayoutMilestone {
 
 function getRect(elementId: string, positions: Record<string, Rect>, layoutMap: Map<string, LayoutMilestone>): Rect {
   const stored = positions[elementId]
-  if (stored) return { ...stored, width: stored.width || 20, height: stored.height || 20 }
   const layout = layoutMap.get(elementId)
   if (layout) {
     if (elementId.startsWith('circle-')) {
+      if (stored) return { x: stored.x, y: stored.y, width: stored.width || 20, height: stored.height || 20 }
       return { x: layout.centerX - 14, y: 260 - 14, width: 28, height: 28 }
+    }
+    if (stored) {
+      return { x: stored.x, y: stored.y, width: stored.width || layout.rectW, height: Math.max(stored.height || layout.rectH, layout.rectH) }
     }
     return { x: layout.rectX, y: layout.rectY, width: layout.rectW, height: layout.rectH }
   }
+  if (stored) return { ...stored, width: stored.width || 20, height: stored.height || 20 }
   return { x: 0, y: 0, width: 0, height: 0 }
 }
 
@@ -55,23 +59,29 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   const circleR = 14
   const marginX = 100
   const rectW = 140
-  const rectH = 95
+  const baselineRectH = 95
   const headerH = 30
   const gap = 12
+  const LINE_HEIGHT = 14
 
   const layoutMap = useMemo(() => {
     const map = new Map<string, LayoutMilestone>()
     const availableW = W - marginX * 2
     const milestoneSpacing = milestones.length > 1 ? availableW / (milestones.length - 1) : availableW / 2
-    milestones.forEach((_m, index) => {
+    milestones.forEach((milestone, index) => {
       const elementId = `milestone-${index}`
       const circleId = `circle-${index}`
       const centerX = marginX + index * milestoneSpacing
       const isAbove = index % 2 === 0
+      const subtitleLines = milestone.subtitle ? milestone.subtitle.split('\n').filter(Boolean).length : 0
+      const titleLines = milestone.title ? Math.max(1, milestone.title.split('\n').filter(Boolean).length) : 1
+      const effectiveHeaderH = Math.max(headerH, titleLines * LINE_HEIGHT + 8)
+      const subtitleTextH = subtitleLines * LINE_HEIGHT
+      const computedH = Math.max(baselineRectH, effectiveHeaderH + 16 + subtitleTextH)
       const rx = centerX - rectW / 2
-      const ry = isAbove ? timelineY - circleR - gap - rectH : timelineY + circleR + gap
-      map.set(elementId, { id: elementId, circleId, index, centerX, rectX: rx, rectY: ry, rectW, rectH, isAbove })
-      map.set(circleId, { id: circleId, circleId, index, centerX, rectX: rx, rectY: ry, rectW, rectH, isAbove })
+      const ry = isAbove ? timelineY - circleR - gap - computedH : timelineY + circleR + gap
+      map.set(elementId, { id: elementId, circleId, index, centerX, rectX: rx, rectY: ry, rectW, rectH: computedH, isAbove })
+      map.set(circleId, { id: circleId, circleId, index, centerX, rectX: rx, rectY: ry, rectW, rectH: computedH, isAbove })
     })
     return map
   }, [milestones])
@@ -129,6 +139,9 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const lineY2 = isAbove ? rect.y + rect.height : rect.y
         const availableW = W - marginX * 2
         const milestoneSpacing = milestones.length > 1 ? availableW / (milestones.length - 1) : availableW / 2
+        const titleLineArray = milestone.title.split('\n').filter(Boolean)
+        const dynamicHeaderH = Math.max(headerH, titleLineArray.length * LINE_HEIGHT + 8)
+        const titleStartY = rect.y + dynamicHeaderH / 2 + 5 - ((titleLineArray.length - 1) * LINE_HEIGHT) / 2
 
         return (
           <g key={index}>
@@ -140,10 +153,12 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
 
             <g onMouseDown={e => startDrag(e, elementId, rect)} style={{ cursor: 'pointer' }}>
               <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={10} fill="white" stroke={customStroke || (isSelected ? '#4a90d9' : color)} strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
-              <path d={`M ${rect.x + 10} ${rect.y} L ${rect.x + rect.width - 10} ${rect.y} Q ${rect.x + rect.width} ${rect.y} ${rect.x + rect.width} ${rect.y + 10} L ${rect.x + rect.width} ${rect.y + headerH} L ${rect.x} ${rect.y + headerH} L ${rect.x} ${rect.y + 10} Q ${rect.x} ${rect.y} ${rect.x + 10} ${rect.y} Z`} fill={color} />
-              <text x={rect.x + rect.width / 2} y={rect.y + headerH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">{milestone.title}</text>
-              {milestone.subtitle && milestone.subtitle.split('\n').slice(0, 3).map((line, li) => (
-                <text key={li} x={rect.x + rect.width / 2} y={rect.y + headerH + 16 + li * 14} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#555">
+              <path d={`M ${rect.x + 10} ${rect.y} L ${rect.x + rect.width - 10} ${rect.y} Q ${rect.x + rect.width} ${rect.y} ${rect.x + rect.width} ${rect.y + 10} L ${rect.x + rect.width} ${rect.y + dynamicHeaderH} L ${rect.x} ${rect.y + dynamicHeaderH} L ${rect.x} ${rect.y + 10} Q ${rect.x} ${rect.y} ${rect.x + 10} ${rect.y} Z`} fill={color} />
+              {titleLineArray.map((line, li) => (
+                <text key={li} x={rect.x + rect.width / 2} y={titleStartY + li * LINE_HEIGHT} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">{line}</text>
+              ))}
+              {milestone.subtitle && milestone.subtitle.split('\n').filter(Boolean).slice(0, 3).map((line, li) => (
+                <text key={li} x={rect.x + rect.width / 2} y={rect.y + dynamicHeaderH + 16 + li * LINE_HEIGHT} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#555">
                   {line.length > 38 ? line.slice(0, 35) + '...' : line}
                 </text>
               ))}
