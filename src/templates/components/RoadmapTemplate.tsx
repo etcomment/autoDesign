@@ -258,7 +258,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
               {titleLineArray.map((line, li) => (
                 <text key={li} x={rect.x + rect.width / 2} y={titleStartY + li * LINE_HEIGHT} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>{line}</text>
               ))}
-              {milestone.subtitle && milestone.subtitle.split('\n').filter(Boolean).slice(0, 3).map((line, li) => (
+              {milestone.subtitle && milestone.subtitle.split('\n').filter(Boolean).map((line, li) => (
                 <text key={li} x={rect.x + rect.width / 2} y={rect.y + dynamicHeaderH + 16 + li * LINE_HEIGHT} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={milestone.style?.fontSize ? milestone.style.fontSize - 2 : 9} fill={milestone.style?.fontColor ?? '#555'}>
                   {line.length > 38 ? line.slice(0, 35) + '...' : line}
                 </text>
