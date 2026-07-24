@@ -1,14 +1,13 @@
-import type { RoadmapData, ProductRoadmapData, TemplateData } from '../types'
-
-interface Milestone {
-  title: string
-  subtitle?: string
-  quarter?: string
-  lane?: string
-}
+import type { RoadmapData, ProductRoadmapData, TemplateData, TemplateElementStyle, TemplateMilestone } from '../types'
 
 function stripQuotes(s: string): string {
   return s.replace(/^["']|["']$/g, '').trim()
+}
+
+function parseStyleValue(value: string): string | number {
+  const num = Number(value)
+  if (!isNaN(num)) return num
+  return value.replace(/^["']|["']$/g, '')
 }
 
 export function parseTemplateDsl(dsl: string): TemplateData | null {
@@ -27,9 +26,11 @@ function parseRoadmap(dsl: string): RoadmapData | ProductRoadmapData {
   let title: string | undefined
   let startLabel: string | undefined
   let finishLabel: string | undefined
-  const milestones: Milestone[] = []
+  const milestones: TemplateMilestone[] = []
   const quarters: string[] = []
   const lanes: string[] = []
+  const defaultStyle: Record<string, string | number> = {}
+  let currentStyle: Record<string, string | number> | null = null
 
   for (const line of lines) {
     if (line.startsWith('@roadmap')) {
@@ -62,17 +63,39 @@ function parseRoadmap(dsl: string): RoadmapData | ProductRoadmapData {
       continue
     }
 
+    const styleMatch = /^style\s+(\S+)\s+(.+)$/.exec(line)
+    if (styleMatch) {
+      const key = styleMatch[1]!
+      const value = parseStyleValue(styleMatch[2]!)
+      if (currentStyle) {
+        currentStyle[key] = value
+      } else {
+        defaultStyle[key] = value
+      }
+      continue
+    }
+
     const milestoneMatch = /^milestone(?:\s+(\S+):(\S+))?\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
     if (milestoneMatch) {
+      const style: TemplateElementStyle = {}
+      if (currentStyle) {
+        for (const [k, v] of Object.entries(currentStyle)) {
+          ;(style as Record<string, unknown>)[k] = v
+        }
+      }
       milestones.push({
         quarter: milestoneMatch[1],
         lane: milestoneMatch[2],
         title: milestoneMatch[3]!,
         subtitle: milestoneMatch[4] ? stripQuotes(milestoneMatch[4]) : undefined,
+        style: Object.keys(style).length > 0 ? style : undefined,
       })
+      currentStyle = {}
       continue
     }
   }
+
+  const defaultStyleObj: TemplateElementStyle | undefined = Object.keys(defaultStyle).length > 0 ? defaultStyle as unknown as TemplateElementStyle : undefined
 
   if (quarters.length > 0 || lanes.length > 0) {
     const defaultQuarters = quarters.length > 0 ? quarters : ['Q1', 'Q2', 'Q3', 'Q4']
@@ -88,6 +111,7 @@ function parseRoadmap(dsl: string): RoadmapData | ProductRoadmapData {
         subtitle: m.subtitle,
         quarter: m.quarter ?? defaultQuarters[0],
         lane: m.lane ?? defaultLanes[0],
+        style: m.style ?? (Object.keys(defaultStyle).length > 0 ? defaultStyleObj : undefined),
       })),
     }
   }
@@ -100,6 +124,7 @@ function parseRoadmap(dsl: string): RoadmapData | ProductRoadmapData {
     milestones: milestones.map(m => ({
       title: m.title,
       subtitle: m.subtitle,
+      style: m.style ?? (Object.keys(defaultStyle).length > 0 ? defaultStyleObj : undefined),
     })),
   }
 }

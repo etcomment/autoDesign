@@ -9,9 +9,18 @@ export function TemplateDslEditor() {
   start "Kickoff"
   finish "GA Release"
 
+  style boxWidth 150
+  style fontSize 13
+
   milestone "Alpha" "Internal testing"
+    style fill #4a90d9
+
   milestone "Beta" "Early access"
+    style fill #2ecc71
+    style boxWidth 180
+
   milestone "RC1" "Release candidate"
+
   milestone "GA" "Go live"`)
 
   const handleParse = () => {
@@ -37,7 +46,8 @@ export function TemplateDslEditor() {
       </button>
       <div style={styles.hint}>
         <strong>Commands:</strong> @roadmap start finish milestone<br />
-        <strong>Grid mode:</strong> quarters lanes milestone Q:Lane "Title"
+        <strong>Grid:</strong> quarters lanes milestone Q:Lane "Title"<br />
+        <strong>Style:</strong> style boxWidth 150 | style fontSize 13 | style fill #4a90d9 | style stroke #333 | style fontColor white
       </div>
     </div>
   )

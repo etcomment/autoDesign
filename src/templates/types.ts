@@ -10,6 +10,17 @@ export interface TemplateMilestone {
   subtitle?: string
   quarter?: string
   lane?: string
+  style?: TemplateElementStyle
+}
+
+export interface TemplateElementStyle {
+  boxWidth?: number
+  boxHeight?: number
+  fontSize?: number
+  fontWeight?: number
+  fontColor?: string
+  fill?: string
+  stroke?: string
 }
 
 export interface TemplateQuarter {
@@ -29,6 +40,7 @@ export interface RoadmapData {
   lanes?: TemplateLane[]
   startLabel?: string
   finishLabel?: string
+  defaultStyle?: TemplateElementStyle
 }
 
 export interface ProductRoadmapData {

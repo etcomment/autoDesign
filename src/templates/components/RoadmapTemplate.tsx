@@ -73,15 +73,17 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
       const circleId = `circle-${index}`
       const centerX = marginX + index * milestoneSpacing
       const isAbove = index % 2 === 0
+      const styleW = milestone.style?.boxWidth ?? rectW
+      const baseStyleH = milestone.style?.boxHeight ?? baselineRectH
       const subtitleLines = milestone.subtitle ? milestone.subtitle.split('\n').filter(Boolean).length : 0
       const titleLines = milestone.title ? Math.max(1, milestone.title.split('\n').filter(Boolean).length) : 1
       const effectiveHeaderH = Math.max(headerH, titleLines * LINE_HEIGHT + 8)
       const subtitleTextH = subtitleLines * LINE_HEIGHT
-      const computedH = Math.max(baselineRectH, effectiveHeaderH + 16 + subtitleTextH)
-      const rx = centerX - rectW / 2
+      const computedH = Math.max(baseStyleH, effectiveHeaderH + 16 + subtitleTextH)
+      const rx = centerX - styleW / 2
       const ry = isAbove ? timelineY - circleR - gap - computedH : timelineY + circleR + gap
-      map.set(elementId, { id: elementId, circleId, index, centerX, rectX: rx, rectY: ry, rectW, rectH: computedH, isAbove })
-      map.set(circleId, { id: circleId, circleId, index, centerX, rectX: rx, rectY: ry, rectW, rectH: computedH, isAbove })
+      map.set(elementId, { id: elementId, circleId, index, centerX, rectX: rx, rectY: ry, rectW: styleW, rectH: computedH, isAbove })
+      map.set(circleId, { id: circleId, circleId, index, centerX, rectX: rx, rectY: ry, rectW: styleW, rectH: computedH, isAbove })
     })
     return map
   }, [milestones])
@@ -122,9 +124,10 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const circleId = `circle-${index}`
         const layout = layoutMap.get(elementId)
         if (!layout) return null
-        const color = tplColors[elementId] ?? PALETTE[index % PALETTE.length]!
-        const circleColor = tplColors[circleId] ?? color
+        const color = tplColors[elementId] ?? milestone.style?.fill ?? PALETTE[index % PALETTE.length]!
+        const circleColor = tplColors[circleId] ?? milestone.style?.fill ?? color
         const customStroke = tplStrokeColors[elementId]
+        const styleStroke = milestone.style?.stroke
         const isSelected = selectedIds.has(elementId)
         const isCircleSelected = selectedIds.has(circleId)
         const rect = elementRects.get(elementId)!
@@ -140,8 +143,12 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const availableW = W - marginX * 2
         const milestoneSpacing = milestones.length > 1 ? availableW / (milestones.length - 1) : availableW / 2
         const titleLineArray = milestone.title.split('\n').filter(Boolean)
+        const styleFontSize = milestone.style?.fontSize ?? 12
+        const styleFontWeight = milestone.style?.fontWeight ?? 700
+        const styleFontColor = milestone.style?.fontColor ?? 'white'
         const dynamicHeaderH = Math.max(headerH, titleLineArray.length * LINE_HEIGHT + 8)
         const titleStartY = rect.y + dynamicHeaderH / 2 + 5 - ((titleLineArray.length - 1) * LINE_HEIGHT) / 2
+        const baseStroke = styleStroke || color
 
         return (
           <g key={index}>
@@ -152,13 +159,13 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
             />
 
             <g onMouseDown={e => startDrag(e, elementId, rect)} style={{ cursor: 'pointer' }}>
-              <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={10} fill="white" stroke={customStroke || (isSelected ? '#4a90d9' : color)} strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
+              <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={10} fill="white" stroke={customStroke || (isSelected ? '#4a90d9' : baseStroke)} strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
               <path d={`M ${rect.x + 10} ${rect.y} L ${rect.x + rect.width - 10} ${rect.y} Q ${rect.x + rect.width} ${rect.y} ${rect.x + rect.width} ${rect.y + 10} L ${rect.x + rect.width} ${rect.y + dynamicHeaderH} L ${rect.x} ${rect.y + dynamicHeaderH} L ${rect.x} ${rect.y + 10} Q ${rect.x} ${rect.y} ${rect.x + 10} ${rect.y} Z`} fill={color} />
               {titleLineArray.map((line, li) => (
-                <text key={li} x={rect.x + rect.width / 2} y={titleStartY + li * LINE_HEIGHT} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">{line}</text>
+                <text key={li} x={rect.x + rect.width / 2} y={titleStartY + li * LINE_HEIGHT} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>{line}</text>
               ))}
               {milestone.subtitle && milestone.subtitle.split('\n').filter(Boolean).slice(0, 3).map((line, li) => (
-                <text key={li} x={rect.x + rect.width / 2} y={rect.y + dynamicHeaderH + 16 + li * LINE_HEIGHT} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#555">
+                <text key={li} x={rect.x + rect.width / 2} y={rect.y + dynamicHeaderH + 16 + li * LINE_HEIGHT} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={milestone.style?.fontSize ? milestone.style.fontSize - 2 : 9} fill={milestone.style?.fontColor ?? '#555'}>
                   {line.length > 38 ? line.slice(0, 35) + '...' : line}
                 </text>
               ))}
