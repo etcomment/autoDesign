@@ -1,7 +1,7 @@
 import type { RoadmapData, ProductRoadmapData, TemplateData, TemplateElementStyle, TemplateMilestone } from '../types'
 
 function stripQuotes(s: string): string {
-  return s.replace(/^["']|["']$/g, '').trim()
+  return s.replace(/^["']|["']$/g, '').trim().replace(/\\n/g, '\n')
 }
 
 function parseStyleValue(value: string): string | number {

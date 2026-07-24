@@ -12,7 +12,7 @@ export function TemplateDslEditor() {
   style boxWidth 150
   style fontSize 13
 
-  milestone "Alpha" "Internal testing"
+  milestone "Alpha" "Internal testing\nphase 1 of 2"
     style fill #4a90d9
 
   milestone "Beta" "Early access"
@@ -47,7 +47,8 @@ export function TemplateDslEditor() {
       <div style={styles.hint}>
         <strong>Commands:</strong> @roadmap start finish milestone<br />
         <strong>Grid:</strong> quarters lanes milestone Q:Lane "Title"<br />
-        <strong>Style:</strong> style boxWidth 150 | style fontSize 13 | style fill #4a90d9 | style stroke #333 | style fontColor white
+        <strong>Style:</strong> style boxWidth 150 | style fontSize 13 | style fill #4a90d9<br />
+        <strong>Line break:</strong> use \n in quoted text
       </div>
     </div>
   )
