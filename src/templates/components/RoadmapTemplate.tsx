@@ -17,6 +17,7 @@ interface Rect {
 
 interface LayoutMilestone {
   id: string
+  circleId: string
   index: number
   centerX: number
   rectX: number
@@ -26,17 +27,17 @@ interface LayoutMilestone {
   isAbove: boolean
 }
 
-function getRect(layout: LayoutMilestone, positions: Record<string, Rect>): Rect {
-  const stored = positions[layout.id]
-  if (stored) {
-    return {
-      x: stored.x,
-      y: stored.y,
-      width: stored.width || layout.rectW,
-      height: stored.height || layout.rectH,
+function getRect(elementId: string, positions: Record<string, Rect>, layoutMap: Map<string, LayoutMilestone>): Rect {
+  const stored = positions[elementId]
+  if (stored) return { ...stored, width: stored.width || 20, height: stored.height || 20 }
+  const layout = layoutMap.get(elementId)
+  if (layout) {
+    if (elementId.startsWith('circle-')) {
+      return { x: layout.centerX - 14, y: 260 - 14, width: 28, height: 28 }
     }
+    return { x: layout.rectX, y: layout.rectY, width: layout.rectW, height: layout.rectH }
   }
-  return { x: layout.rectX, y: layout.rectY, width: layout.rectW, height: layout.rectH }
+  return { x: 0, y: 0, width: 0, height: 0 }
 }
 
 export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
@@ -58,36 +59,37 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   const headerH = 30
   const gap = 12
 
-  const layoutMilestones = useMemo<LayoutMilestone[]>(() => {
+  const layoutMap = useMemo(() => {
+    const map = new Map<string, LayoutMilestone>()
     const availableW = W - marginX * 2
     const milestoneSpacing = milestones.length > 1 ? availableW / (milestones.length - 1) : availableW / 2
-    return milestones.map((_milestone, index) => {
+    milestones.forEach((_m, index) => {
       const elementId = `milestone-${index}`
+      const circleId = `circle-${index}`
       const centerX = marginX + index * milestoneSpacing
       const isAbove = index % 2 === 0
-      const rectX = centerX - rectW / 2
-      const rectY = isAbove ? timelineY - circleR - gap - rectH : timelineY + circleR + gap
-      return { id: elementId, index, centerX, rectX, rectY, rectW, rectH, isAbove }
+      const rx = centerX - rectW / 2
+      const ry = isAbove ? timelineY - circleR - gap - rectH : timelineY + circleR + gap
+      map.set(elementId, { id: elementId, circleId, index, centerX, rectX: rx, rectY: ry, rectW, rectH, isAbove })
+      map.set(circleId, { id: circleId, circleId, index, centerX, rectX: rx, rectY: ry, rectW, rectH, isAbove })
     })
+    return map
   }, [milestones])
 
   useEffect(() => {
-    if (layoutMilestones.length === 0) return
-    for (const layout of layoutMilestones) {
-      if (templateElementPositions[layout.id]) continue
-      const rect = getRect(layout, templateElementPositions)
-      moveTemplateElement(layout.id, { x: rect.x, y: rect.y })
-      resizeTemplateElement(layout.id, { width: rect.width, height: rect.height })
+    const ids = [...layoutMap.keys()]
+    for (const id of ids) {
+      if (templateElementPositions[id]) continue
+      const rect = getRect(id, templateElementPositions, layoutMap)
+      moveTemplateElement(id, { x: rect.x, y: rect.y })
+      resizeTemplateElement(id, { width: rect.width, height: rect.height })
     }
-  }, [layoutMilestones, templateElementPositions, moveTemplateElement, resizeTemplateElement])
+  }, [layoutMap, templateElementPositions, moveTemplateElement, resizeTemplateElement])
 
   const elementRects = new Map<string, Rect>()
-  for (const layout of layoutMilestones) {
-    elementRects.set(layout.id, getRect(layout, templateElementPositions))
+  for (const id of layoutMap.keys()) {
+    elementRects.set(id, getRect(id, templateElementPositions, layoutMap))
   }
-
-  const availableW = W - marginX * 2
-  const milestoneSpacing = milestones.length > 1 ? availableW / (milestones.length - 1) : availableW / 2
 
   return (
     <g ref={svgRef}>
@@ -107,26 +109,29 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
 
       {milestones.map((milestone, index) => {
         const elementId = `milestone-${index}`
-        const layout = layoutMilestones.find(l => l.id === elementId)
+        const circleId = `circle-${index}`
+        const layout = layoutMap.get(elementId)
         if (!layout) return null
         const color = tplColors[elementId] ?? PALETTE[index % PALETTE.length]!
+        const circleColor = tplColors[circleId] ?? color
         const customStroke = tplStrokeColors[elementId]
         const isSelected = selectedIds.has(elementId)
-        const isAbove = index % 2 === 0
+        const isCircleSelected = selectedIds.has(circleId)
         const rect = elementRects.get(elementId)!
+        const circleRect = elementRects.get(circleId)!
         const num = String(index + 1)
         const centerX = rect.x + rect.width / 2
+        const circleX = circleRect.x + circleRect.width / 2
+        const circleY = circleRect.y + circleRect.height / 2
+        const availableW = W - marginX * 2
+        const milestoneSpacing = milestones.length > 1 ? availableW / (milestones.length - 1) : availableW / 2
 
         return (
           <g key={index}>
             <line
-              x1={layout.centerX}
-              y1={isAbove ? timelineY - circleR : timelineY + circleR}
-              x2={centerX}
-              y2={isAbove ? rect.y + rect.height : rect.y}
-              stroke={color}
-              strokeWidth={1.5}
-              opacity={0.6}
+              x1={layout.centerX} y1={isSelected ? timelineY - circleR : timelineY + circleR}
+              x2={centerX} y2={isSelected ? rect.y + rect.height : rect.y}
+              stroke={color} strokeWidth={1.5} opacity={0.6}
             />
 
             <g onMouseDown={e => startDrag(e, elementId, rect)} style={{ cursor: 'pointer' }}>
@@ -137,11 +142,11 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
                 <text x={rect.x + rect.width / 2} y={rect.y + headerH + 28} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#555">{milestone.subtitle.length > 28 ? milestone.subtitle.slice(0, 25) + '...' : milestone.subtitle}</text>
               )}
               {isSelected && renderHandles(rect, elementId)}
-              {/* invisible click target - keeps selection working when dragging */}
             </g>
 
-            <g style={{ cursor: 'pointer' }} onClick={e => { e.stopPropagation(); const s = useTemplateStore.getState(); s.toggleTemplateElement(elementId); }}>
-              <CircleBadge cx={layout.centerX} cy={timelineY} r={circleR} fill={color} label={num} />
+            <g onMouseDown={e => startDrag(e, circleId, circleRect)} style={{ cursor: 'pointer' }}>
+              <CircleBadge cx={circleX} cy={circleY} r={circleR} fill={circleColor} label={num} />
+              {isCircleSelected && renderHandles(circleRect, circleId)}
             </g>
 
             {index < milestones.length - 1 && (

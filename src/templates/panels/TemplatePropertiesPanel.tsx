@@ -14,7 +14,7 @@ function elementLabel(elementId: string): string {
   const prefix = elementId.slice(0, dash)
   const name = elementId.slice(dash + 1)
   const labels: Record<string, string> = {
-    milestone: 'Milestone', block: 'Block', step: 'Step', piece: 'Piece',
+    milestone: 'Milestone', circle: 'Circle', block: 'Block', step: 'Step', piece: 'Piece',
     level: 'Level', section: 'Section', metric: 'Metric', row: 'Row',
     item: 'Item', node: 'Node', station: 'Station', branch: 'Branch',
     primary: 'Activity', support: 'Support',
@@ -24,6 +24,7 @@ function elementLabel(elementId: string): string {
 
 const collectionKeys: Record<string, string> = {
   milestone: 'milestones',
+  circle: 'milestones',
   block: 'blocks',
   step: 'steps',
   piece: 'pieces',
@@ -37,6 +38,26 @@ const collectionKeys: Record<string, string> = {
   station: 'stations',
   primary: 'primary',
   support: 'support',
+}
+
+function updateElementField(
+  elementId: string,
+  field: string,
+  value: string,
+  templateData: Record<string, unknown>,
+): Record<string, unknown> {
+  const prefix = elementId.split('-')[0]!
+  const index = parseInt(elementId.split('-')[1]!, 10)
+  if (isNaN(index)) return templateData
+  const collectionKey = collectionKeys[prefix]
+  if (!collectionKey) return templateData
+  const items = templateData[collectionKey] as Record<string, unknown>[] | undefined
+  if (!items || !items[index]) return templateData
+  const newItems = items.map((item, i) => {
+    if (i !== index) return item
+    return { ...item, [field]: value }
+  })
+  return { ...templateData, [collectionKey]: newItems }
 }
 
 export function TemplatePropertiesPanel() {
@@ -57,37 +78,28 @@ export function TemplatePropertiesPanel() {
   const primaryFill = templateColors[primaryId] ?? ''
   const primaryStroke = templateStrokeColors[primaryId] ?? ''
 
-  const handleTextChange = (elementId: string, newTitle: string) => {
-    if (!templateData) return
-    const data = templateData as unknown as Record<string, unknown>
-    const prefix = elementId.split('-')[0]!
-    const index = parseInt(elementId.split('-')[1]!, 10)
-    if (isNaN(index)) return
-    const collectionKey = collectionKeys[prefix]
-    if (!collectionKey) return
-    const items = (data as Record<string, unknown>)[collectionKey] as Record<string, unknown>[] | undefined
-    if (!items || !items[index]) return
-    const item: Record<string, unknown> = { ...items[index] }
-    item.title = newTitle
-    const newItems = [...items]
-    newItems[index] = item as never
-    ;(data as Record<string, unknown>)[collectionKey] = newItems
-    updateTemplateData(data as never)
+  const prefix = primaryId.split('-')[0]!
+  const paramIndex = parseInt(primaryId.split('-')[1]!, 10)
+  const collKey = collectionKeys[prefix]
+  let currentTitle = ''
+  let currentSubtitle = ''
+  if (templateData && collKey && !isNaN(paramIndex)) {
+    const items = (templateData as unknown as Record<string, unknown>)[collKey] as Record<string, string>[] | undefined
+    if (items && items[paramIndex]) {
+      currentTitle = items[paramIndex].title ?? ''
+      currentSubtitle = items[paramIndex].subtitle ?? items[paramIndex].description ?? ''
+    }
   }
 
-  const currentIndex = parseInt(primaryId.split('-')[1]!, 10)
-  const collectionKey = collectionKeys[primaryId.split('-')[0]!]
-  let currentTitle = ''
-  if (templateData && collectionKey && !isNaN(currentIndex)) {
-    const items = (templateData as unknown as Record<string, unknown>)[collectionKey] as Record<string, unknown>[] | undefined
-    if (items && items[currentIndex]) {
-      currentTitle = (items[currentIndex].title || items[currentIndex].label || '') as string
-    }
+  const handleFieldChange = (field: string, value: string) => {
+    if (!templateData) return
+    const updated = updateElementField(primaryId, field, value, templateData as unknown as Record<string, unknown>)
+    updateTemplateData(updated as never)
   }
 
   return (
     <div style={styles.panel}>
-      <h3 style={styles.title}>Template Element</h3>
+      <h3 style={styles.title}>Element Properties</h3>
 
       <div style={styles.section}>
         <label style={styles.label}>
@@ -95,14 +107,27 @@ export function TemplatePropertiesPanel() {
         </label>
       </div>
 
-      {!isMulti && currentTitle !== undefined && (
+      {!isMulti && (
         <div style={styles.section}>
-          <label style={styles.sectionLabel}>Text</label>
+          <label style={styles.sectionLabel}>Title</label>
           <input
             type="text"
             value={currentTitle}
-            onChange={(e) => handleTextChange(primaryId, e.target.value)}
-            placeholder="Edit text..."
+            onChange={(e) => handleFieldChange('title', e.target.value)}
+            placeholder="Title..."
+            style={styles.textInput}
+          />
+        </div>
+      )}
+
+      {!isMulti && paramsAllowSubtitle.has(prefix) && (
+        <div style={styles.section}>
+          <label style={styles.sectionLabel}>Description</label>
+          <input
+            type="text"
+            value={currentSubtitle}
+            onChange={(e) => handleFieldChange('subtitle', e.target.value)}
+            placeholder="Description..."
             style={styles.textInput}
           />
         </div>
@@ -162,6 +187,8 @@ export function TemplatePropertiesPanel() {
     </div>
   )
 }
+
+const paramsAllowSubtitle = new Set(['milestone', 'block', 'step', 'piece', 'level', 'section', 'item', 'node', 'branch', 'station', 'primary', 'support'])
 
 const styles: Record<string, React.CSSProperties> = {
   panel: {
