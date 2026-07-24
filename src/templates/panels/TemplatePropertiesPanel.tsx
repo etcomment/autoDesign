@@ -211,16 +211,19 @@ export function TemplatePropertiesPanel() {
             onChange={(e) => elements.forEach(id => updateTemplateStrokeColor(id, e.target.value))}
             style={styles.colorInput}
           />
-          <label style={{ fontSize: 11, color: '#666', minWidth: 30 }}>Width</label>
+        </div>
+        <label style={{ ...styles.sectionLabel, marginTop: 8 }}>Stroke Width</label>
+        <div style={styles.row}>
           <input
-            type="number"
-            value={primaryStrokeWidth}
-            onChange={(e) => elements.forEach(id => updateTemplateStrokeWidth(id, Number(e.target.value) || 1))}
+            type="range"
             min={0}
-            max={20}
+            max={10}
             step={0.5}
-            style={{ ...styles.textInput, width: 50 }}
+            value={primaryStrokeWidth}
+            onChange={(e) => elements.forEach(id => updateTemplateStrokeWidth(id, Number(e.target.value)))}
+            style={styles.range}
           />
+          <span style={styles.value}>{primaryStrokeWidth}px</span>
         </div>
       </div>
     </div>
@@ -283,6 +286,15 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 0,
     border: 'none',
     cursor: 'pointer',
+  },
+  range: {
+    flex: 1,
+    cursor: 'pointer',
+  },
+  value: {
+    fontSize: 12,
+    color: '#666',
+    minWidth: 30,
   },
   textInput: {
     width: '100%',

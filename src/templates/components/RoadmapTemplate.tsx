@@ -66,6 +66,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
   const moveTemplateElement = useTemplateStore(s => s.moveTemplateElement)
   const resizeTemplateElement = useTemplateStore(s => s.resizeTemplateElement)
@@ -253,6 +254,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const color = tplColors[elementId] ?? milestone.style?.fill ?? PALETTE[index % PALETTE.length]!
         const circleColor = tplColors[circleId] ?? milestone.style?.fill ?? color
         const customStroke = tplStrokeColors[elementId]
+        const customStrokeWidth = tplStrokeWidths[elementId] ?? 1.5
         const styleStroke = milestone.style?.stroke
         const isSelected = selectedIds.has(elementId)
         const isCircleSelected = selectedIds.has(circleId)
@@ -283,7 +285,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
             />
 
             <g onMouseDown={e => startDrag(e, elementId, rect)} style={{ cursor: 'pointer' }}>
-              <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={10} fill="white" stroke={customStroke || (isSelected ? '#4a90d9' : baseStroke)} strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
+              <rect x={rect.x} y={rect.y} width={rect.width} height={rect.height} rx={10} fill="white" stroke={customStroke || (isSelected ? '#4a90d9' : baseStroke)} strokeWidth={isSelected ? 2.5 : customStrokeWidth} strokeDasharray={isSelected ? '4 2' : undefined} />
               <path d={`M ${rect.x + 10} ${rect.y} L ${rect.x + rect.width - 10} ${rect.y} Q ${rect.x + rect.width} ${rect.y} ${rect.x + rect.width} ${rect.y + 10} L ${rect.x + rect.width} ${rect.y + dynamicHeaderH} L ${rect.x} ${rect.y + dynamicHeaderH} L ${rect.x} ${rect.y + 10} Q ${rect.x} ${rect.y} ${rect.x + 10} ${rect.y} Z`} fill={color} />
               {titleLineArray.map((line, li) => (
                 <text key={li} x={rect.x + rect.width / 2} y={titleStartY + li * LINE_HEIGHT} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>{line}</text>

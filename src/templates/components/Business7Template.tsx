@@ -11,6 +11,8 @@ export function Business7Template({ data }: { data: BusinessData }): ReactElemen
   const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
   const { title, centerLabel, nodes } = data
   const W = 900
@@ -43,6 +45,8 @@ export function Business7Template({ data }: { data: BusinessData }): ReactElemen
         const nx = cx + orbitR * Math.cos(angle)
         const ny = cy + orbitR * Math.sin(angle)
         const color = tplColors[elementId] ?? PALETTE[i % PALETTE.length]!
+        const strokeColor = tplStrokeColors[elementId] ?? color
+        const strokeW = tplStrokeWidths[elementId] ?? 1.5
         const isSelected = selectedIds.has(elementId)
         const boxX = nx - nodeW / 2
         const boxY = ny - nodeH / 2
@@ -58,7 +62,7 @@ export function Business7Template({ data }: { data: BusinessData }): ReactElemen
           <g key={i}>
             <line x1={edgeX} y1={edgeY} x2={nx - (dx / dist) * (nodeW / 2)} y2={ny - (dy / dist) * (nodeH / 2)} stroke={color} strokeWidth={1.5} opacity={0.5} />
             <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={boxX} y={boxY} width={nodeW} height={nodeH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
+              <rect x={boxX} y={boxY} width={nodeW} height={nodeH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : strokeColor} strokeWidth={isSelected ? 2.5 : strokeW} strokeDasharray={isSelected ? '4 2' : undefined} />
               <text x={nx} y={ny + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill="#333">
                 {node.title.length > 14 ? node.title.slice(0, 12) + '..' : node.title}
               </text>
