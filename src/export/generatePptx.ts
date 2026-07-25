@@ -126,45 +126,40 @@ export async function downloadPptx(model: DiagramModel, filename: string = 'diag
   URL.revokeObjectURL(url)
 }
 
-function getComputedSvgStyle(el: Element): { fill: string; stroke: string; strokeWidth: number; rx: number } {
-  let fill = ''
-  let stroke = ''
-  let strokeWidth = -1
-  let rx = 0
+function resolveColorToHex(color: string): string {
+  if (!color || color === 'none' || color === 'transparent') return ''
+  
+  if (color.startsWith('#')) {
+    let hex = color.replace('#', '')
+    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('')
+    return hex.toUpperCase().slice(0, 6)
+  }
 
-  let current: Element | null = el
-  while (current && current.tagName.toLowerCase() !== 'svg') {
-    const f = current.getAttribute('fill')
-    if (!fill && f) fill = f
+  const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
+  if (match) {
+    const r = parseInt(match[1]!).toString(16).padStart(2, '0')
+    const g = parseInt(match[2]!).toString(16).padStart(2, '0')
+    const b = parseInt(match[3]!).toString(16).padStart(2, '0')
+    return (r + g + b).toUpperCase()
+  }
 
-    const s = current.getAttribute('stroke')
-    if (!stroke && s) stroke = s
-
-    const sw = current.getAttribute('stroke-width')
-    if (strokeWidth < 0 && sw) strokeWidth = parseFloat(sw)
-
-    const r = current.getAttribute('rx')
-    if (rx <= 0 && r) rx = parseFloat(r)
-
-    const styleAttr = current.getAttribute('style')
-    if (styleAttr) {
-      const parts = styleAttr.split(';')
-      for (const part of parts) {
-        const [k, v] = part.split(':').map(str => str.trim())
-        if (k === 'fill' && v && !fill) fill = v
-        if (k === 'stroke' && v && !stroke) stroke = v
-        if (k === 'stroke-width' && v && strokeWidth < 0) strokeWidth = parseFloat(v)
-      }
+  // Fallback for named colors by forcing browser to resolve it
+  if (typeof document !== 'undefined') {
+    const temp = document.createElement('div')
+    temp.style.color = color
+    document.body.appendChild(temp)
+    const computed = window.getComputedStyle(temp).color
+    document.body.removeChild(temp)
+    const m2 = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
+    if (m2) {
+      const r = parseInt(m2[1]!).toString(16).padStart(2, '0')
+      const g = parseInt(m2[2]!).toString(16).padStart(2, '0')
+      const b = parseInt(m2[3]!).toString(16).padStart(2, '0')
+      return (r + g + b).toUpperCase()
     }
-    current = current.parentElement
   }
 
-  return {
-    fill: fill || 'none',
-    stroke: stroke || 'none',
-    strokeWidth: strokeWidth >= 0 ? strokeWidth : 1,
-    rx,
-  }
+  return '000000'
 }
 
 export async function generateCanvasPptx(): Promise<Blob> {
@@ -249,15 +244,26 @@ export async function generateCanvasPptx(): Promise<Blob> {
     // Ignore interactive editor handles or selection bounding boxes
     if (el.getAttribute('stroke-dasharray') === '4 2' || el.classList.contains('handle') || el.getAttribute('data-handle')) continue
 
-    const { fill, stroke, strokeWidth, rx } = getComputedSvgStyle(el)
+    const computedStyle = window.getComputedStyle(el)
+    const svgEl = el as SVGElement
+    let fill = el.getAttribute('fill')
+    if (!fill) fill = svgEl.style.fill || computedStyle.fill || 'none'
+    let stroke = el.getAttribute('stroke')
+    if (!stroke) stroke = svgEl.style.stroke || computedStyle.stroke || 'none'
+    
+    let strokeWidthStr = el.getAttribute('stroke-width')
+    if (!strokeWidthStr) strokeWidthStr = svgEl.style.strokeWidth || computedStyle.strokeWidth || '1'
+    const strokeWidth = parseFloat(strokeWidthStr || '1')
+    
+    const rx = parseFloat(el.getAttribute('rx') || '0')
 
-    const isFillTransparent = !fill || fill === 'none' || fill === 'transparent'
-    const isStrokeTransparent = !stroke || stroke === 'none' || stroke === 'transparent' || strokeWidth <= 0
+    const isFillTransparent = fill === 'none' || fill === 'transparent' || fill === 'rgba(0, 0, 0, 0)'
+    const isStrokeTransparent = stroke === 'none' || stroke === 'transparent' || stroke === 'rgba(0, 0, 0, 0)' || strokeWidth <= 0
 
     if (isFillTransparent && isStrokeTransparent) continue
 
-    const hexFill = mapHexToPptxColor(fill === 'none' ? '#ffffff' : fill)
-    const hexStroke = mapHexToPptxColor(stroke === 'none' ? '#000000' : stroke)
+    const hexFill = isFillTransparent ? '' : resolveColorToHex(fill || 'none')
+    const hexStroke = isStrokeTransparent ? '' : resolveColorToHex(stroke || 'none')
 
     const shapeOpts: PptxGenJS.ShapeProps = {
       x: 0,
@@ -266,11 +272,11 @@ export async function generateCanvasPptx(): Promise<Blob> {
       h: 0,
     }
 
-    if (!isFillTransparent) {
+    if (hexFill) {
       shapeOpts.fill = { color: hexFill }
     }
 
-    if (!isStrokeTransparent) {
+    if (hexStroke) {
       shapeOpts.line = {
         color: hexStroke,
         width: Math.max(0.5, strokeWidth * scale * 0.75),
@@ -378,11 +384,14 @@ export async function generateCanvasPptx(): Promise<Blob> {
     const y = parseFloat(el.getAttribute('y') || '0')
     const fontSizeSvg = parseFloat(el.getAttribute('font-size') || '14')
     const fontFamily = el.getAttribute('font-family') || 'Arial, sans-serif'
-    const { fill } = getComputedSvgStyle(el)
+    const svgEl = el as SVGElement
+    let fill = el.getAttribute('fill')
+    if (!fill) fill = svgEl.style.fill || window.getComputedStyle(el).fill || 'none'
+    const hexColor = fill === 'none' || fill === 'transparent' ? '111111' : resolveColorToHex(fill || 'none')
     const textAnchor = el.getAttribute('text-anchor') || 'start'
 
     const pptxFontSize = Math.max(9, Math.round(fontSizeSvg * scale * 72 / 96))
-    const hexColor = mapHexToPptxColor(fill === 'none' ? '#111111' : fill)
+
 
     let align: PptxGenJS.HAlign = 'left'
     if (textAnchor === 'middle') align = 'center'
