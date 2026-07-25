@@ -126,24 +126,45 @@ export async function downloadPptx(model: DiagramModel, filename: string = 'diag
   URL.revokeObjectURL(url)
 }
 
-function parseSvgStyle(el: Element): { fill: string; stroke: string; strokeWidth: number; rx: number } {
-  let fill = el.getAttribute('fill') || ''
-  let stroke = el.getAttribute('stroke') || ''
-  let strokeWidth = parseFloat(el.getAttribute('stroke-width') || '0')
-  const rx = parseFloat(el.getAttribute('rx') || '0')
+function getComputedSvgStyle(el: Element): { fill: string; stroke: string; strokeWidth: number; rx: number } {
+  let fill = ''
+  let stroke = ''
+  let strokeWidth = -1
+  let rx = 0
 
-  const styleAttr = el.getAttribute('style')
-  if (styleAttr) {
-    const parts = styleAttr.split(';')
-    for (const part of parts) {
-      const [k, v] = part.split(':').map(s => s.trim())
-      if (k === 'fill' && v) fill = v
-      if (k === 'stroke' && v) stroke = v
-      if (k === 'stroke-width' && v) strokeWidth = parseFloat(v)
+  let current: Element | null = el
+  while (current && current.tagName.toLowerCase() !== 'svg') {
+    const f = current.getAttribute('fill')
+    if (!fill && f) fill = f
+
+    const s = current.getAttribute('stroke')
+    if (!stroke && s) stroke = s
+
+    const sw = current.getAttribute('stroke-width')
+    if (strokeWidth < 0 && sw) strokeWidth = parseFloat(sw)
+
+    const r = current.getAttribute('rx')
+    if (rx <= 0 && r) rx = parseFloat(r)
+
+    const styleAttr = current.getAttribute('style')
+    if (styleAttr) {
+      const parts = styleAttr.split(';')
+      for (const part of parts) {
+        const [k, v] = part.split(':').map(str => str.trim())
+        if (k === 'fill' && v && !fill) fill = v
+        if (k === 'stroke' && v && !stroke) stroke = v
+        if (k === 'stroke-width' && v && strokeWidth < 0) strokeWidth = parseFloat(v)
+      }
     }
+    current = current.parentElement
   }
 
-  return { fill, stroke, strokeWidth, rx }
+  return {
+    fill: fill || 'none',
+    stroke: stroke || 'none',
+    strokeWidth: strokeWidth >= 0 ? strokeWidth : 1,
+    rx,
+  }
 }
 
 export async function generateCanvasPptx(): Promise<Blob> {
@@ -194,22 +215,22 @@ export async function generateCanvasPptx(): Promise<Blob> {
   const mapW = (w: number) => w * scale
   const mapH = (h: number) => h * scale
 
-  // 1. Convert SVG visual elements to native PowerPoint shapes
+  // 1. Process SVG shape elements
   svgEl.querySelectorAll('rect, circle, ellipse, polygon, path, line').forEach((el) => {
     const tagName = el.tagName.toLowerCase()
 
-    // Ignore selection marquee, handles or transparent overlays
-    if (el.getAttribute('stroke-dasharray') || el.classList.contains('handle')) return
+    // Ignore interactive editor handles or selection bounding boxes
+    if (el.getAttribute('stroke-dasharray') === '4 2' || el.classList.contains('handle') || el.getAttribute('data-handle')) return
 
-    const { fill, stroke, strokeWidth, rx } = parseSvgStyle(el)
+    const { fill, stroke, strokeWidth, rx } = getComputedSvgStyle(el)
 
     const isFillTransparent = !fill || fill === 'none' || fill === 'transparent'
     const isStrokeTransparent = !stroke || stroke === 'none' || stroke === 'transparent' || strokeWidth <= 0
 
     if (isFillTransparent && isStrokeTransparent) return
 
-    const hexFill = mapHexToPptxColor(fill || '#ffffff')
-    const hexStroke = mapHexToPptxColor(stroke || '#000000')
+    const hexFill = mapHexToPptxColor(fill === 'none' ? '#ffffff' : fill)
+    const hexStroke = mapHexToPptxColor(stroke === 'none' ? '#000000' : stroke)
 
     const shapeOpts: PptxGenJS.ShapeProps = {
       x: 0,
@@ -260,14 +281,14 @@ export async function generateCanvasPptx(): Promise<Blob> {
     } else if (tagName === 'ellipse') {
       const cx = parseFloat(el.getAttribute('cx') || '0')
       const cy = parseFloat(el.getAttribute('cy') || '0')
-      const rx = parseFloat(el.getAttribute('rx') || '0')
-      const ry = parseFloat(el.getAttribute('ry') || '0')
-      if (rx <= 0 || ry <= 0) return
+      const rxAttr = parseFloat(el.getAttribute('rx') || '0')
+      const ryAttr = parseFloat(el.getAttribute('ry') || '0')
+      if (rxAttr <= 0 || ryAttr <= 0) return
 
-      shapeOpts.x = mapX(cx - rx)
-      shapeOpts.y = mapY(cy - ry)
-      shapeOpts.w = mapW(rx * 2)
-      shapeOpts.h = mapH(ry * 2)
+      shapeOpts.x = mapX(cx - rxAttr)
+      shapeOpts.y = mapY(cy - ryAttr)
+      shapeOpts.w = mapW(rxAttr * 2)
+      shapeOpts.h = mapH(ryAttr * 2)
       slide.addShape('ellipse', shapeOpts)
     } else if (tagName === 'line') {
       const x1 = parseFloat(el.getAttribute('x1') || '0')
@@ -315,7 +336,7 @@ export async function generateCanvasPptx(): Promise<Blob> {
       const pathData = el.getAttribute('d') || ''
       if (!pathData) return
 
-      // Compute bounding box from path numbers
+      // Extract numbers for bounding box calculation
       const coords = pathData.match(/[-+]?\d*\.?\d+/g)?.map(Number) || []
       if (coords.length >= 4) {
         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
@@ -334,7 +355,10 @@ export async function generateCanvasPptx(): Promise<Blob> {
           shapeOpts.y = mapY(minY)
           shapeOpts.w = mapW(maxX - minX)
           shapeOpts.h = mapH(maxY - minY)
-          slide.addShape('rect', shapeOpts)
+
+          // If path is a header clip or decorative shape, add as round rect or rect
+          const shapeType = rx > 0 ? 'roundRect' : 'rect'
+          slide.addShape(shapeType, shapeOpts)
         }
       }
     }
@@ -349,11 +373,11 @@ export async function generateCanvasPptx(): Promise<Blob> {
     const y = parseFloat(el.getAttribute('y') || '0')
     const fontSizeSvg = parseFloat(el.getAttribute('font-size') || '14')
     const fontFamily = el.getAttribute('font-family') || 'Arial, sans-serif'
-    const fill = parseSvgStyle(el).fill || el.getAttribute('fill') || '#111111'
+    const { fill } = getComputedSvgStyle(el)
     const textAnchor = el.getAttribute('text-anchor') || 'start'
 
     const pptxFontSize = Math.max(9, Math.round(fontSizeSvg * scale * 72 / 96))
-    const hexColor = mapHexToPptxColor(fill)
+    const hexColor = mapHexToPptxColor(fill === 'none' ? '#111111' : fill)
 
     let align: PptxGenJS.HAlign = 'left'
     if (textAnchor === 'middle') align = 'center'
