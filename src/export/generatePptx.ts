@@ -128,68 +128,213 @@ export async function downloadPptx(model: DiagramModel, filename: string = 'diag
 
 export async function generateCanvasPptx(): Promise<Blob> {
   const svgString = getContentSvg()
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(svgString, 'image/svg+xml')
+  const svgEl = doc.querySelector('svg')
 
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    const svgBlob = new Blob([svgString], { type: 'image/svg+xml' })
-    const url = URL.createObjectURL(svgBlob)
+  const pres = new PptxGenJS()
+  pres.layout = 'LAYOUT_WIDE'
+  pres.author = 'autoDesign'
+  pres.title = 'Diagram'
+  const slide = pres.addSlide()
 
-    img.onload = async () => {
-      // 4x pixel ratio scale for ultra-high-definition sharp rendering
-      const scale = 4
-      const canvas = document.createElement('canvas')
-      canvas.width = img.width * scale
-      canvas.height = img.height * scale
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        URL.revokeObjectURL(url)
-        return reject(new Error('Canvas context not available'))
-      }
+  if (!svgEl) {
+    const data = await pres.write({ outputType: 'arraybuffer' })
+    return new Blob([data as ArrayBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    })
+  }
 
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      ctx.scale(scale, scale)
-      ctx.drawImage(img, 0, 0)
+  // Parse viewBox bounds
+  const viewBoxAttr = svgEl.getAttribute('viewBox')
+  let vx = 0, vy = 0, vw = 900, vh = 600
+  if (viewBoxAttr) {
+    const parts = viewBoxAttr.split(/[\s,]+/).map(Number)
+    if (parts.length === 4 && parts.every(n => typeof n === 'number' && !isNaN(n))) {
+      vx = parts[0]!
+      vy = parts[1]!
+      vw = parts[2]!
+      vh = parts[3]!
+    }
+  }
 
-      const dataUrl = canvas.toDataURL('image/png', 1.0)
-      URL.revokeObjectURL(url)
+  // Target slide dimensions in inches (13.33 x 7.5 for widescreen)
+  const slideW = 13.33
+  const slideH = 7.5
 
-      const pres = new PptxGenJS()
-      pres.layout = 'LAYOUT_WIDE'
-      pres.author = 'autoDesign'
-      pres.title = 'Diagram'
-      const slide = pres.addSlide()
+  const scaleX = slideW / (vw || 900)
+  const scaleY = slideH / (vh || 600)
+  const scale = Math.min(scaleX, scaleY)
 
-      const slideW = 13.33
-      const slideH = 7.5
-      const aspect = img.width / img.height
-      let imgW: number
-      let imgH: number
-      if (aspect > slideW / slideH) {
-        imgW = slideW
-        imgH = slideW / aspect
-      } else {
-        imgH = slideH
-        imgW = slideH * aspect
-      }
+  const offsetX = (slideW - (vw * scale)) / 2
+  const offsetY = (slideH - (vh * scale)) / 2
 
-      const x = (slideW - imgW) / 2
-      const y = (slideH - imgH) / 2
+  const mapX = (x: number) => offsetX + (x - vx) * scale
+  const mapY = (y: number) => offsetY + (y - vy) * scale
+  const mapW = (w: number) => w * scale
+  const mapH = (h: number) => h * scale
 
-      slide.addImage({ data: dataUrl, x, y, w: imgW, h: imgH })
+  // 1. Process SVG shapes (rect, circle, ellipse, polygon)
+  svgEl.querySelectorAll('rect, circle, ellipse, polygon, path').forEach((el) => {
+    const tagName = el.tagName.toLowerCase()
+    const fill = el.getAttribute('fill') || '#ffffff'
+    const stroke = el.getAttribute('stroke') || 'none'
+    const strokeWidth = parseFloat(el.getAttribute('stroke-width') || '1')
 
-      const data = await pres.write({ outputType: 'arraybuffer' })
-      resolve(new Blob([data as ArrayBuffer], {
-        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      }))
+    if (fill === 'none' && stroke === 'none') return
+    if (el.getAttribute('fill') === 'transparent' || el.getAttribute('fill') === 'none') return
+
+    const hexFill = mapHexToPptxColor(fill)
+    const hexStroke = mapHexToPptxColor(stroke)
+
+    const shapeOpts: PptxGenJS.ShapeProps = {
+      x: 0,
+      y: 0,
+      w: 0,
+      h: 0,
     }
 
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      reject(new Error('Failed to load SVG'))
+    if (fill !== 'none' && fill !== 'transparent') {
+      shapeOpts.fill = { color: hexFill }
     }
 
-    img.src = url
+    if (stroke !== 'none' && stroke !== 'transparent' && strokeWidth > 0) {
+      shapeOpts.line = {
+        color: hexStroke,
+        width: Math.max(0.5, strokeWidth * scale * 0.75),
+      }
+    }
+
+    if (tagName === 'rect') {
+      const x = parseFloat(el.getAttribute('x') || '0')
+      const y = parseFloat(el.getAttribute('y') || '0')
+      const w = parseFloat(el.getAttribute('width') || '0')
+      const h = parseFloat(el.getAttribute('height') || '0')
+      if (w <= 0 || h <= 0) return
+
+      // Skip white background rect
+      if (x === vx && y === vy && w === vw && h === vh && (fill === 'white' || fill === '#ffffff')) return
+
+      shapeOpts.x = mapX(x)
+      shapeOpts.y = mapY(y)
+      shapeOpts.w = mapW(w)
+      shapeOpts.h = mapH(h)
+      slide.addShape('rect', shapeOpts)
+    } else if (tagName === 'circle') {
+      const cx = parseFloat(el.getAttribute('cx') || '0')
+      const cy = parseFloat(el.getAttribute('cy') || '0')
+      const r = parseFloat(el.getAttribute('r') || '0')
+      if (r <= 0) return
+
+      shapeOpts.x = mapX(cx - r)
+      shapeOpts.y = mapY(cy - r)
+      shapeOpts.w = mapW(r * 2)
+      shapeOpts.h = mapH(r * 2)
+      slide.addShape('ellipse', shapeOpts)
+    } else if (tagName === 'ellipse') {
+      const cx = parseFloat(el.getAttribute('cx') || '0')
+      const cy = parseFloat(el.getAttribute('cy') || '0')
+      const rx = parseFloat(el.getAttribute('rx') || '0')
+      const ry = parseFloat(el.getAttribute('ry') || '0')
+      if (rx <= 0 || ry <= 0) return
+
+      shapeOpts.x = mapX(cx - rx)
+      shapeOpts.y = mapY(cy - ry)
+      shapeOpts.w = mapW(rx * 2)
+      shapeOpts.h = mapH(ry * 2)
+      slide.addShape('ellipse', shapeOpts)
+    } else if (tagName === 'polygon') {
+      const pointsAttr = el.getAttribute('points') || ''
+      const pts = pointsAttr.trim().split(/[\s,]+/).map(Number)
+      if (pts.length >= 6) {
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+        for (let i = 0; i < pts.length; i += 2) {
+          const px = pts[i]!
+          const py = pts[i + 1]!
+          if (px < minX) minX = px
+          if (px > maxX) maxX = px
+          if (py < minY) minY = py
+          if (py > maxY) maxY = py
+        }
+        shapeOpts.x = mapX(minX)
+        shapeOpts.y = mapY(minY)
+        shapeOpts.w = mapW(maxX - minX)
+        shapeOpts.h = mapH(maxY - minY)
+        slide.addShape('diamond', shapeOpts)
+      }
+    } else if (tagName === 'path') {
+      const pathData = el.getAttribute('d') || ''
+      if (!pathData) return
+
+      // Extract bounding coordinates from path string
+      const coords = pathData.match(/[-+]?\d*\.?\d+/g)?.map(Number) || []
+      if (coords.length >= 4) {
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+        for (let i = 0; i < coords.length - 1; i += 2) {
+          const px = coords[i]!
+          const py = coords[i + 1]!
+          if (px >= vx - 1000 && px <= vx + vw + 1000 && py >= vy - 1000 && py <= vy + vh + 1000) {
+            if (px < minX) minX = px
+            if (px > maxX) maxX = px
+            if (py < minY) minY = py
+            if (py > maxY) maxY = py
+          }
+        }
+        if (minX < maxX && minY < maxY) {
+          shapeOpts.x = mapX(minX)
+          shapeOpts.y = mapY(minY)
+          shapeOpts.w = mapW(maxX - minX)
+          shapeOpts.h = mapH(maxY - minY)
+          slide.addShape('rect', shapeOpts)
+        }
+      }
+    }
+  })
+
+  // 2. Process SVG text elements as native editable PPTX text boxes
+  svgEl.querySelectorAll('text').forEach((el) => {
+    const textContent = el.textContent?.trim()
+    if (!textContent) return
+
+    const x = parseFloat(el.getAttribute('x') || '0')
+    const y = parseFloat(el.getAttribute('y') || '0')
+    const fontSizeSvg = parseFloat(el.getAttribute('font-size') || '14')
+    const fontFamily = el.getAttribute('font-family') || 'Arial, sans-serif'
+    const fill = el.getAttribute('fill') || '#111111'
+    const textAnchor = el.getAttribute('text-anchor') || 'start'
+
+    const pptxFontSize = Math.max(8, Math.round(fontSizeSvg * scale * 72 / 96))
+    const hexColor = mapHexToPptxColor(fill)
+
+    let align: PptxGenJS.HAlign = 'left'
+    if (textAnchor === 'middle') align = 'center'
+    else if (textAnchor === 'end') align = 'right'
+
+    const estWidth = Math.max(1.5, (textContent.length * fontSizeSvg * 0.6 * scale) / 96)
+    const estHeight = Math.max(0.4, (fontSizeSvg * 1.4 * scale) / 96)
+
+    let pptxX = mapX(x)
+    if (textAnchor === 'middle') pptxX -= estWidth / 2
+    else if (textAnchor === 'end') pptxX -= estWidth
+
+    const pptxY = mapY(y) - estHeight / 2
+
+    slide.addText(textContent, {
+      x: Math.max(0, pptxX),
+      y: Math.max(0, pptxY),
+      w: estWidth,
+      h: estHeight,
+      fontSize: pptxFontSize,
+      fontFace: fontFamily.replace(/['",]/g, ''),
+      color: hexColor,
+      align,
+      valign: 'middle',
+    })
+  })
+
+  const data = await pres.write({ outputType: 'arraybuffer' })
+  return new Blob([data as ArrayBuffer], {
+    type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   })
 }
 
