@@ -2,6 +2,7 @@ import PptxGenJS from 'pptxgenjs'
 import type { DiagramModel } from '../core/model/DiagramModel'
 import type { Shape } from '../core/model/Shape'
 import { computeEdgePoints } from '../core/geometry'
+import { getContentSvg } from './generateSvg'
 
 function mapHexToPptxColor(hex: string): string {
   return hex.startsWith('#') ? hex.replace('#', '') : hex
@@ -126,9 +127,7 @@ export async function downloadPptx(model: DiagramModel, filename: string = 'diag
 }
 
 export async function generateCanvasPptx(): Promise<Blob> {
-  const svgElement = document.querySelector('svg')
-  if (!svgElement) throw new Error('No SVG element found on canvas')
-  const svgString = new XMLSerializer().serializeToString(svgElement)
+  const svgString = getContentSvg()
 
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -136,16 +135,23 @@ export async function generateCanvasPptx(): Promise<Blob> {
     const url = URL.createObjectURL(svgBlob)
 
     img.onload = async () => {
+      // 4x pixel ratio scale for ultra-high-definition sharp rendering
+      const scale = 4
       const canvas = document.createElement('canvas')
-      canvas.width = img.width
-      canvas.height = img.height
+      canvas.width = img.width * scale
+      canvas.height = img.height * scale
       const ctx = canvas.getContext('2d')
       if (!ctx) {
         URL.revokeObjectURL(url)
         return reject(new Error('Canvas context not available'))
       }
+
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.scale(scale, scale)
       ctx.drawImage(img, 0, 0)
-      const dataUrl = canvas.toDataURL('image/png')
+
+      const dataUrl = canvas.toDataURL('image/png', 1.0)
       URL.revokeObjectURL(url)
 
       const pres = new PptxGenJS()
