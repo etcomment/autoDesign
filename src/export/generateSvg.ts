@@ -125,3 +125,77 @@ export function downloadCanvasSvg(filename: string = 'diagram.svg'): void {
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
 }
+
+export function getContentSvg(): string {
+  const svgElement = document.querySelector('svg')
+  if (!svgElement) throw new Error('No SVG element found on canvas')
+
+  const mainGroup = svgElement.querySelector('g[transform]')
+  if (!mainGroup) return exportCanvasToSvg()
+
+  const clonedGroup = mainGroup.cloneNode(true) as SVGGElement
+
+  // Remove background grid rect
+  const gridRect = clonedGroup.querySelector('rect[fill="url(#grid)"]')
+  if (gridRect) gridRect.remove()
+
+  // Remove selection marquee or interactive handles
+  clonedGroup.querySelectorAll('[stroke-dasharray="4 2"], .handle, rect[fill*="rgba(74, 144, 217"]').forEach(el => el.remove())
+
+  // Remove data-shape-id if present
+  clonedGroup.querySelectorAll('[data-shape-id]').forEach(el => {
+    el.removeAttribute('data-shape-id')
+  })
+
+  // Measure bounding box if possible via SVG API or fallback to viewBox
+  let bbox: { x: number; y: number; width: number; height: number } | null = null
+  try {
+    const rawGroup = mainGroup as SVGGElement
+    // Temporarily hide grid rect to compute accurate bbox of diagram contents
+    const rawGrid = rawGroup.querySelector('rect[fill="url(#grid)"]') as SVGElement | null
+    if (rawGrid) rawGrid.style.display = 'none'
+
+    const svgBBox = rawGroup.getBBox()
+
+    if (rawGrid) rawGrid.style.display = ''
+
+    if (svgBBox && svgBBox.width > 0 && svgBBox.height > 0) {
+      bbox = {
+        x: svgBBox.x,
+        y: svgBBox.y,
+        width: svgBBox.width,
+        height: svgBBox.height,
+      }
+    }
+  } catch {
+    bbox = null
+  }
+
+  const vb = svgElement.viewBox.baseVal
+  const padding = 40
+
+  const vx = bbox ? bbox.x - padding : vb.x
+  const vy = bbox ? bbox.y - padding : vb.y
+  const vw = bbox ? bbox.width + padding * 2 : vb.width
+  const vh = bbox ? bbox.height + padding * 2 : vb.height
+
+  // Remove any remaining root transform from cloned group so elements align with computed viewbox
+  clonedGroup.removeAttribute('transform')
+
+  const inner = clonedGroup.innerHTML
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">\n  <rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="white"/>\n  ${inner}\n</svg>`
+}
+
+export function downloadContentSvg(filename: string = 'diagram.svg'): void {
+  const svg = getContentSvg()
+  const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
