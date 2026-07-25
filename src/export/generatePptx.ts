@@ -126,6 +126,26 @@ export async function downloadPptx(model: DiagramModel, filename: string = 'diag
   URL.revokeObjectURL(url)
 }
 
+function parseSvgStyle(el: Element): { fill: string; stroke: string; strokeWidth: number; rx: number } {
+  let fill = el.getAttribute('fill') || ''
+  let stroke = el.getAttribute('stroke') || ''
+  let strokeWidth = parseFloat(el.getAttribute('stroke-width') || '0')
+  const rx = parseFloat(el.getAttribute('rx') || '0')
+
+  const styleAttr = el.getAttribute('style')
+  if (styleAttr) {
+    const parts = styleAttr.split(';')
+    for (const part of parts) {
+      const [k, v] = part.split(':').map(s => s.trim())
+      if (k === 'fill' && v) fill = v
+      if (k === 'stroke' && v) stroke = v
+      if (k === 'stroke-width' && v) strokeWidth = parseFloat(v)
+    }
+  }
+
+  return { fill, stroke, strokeWidth, rx }
+}
+
 export async function generateCanvasPptx(): Promise<Blob> {
   const svgString = getContentSvg()
   const parser = new DOMParser()
@@ -174,18 +194,22 @@ export async function generateCanvasPptx(): Promise<Blob> {
   const mapW = (w: number) => w * scale
   const mapH = (h: number) => h * scale
 
-  // 1. Process SVG shapes (rect, circle, ellipse, polygon)
-  svgEl.querySelectorAll('rect, circle, ellipse, polygon, path').forEach((el) => {
+  // 1. Convert SVG visual elements to native PowerPoint shapes
+  svgEl.querySelectorAll('rect, circle, ellipse, polygon, path, line').forEach((el) => {
     const tagName = el.tagName.toLowerCase()
-    const fill = el.getAttribute('fill') || '#ffffff'
-    const stroke = el.getAttribute('stroke') || 'none'
-    const strokeWidth = parseFloat(el.getAttribute('stroke-width') || '1')
 
-    if (fill === 'none' && stroke === 'none') return
-    if (el.getAttribute('fill') === 'transparent' || el.getAttribute('fill') === 'none') return
+    // Ignore selection marquee, handles or transparent overlays
+    if (el.getAttribute('stroke-dasharray') || el.classList.contains('handle')) return
 
-    const hexFill = mapHexToPptxColor(fill)
-    const hexStroke = mapHexToPptxColor(stroke)
+    const { fill, stroke, strokeWidth, rx } = parseSvgStyle(el)
+
+    const isFillTransparent = !fill || fill === 'none' || fill === 'transparent'
+    const isStrokeTransparent = !stroke || stroke === 'none' || stroke === 'transparent' || strokeWidth <= 0
+
+    if (isFillTransparent && isStrokeTransparent) return
+
+    const hexFill = mapHexToPptxColor(fill || '#ffffff')
+    const hexStroke = mapHexToPptxColor(stroke || '#000000')
 
     const shapeOpts: PptxGenJS.ShapeProps = {
       x: 0,
@@ -194,11 +218,11 @@ export async function generateCanvasPptx(): Promise<Blob> {
       h: 0,
     }
 
-    if (fill !== 'none' && fill !== 'transparent') {
+    if (!isFillTransparent) {
       shapeOpts.fill = { color: hexFill }
     }
 
-    if (stroke !== 'none' && stroke !== 'transparent' && strokeWidth > 0) {
+    if (!isStrokeTransparent) {
       shapeOpts.line = {
         color: hexStroke,
         width: Math.max(0.5, strokeWidth * scale * 0.75),
@@ -212,14 +236,16 @@ export async function generateCanvasPptx(): Promise<Blob> {
       const h = parseFloat(el.getAttribute('height') || '0')
       if (w <= 0 || h <= 0) return
 
-      // Skip white background rect
+      // Skip white background rect of entire canvas
       if (x === vx && y === vy && w === vw && h === vh && (fill === 'white' || fill === '#ffffff')) return
 
       shapeOpts.x = mapX(x)
       shapeOpts.y = mapY(y)
       shapeOpts.w = mapW(w)
       shapeOpts.h = mapH(h)
-      slide.addShape('rect', shapeOpts)
+
+      const shapeType = rx > 0 ? 'roundRect' : 'rect'
+      slide.addShape(shapeType, shapeOpts)
     } else if (tagName === 'circle') {
       const cx = parseFloat(el.getAttribute('cx') || '0')
       const cy = parseFloat(el.getAttribute('cy') || '0')
@@ -243,6 +269,29 @@ export async function generateCanvasPptx(): Promise<Blob> {
       shapeOpts.w = mapW(rx * 2)
       shapeOpts.h = mapH(ry * 2)
       slide.addShape('ellipse', shapeOpts)
+    } else if (tagName === 'line') {
+      const x1 = parseFloat(el.getAttribute('x1') || '0')
+      const y1 = parseFloat(el.getAttribute('y1') || '0')
+      const x2 = parseFloat(el.getAttribute('x2') || '0')
+      const y2 = parseFloat(el.getAttribute('y2') || '0')
+
+      const sx = mapX(x1)
+      const sy = mapY(y1)
+      const ex = mapX(x2)
+      const ey = mapY(y2)
+
+      slide.addShape('line', {
+        x: sx,
+        y: sy,
+        w: ex - sx,
+        h: ey - sy,
+        line: {
+          color: hexStroke,
+          width: Math.max(0.5, strokeWidth * scale * 0.75),
+        },
+        flipV: ey < sy,
+        flipH: ex < sx,
+      })
     } else if (tagName === 'polygon') {
       const pointsAttr = el.getAttribute('points') || ''
       const pts = pointsAttr.trim().split(/[\s,]+/).map(Number)
@@ -266,14 +315,14 @@ export async function generateCanvasPptx(): Promise<Blob> {
       const pathData = el.getAttribute('d') || ''
       if (!pathData) return
 
-      // Extract bounding coordinates from path string
+      // Compute bounding box from path numbers
       const coords = pathData.match(/[-+]?\d*\.?\d+/g)?.map(Number) || []
       if (coords.length >= 4) {
         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
         for (let i = 0; i < coords.length - 1; i += 2) {
           const px = coords[i]!
           const py = coords[i + 1]!
-          if (px >= vx - 1000 && px <= vx + vw + 1000 && py >= vy - 1000 && py <= vy + vh + 1000) {
+          if (px >= vx - 500 && px <= vx + vw + 500 && py >= vy - 500 && py <= vy + vh + 500) {
             if (px < minX) minX = px
             if (px > maxX) maxX = px
             if (py < minY) minY = py
@@ -291,7 +340,7 @@ export async function generateCanvasPptx(): Promise<Blob> {
     }
   })
 
-  // 2. Process SVG text elements as native editable PPTX text boxes
+  // 2. Convert SVG text elements to native, editable PowerPoint text boxes
   svgEl.querySelectorAll('text').forEach((el) => {
     const textContent = el.textContent?.trim()
     if (!textContent) return
@@ -300,18 +349,18 @@ export async function generateCanvasPptx(): Promise<Blob> {
     const y = parseFloat(el.getAttribute('y') || '0')
     const fontSizeSvg = parseFloat(el.getAttribute('font-size') || '14')
     const fontFamily = el.getAttribute('font-family') || 'Arial, sans-serif'
-    const fill = el.getAttribute('fill') || '#111111'
+    const fill = parseSvgStyle(el).fill || el.getAttribute('fill') || '#111111'
     const textAnchor = el.getAttribute('text-anchor') || 'start'
 
-    const pptxFontSize = Math.max(8, Math.round(fontSizeSvg * scale * 72 / 96))
+    const pptxFontSize = Math.max(9, Math.round(fontSizeSvg * scale * 72 / 96))
     const hexColor = mapHexToPptxColor(fill)
 
     let align: PptxGenJS.HAlign = 'left'
     if (textAnchor === 'middle') align = 'center'
     else if (textAnchor === 'end') align = 'right'
 
-    const estWidth = Math.max(1.5, (textContent.length * fontSizeSvg * 0.6 * scale) / 96)
-    const estHeight = Math.max(0.4, (fontSizeSvg * 1.4 * scale) / 96)
+    const estWidth = Math.max(1.8, (textContent.length * fontSizeSvg * 0.65 * scale) / 96)
+    const estHeight = Math.max(0.4, (fontSizeSvg * 1.5 * scale) / 96)
 
     let pptxX = mapX(x)
     if (textAnchor === 'middle') pptxX -= estWidth / 2
