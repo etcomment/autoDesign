@@ -106,7 +106,6 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {data.title && (
         <>
           <text x={50} y={50} fontFamily="Arial, sans-serif" fontSize={32} fontWeight={700} fill="#2D2B55">
