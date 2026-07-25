@@ -28,6 +28,7 @@ import { IshikawaRenderer } from './shapes/IshikawaRenderer'
 import { ErDiagramRenderer } from './shapes/ErDiagramRenderer'
 import { TemplateRenderer } from '../templates/TemplateRenderer'
 import { GRID_SIZE, snapToGrid } from '../core/grid'
+import type { ShapeType } from '../core/model/Shape'
 
 interface MarqueeRect {
   startX: number
@@ -223,11 +224,37 @@ export function Canvas() {
     e.preventDefault()
   }, [])
 
+  const addShape = useDiagramStore(s => s.addShape)
+
+  const onDragOver = useCallback((e: React.DragEvent<SVGSVGElement>) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }, [])
+
+  const onDrop = useCallback((e: React.DragEvent<SVGSVGElement>) => {
+    e.preventDefault()
+    const pos = screenToCanvas(e.clientX, e.clientY)
+    const snapped = { x: snapToGrid(pos.x), y: snapToGrid(pos.y) }
+
+    const shapeType = e.dataTransfer.getData('shapeType')
+    if (shapeType) {
+      addShape(shapeType as ShapeType, snapped, { width: 120, height: 80 })
+      return
+    }
+
+    const iconName = e.dataTransfer.getData('templateIcon')
+    if (iconName) {
+      addShape('icon', snapped, { width: 80, height: 80 }, iconName)
+      return
+    }
+  }, [screenToCanvas, addShape])
+
   const transform = `translate(${viewBox.x}, ${viewBox.y}) scale(${viewBox.scale})`
 
   return (
     <svg
       ref={svgRef}
+      data-canvas-svg="true"
       width="100%"
       height="100%"
       style={{
@@ -241,6 +268,8 @@ export function Canvas() {
       onMouseLeave={onMouseUp}
       onWheel={onWheel}
       onContextMenu={onContextMenu}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
     >
       <defs>
         <pattern

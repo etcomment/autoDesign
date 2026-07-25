@@ -108,7 +108,7 @@ export function downloadSvg(model: DiagramModel, filename: string = 'diagram.svg
 }
 
 export function exportCanvasToSvg(): string {
-  const svgElement = document.querySelector('svg')
+  const svgElement = (document.querySelector('svg[data-canvas-svg="true"]') || document.querySelector('svg')) as SVGSVGElement | null
   if (!svgElement) throw new Error('No SVG element found on canvas')
   return new XMLSerializer().serializeToString(svgElement)
 }
@@ -127,7 +127,7 @@ export function downloadCanvasSvg(filename: string = 'diagram.svg'): void {
 }
 
 export function getContentSvg(): string {
-  const svgElement = document.querySelector('svg')
+  const svgElement = (document.querySelector('svg[data-canvas-svg="true"]') || document.querySelector('svg')) as SVGSVGElement | null
   if (!svgElement) throw new Error('No SVG element found on canvas')
 
   const mainGroup = svgElement.querySelector('g[transform]')
