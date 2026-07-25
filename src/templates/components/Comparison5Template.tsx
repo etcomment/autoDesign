@@ -15,7 +15,6 @@ export function Comparison5Template({ data }: { data: Comparison5Data }): ReactE
 
   const { title, entries } = data
   const W = 800
-  const H = title ? 520 : 480
   const cardW = 220
   const gap = 30
   const totalW = entries.length * cardW + (entries.length - 1) * gap
@@ -26,7 +25,6 @@ export function Comparison5Template({ data }: { data: Comparison5Data }): ReactE
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

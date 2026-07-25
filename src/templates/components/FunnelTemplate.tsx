@@ -18,7 +18,6 @@ export function FunnelTemplate({ data }: { data: FunnelData }): ReactElement {
 
   const { title, levels } = data
   const W = 900
-  const H = 600
 
   const funnelTop = 100
   const funnelBottom = 560
@@ -57,7 +56,6 @@ export function FunnelTemplate({ data }: { data: FunnelData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={cx} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

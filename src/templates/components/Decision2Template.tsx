@@ -67,7 +67,6 @@ export function Decision2Template({ data }: { data: DecisionTreeData }): ReactEl
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={36} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
           {title}

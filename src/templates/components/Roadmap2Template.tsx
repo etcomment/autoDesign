@@ -13,7 +13,6 @@ const CARD_W = 680
 const CARD_H = 85
 const ITEM_H = 130
 const TOP_PAD = 90
-const BOTTOM_PAD = 60
 
 interface Rect { x: number; y: number; width: number; height: number }
 
@@ -49,7 +48,6 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
 
   const { title, milestones, startLabel = 'START', finishLabel = 'FINISH' } = data
   const N = milestones.length
-  const H = TOP_PAD + N * ITEM_H + BOTTOM_PAD
   const lineTop = TOP_PAD - 10
   const lineBot = TOP_PAD + N * ITEM_H + 10
 
@@ -89,7 +87,6 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">{title}</text>}
 
       {(() => {

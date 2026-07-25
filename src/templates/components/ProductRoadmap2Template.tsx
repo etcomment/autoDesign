@@ -31,7 +31,6 @@ export function ProductRoadmap2Template({ data }: { data: ProductRoadmap2Data })
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
 
       {title && (
         <text x={W / 2} y={36} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill="#1a1a2e">

@@ -48,13 +48,10 @@ export function Puzzle5Template({ data }: { data: PuzzleData }): ReactElement {
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
 
   const { title, pieces } = data
-  const W = 900
-  const H = 500
   const displayed = pieces.slice(0, 4)
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       <circle cx={CX} cy={CY} r={INNER_R} fill="#eef2f6" stroke="#cbd5e0" strokeWidth={2} />
       <text x={CX} y={CY - 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="#1e3a5f">
         {title || 'Puzzle'}

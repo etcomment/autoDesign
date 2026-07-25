@@ -15,7 +15,6 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
 
   const { title, quarters, milestones, lanes } = data
   const W = 1000
-  const H = 640
   const topMargin = 50
   const headerHeight = 60
   const timelineY = topMargin + headerHeight
@@ -43,7 +42,6 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
 
       {title && (
         <text x={W / 2} y={28} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill="#1a1a2e">

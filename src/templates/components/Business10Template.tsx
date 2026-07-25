@@ -14,7 +14,6 @@ export function Business10Template({ data }: { data: BusinessData }): ReactEleme
 
   const { title, nodes } = data
   const W = 900
-  const H = 600
   const cx = W / 2
   const nodeW = 120
   const nodeH = 48
@@ -33,7 +32,6 @@ export function Business10Template({ data }: { data: BusinessData }): ReactEleme
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={cx} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
           {title}

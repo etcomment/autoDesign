@@ -19,7 +19,6 @@ export function Manufacturing4Template({ data }: { data: ManufacturingData }): R
   const productionStations = stations.filter(s => !s.isQuality)
   const qaStations = stations.filter(s => s.isQuality)
   const W = 960
-  const H = title ? 540 : 500
   const boxW = 140
   const boxH = 64
   const gap = 24
@@ -29,7 +28,6 @@ export function Manufacturing4Template({ data }: { data: ManufacturingData }): R
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

@@ -10,7 +10,6 @@ const W = 1000
 const MAX_PER_ROW = 5
 const ROW_HEIGHT = 220
 const BASE_TIMELINE_Y = 260
-const BASE_CANVAS_H = 600
 
 interface Rect {
   x: number
@@ -81,7 +80,6 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   const LINE_HEIGHT = 14
 
   const totalRows = Math.ceil(milestones.length / MAX_PER_ROW) || 1
-  const H = BASE_CANVAS_H + (totalRows - 1) * ROW_HEIGHT
 
   const layoutMap = useMemo(() => {
     const map = new Map<string, LayoutMilestone>()
@@ -165,7 +163,6 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
 
       {title && (
         <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">

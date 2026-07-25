@@ -23,7 +23,6 @@ export function Comparison2Template({ data }: { data: Comparison2Data }): ReactE
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

@@ -22,7 +22,6 @@ export function Dashboard5Template({ data }: { data: DashboardData }): ReactElem
 
   const { title, metrics } = data
   const W = 600
-  const H = 460
   const displayed = metrics.slice(0, 6)
   const cx = W / 2
   const totalW = COLS * CARD_W + (COLS - 1) * GAP
@@ -31,7 +30,6 @@ export function Dashboard5Template({ data }: { data: DashboardData }): ReactElem
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="#f7fafc" rx={8} />
       {title && (
         <text x={cx} y={44} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

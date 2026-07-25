@@ -55,8 +55,6 @@ export function Roadmap11Template({ data }: { data: RoadmapData }): ReactElement
   const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
   const { title, milestones } = data
-  const N = milestones.length
-  const H = TOP_PAD + N * ITEM_H + 60
 
   const layoutMap = useMemo(() => {
     const m = new Map<string, { cy: number }>()
@@ -87,7 +85,6 @@ export function Roadmap11Template({ data }: { data: RoadmapData }): ReactElement
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">{title}</text>}
 
       {milestones.map((ms, i) => {

@@ -10,7 +10,6 @@ export function Goals5Template({ data }: { data: GoalsData }): ReactElement {
 
   const { title, metrics } = data
   const W = 1000
-  const H = 500
   const thermoW = 44
   const thermoH = 220
   const bulbR = 28
@@ -22,7 +21,6 @@ export function Goals5Template({ data }: { data: GoalsData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={46} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
           {title}

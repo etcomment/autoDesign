@@ -18,7 +18,6 @@ export function Dashboard2Template({ data }: { data: DashboardData }): ReactElem
 
   const { title, metrics } = data
   const W = 900
-  const H = 600
   const displayed = metrics.slice(0, 4)
   const bigW = 340
   const bigH = 200
@@ -32,7 +31,6 @@ export function Dashboard2Template({ data }: { data: DashboardData }): ReactElem
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="#f7fafc" rx={8} />
       {title && (
         <text x={cx} y={44} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

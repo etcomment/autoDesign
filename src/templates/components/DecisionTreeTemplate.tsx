@@ -18,7 +18,6 @@ export function DecisionTreeTemplate({ data }: { data: DecisionTreeData }): Reac
 
   const { title, rootQuestion, branches } = data
   const W = 900
-  const H = 600
   const nodeW = 160
   const nodeH = 44
   const cx = W / 2
@@ -82,7 +81,6 @@ export function DecisionTreeTemplate({ data }: { data: DecisionTreeData }): Reac
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={36} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
           {title}

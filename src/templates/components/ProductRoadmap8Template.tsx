@@ -15,7 +15,6 @@ export function ProductRoadmap8Template({ data }: { data: ProductRoadmapData }):
 
   const { title, lanes, milestones } = data
   const W = 960
-  const H = 560
   const marginX = 120
   const topY = title ? 110 : 70
   const monthW = (W - marginX) / 12
@@ -24,7 +23,6 @@ export function ProductRoadmap8Template({ data }: { data: ProductRoadmapData }):
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

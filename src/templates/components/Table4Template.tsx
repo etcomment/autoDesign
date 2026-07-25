@@ -13,7 +13,6 @@ export function Table4Template({ data }: { data: TableData }): ReactElement {
 
   const { title, columns, rows } = data
   const W = 900
-  const H = 600
   const labelW = 100
   const tableX = 40
   const tableW = W - tableX * 2
@@ -24,7 +23,6 @@ export function Table4Template({ data }: { data: TableData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

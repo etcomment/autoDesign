@@ -51,7 +51,6 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
 
   const { title, pieces } = data
   const W = 900
-  const H = 350
   const displayed = pieces.slice(0, 4)
   const totalW = displayed.length * CELL_W
   const startX = (W - totalW) / 2
@@ -59,7 +58,6 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

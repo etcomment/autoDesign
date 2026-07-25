@@ -17,7 +17,6 @@ export function Strategy5Template({ data }: { data: Strategy5Data }): ReactEleme
 
   const { title, blocks } = data
   const W = 1000
-  const H = 480
   const phaseCount = 3
   const phaseW = 290
   const phaseGap = 16
@@ -42,7 +41,6 @@ export function Strategy5Template({ data }: { data: Strategy5Data }): ReactEleme
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
 
       {title && (
         <text x={W / 2} y={44} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">

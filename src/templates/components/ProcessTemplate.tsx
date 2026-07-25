@@ -16,7 +16,6 @@ export function ProcessTemplate({ data }: { data: ProcessData }): ReactElement {
 
   const { title, steps, outcome } = data
   const W = 1000
-  const H = 600
 
   const halfCount = Math.ceil(steps.length / 2)
   const topSteps = steps.slice(0, halfCount)
@@ -75,7 +74,6 @@ export function ProcessTemplate({ data }: { data: ProcessData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
 
       {title && (
         <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">

@@ -14,7 +14,6 @@ export function Business8Template({ data }: { data: BusinessData }): ReactElemen
 
   const { title, nodes } = data
   const W = 900
-  const H = 600
   const lineX = 180
   const cardX = 220
   const cardW = 500
@@ -29,7 +28,6 @@ export function Business8Template({ data }: { data: BusinessData }): ReactElemen
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
           {title}

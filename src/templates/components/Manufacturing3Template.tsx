@@ -16,7 +16,6 @@ export function Manufacturing3Template({ data }: { data: ManufacturingData }): R
 
   const { title, stations } = data
   const W = 900
-  const H = 520
   const boxW = 130
   const boxH = 64
   const topY = title ? 100 : 60
@@ -31,7 +30,6 @@ export function Manufacturing3Template({ data }: { data: ManufacturingData }): R
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

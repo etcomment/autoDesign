@@ -15,7 +15,6 @@ export function Manufacturing7Template({ data }: { data: ManufacturingData }): R
 
   const { title, stations } = data
   const W = 960
-  const H = title ? 500 : 460
   const marginX = 80
   const topY = title ? 110 : 70
   const colW = (W - marginX * 2) / 5
@@ -25,7 +24,6 @@ export function Manufacturing7Template({ data }: { data: ManufacturingData }): R
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

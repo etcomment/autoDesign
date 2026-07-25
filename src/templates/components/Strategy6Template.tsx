@@ -15,7 +15,6 @@ export function Strategy6Template({ data }: { data: Strategy6Data }): ReactEleme
 
   const { title, axisX, axisY, quadrants } = data
   const W = 800
-  const H = title ? 620 : 580
   const boxSize = 260
   const centerX = W / 2
   const centerY = title ? 380 : 340
@@ -25,7 +24,6 @@ export function Strategy6Template({ data }: { data: Strategy6Data }): ReactEleme
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

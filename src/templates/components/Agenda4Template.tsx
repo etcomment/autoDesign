@@ -14,7 +14,6 @@ export function Agenda4Template({ data }: { data: AgendaData }): ReactElement {
 
   const { title, items } = data
   const W = 700
-  const H = 540
   const cardW = 420
   const cardH = 70
   const offsetX = 30
@@ -25,7 +24,6 @@ export function Agenda4Template({ data }: { data: AgendaData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

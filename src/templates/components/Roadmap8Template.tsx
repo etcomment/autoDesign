@@ -6,7 +6,6 @@ import { MIGSO_PALETTE } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#3498db']
 const W = 1000
-const H = 500
 const TIMELINE_Y = 460
 const MARGIN_X = 60
 const CARD_W = 200
@@ -83,7 +82,6 @@ export function Roadmap8Template({ data }: { data: RoadmapData }): ReactElement 
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">{title}</text>}
 
       {(() => {

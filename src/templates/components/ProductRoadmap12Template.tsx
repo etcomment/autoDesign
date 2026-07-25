@@ -15,7 +15,6 @@ export function ProductRoadmap12Template({ data }: { data: ProductRoadmapData })
 
   const { title, quarters, milestones } = data
   const W = 960
-  const H = title ? 520 : 480
   const marginX = 60
   const topY = title ? 110 : 70
   const circleR = 28
@@ -23,7 +22,6 @@ export function ProductRoadmap12Template({ data }: { data: ProductRoadmapData })
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

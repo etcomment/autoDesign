@@ -20,8 +20,6 @@ export function Funnel5Template({ data }: { data: FunnelData }): ReactElement {
   const W = 900
   const count = levels.length
   const gap = 20
-  const totalH = count * BAR_H + (count - 1) * (ARROW_H + gap) + 140
-  const H = Math.max(600, totalH + 60)
   const cx = W / 2
   const startX = (W - BAR_W) / 2
   const startY = title ? 100 : 70
@@ -30,7 +28,6 @@ export function Funnel5Template({ data }: { data: FunnelData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={cx} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

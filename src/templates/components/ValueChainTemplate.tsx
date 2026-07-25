@@ -16,7 +16,6 @@ export function ValueChainTemplate({ data }: { data: ValueChainData }): ReactEle
 
   const { title, primary, support } = data
   const W = 1000
-  const H = 580
   const startX = 60
   const primaryW = (W - startX * 2) / Math.max(primary.length, 1)
   const primaryH = 80
@@ -29,7 +28,6 @@ export function ValueChainTemplate({ data }: { data: ValueChainData }): ReactEle
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
           {title}

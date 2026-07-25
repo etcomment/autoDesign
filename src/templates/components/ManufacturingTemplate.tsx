@@ -16,7 +16,6 @@ export function ManufacturingTemplate({ data }: { data: ManufacturingData }): Re
 
   const { title, stations } = data
   const W = 1000
-  const H = 500
   const startX = 120
   const boxW = 130
   const boxH = 80
@@ -28,7 +27,6 @@ export function ManufacturingTemplate({ data }: { data: ManufacturingData }): Re
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
           {title}

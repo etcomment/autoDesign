@@ -14,7 +14,6 @@ export function Table3Template({ data }: { data: TableData }): ReactElement {
 
   const { title, columns, rows } = data
   const W = 800
-  const H = 620
   const cardX = 40
   const cardW = W - cardX * 2
   const cardH = 64
@@ -24,7 +23,6 @@ export function Table3Template({ data }: { data: TableData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

@@ -16,7 +16,6 @@ export function Process1Template({ data }: { data: ProcessData }): ReactElement 
 
   const { title, steps, outcome } = data
   const W = 960
-  const H = 380
   const stepW = 150
   const stepH = 80
   const gap = 30
@@ -28,7 +27,6 @@ export function Process1Template({ data }: { data: ProcessData }): ReactElement 
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

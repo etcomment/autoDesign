@@ -17,7 +17,6 @@ export function StrategyTemplate({ data }: { data: StrategyData }): ReactElement
 
   const { title, blocks } = data
   const W = 1000
-  const H = 500
   const blockW = 170
   const blockH = 58
   const gap = 24
@@ -28,7 +27,6 @@ export function StrategyTemplate({ data }: { data: StrategyData }): ReactElement
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
 
       {title && (
         <text x={W / 2} y={50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">

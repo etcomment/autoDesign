@@ -10,7 +10,6 @@ export function Comparison4Template({ data }: { data: ComparisonData }): ReactEl
 
   const { title, leftTitle, rightTitle, items } = data
   const W = 800
-  const H = 540
   const circleR = 160
   const leftCx = W / 2 - 80
   const rightCx = W / 2 + 80
@@ -21,7 +20,6 @@ export function Comparison4Template({ data }: { data: ComparisonData }): ReactEl
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

@@ -15,7 +15,6 @@ export function Agenda3Template({ data }: { data: AgendaData }): ReactElement {
   const { title, items } = data
   const displayItems = items.slice(0, 4)
   const W = 800
-  const H = title ? 520 : 480
   const cardW = 300
   const cardH = 120
   const gap = 24
@@ -24,7 +23,6 @@ export function Agenda3Template({ data }: { data: AgendaData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
           {title}

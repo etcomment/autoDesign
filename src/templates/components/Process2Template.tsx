@@ -16,7 +16,6 @@ export function Process2Template({ data }: { data: Process2Data }): ReactElement
 
   const { title, steps, outcome } = data
   const W = 1000
-  const H = 380
   const normalW = 130
   const normalH = 48
   const largeW = 180
@@ -31,7 +30,6 @@ export function Process2Template({ data }: { data: Process2Data }): ReactElement
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
 
       {title && (
         <text x={W / 2} y={50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">

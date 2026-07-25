@@ -92,7 +92,6 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
   if (n < 2)
     return (
       <g>
-        <rect width={W} height={H} fill="white" rx={8} />
         <text x={cx} y={cy} textAnchor="middle" fontSize={16} fill="#999">
           Minimum 2 segments
         </text>

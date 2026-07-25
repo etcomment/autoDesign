@@ -7,7 +7,6 @@ import { MIGSO_PALETTE } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#3498db']
 const W = 1000
-const H = 460
 const MARGIN_X = 100
 const TIMELINE_Y = 170
 const YEAR_TOP_Y = 60
@@ -98,7 +97,6 @@ export function Roadmap14Template({ data }: { data: RoadmapData }): ReactElement
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && <text x={W / 2} y={35} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">{title}</text>}
 
       {(() => {
