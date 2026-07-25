@@ -2,7 +2,7 @@ import PptxGenJS from 'pptxgenjs'
 import type { DiagramModel } from '../core/model/DiagramModel'
 import type { Shape } from '../core/model/Shape'
 import { computeEdgePoints } from '../core/geometry'
-import { getContentSvg } from './generateSvg'
+
 
 function mapHexToPptxColor(hex: string): string {
   return hex.startsWith('#') ? hex.replace('#', '') : hex
@@ -168,36 +168,62 @@ function getComputedSvgStyle(el: Element): { fill: string; stroke: string; strok
 }
 
 export async function generateCanvasPptx(): Promise<Blob> {
-  const svgString = getContentSvg()
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(svgString, 'image/svg+xml')
-  const svgEl = doc.querySelector('svg')
-
   const pres = new PptxGenJS()
   pres.layout = 'LAYOUT_WIDE'
   pres.author = 'autoDesign'
   pres.title = 'Diagram'
   const slide = pres.addSlide()
 
-  if (!svgEl) {
+  const liveSvg = (document.querySelector('svg[data-canvas-svg="true"]') || document.querySelector('svg')) as SVGSVGElement | null
+  if (!liveSvg) {
     const data = await pres.write({ outputType: 'arraybuffer' })
     return new Blob([data as ArrayBuffer], {
       type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     })
   }
 
-  // Parse viewBox bounds
-  const viewBoxAttr = svgEl.getAttribute('viewBox')
+  // Clone SVG to DOM to allow getBBox() calculations
+  const clonedSvg = liveSvg.cloneNode(true) as SVGSVGElement
+  clonedSvg.style.position = 'absolute'
+  clonedSvg.style.visibility = 'hidden'
+  clonedSvg.style.pointerEvents = 'none'
+  document.body.appendChild(clonedSvg)
+
+  // Cleanup interactive elements (similar to getContentSvg)
+  const gridRect = clonedSvg.querySelector('rect[fill="url(#grid)"]')
+  if (gridRect) gridRect.remove()
+  clonedSvg.querySelectorAll('[stroke-dasharray="4 2"], .handle, rect[fill*="rgba(74, 144, 217"]').forEach(el => el.remove())
+  clonedSvg.querySelectorAll('[data-shape-id]').forEach(el => el.removeAttribute('data-shape-id'))
+
+  // Remove top transform to match viewBox coordinates
+  const mainGroup = clonedSvg.querySelector('g[transform]')
+  if (mainGroup) {
+    mainGroup.removeAttribute('transform')
+  }
+
   let vx = 0, vy = 0, vw = 900, vh = 600
-  if (viewBoxAttr) {
-    const parts = viewBoxAttr.split(/[\s,]+/).map(Number)
-    if (parts.length === 4 && parts.every(n => typeof n === 'number' && !isNaN(n))) {
-      vx = parts[0]!
-      vy = parts[1]!
-      vw = parts[2]!
-      vh = parts[3]!
+  try {
+    const bbox = (mainGroup as SVGGElement || clonedSvg).getBBox()
+    if (bbox && bbox.width > 0 && bbox.height > 0) {
+      const padding = 40
+      vx = bbox.x - padding
+      vy = bbox.y - padding
+      vw = bbox.width + padding * 2
+      vh = bbox.height + padding * 2
+    } else {
+      const vb = clonedSvg.viewBox.baseVal
+      if (vb.width > 0) {
+        vx = vb.x; vy = vb.y; vw = vb.width; vh = vb.height
+      }
+    }
+  } catch {
+    const vb = clonedSvg.viewBox.baseVal
+    if (vb.width > 0) {
+      vx = vb.x; vy = vb.y; vw = vb.width; vh = vb.height
     }
   }
+
+
 
   // Target slide dimensions in inches (13.33 x 7.5 for widescreen)
   const slideW = 13.33
@@ -216,18 +242,19 @@ export async function generateCanvasPptx(): Promise<Blob> {
   const mapH = (h: number) => h * scale
 
   // 1. Process SVG shape elements
-  svgEl.querySelectorAll('rect, circle, ellipse, polygon, path, line').forEach((el) => {
+  const elements = Array.from(clonedSvg.querySelectorAll('rect, circle, ellipse, polygon, path, line'))
+  for (const el of elements) {
     const tagName = el.tagName.toLowerCase()
 
     // Ignore interactive editor handles or selection bounding boxes
-    if (el.getAttribute('stroke-dasharray') === '4 2' || el.classList.contains('handle') || el.getAttribute('data-handle')) return
+    if (el.getAttribute('stroke-dasharray') === '4 2' || el.classList.contains('handle') || el.getAttribute('data-handle')) continue
 
     const { fill, stroke, strokeWidth, rx } = getComputedSvgStyle(el)
 
     const isFillTransparent = !fill || fill === 'none' || fill === 'transparent'
     const isStrokeTransparent = !stroke || stroke === 'none' || stroke === 'transparent' || strokeWidth <= 0
 
-    if (isFillTransparent && isStrokeTransparent) return
+    if (isFillTransparent && isStrokeTransparent) continue
 
     const hexFill = mapHexToPptxColor(fill === 'none' ? '#ffffff' : fill)
     const hexStroke = mapHexToPptxColor(stroke === 'none' ? '#000000' : stroke)
@@ -255,10 +282,10 @@ export async function generateCanvasPptx(): Promise<Blob> {
       const y = parseFloat(el.getAttribute('y') || '0')
       const w = parseFloat(el.getAttribute('width') || '0')
       const h = parseFloat(el.getAttribute('height') || '0')
-      if (w <= 0 || h <= 0) return
+      if (w <= 0 || h <= 0) continue
 
       // Skip white background rect of entire canvas
-      if (x === vx && y === vy && w === vw && h === vh && (fill === 'white' || fill === '#ffffff')) return
+      if (x === vx && y === vy && w === vw && h === vh && (fill === 'white' || fill === '#ffffff')) continue
 
       shapeOpts.x = mapX(x)
       shapeOpts.y = mapY(y)
@@ -271,7 +298,7 @@ export async function generateCanvasPptx(): Promise<Blob> {
       const cx = parseFloat(el.getAttribute('cx') || '0')
       const cy = parseFloat(el.getAttribute('cy') || '0')
       const r = parseFloat(el.getAttribute('r') || '0')
-      if (r <= 0) return
+      if (r <= 0) continue
 
       shapeOpts.x = mapX(cx - r)
       shapeOpts.y = mapY(cy - r)
@@ -283,7 +310,7 @@ export async function generateCanvasPptx(): Promise<Blob> {
       const cy = parseFloat(el.getAttribute('cy') || '0')
       const rxAttr = parseFloat(el.getAttribute('rx') || '0')
       const ryAttr = parseFloat(el.getAttribute('ry') || '0')
-      if (rxAttr <= 0 || ryAttr <= 0) return
+      if (rxAttr <= 0 || ryAttr <= 0) continue
 
       shapeOpts.x = mapX(cx - rxAttr)
       shapeOpts.y = mapY(cy - ryAttr)
@@ -313,61 +340,39 @@ export async function generateCanvasPptx(): Promise<Blob> {
         flipV: ey < sy,
         flipH: ex < sx,
       })
-    } else if (tagName === 'polygon') {
-      const pointsAttr = el.getAttribute('points') || ''
-      const pts = pointsAttr.trim().split(/[\s,]+/).map(Number)
-      if (pts.length >= 6) {
-        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
-        for (let i = 0; i < pts.length; i += 2) {
-          const px = pts[i]!
-          const py = pts[i + 1]!
-          if (px < minX) minX = px
-          if (px > maxX) maxX = px
-          if (py < minY) minY = py
-          if (py > maxY) maxY = py
+    } else if (tagName === 'polygon' || tagName === 'path') {
+      try {
+        const svgEl = el as SVGGraphicsElement
+        const bbox = svgEl.getBBox()
+        if (bbox && bbox.width > 0 && bbox.height > 0) {
+          const pad = 2
+          const bX = bbox.x - pad
+          const bY = bbox.y - pad
+          const bW = bbox.width + pad * 2
+          const bH = bbox.height + pad * 2
+          
+          const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${bX} ${bY} ${bW} ${bH}" width="${bW}" height="${bH}">${el.outerHTML}</svg>`
+          const base64 = window.btoa(unescape(encodeURIComponent(svgStr)))
+          
+          slide.addImage({
+            data: 'data:image/svg+xml;base64,' + base64,
+            x: mapX(bX),
+            y: mapY(bY),
+            w: mapW(bW),
+            h: mapH(bH)
+          })
         }
-        shapeOpts.x = mapX(minX)
-        shapeOpts.y = mapY(minY)
-        shapeOpts.w = mapW(maxX - minX)
-        shapeOpts.h = mapH(maxY - minY)
-        slide.addShape('diamond', shapeOpts)
-      }
-    } else if (tagName === 'path') {
-      const pathData = el.getAttribute('d') || ''
-      if (!pathData) return
-
-      // Extract numbers for bounding box calculation
-      const coords = pathData.match(/[-+]?\d*\.?\d+/g)?.map(Number) || []
-      if (coords.length >= 4) {
-        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
-        for (let i = 0; i < coords.length - 1; i += 2) {
-          const px = coords[i]!
-          const py = coords[i + 1]!
-          if (px >= vx - 500 && px <= vx + vw + 500 && py >= vy - 500 && py <= vy + vh + 500) {
-            if (px < minX) minX = px
-            if (px > maxX) maxX = px
-            if (py < minY) minY = py
-            if (py > maxY) maxY = py
-          }
-        }
-        if (minX < maxX && minY < maxY) {
-          shapeOpts.x = mapX(minX)
-          shapeOpts.y = mapY(minY)
-          shapeOpts.w = mapW(maxX - minX)
-          shapeOpts.h = mapH(maxY - minY)
-
-          // If path is a header clip or decorative shape, add as round rect or rect
-          const shapeType = rx > 0 ? 'roundRect' : 'rect'
-          slide.addShape(shapeType, shapeOpts)
-        }
+      } catch (e) {
+        // Fallback for paths with errors
       }
     }
-  })
+  }
 
   // 2. Convert SVG text elements to native, editable PowerPoint text boxes
-  svgEl.querySelectorAll('text').forEach((el) => {
+  const textElements = Array.from(clonedSvg.querySelectorAll('text'))
+  for (const el of textElements) {
     const textContent = el.textContent?.trim()
-    if (!textContent) return
+    if (!textContent) continue
 
     const x = parseFloat(el.getAttribute('x') || '0')
     const y = parseFloat(el.getAttribute('y') || '0')
@@ -403,7 +408,10 @@ export async function generateCanvasPptx(): Promise<Blob> {
       align,
       valign: 'middle',
     })
-  })
+  }
+
+  // Remove the cloned SVG from DOM
+  clonedSvg.remove()
 
   const data = await pres.write({ outputType: 'arraybuffer' })
   return new Blob([data as ArrayBuffer], {
