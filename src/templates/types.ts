@@ -10,7 +10,12 @@ export interface TemplateMilestone {
   subtitle?: string
   quarter?: string
   lane?: string
+  date?: string
   style?: TemplateElementStyle
+  color?: string
+  icon?: string
+  value?: string
+  percent?: string
 }
 
 export interface TemplateElementStyle {
@@ -36,6 +41,7 @@ export interface RoadmapData {
   type: 'roadmap'
   title?: string
   milestones: TemplateMilestone[]
+  steps?: ProcessStep[]
   quarters?: TemplateQuarter[]
   lanes?: TemplateLane[]
   startLabel?: string
@@ -46,6 +52,7 @@ export interface RoadmapData {
 export interface ProductRoadmapData {
   type: 'productRoadmap'
   title?: string
+  steps?: ProcessStep[]
   quarters: TemplateQuarter[]
   lanes: TemplateLane[]
   milestones: TemplateMilestone[]
@@ -176,16 +183,16 @@ export type Manufacturing8Data = ManufacturingData
 
 export type ValueChain2Data = ValueChainData
 
-export type Business2Data = BusinessData
-export type Business3Data = BusinessData
-export type Business4Data = BusinessData
-export type Business5Data = BusinessData
-export type Business6Data = BusinessData
-export type Business7Data = BusinessData
-export type Business8Data = BusinessData
-export type Business9Data = BusinessData
-export type Business10Data = BusinessData
-export type Business11Data = BusinessData
+export type Business2Data = Omit<BusinessData, 'type'> & { type: 'business2' }
+export type Business3Data = Omit<BusinessData, 'type'> & { type: 'business3' }
+export type Business4Data = Omit<BusinessData, 'type'> & { type: 'business4' }
+export type Business5Data = Omit<BusinessData, 'type'> & { type: 'business5' }
+export type Business6Data = Omit<BusinessData, 'type'> & { type: 'business6' }
+export type Business7Data = Omit<BusinessData, 'type'> & { type: 'business7' }
+export type Business8Data = Omit<BusinessData, 'type'> & { type: 'business8' }
+export type Business9Data = Omit<BusinessData, 'type'> & { type: 'business9' }
+export type Business10Data = Omit<BusinessData, 'type'> & { type: 'business10' }
+export type Business11Data = Omit<BusinessData, 'type'> & { type: 'business11' }
 
 export type Brain2Data = BrainData
 export type Brain3Data = BrainData
@@ -208,6 +215,10 @@ export interface StrategyBlock {
   number: string
   title: string
   subtitle?: string
+  color?: string
+  icon?: string
+  value?: string
+  percent?: string
 }
 
 export interface StrategyData {
@@ -244,6 +255,10 @@ export interface ProcessStep {
   number: number
   title: string
   subtitle?: string
+  color?: string
+  icon?: string
+  value?: string
+  percent?: string
 }
 
 export interface ProcessData {
@@ -278,7 +293,10 @@ export interface PuzzlePiece {
   number: number
   title: string
   subtitle?: string
-  color: string
+  color?: string
+  icon?: string
+  value?: string
+  percent?: string
 }
 
 export interface PuzzleData {
@@ -292,6 +310,9 @@ export interface FunnelLevel {
   subtitle?: string
   percentage?: number
   color?: string
+  icon?: string
+  value?: string
+  percent?: string
 }
 
 export interface FunnelData {
@@ -304,6 +325,10 @@ export interface IcebergSection {
   title: string
   subtitle?: string
   isAbove: boolean
+  color?: string
+  icon?: string
+  value?: string
+  percent?: string
 }
 
 export interface IcebergData {
@@ -317,6 +342,8 @@ export interface DashboardMetric {
   value: string
   change?: string
   color?: string
+  icon?: string
+  percent?: string
 }
 
 export interface DashboardData {
@@ -341,6 +368,10 @@ export interface AgendaItem {
   number: string
   title: string
   subtitle?: string
+  color?: string
+  icon?: string
+  value?: string
+  percent?: string
 }
 
 export interface AgendaData {
@@ -353,6 +384,10 @@ export interface ComparisonItem {
   label: string
   left: string
   right: string
+  color?: string
+  icon?: string
+  value?: string
+  percent?: string
 }
 
 export interface ComparisonData {
@@ -375,6 +410,9 @@ export interface BudgetItem {
   amount: string
   percentage: number
   color?: string
+  icon?: string
+  value?: string
+  percent?: string
 }
 
 export interface BudgetData {
@@ -389,7 +427,7 @@ export interface BusinessData {
   type: 'business'
   title?: string
   centerLabel: string
-  nodes: { title: string; subtitle?: string }[]
+  nodes: { title: string; subtitle?: string; value?: string; percent?: string; color?: string; icon?: string }[]
 }
 
 export interface DecisionTreeNode {
@@ -410,6 +448,9 @@ export interface GoalsMetric {
   label: string
   value: string
   target: string
+  color?: string
+  icon?: string
+  percent?: string
 }
 
 export interface GoalsData {
@@ -423,6 +464,10 @@ export interface ManufacturingStation {
   title: string
   subtitle?: string
   isQuality?: boolean
+  color?: string
+  icon?: string
+  value?: string
+  percent?: string
 }
 
 export interface ManufacturingData {
@@ -434,6 +479,10 @@ export interface ManufacturingData {
 export interface ValueChainActivity {
   title: string
   subtitle?: string
+  color?: string
+  icon?: string
+  value?: string
+  percent?: string
 }
 
 export interface ValueChainData {

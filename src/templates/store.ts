@@ -6,6 +6,7 @@ import { generateDslText } from './dsl/parseTemplate'
 interface TemplateStore {
   readonly activeTemplate: TemplateType | null
   readonly templateData: TemplateData | null
+  readonly isTemplateHidden: boolean
   readonly selectedTemplateElementIds: ReadonlySet<string>
   readonly templateElementColors: Record<string, string>
   readonly templateStrokeColors: Record<string, string>
@@ -16,8 +17,11 @@ interface TemplateStore {
   selectTemplate: (type: TemplateType) => void
   selectTemplateWithData: (type: TemplateType, data: TemplateData) => void
   clearTemplate: () => void
+  toggleTemplateHidden: () => void
   updateTemplateData: (data: TemplateData) => void
+  selectTemplateElement: (id: string) => void
   toggleTemplateElement: (id: string) => void
+  clearTemplateElementSelection: () => void
   updateTemplateColor: (id: string, color: string) => void
   updateTemplateStrokeColor: (id: string, color: string) => void
   updateTemplateStrokeWidth: (id: string, width: number) => void
@@ -28,6 +32,7 @@ interface TemplateStore {
 export const useTemplateStore = create<TemplateStore>((set, get) => ({
   activeTemplate: null,
   templateData: null,
+  isTemplateHidden: false,
   selectedTemplateElementIds: new Set(),
   templateElementColors: {},
   templateStrokeColors: {},
@@ -41,6 +46,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     set({
       activeTemplate: type,
       templateData: data,
+      isTemplateHidden: false,
       dslText: data ? generateDslText(type, data) : '',
       selectedTemplateElementIds: new Set(),
       templateElementColors: {},
@@ -54,6 +60,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     set({
       activeTemplate: type,
       templateData: data,
+      isTemplateHidden: false,
       dslText: generateDslText(type, data),
       selectedTemplateElementIds: new Set(),
       templateElementColors: {},
@@ -67,6 +74,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     set({
       activeTemplate: null,
       templateData: null,
+      isTemplateHidden: false,
       selectedTemplateElementIds: new Set(),
       templateElementColors: {},
       templateStrokeColors: {},
@@ -75,8 +83,16 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     })
   },
 
+  toggleTemplateHidden: () => {
+    set(s => ({ isTemplateHidden: !s.isTemplateHidden }))
+  },
+
   updateTemplateData: (data) => {
     set({ templateData: data })
+  },
+
+  selectTemplateElement: (id) => {
+    set({ selectedTemplateElementIds: new Set([id]) })
   },
 
   toggleTemplateElement: (id) => {
@@ -85,6 +101,10 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     if (next.has(id)) next.delete(id)
     else next.add(id)
     set({ selectedTemplateElementIds: next })
+  },
+
+  clearTemplateElementSelection: () => {
+    set({ selectedTemplateElementIds: new Set() })
   },
 
   updateTemplateColor: (id, color) => {

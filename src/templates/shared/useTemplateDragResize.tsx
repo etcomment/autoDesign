@@ -1,5 +1,6 @@
 import { useRef, useCallback } from 'react'
 import { useTemplateStore } from '../store'
+import { useDiagramStore } from '../../store/diagramStore'
 
 interface Rect {
   x: number
@@ -27,16 +28,17 @@ const MIN_SIZE = 40
 export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null>) {
   const interactionRef = useRef<Interaction | null>(null)
   const toggleElement = useTemplateStore(s => s.toggleTemplateElement)
+  const selectElement = useTemplateStore(s => s.selectTemplateElement)
   const moveElement = useTemplateStore(s => s.moveTemplateElement)
   const resizeElement = useTemplateStore(s => s.resizeTemplateElement)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const onMouseMoveRef = useRef<(e: MouseEvent) => void>(() => {})
-  const onMouseUpRef = useRef<() => void>(() => {})
+  const onMouseUpRef = useRef<(e: MouseEvent) => void>(() => {})
 
   const stableOnMouseMove = useCallback((e: MouseEvent) => onMouseMoveRef.current(e), [])
-  const stableOnMouseUp = useCallback(() => onMouseUpRef.current(), [])
+  const stableOnMouseUp = useCallback((e: MouseEvent) => onMouseUpRef.current(e), [])
 
   const toSvgPoint = useCallback((e: MouseEvent): { x: number; y: number } => {
     const svg = svgRef.current?.ownerSVGElement
@@ -50,14 +52,20 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
     return { x: p.x, y: p.y }
   }, [svgRef])
 
-  onMouseUpRef.current = () => {
+  onMouseUpRef.current = (e: MouseEvent) => {
     const interaction = interactionRef.current
     if (!interaction) return
     interactionRef.current = null
     window.removeEventListener('mousemove', stableOnMouseMove)
     window.removeEventListener('mouseup', stableOnMouseUp)
     if (!interaction.hasMoved) {
-      toggleElement(interaction.id)
+      if (e.ctrlKey || e.metaKey) {
+        toggleElement(interaction.id)
+      } else {
+        useDiagramStore.getState().clearSelection()
+        useDiagramStore.getState().clearDiagramElementSelection()
+        selectElement(interaction.id)
+      }
     }
   }
 

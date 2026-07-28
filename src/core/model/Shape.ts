@@ -11,6 +11,7 @@ export type ShapeType =
   | 'trapezoidAlt'
   | 'document'
   | 'subroutine'
+  | 'icon'
 
 export type ArrowStyle = 'solid' | 'dashed' | 'dotted' | 'thick'
 export type ArrowHead = 'filled' | 'open' | 'none' | 'cross' | 'circle' | 'diamond'
@@ -51,6 +52,11 @@ export interface ShapeText {
   fontAlign: 'left' | 'center' | 'right'
 }
 
+export interface Group {
+  readonly id: string
+  readonly shapeIds: readonly string[]
+}
+
 export interface Shape {
   readonly id: string
   readonly type: ShapeType
@@ -58,6 +64,10 @@ export interface Shape {
   readonly dimensions: Dimensions
   readonly style: ShapeStyle
   readonly text: ShapeText
+  readonly iconName?: string
+  readonly groupId?: string
+  readonly isHidden?: boolean
+  readonly isLocked?: boolean
 }
 
 export function createDefaultStyle(): ShapeStyle {

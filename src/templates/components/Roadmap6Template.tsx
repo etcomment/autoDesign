@@ -4,31 +4,61 @@ import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
+// Roadmap 6: Horizontal chevron ribbon — milestones grouped by quarter/period.
+// Each milestone is rendered as a chevron arrow in a continuous ribbon.
+// Quarters are labelled above the ribbon.
+
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#3498db']
 const W = 1000
-const WEEKS = 4
-const MARGIN_X = 100
-const WEEK_W = (W - MARGIN_X * 2) / WEEKS
-const TIMELINE_Y = 120
-const CARD_START_Y = 170
-const CARD_H = 36
-const CARD_GAP = 8
+const RIBBON_Y = 200       // vertical center of the ribbon
+const RIBBON_H = 90        // height of each chevron
+const ARROW_TIP = 28       // horizontal depth of the chevron notch/tip
+const LABEL_GAP = 16       // gap between ribbon bottom and milestone label
+const TEXT_START_Y = RIBBON_Y + RIBBON_H / 2 + LABEL_GAP + 20
 
 interface Rect { x: number; y: number; width: number; height: number }
 
-function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, { weekIdx: number; stackIdx: number }>, grey: Map<string, Rect>): Rect {
-  const s = pos[id]
-  if (id.startsWith('pill-')) {
-    const l = layout.get(id)
-    if (!l) return s || { x: 0, y: 0, width: 0, height: 0 }
-    const wkX = MARGIN_X + l.weekIdx * WEEK_W
-    const cx = wkX + WEEK_W / 2
-    const pw = WEEK_W - 30
-    const py = CARD_START_Y + l.stackIdx * (CARD_H + CARD_GAP)
-    if (s) return { ...s, width: s.width || pw, height: s.height || CARD_H }
-    return { x: cx - pw / 2, y: py, width: pw, height: CARD_H }
+/** Build chevron polygon points for one milestone cell */
+function chevronPoints(x: number, y: number, w: number, h: number, isFirst: boolean, isLast: boolean): string {
+  const top = y
+  const bot = y + h
+  const mid = y + h / 2
+  const left = isFirst ? x : x + ARROW_TIP
+  const right = isLast ? x + w : x + w
+
+  if (isFirst && isLast) {
+    return `${x},${top} ${x + w},${top} ${x + w},${bot} ${x},${bot}`
   }
-  const g = grey.get(id); return g ? (s ? { x: s.x, y: s.y, width: s.width || g.width, height: s.height || g.height } : g) : (s || { x: 0, y: 0, width: 0, height: 0 })
+  if (isFirst) {
+    return `${x},${top} ${right},${top} ${right + ARROW_TIP},${mid} ${right},${bot} ${x},${bot}`
+  }
+  if (isLast) {
+    return `${left - ARROW_TIP},${top} ${right},${top} ${right},${bot} ${left - ARROW_TIP},${bot} ${left},${mid}`
+  }
+  return `${left - ARROW_TIP},${top} ${right},${top} ${right + ARROW_TIP},${mid} ${right},${bot} ${left - ARROW_TIP},${bot} ${left},${mid}`
+}
+
+function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, Rect>): Rect {
+  const s = pos[id]
+  const l = layout.get(id)
+  if (l) return s ? { ...s, width: s.width || l.width, height: s.height || l.height } : l
+  return s || { x: 0, y: 0, width: 0, height: 0 }
+}
+
+function wrapText(text: string, maxLen: number): string[] {
+  const words = text.split(' ')
+  const lines: string[] = []
+  let current = ''
+  for (const w of words) {
+    if ((current + ' ' + w).length > maxLen) {
+      if (current) lines.push(current)
+      current = w
+    } else {
+      current = current ? current + ' ' + w : w
+    }
+  }
+  if (current) lines.push(current)
+  return lines
 }
 
 export function Roadmap6Template({ data }: { data: RoadmapData }): ReactElement {
@@ -37,125 +67,177 @@ export function Roadmap6Template({ data }: { data: RoadmapData }): ReactElement 
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const pos = useTemplateStore(s => s.templateElementPositions)
   const moveEl = useTemplateStore(s => s.moveTemplateElement)
   const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
-  const { title, milestones } = data
-  const N = milestones.length
+  const { milestones, quarters } = data
+  const N = Math.max(1, milestones.length)
 
-  const weekAssignments = useMemo(() => {
-    const grouped: number[][] = Array.from({ length: WEEKS }, () => [])
+  // Determine groups from quarters DSL or split evenly across 3 groups
+  const quarterList = quarters && quarters.length > 0 ? quarters : []
+  const numGroups = Math.max(1, quarterList.length || 3)
+
+  // Assign each milestone to a group
+  const groups = useMemo(() => {
+    const grps: number[][] = Array.from({ length: numGroups }, () => [])
     milestones.forEach((_, i) => {
-      const wk = Math.min(Math.floor((i / N) * WEEKS), WEEKS - 1)
-      grouped[wk]!.push(i)
+      const grpIdx = Math.min(Math.floor((i / N) * numGroups), numGroups - 1)
+      grps[grpIdx]!.push(i)
     })
-    return grouped
-  }, [milestones])
+    return grps
+  }, [milestones, N, numGroups])
+
+  // Chevron widths — each milestone gets equal width across total ribbon
+  const MARGIN_X = 40
+  const totalW = W - MARGIN_X * 2
+  const chevronW = totalW / N
 
   const layoutMap = useMemo(() => {
-    const m = new Map<string, { weekIdx: number; stackIdx: number }>()
-    weekAssignments.forEach((indices, weekIdx) => {
-      indices.forEach((globalIdx, stackIdx) => {
-        m.set(`pill-${globalIdx}`, { weekIdx, stackIdx })
-      })
+    const m = new Map<string, Rect>()
+    // Group labels above ribbon
+    let msOffset = 0
+    groups.forEach((indices, gi) => {
+      const count = indices.length
+      if (count === 0) return
+      const x = MARGIN_X + msOffset * chevronW
+      const w = count * chevronW
+      const labelId = `group-label-${gi}`
+      m.set(labelId, { x, y: RIBBON_Y - 50, width: w, height: 28 })
+      msOffset += count
+    })
+
+    // Each chevron
+    milestones.forEach((_, i) => {
+      const x = MARGIN_X + i * chevronW
+      m.set(`chevron-${i}`, { x, y: RIBBON_Y, width: chevronW, height: RIBBON_H })
+      m.set(`chevron-title-${i}`, { x: x + 4, y: TEXT_START_Y, width: chevronW - 8, height: 50 })
+      m.set(`chevron-subtitle-${i}`, { x: x + 4, y: TEXT_START_Y + 50, width: chevronW - 8, height: 60 })
     })
     return m
-  }, [weekAssignments])
-
-  const greyMap = useMemo(() => {
-    const m = new Map<string, Rect>()
-    m.set('timeline', { x: MARGIN_X, y: TIMELINE_Y, width: WEEK_W * WEEKS, height: 2 })
-    for (let wk = 0; wk < WEEKS; wk++) {
-      m.set(`wk-label-${wk}`, { x: MARGIN_X + wk * WEEK_W, y: 75, width: WEEK_W, height: 30 })
-      if (wk > 0) {
-        m.set(`wk-div-${wk}`, { x: MARGIN_X + wk * WEEK_W, y: TIMELINE_Y - 8, width: 2, height: 16 })
-      }
-    }
-    m.set('start-label', { x: MARGIN_X - 60, y: TIMELINE_Y - 30, width: 50, height: 16 })
-    m.set('finish-label', { x: MARGIN_X + WEEK_W * WEEKS + 10, y: TIMELINE_Y - 30, width: 50, height: 16 })
-    return m
-  }, [])
+  }, [milestones, groups, chevronW])
 
   useEffect(() => {
-    for (const id of [...layoutMap.keys(), ...greyMap.keys()]) {
+    for (const id of layoutMap.keys()) {
       if (pos[id]) continue
-      const r = getRect(id, pos, layoutMap, greyMap)
+      const r = getRect(id, pos, layoutMap)
       moveEl(id, { x: r.x, y: r.y })
       resizeEl(id, { width: r.width, height: r.height })
     }
-  }, [layoutMap, greyMap, pos, moveEl, resizeEl])
+  }, [layoutMap, pos, moveEl, resizeEl])
 
   const rects = new Map<string, Rect>()
-  for (const id of [...layoutMap.keys(), ...greyMap.keys()]) {
-    rects.set(id, getRect(id, pos, layoutMap, greyMap))
+  for (const id of layoutMap.keys()) {
+    rects.set(id, getRect(id, pos, layoutMap))
+  }
+
+  // Assign group color (alternating) for each milestone
+  const groupColorOf = (i: number): string => {
+    let cumCount = 0
+    for (let gi = 0; gi < groups.length; gi++) {
+      const cnt = groups[gi]!.length
+      if (i < cumCount + cnt) {
+        return tplColors[`group-label-${gi}`] ?? PALETTE[gi % PALETTE.length]!
+      }
+      cumCount += cnt
+    }
+    return PALETTE[i % PALETTE.length]!
   }
 
   return (
     <g ref={svgRef}>
-      {title && <text x={W / 2} y={40} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">{title}</text>}
-
-      {(() => {
-        const tr = rects.get('timeline')!
-        const stroke = tplStrokeColors['timeline'] ?? '#ccc'
+      {/* Group labels above the ribbon */}
+      {groups.map((indices, gi) => {
+        if (indices.length === 0) return null
+        const labelId = `group-label-${gi}`
+        const lr = rects.get(labelId)
+        if (!lr) return null
+        const color = tplColors[labelId] ?? PALETTE[gi % PALETTE.length]!
         return (
-          <g onMouseDown={e => startDrag(e, 'timeline', tr)} style={{ cursor: 'pointer' }}>
-            <line x1={tr.x} y1={tr.y} x2={tr.x + tr.width} y2={tr.y} stroke={stroke} strokeWidth={3} strokeLinecap="round" />
-            {selectedIds.has('timeline') && renderHandles(tr, 'timeline')}
-          </g>
-        )
-      })()}
-
-      {(['start', 'finish'] as const).map(kind => {
-        const lr = rects.get(`${kind}-label`)!
-        return (
-          <g key={kind} onMouseDown={e => startDrag(e, `${kind}-label`, lr)} style={{ cursor: 'pointer' }}>
-            <text x={lr.x + lr.width / 2} y={lr.y + lr.height} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill="#999">
-              {kind === 'start' ? 'START' : 'FINISH'}
+          <g key={`grp-${gi}`} onMouseDown={e => startDrag(e, labelId, lr)} style={{ cursor: 'pointer' }}>
+            <text
+              x={lr.x}
+              y={lr.y + lr.height - 4}
+              textAnchor="start"
+              fontFamily="Arial, sans-serif"
+              fontSize={20}
+              fontWeight={700}
+              fill={color}
+            >
+              {quarterList[gi]?.label ?? `Q${gi + 1}`}
             </text>
-            {selectedIds.has(`${kind}-label`) && renderHandles(lr, `${kind}-label`)}
+            {selectedIds.has(labelId) && renderHandles(lr, labelId)}
           </g>
         )
       })}
 
-      {Array.from({ length: WEEKS }, (_, wk) => {
-        const lr = rects.get(`wk-label-${wk}`)!
-        const color = PALETTE[wk % PALETTE.length]!
-        return (
-          <g key={`wk-${wk}`} onMouseDown={e => startDrag(e, `wk-label-${wk}`, lr)} style={{ cursor: 'pointer' }}>
-            <rect x={lr.x + 20} y={lr.y} width={lr.width - 40} height={lr.height} rx={16} fill={color} opacity={0.12} />
-            <text x={lr.x + lr.width / 2} y={lr.y + lr.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill={color}>{`Week ${wk + 1}`}</text>
-            {selectedIds.has(`wk-label-${wk}`) && renderHandles(lr, `wk-label-${wk}`)}
-          </g>
-        )
-      })}
-
-      {Array.from({ length: WEEKS }, (_, wk) => {
-        const did = `wk-div-${wk}`
-        const dr = rects.get(did)
-        if (!dr) return null
-        return (
-          <g key={did} onMouseDown={e => startDrag(e, did, dr)} style={{ cursor: 'pointer' }}>
-            <line x1={dr.x} y1={dr.y} x2={dr.x} y2={dr.y + dr.height} stroke="#ddd" strokeWidth={1.5} strokeDasharray="3 3" />
-            {selectedIds.has(did) && renderHandles(dr, did)}
-          </g>
-        )
-      })}
-
+      {/* Chevron arrows for each milestone */}
       {milestones.map((ms, i) => {
-        const pid = `pill-${i}`
-        const pr = rects.get(pid)!
-        const l = layoutMap.get(pid)!
-        const color = tplColors[pid] ?? ms.style?.fill ?? PALETTE[l.weekIdx % PALETTE.length]!
-        const isSel = selectedIds.has(pid)
-        const label = `${i + 1}. ${ms.title}`
+        const chevId = `chevron-${i}`
+        const cr = rects.get(chevId)!
+        const titleId = `chevron-title-${i}`
+        const subId = `chevron-subtitle-${i}`
+        const tr = rects.get(titleId)!
+        const sr = rects.get(subId)!
+
+        const isFirst = i === 0
+        const isLast = i === N - 1
+        const color = tplColors[chevId] ?? ms.style?.fill ?? groupColorOf(i)
+        const strokeC = tplStrokeColors[chevId]
+        const strokeW = tplStrokeWidths[chevId] ?? 0
+        const isSel = selectedIds.has(chevId)
+
+        const points = chevronPoints(cr.x, cr.y, cr.width, cr.height, isFirst, isLast)
 
         return (
-          <g key={i} onMouseDown={e => startDrag(e, pid, pr)} style={{ cursor: 'pointer' }}>
-            <rect x={pr.x} y={pr.y} width={pr.width} height={pr.height} rx={18} fill="white" stroke={isSel ? '#4a90d9' : color} strokeWidth={isSel ? 2.5 : 1.5} />
-            <circle cx={pr.x + 16} cy={pr.y + pr.height / 2} r={9} fill={color} opacity={0.25} />
-            <text x={pr.x + 32} y={pr.y + pr.height / 2 + 4} fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#333">{label.length > 26 ? label.slice(0, 23) + '...' : label}</text>
-            {isSel && renderHandles(pr, pid)}
+          <g key={i}>
+            {/* Chevron shape */}
+            <g onMouseDown={e => startDrag(e, chevId, cr)} style={{ cursor: 'pointer' }}>
+              <polygon
+                points={points}
+                fill={color}
+                stroke={strokeC || (isSel ? '#fff' : 'none')}
+                strokeWidth={isSel ? 2 : strokeW}
+              />
+              {isSel && renderHandles(cr, chevId)}
+            </g>
+
+            {/* Milestone title below ribbon */}
+            <g onMouseDown={e => startDrag(e, titleId, tr)} style={{ cursor: 'pointer' }}>
+              <text
+                x={tr.x + tr.width / 2}
+                y={tr.y + 16}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={13}
+                fontWeight={700}
+                fill={tplColors[titleId] ?? '#292b3a'}
+              >
+                {ms.title}
+              </text>
+              {selectedIds.has(titleId) && renderHandles(tr, titleId)}
+            </g>
+
+            {/* Subtitle below title */}
+            {ms.subtitle && (
+              <g onMouseDown={e => startDrag(e, subId, sr)} style={{ cursor: 'pointer' }}>
+                {wrapText(ms.subtitle, 28).map((line, li) => (
+                  <text
+                    key={li}
+                    x={sr.x + sr.width / 2}
+                    y={sr.y + 14 + li * 18}
+                    textAnchor="middle"
+                    fontFamily="Arial, sans-serif"
+                    fontSize={11}
+                    fill={tplColors[subId] ?? '#666'}
+                  >
+                    {line}
+                  </text>
+                ))}
+                {selectedIds.has(subId) && renderHandles(sr, subId)}
+              </g>
+            )}
           </g>
         )
       })}

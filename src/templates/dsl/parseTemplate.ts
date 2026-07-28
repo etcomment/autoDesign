@@ -87,6 +87,50 @@ function tokenizeLine(line: string): QuotedTokens {
   return { tokens }
 }
 
+
+export function extractTrailingArgs(args: string[], startIndex: number) {
+  let subtitle: string | undefined
+  let color: string | undefined
+  let icon: string | undefined
+  let value: string | undefined
+  let percent: string | undefined
+  let date: string | undefined
+
+  let idx = startIndex
+  if (idx < args.length && !args[idx]!.startsWith('#') && !args[idx]!.startsWith('val:') && !args[idx]!.startsWith('pct:') && !args[idx]!.startsWith('icon:') && !args[idx]!.startsWith('date:')) {
+    subtitle = stripQuotes(args[idx]!)
+    idx++
+  }
+
+  while (idx < args.length) {
+    const arg = args[idx]!
+    if (arg.startsWith('val:')) {
+      value = stripQuotes(arg.slice(4))
+    } else if (arg.startsWith('pct:')) {
+      percent = stripQuotes(arg.slice(4))
+    } else if (arg.startsWith('icon:')) {
+      icon = stripQuotes(arg.slice(5))
+    } else if (arg.startsWith('date:')) {
+      date = stripQuotes(arg.slice(5))
+    } else if (arg.startsWith('#')) {
+      color = arg
+    }
+    idx++
+  }
+
+  return { subtitle, color, icon, value, percent, date }
+}
+
+function emitTrailingArgs(n: Record<string, any>): string {
+  let out = ''
+  if (n.date) out += ' date:' + escapeField(n.date)
+  if (n.value) out += ' val:"' + escapeField(n.value) + '"'
+  if (n.percent) out += ' pct:"' + escapeField(n.percent) + '"'
+  if (n.icon) out += ' icon:' + escapeField(n.icon)
+  if (n.color) out += ' ' + n.color
+  return out
+}
+
 function parseHeader(trimmed: string): { type: string; title?: string } | null {
   const firstLine = trimmed.split('\n')[0]!.trim()
   const match = /^@(\w+)(\d*)\s*"?([^"]*)"?\s*$/.exec(firstLine)
@@ -109,59 +153,59 @@ export function parseTemplateDsl(dsl: string): TemplateData | null {
   switch (baseType) {
     case 'roadmap':
     case 'productRoadmap':
-      result = parseRoadmap(trimmed)
+      result = parseRoadmap(trimmed, header.title)
       break
     case 'process':
-      result = parseProcess(trimmed)
+      result = parseProcess(trimmed, header.title)
       break
     case 'strategy':
-      result = parseStrategy(trimmed)
+      result = parseStrategy(trimmed, header.title)
       break
     case 'puzzle':
-      result = parsePuzzle(trimmed)
+      result = parsePuzzle(trimmed, header.title)
       break
     case 'funnel':
-      result = parseFunnel(trimmed)
+      result = parseFunnel(trimmed, header.title)
       break
     case 'dashboard':
-      result = parseDashboard(trimmed)
+      result = parseDashboard(trimmed, header.title)
       break
     case 'table':
-      result = parseTable(trimmed)
+      result = parseTable(trimmed, header.title)
       break
     case 'agenda':
-      result = parseAgenda(trimmed)
+      result = parseAgenda(trimmed, header.title)
       break
     case 'comparison':
-      result = parseComparison(trimmed)
+      result = parseComparison(trimmed, header.title)
       break
     case 'business':
-      result = parseBusiness(trimmed)
+      result = parseBusiness(trimmed, header.title)
       break
     case 'brain':
-      result = parseBrain(trimmed)
+      result = parseBrain(trimmed, header.title)
       break
     case 'budget':
-      result = parseBudget(trimmed)
+      result = parseBudget(trimmed, header.title)
       break
     case 'decision':
     case 'decisionTree':
-      result = parseDecision(trimmed)
+      result = parseDecision(trimmed, header.title)
       break
     case 'goals':
-      result = parseGoals(trimmed)
+      result = parseGoals(trimmed, header.title)
       break
     case 'manufacturing':
-      result = parseManufacturing(trimmed)
+      result = parseManufacturing(trimmed, header.title)
       break
     case 'valueChain':
-      result = parseValueChain(trimmed)
+      result = parseValueChain(trimmed, header.title)
       break
     case 'iceberg':
-      result = parseIceberg(trimmed)
+      result = parseIceberg(trimmed, header.title)
       break
     case 'circle':
-      result = parseCircle(trimmed)
+      result = parseCircle(trimmed, header.title)
       break
   }
 
@@ -175,18 +219,19 @@ function getLines(dsl: string): string[] {
   return dsl.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('//'))
 }
 
-function parseRoadmap(dsl: string): RoadmapData | ProductRoadmapData {
+function parseRoadmap(dsl: string, headerTitle?: string): RoadmapData | ProductRoadmapData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   let startLabel: string | undefined
   let finishLabel: string | undefined
   const milestones: TemplateMilestone[] = []
+  const steps: ProcessStep[] = []
   const quarters: string[] = []
   const lanes: string[] = []
   const globalStyles: Record<string, string | number> = {}
   let pendingStyle: Record<string, string | number> = {}
   let hasPendingStyle = false
-  let pendingMilestone: { quarter?: string; lane?: string; title: string; subtitle?: string } | null = null
+  let pendingMilestone: { quarter?: string; lane?: string; title: string; subtitle?: string; date?: string; color?: string; icon?: string; value?: string; percent?: string } | null = null
 
   function flushMilestone() {
     if (pendingMilestone) {
@@ -202,9 +247,9 @@ function parseRoadmap(dsl: string): RoadmapData | ProductRoadmapData {
   }
 
   for (const line of lines) {
-    if (line.startsWith('@roadmap')) {
-      const titleMatch = /^@roadmap\s+"?([^"]*)"?\s*$/.exec(line)
-      if (titleMatch && titleMatch[1]) title = stripQuotes(titleMatch[1])
+    if (line.startsWith('@roadmap') || line.startsWith('@productRoadmap')) {
+      const titleMatch = /^@(roadmap|productRoadmap)\d*\s+"?([^"]*)"?\s*$/.exec(line)
+      if (titleMatch && titleMatch[2]) title = stripQuotes(titleMatch[2])
       continue
     }
 
@@ -233,18 +278,61 @@ function parseRoadmap(dsl: string): RoadmapData | ProductRoadmapData {
       continue
     }
 
-    const milestoneMatch = /^milestone(?:\s+([\w.-]+):([\w.-]*))?\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
-    if (milestoneMatch) {
-      flushMilestone()
-      pendingMilestone = {
-        quarter: milestoneMatch[1],
-        lane: milestoneMatch[2],
-        title: milestoneMatch[3]!,
-        subtitle: milestoneMatch[4] ? stripQuotes(milestoneMatch[4]) : undefined,
+    var tokens = tokenizeLine(line)
+    const tok0 = tokens.tokens[0]
+    if (tok0 && (tok0 === 'step' || tok0.startsWith('step'))) {
+      const args = tokens.tokens.slice(1)
+      if (args.length >= 1) {
+        const stepTitle = stripQuotes(args[0]!)
+        const trailing = extractTrailingArgs(args, 1)
+        steps.push({
+          number: steps.length + 1,
+          title: stepTitle,
+          ...trailing
+        })
+        continue
       }
-      pendingStyle = {}
-      hasPendingStyle = false
-      continue
+    }
+
+    if (tok0 && (tok0 === 'milestone' || tok0.startsWith('milestone'))) {
+      let quarter: string | undefined
+      let lane: string | undefined
+      let argsStart = 1
+
+      if (tok0.startsWith('milestone:')) {
+        const parts = tok0.slice('milestone:'.length).split(':')
+        quarter = parts[0] || undefined
+        lane = parts[1] || undefined
+      } else if (tokens.tokens.length >= 2 && tokens.tokens[1]!.endsWith(':') && !tokens.tokens[1]!.startsWith('"') && !tokens.tokens[1]!.startsWith("'")) {
+        const parts = tokens.tokens[1]!.slice(0, -1).split(':')
+        quarter = parts[0] || undefined
+        lane = parts[1] || undefined
+        argsStart = 2
+      } else if (tok0.includes(':')) {
+        const parts = tok0.substring('milestone'.length).replace(/^:/, '').trim().split(':')
+        quarter = parts[0] || undefined
+        lane = parts[1] || undefined
+      }
+
+      const args = tokens.tokens.slice(argsStart)
+      if (args.length >= 1) {
+        flushMilestone()
+        const msTitle = stripQuotes(args[0]!)
+        const trailing = extractTrailingArgs(args, 1)
+        pendingMilestone = {
+          quarter,
+          lane,
+          title: msTitle,
+          ...trailing
+        }
+        pendingStyle = {}
+        hasPendingStyle = false
+        if (trailing.color || trailing.icon || trailing.value || trailing.percent) { 
+          Object.assign(pendingStyle, trailing)
+          hasPendingStyle = true 
+        }
+        continue
+      }
     }
   }
 
@@ -265,33 +353,41 @@ function parseRoadmap(dsl: string): RoadmapData | ProductRoadmapData {
     finishLabel,
     quarters: resolvedQuarters,
     lanes: resolvedLanes,
+    steps: steps.length > 0 ? steps : undefined,
     milestones: milestones.map(m => ({
       title: m.title,
       subtitle: m.subtitle,
-      quarter: m.quarter ?? resolvedQuarters?.[0]?.label,
-      lane: m.lane ?? resolvedLanes?.[0]?.label,
+      quarter: m.quarter,
+      lane: m.lane,
+      date: m.date,
       style: m.style ?? globalStyle,
+      color: m.color,
+      icon: m.icon,
+      value: m.value,
+      percent: m.percent,
     })),
   }
 }
 
-function parseProcess(dsl: string): ProcessData {
+function parseProcess(dsl: string, headerTitle?: string): ProcessData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   const steps: ProcessStep[] = []
 
   for (const line of lines) {
     if (line.startsWith('@process')) {
-      const m = /^@process\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@process\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
-    const stepMatch = /^step\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
-    if (stepMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'step' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
       steps.push({
         number: steps.length + 1,
-        title: stripQuotes(stepMatch[1]!),
-        subtitle: stepMatch[2] ? stripQuotes(stepMatch[2]) : undefined,
+        title: stripQuotes(args[0]!),
+        ...trailing
       })
       continue
     }
@@ -300,23 +396,25 @@ function parseProcess(dsl: string): ProcessData {
   return { type: 'process', title, steps }
 }
 
-function parseStrategy(dsl: string): StrategyData {
+function parseStrategy(dsl: string, headerTitle?: string): StrategyData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   const blocks: StrategyBlock[] = []
 
   for (const line of lines) {
     if (line.startsWith('@strategy')) {
-      const m = /^@strategy\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@strategy\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
-    const blockMatch = /^block\s+"([^"]*)"\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
-    if (blockMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'block' && tokens.tokens.length >= 3) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 2)
       blocks.push({
-        number: blockMatch[1]!,
-        title: stripQuotes(blockMatch[2]!),
-        subtitle: blockMatch[3] ? stripQuotes(blockMatch[3]) : undefined,
+        number: stripQuotes(args[0]!),
+        title: stripQuotes(args[1]!),
+        ...trailing
       })
       continue
     }
@@ -325,31 +423,27 @@ function parseStrategy(dsl: string): StrategyData {
   return { type: 'strategy', title, blocks }
 }
 
-function parsePuzzle(dsl: string): PuzzleData {
+function parsePuzzle(dsl: string, headerTitle?: string): PuzzleData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   const pieces: PuzzlePiece[] = []
 
   for (const line of lines) {
     if (line.startsWith('@puzzle')) {
-      const m = /^@puzzle\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@puzzle\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
-    const tokens = tokenizeLine(line)
+    var tokens = tokenizeLine(line)
     if (tokens.tokens[0] === 'piece' && tokens.tokens.length >= 2) {
       const args = tokens.tokens.slice(1)
       const pieceTitle = stripQuotes(args[0]!)
-      const subtitle = args.length >= 2 && !args[1]!.startsWith('#')
-        ? stripQuotes(args[1]!)
-        : undefined
-      const colorIdx = subtitle ? 2 : 1
-      const color = args[colorIdx]?.startsWith('#') ? args[colorIdx]! : '#4a90d9'
+      const trailing = extractTrailingArgs(args, 1)
       pieces.push({
         number: pieces.length + 1,
         title: pieceTitle,
-        subtitle,
-        color,
+        ...trailing,
+        color: trailing.color ?? '#4a90d9'
       })
       continue
     }
@@ -358,23 +452,37 @@ function parsePuzzle(dsl: string): PuzzleData {
   return { type: 'puzzle', title, pieces }
 }
 
-function parseFunnel(dsl: string): FunnelData {
+function parseFunnel(dsl: string, headerTitle?: string): FunnelData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   const levels: FunnelLevel[] = []
 
   for (const line of lines) {
     if (line.startsWith('@funnel')) {
-      const m = /^@funnel\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@funnel\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
-    const levelMatch = /^level\s+"([^"]*)"(?:\s+(\d+))?(?:\s+(#[0-9a-fA-F]+))?\s*$/.exec(line)
-    if (levelMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'level' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const title = stripQuotes(args[0]!)
+      
+      let idx = 1
+      let percentage: number | undefined
+      if (idx < args.length && !args[idx]!.startsWith('#') && !args[idx]!.startsWith('val:') && !args[idx]!.startsWith('pct:') && !args[idx]!.startsWith('icon:')) {
+        const num = Number(args[idx])
+        if (!isNaN(num)) {
+          percentage = num
+          idx++
+        }
+      }
+      const trailing = extractTrailingArgs(args, idx)
+      
       levels.push({
-        title: stripQuotes(levelMatch[1]!),
-        percentage: levelMatch[2] ? Number(levelMatch[2]) : undefined,
-        color: levelMatch[3] || undefined,
+        title,
+        percentage: percentage ?? (trailing.percent ? Number(trailing.percent) : undefined),
+        ...trailing
       })
       continue
     }
@@ -383,23 +491,28 @@ function parseFunnel(dsl: string): FunnelData {
   return { type: 'funnel', title, levels }
 }
 
-function parseDashboard(dsl: string): DashboardData {
+function parseDashboard(dsl: string, headerTitle?: string): DashboardData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   const metrics: DashboardMetric[] = []
 
   for (const line of lines) {
     if (line.startsWith('@dashboard')) {
-      const m = /^@dashboard\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@dashboard\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
-    const metricMatch = /^metric\s+"([^"]*)"\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
-    if (metricMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'metric' && tokens.tokens.length >= 3) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 2)
       metrics.push({
-        label: metricMatch[1]!,
-        value: metricMatch[2]!,
-        change: metricMatch[3] || undefined,
+        label: stripQuotes(args[0]!),
+        value: trailing.value ?? stripQuotes(args[1]!),
+        change: trailing.subtitle,
+        color: trailing.color,
+        icon: trailing.icon,
+        percent: trailing.percent,
       })
       continue
     }
@@ -408,19 +521,19 @@ function parseDashboard(dsl: string): DashboardData {
   return { type: 'dashboard', title, metrics }
 }
 
-function parseTable(dsl: string): TableData {
+function parseTable(dsl: string, headerTitle?: string): TableData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   let columns: string[] = []
   const rows: TableRow[] = []
 
   for (const line of lines) {
     if (line.startsWith('@table')) {
-      const m = /^@table\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@table\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
-    const tokens = tokenizeLine(line)
+    var tokens = tokenizeLine(line)
     if (tokens.tokens[0] === 'columns') {
       columns = tokens.tokens.slice(1).map(t => stripQuotes(t))
       continue
@@ -440,23 +553,25 @@ function parseTable(dsl: string): TableData {
   return { type: 'table', title, columns, rows }
 }
 
-function parseAgenda(dsl: string): AgendaData {
+function parseAgenda(dsl: string, headerTitle?: string): AgendaData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   const items: AgendaItem[] = []
 
   for (const line of lines) {
     if (line.startsWith('@agenda')) {
-      const m = /^@agenda\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@agenda\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
-    const itemMatch = /^item\s+"([^"]*)"\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
-    if (itemMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'item' && tokens.tokens.length >= 3) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 2)
       items.push({
-        number: itemMatch[1]!,
-        title: stripQuotes(itemMatch[2]!),
-        subtitle: itemMatch[3] ? stripQuotes(itemMatch[3]) : undefined,
+        number: stripQuotes(args[0]!),
+        title: stripQuotes(args[1]!),
+        ...trailing
       })
       continue
     }
@@ -465,16 +580,16 @@ function parseAgenda(dsl: string): AgendaData {
   return { type: 'agenda', title, items }
 }
 
-function parseComparison(dsl: string): ComparisonData {
+function parseComparison(dsl: string, headerTitle?: string): ComparisonData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   let leftTitle = ''
   let rightTitle = ''
   const items: ComparisonItem[] = []
 
   for (const line of lines) {
     if (line.startsWith('@comparison')) {
-      const m = /^@comparison\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@comparison\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
@@ -484,12 +599,15 @@ function parseComparison(dsl: string): ComparisonData {
     const rightMatch = /^right\s+"([^"]*)"\s*$/.exec(line)
     if (rightMatch) { rightTitle = rightMatch[1]!; continue }
 
-    const compMatch = /^comp\s+"([^"]*)"\s+"([^"]*)"\s+"([^"]*)"\s*$/.exec(line)
-    if (compMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'comp' && tokens.tokens.length >= 4) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 3)
       items.push({
-        label: compMatch[1]!,
-        left: compMatch[2]!,
-        right: compMatch[3]!,
+        label: stripQuotes(args[0]!),
+        left: stripQuotes(args[1]!),
+        right: stripQuotes(args[2]!),
+        ...trailing
       })
       continue
     }
@@ -498,15 +616,15 @@ function parseComparison(dsl: string): ComparisonData {
   return { type: 'comparison', title, leftTitle, rightTitle, items }
 }
 
-function parseBusiness(dsl: string): BusinessData {
+function parseBusiness(dsl: string, headerTitle?: string): BusinessData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   let centerLabel = ''
-  const nodes: { title: string; subtitle?: string }[] = []
+  const nodes: { title: string; subtitle?: string; value?: string; percent?: string; color?: string; icon?: string }[] = []
 
   for (const line of lines) {
     if (line.startsWith('@business')) {
-      const m = /^@business\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@business\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
@@ -515,11 +633,20 @@ function parseBusiness(dsl: string): BusinessData {
       if (m) centerLabel = m[1]!
       continue
     }
-    const tokens = tokenizeLine(line)
+    var tokens = tokenizeLine(line)
     if (tokens.tokens[0] === 'nodes') {
       for (const t of tokens.tokens.slice(1)) {
         nodes.push({ title: stripQuotes(t) })
       }
+      continue
+    }
+    if (tokens.tokens[0] === 'node' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
+      nodes.push({
+        title: stripQuotes(args[0]!),
+        ...trailing
+      })
       continue
     }
   }
@@ -527,26 +654,28 @@ function parseBusiness(dsl: string): BusinessData {
   return { type: 'business', title, centerLabel, nodes }
 }
 
-function parseBrain(dsl: string): BrainData {
+function parseBrain(dsl: string, headerTitle?: string): BrainData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   let centerLabel = ''
   const branches: { title: string; subtitle?: string; color?: string }[] = []
 
   for (const line of lines) {
     if (line.startsWith('@brain')) {
-      const m = /^@brain\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@brain\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
     const centerMatch = /^center\s+"([^"]*)"\s*$/.exec(line)
     if (centerMatch) { centerLabel = centerMatch[1]!; continue }
 
-    const branchMatch = /^branch\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
-    if (branchMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'branch' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
       branches.push({
-        title: stripQuotes(branchMatch[1]!),
-        subtitle: branchMatch[2] ? stripQuotes(branchMatch[2]) : undefined,
+        title: stripQuotes(args[0]!),
+        ...trailing
       })
       continue
     }
@@ -555,27 +684,30 @@ function parseBrain(dsl: string): BrainData {
   return { type: 'brain', title, centerLabel, branches }
 }
 
-function parseBudget(dsl: string): BudgetData {
+function parseBudget(dsl: string, headerTitle?: string): BudgetData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   let totalAmount = ''
   const items: BudgetItem[] = []
 
   for (const line of lines) {
     if (line.startsWith('@budget')) {
-      const m = /^@budget\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@budget\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
     const totalMatch = /^total\s+"([^"]*)"\s*$/.exec(line)
     if (totalMatch) { totalAmount = totalMatch[1]!; continue }
 
-    const lineMatch = /^line\s+"([^"]*)"\s+"([^"]*)"\s+(\d+)\s*$/.exec(line)
-    if (lineMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'line' && tokens.tokens.length >= 4) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 3)
       items.push({
-        label: lineMatch[1]!,
-        amount: lineMatch[2]!,
-        percentage: Number(lineMatch[3]!),
+        label: stripQuotes(args[0]!),
+        amount: stripQuotes(args[1]!),
+        percentage: Number(args[2]!),
+        ...trailing
       })
       continue
     }
@@ -584,9 +716,9 @@ function parseBudget(dsl: string): BudgetData {
   return { type: 'budget', title, totalLabel: 'Total', totalAmount, items }
 }
 
-function parseDecision(dsl: string): DecisionTreeData {
+function parseDecision(dsl: string, headerTitle?: string): DecisionTreeData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   let rootQuestion = ''
 
   interface DecisionEdge {
@@ -601,7 +733,7 @@ function parseDecision(dsl: string): DecisionTreeData {
 
   for (const line of lines) {
     if (line.startsWith('@decision')) {
-      const m = /^@decision\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@decision\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
@@ -655,27 +787,32 @@ function parseDecision(dsl: string): DecisionTreeData {
   return { type: 'decisionTree', title, rootQuestion, branches }
 }
 
-function parseGoals(dsl: string): GoalsData {
+function parseGoals(dsl: string, headerTitle?: string): GoalsData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   let centerGoal = ''
   const metrics: GoalsMetric[] = []
 
   for (const line of lines) {
     if (line.startsWith('@goals')) {
-      const m = /^@goals\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@goals\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
     const centerMatch = /^center\s+"([^"]*)"\s*$/.exec(line)
     if (centerMatch) { centerGoal = centerMatch[1]!; continue }
 
-    const metricMatch = /^metric\s+"([^"]*)"\s+"([^"]*)"\s+"([^"]*)"\s*$/.exec(line)
-    if (metricMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'metric' && tokens.tokens.length >= 4) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 3)
       metrics.push({
-        label: metricMatch[1]!,
-        value: metricMatch[2]!,
-        target: metricMatch[3]!,
+        label: stripQuotes(args[0]!),
+        value: trailing.value ?? stripQuotes(args[1]!),
+        target: stripQuotes(args[2]!),
+        color: trailing.color,
+        icon: trailing.icon,
+        percent: trailing.percent,
       })
       continue
     }
@@ -684,22 +821,24 @@ function parseGoals(dsl: string): GoalsData {
   return { type: 'goals', title, centerGoal, metrics }
 }
 
-function parseManufacturing(dsl: string): ManufacturingData {
+function parseManufacturing(dsl: string, headerTitle?: string): ManufacturingData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   const stations: ManufacturingStation[] = []
 
   for (const line of lines) {
     if (line.startsWith('@manufacturing')) {
-      const m = /^@manufacturing\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@manufacturing\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
-    const stationMatch = /^station\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
-    if (stationMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'station' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
       stations.push({
-        title: stripQuotes(stationMatch[1]!),
-        subtitle: stationMatch[2] ? stripQuotes(stationMatch[2]) : undefined,
+        title: stripQuotes(args[0]!),
+        ...trailing
       })
       continue
     }
@@ -708,31 +847,35 @@ function parseManufacturing(dsl: string): ManufacturingData {
   return { type: 'manufacturing', title, stations }
 }
 
-function parseValueChain(dsl: string): ValueChainData {
+function parseValueChain(dsl: string, headerTitle?: string): ValueChainData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   const primary: ValueChainActivity[] = []
   const support: ValueChainActivity[] = []
 
   for (const line of lines) {
     if (line.startsWith('@valueChain')) {
-      const m = /^@valueChain\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@valueChain\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
-    const primaryMatch = /^primary\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
-    if (primaryMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'primary' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
       primary.push({
-        title: stripQuotes(primaryMatch[1]!),
-        subtitle: primaryMatch[2] ? stripQuotes(primaryMatch[2]) : undefined,
+        title: stripQuotes(args[0]!),
+        ...trailing
       })
       continue
     }
-    const supportMatch = /^support\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
-    if (supportMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'support' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
       support.push({
-        title: stripQuotes(supportMatch[1]!),
-        subtitle: supportMatch[2] ? stripQuotes(supportMatch[2]) : undefined,
+        title: stripQuotes(args[0]!),
+        ...trailing
       })
       continue
     }
@@ -741,32 +884,36 @@ function parseValueChain(dsl: string): ValueChainData {
   return { type: 'valueChain', title, primary, support }
 }
 
-function parseIceberg(dsl: string): IcebergData {
+function parseIceberg(dsl: string, headerTitle?: string): IcebergData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   const sections: IcebergSection[] = []
 
   for (const line of lines) {
     if (line.startsWith('@iceberg')) {
-      const m = /^@iceberg\s+"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@iceberg\d*\s+"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
-    const aboveMatch = /^above\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
-    if (aboveMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'above' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
       sections.push({
-        title: stripQuotes(aboveMatch[1]!),
-        subtitle: aboveMatch[2] ? stripQuotes(aboveMatch[2]) : undefined,
+        title: stripQuotes(args[0]!),
         isAbove: true,
+        ...trailing
       })
       continue
     }
-    const belowMatch = /^below\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
-    if (belowMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'below' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
       sections.push({
-        title: stripQuotes(belowMatch[1]!),
-        subtitle: belowMatch[2] ? stripQuotes(belowMatch[2]) : undefined,
+        title: stripQuotes(args[0]!),
         isAbove: false,
+        ...trailing
       })
       continue
     }
@@ -775,25 +922,28 @@ function parseIceberg(dsl: string): IcebergData {
   return { type: 'iceberg', title, sections }
 }
 
-function parseCircle(dsl: string): CircleData {
+function parseCircle(dsl: string, headerTitle?: string): CircleData {
   const lines = getLines(dsl)
-  let title: string | undefined
+  let title: string | undefined = headerTitle
   const segments: CircleSegment[] = []
 
   for (const line of lines) {
     if (line.startsWith('@circle')) {
-      const m = /^@circle\s*"?([^"]*)"?\s*$/.exec(line)
+      const m = /^@circle\d*\s*"?([^"]*)"?\s*$/.exec(line)
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
 
-    const segmentMatch = /^segment\s+"([^"]*)"\s+"([^"]*)"\s+"([^"]*)"(\s+(\S+))?\s*$/.exec(line)
-    if (segmentMatch) {
+    var tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'segment' && tokens.tokens.length >= 4) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 3)
       segments.push({
-        number: segmentMatch[1]!,
-        title: segmentMatch[2]!,
-        description: segmentMatch[3]!,
-        icon: segmentMatch[5] ?? '',
+        number: stripQuotes(args[0]!),
+        title: stripQuotes(args[1]!),
+        description: stripQuotes(args[2]!),
+        ...trailing,
+        icon: trailing.icon ?? ''
       })
       continue
     }
@@ -820,31 +970,36 @@ export function generateDslText(type: string, data: TemplateData): string {
   if (lanes?.length) out += `  lanes ${lanes.map((l: Record<string,unknown>) => l.label).join(' ')}\n`
 
   const milestones = list('milestones')
-  if (milestones) for (const m of milestones) out += `  milestone${m.quarter ? ' ' + m.quarter + ':' + (m.lane ?? '') : ''} "${esc(m.title)}"${m.subtitle ? ' "' + esc(m.subtitle) + '"' : ''}\n`
+  if (milestones) {
+    for (const m of milestones) {
+      const qPrefix = m.quarter ? `:${m.quarter}${m.lane ? ':' + m.lane : ''}` : ''
+      out += `  milestone${qPrefix} "${esc(m.title)}"${m.subtitle ? ' "' + esc(m.subtitle) + '"' : ''}${emitTrailingArgs(m)}\n`
+    }
+  }
 
   const steps = list('steps')
-  if (steps) for (const s of steps) out += `  step "${esc(s.title)}"${s.subtitle ? ' "' + esc(s.subtitle) + '"' : ''}\n`
+  if (steps) for (const s of steps) out += `  step "${esc(s.title)}"${s.subtitle ? ' "' + esc(s.subtitle) + '"' : ''}${emitTrailingArgs(s)}\n`
 
   const blocks = list('blocks')
-  if (blocks) for (const b of blocks) out += `  block "${esc(b.number)}" "${esc(b.title)}"${b.subtitle ? ' "' + esc(b.subtitle) + '"' : ''}\n`
+  if (blocks) for (const b of blocks) out += `  block "${esc(b.number)}" "${esc(b.title)}"${b.subtitle ? ' "' + esc(b.subtitle) + '"' : ''}${emitTrailingArgs(b)}\n`
 
   const pieces = list('pieces')
-  if (pieces) for (const p of pieces) out += `  piece "${esc(p.title)}"${p.subtitle ? ' "' + esc(p.subtitle) + '"' : ''}${p.color ? ' ' + p.color : ''}\n`
+  if (pieces) for (const p of pieces) out += `  piece "${esc(p.title)}"${p.subtitle ? ' "' + esc(p.subtitle) + '"' : ''}${emitTrailingArgs(p)}\n`
 
   const levels = list('levels')
-  if (levels) for (const l of levels) out += `  level "${esc(l.title)}" ${l.percentage ?? ''}${l.color ? ' ' + l.color : ''}\n`
+  if (levels) for (const l of levels) out += `  level "${esc(l.title)}" ${l.percentage ?? ''}${emitTrailingArgs(l)}\n`
 
   const metrics = list('metrics')
-  if (metrics) for (const m of metrics) out += `  metric "${esc(m.label)}" "${esc(m.value)}"${m.change ? ' "' + esc(m.change) + '"' : ''}\n`
+  if (metrics) for (const m of metrics) out += `  metric "${esc(m.label)}" "${esc(m.value)}"${m.change ? ' "' + esc(m.change) + '"' : ''}${emitTrailingArgs(m)}\n`
 
   const items = list('items')
-  if (items) for (const it of items) out += `  item "${esc(it.number)}" "${esc(it.title)}"${it.subtitle ? ' "' + esc(it.subtitle) + '"' : ''}\n`
+  if (items) for (const it of items) out += `  item "${esc(it.number)}" "${esc(it.title)}"${it.subtitle ? ' "' + esc(it.subtitle) + '"' : ''}${emitTrailingArgs(it)}\n`
 
   const segments = list('segments')
-  if (segments) for (const s of segments) out += `  segment "${esc(s.number)}" "${esc(s.title)}" "${esc(s.description ?? '')}"${s.icon ? ' ' + s.icon : ''}\n`
+  if (segments) for (const s of segments) out += `  segment "${esc(s.number)}" "${esc(s.title)}" "${esc(s.description ?? '')}"${emitTrailingArgs(s)}\n`
 
   const stations = list('stations')
-  if (stations) for (const s of stations) out += `  station "${esc(s.title)}"${s.subtitle ? ' "' + esc(s.subtitle) + '"' : ''}\n`
+  if (stations) for (const s of stations) out += `  station "${esc(s.title)}"${s.subtitle ? ' "' + esc(s.subtitle) + '"' : ''}${emitTrailingArgs(s)}\n`
 
   const rows = list('rows')
   if (rows) {
@@ -881,7 +1036,7 @@ export function generateDslText(type: string, data: TemplateData): string {
       }
       emitDecisionNodes(branches)
     } else {
-      for (const b of branches) out += '  branch "' + esc(b.title) + '"' + (b.subtitle ? ' "' + esc(b.subtitle) + '"' : '') + '\n'
+      for (const b of branches) out += '  branch "' + esc(b.title) + '"' + (b.subtitle ? ' "' + esc(b.subtitle) + '"' : '' + emitTrailingArgs(b)) + '\n'
     }
   }
 
@@ -889,13 +1044,13 @@ export function generateDslText(type: string, data: TemplateData): string {
   if (nodes) { if (d.centerLabel) out += '  center "' + esc(d.centerLabel) + '"\n'; out += '  nodes ' + nodes.map((n: Record<string,unknown>) => '"' + esc(n.title) + '"').join(' ') + '\n' }
 
   const sections = list('sections')
-  if (sections) for (const s of sections) out += '  ' + (s.isAbove ? 'above' : 'below') + ' "' + esc(s.title) + '"' + (s.subtitle ? ' "' + esc(s.subtitle) + '"' : '') + '\n'
+  if (sections) for (const s of sections) out += '  ' + (s.isAbove ? 'above' : 'below') + ' "' + esc(s.title) + '"' + (s.subtitle ? ' "' + esc(s.subtitle) + '"' : '' + emitTrailingArgs(s)) + '\n'
 
   const primaries = list('primary')
-  if (primaries) for (const p of primaries) out += '  primary "' + esc(p.title) + '"' + (p.subtitle ? ' "' + esc(p.subtitle) + '"' : '') + '\n'
+  if (primaries) for (const p of primaries) out += '  primary "' + esc(p.title) + '"' + (p.subtitle ? ' "' + esc(p.subtitle) + '"' : '' + emitTrailingArgs(p)) + '\n'
 
   const supports = list('support')
-  if (supports) for (const s of supports) out += '  support "' + esc(s.title) + '"' + (s.subtitle ? ' "' + esc(s.subtitle) + '"' : '') + '\n'
+  if (supports) for (const s of supports) out += '  support "' + esc(s.title) + '"' + (s.subtitle ? ' "' + esc(s.subtitle) + '"' : '' + emitTrailingArgs(s)) + '\n'
 
   if (d.rootQuestion) out += '  question "' + esc(d.rootQuestion) + '"\n'
   if (d.centerGoal) out += '  center "' + esc(d.centerGoal) + '"\n'

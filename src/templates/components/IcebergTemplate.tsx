@@ -2,6 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { IcebergData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { renderMultiLineText } from '../shared/primitives'
 
 const ABOVE_COLOR = '#e3f2fd'
 const BELOW_COLOR = '#0f2b46'
@@ -38,6 +39,8 @@ export function IcebergTemplate({ data }: { data: IcebergData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
   const { title, sections } = data
   const W = 900

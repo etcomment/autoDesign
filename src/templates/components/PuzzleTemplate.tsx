@@ -63,13 +63,13 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const { title, pieces } = data
   const W = 900
 
   const gridX = (W - CELL_W * 2) / 2
   const gridY = title ? 110 : 80
-  const displayed = pieces.slice(0, 4)
 
   return (
     <g ref={svgRef}>
@@ -79,10 +79,12 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
         </text>
       )}
 
-      {displayed.map((piece, i) => {
-        const layout = PIECE_LAYOUTS[i]!
-        const px = gridX + layout.offsetX
-        const py = gridY + layout.offsetY
+      {pieces.map((piece, i) => {
+        const layout = PIECE_LAYOUTS[i % PIECE_LAYOUTS.length]!
+        const col = i % 2
+        const row = Math.floor(i / 2)
+        const px = gridX + col * CELL_W
+        const py = gridY + row * CELL_H
         const cx = px + CELL_W / 2
         const cy = py + CELL_H / 2
         const path = piecePath(px, py, layout.tabs)
@@ -91,11 +93,25 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
         const color = tplColors[elementId] ?? piece.color
         const stroke = tplStrokeColors[elementId] || 'white'
         const isSelected = selectedIds.has(elementId)
-        const visualRect = { x: px, y: py, width: CELL_W, height: CELL_H }
+
+        const defaultRect = { x: px, y: py, width: CELL_W, height: CELL_H }
+        const customPos = templateElementPositions[elementId]
+        const visualRect = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+        const scaleX = visualRect.width / defaultRect.width
+        const scaleY = visualRect.height / defaultRect.height
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g
+              transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}
+              onMouseDown={e => startDrag(e, elementId, visualRect)}
+              style={{ cursor: 'pointer' }}
+            >
               <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3.5 : 3} strokeLinejoin="round" />
 
               <circle cx={px + 36} cy={py + 50} r={16} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />

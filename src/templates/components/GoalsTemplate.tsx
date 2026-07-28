@@ -2,6 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { GoalsData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { renderMultiLineText } from '../shared/primitives'
 
 export function GoalsTemplate({ data }: { data: GoalsData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)

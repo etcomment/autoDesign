@@ -18,16 +18,11 @@ export function Puzzle6Template({ data }: { data: PuzzleData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const { title, pieces } = data
-  const displayed = pieces.slice(0, 4)
-
-  const positions = [
-    { x: CX - PIECE_W / 2, y: CY - DIST - PIECE_H / 2 },
-    { x: CX + DIST - PIECE_W / 2, y: CY - PIECE_H / 2 },
-    { x: CX - PIECE_W / 2, y: CY + DIST - PIECE_H / 2 },
-    { x: CX - DIST - PIECE_W / 2, y: CY - PIECE_H / 2 },
-  ]
+  const count = pieces.length
+  const stepAngle = (2 * Math.PI) / count
 
   return (
     <g ref={svgRef}>
@@ -39,29 +34,60 @@ export function Puzzle6Template({ data }: { data: PuzzleData }): ReactElement {
 
       <circle cx={CX} cy={CY} r={40} fill="#eef2f6" stroke="#cbd5e0" strokeWidth={2} />
       <text x={CX} y={CY + 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={700} fill="#1e3a5f">
-        {displayed.length}
+        {count}
       </text>
 
-      {displayed.map((piece, i) => {
-        const pos = positions[i]!
-        const px = pos.x
-        const py = pos.y
+      {pieces.map((piece, i) => {
+        let px: number
+        let py: number
+        let rot: number
+
+        if (count === 4) {
+          const staticPos = [
+            { x: CX - PIECE_W / 2, y: CY - DIST - PIECE_H / 2 },
+            { x: CX + DIST - PIECE_W / 2, y: CY - PIECE_H / 2 },
+            { x: CX - PIECE_W / 2, y: CY + DIST - PIECE_H / 2 },
+            { x: CX - DIST - PIECE_W / 2, y: CY - PIECE_H / 2 },
+          ]
+          px = staticPos[i]!.x
+          py = staticPos[i]!.y
+          rot = ROTATIONS[i]!
+        } else {
+          const angle = i * stepAngle - Math.PI / 2
+          px = CX + DIST * Math.cos(angle) - PIECE_W / 2
+          py = CY + DIST * Math.sin(angle) - PIECE_H / 2
+          rot = 0
+        }
+
         const cx = px + PIECE_W / 2
         const cy = py + PIECE_H / 2
-        const rot = ROTATIONS[i]!
         const defaultColor = piece.color || PALETTE[i % PALETTE.length]!
         const elementId = `piece-${i}`
         const color = tplColors[elementId] ?? defaultColor
         const stroke = tplStrokeColors[elementId] || 'white'
         const isSelected = selectedIds.has(elementId)
-        const visualRect = { x: px, y: py, width: PIECE_W, height: PIECE_H }
+
+        const defaultRect = { x: px, y: py, width: PIECE_W, height: PIECE_H }
+        const customPos = templateElementPositions[elementId]
+        const visualRect = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+        const scaleX = visualRect.width / defaultRect.width
+        const scaleY = visualRect.height / defaultRect.height
 
         const lineX = CX
         const lineY = CY
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g
+              transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}
+              onMouseDown={e => startDrag(e, elementId, visualRect)}
+              style={{ cursor: 'pointer' }}
+            >
               <g transform={`translate(${cx}, ${cy}) rotate(${rot})`}>
                 <rect x={-PIECE_W / 2} y={-PIECE_H / 2} width={PIECE_W} height={PIECE_H} rx={10} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3.5 : 2} />
                 <circle cx={-PIECE_W / 2 + 28} cy={-PIECE_H / 2 + 28} r={14} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />

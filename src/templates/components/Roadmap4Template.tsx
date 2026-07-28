@@ -1,170 +1,239 @@
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
-import type { RoadmapData, TemplateQuarter } from '../types'
-import { CircleBadge } from '../shared/primitives'
+import type { RoadmapData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#3498db']
-const W = 1000
-const TIMELINE_Y = 200
-const MARGIN_X = 120
-const CARD_W = 180
-const CARD_H = 90
-
-interface Rect { x: number; y: number; width: number; height: number }
-
-function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, { cx: number }>, grey: Map<string, Rect>): Rect {
-  const s = pos[id]
-  if (id.startsWith('dot-')) {
-    const l = layout.get(id)
-    if (l) return s ? { ...s, width: s.width || 16, height: s.height || 16 } : { x: l.cx - 8, y: TIMELINE_Y - 8, width: 16, height: 16 }
-  }
-  if (id.startsWith('card-')) {
-    const l = layout.get(id)
-    if (l) return s ? { ...s, width: s.width || CARD_W, height: Math.max(s.height || CARD_H, CARD_H) } : { x: l.cx - CARD_W / 2, y: TIMELINE_Y + 30, width: CARD_W, height: CARD_H }
-  }
-  if (id.startsWith('year-')) {
-    const l = layout.get(id)
-    if (l) return s ? { ...s, width: s.width || 80, height: s.height || 22 } : { x: l.cx - 40, y: TIMELINE_Y - 80, width: 80, height: 22 }
-  }
-  if (id.startsWith('tick-')) {
-    const l = layout.get(id)
-    if (l) return s ? { ...s, width: s.width || 2, height: s.height || 8 } : { x: l.cx - 1, y: TIMELINE_Y - 4, width: 2, height: 8 }
-  }
-  const g = grey.get(id); return g ? (s ? { x: s.x, y: s.y, width: s.width || g.width, height: s.height || g.height } : g) : (s || { x: 0, y: 0, width: 0, height: 0 })
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
 }
+
+// Design from PDF Page 139:
+// Canvas: 1000 x 562.5
+// Winding 3D overlapping snake ribbon with 5 steps:
+// Each step's body starts right underneath the previous arrow head, and its arrow head sits ON TOP of the next step's body!
+// Step 1 (Teal #4cbfa0): Bottom lane going right (y=475)
+// Step 2 (Yellow #ffbe00): Starts under Step 1 arrow (x=480), U-turns right to y=380 going left
+// Step 3 (Coral Red #ff4a2b): Starts under Step 2 arrow (x=545), U-turns left to y=285 going right
+// Step 4 (Medium Blue #2d62ed): Starts under Step 3 arrow (x=475), U-turns right to y=190 going left
+// Step 5 (Dark Navy #23255a): Starts under Step 4 arrow (x=545), U-turns left to y=100 going right
 
 export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
-  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const pos = useTemplateStore(s => s.templateElementPositions)
   const moveEl = useTemplateStore(s => s.moveTemplateElement)
   const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
-  const { title, milestones, quarters, startLabel = 'START', finishLabel = 'FINISH' } = data
-  const N = milestones.length
-  const availableW = W - MARGIN_X * 2
+  const { title, milestones = [], steps = [] } = data as { title?: string; milestones?: Array<{ title: string; subtitle?: string }>; steps?: Array<{ title: string }> }
+  const W = 1000
 
-  const effectiveQuarters: TemplateQuarter[] = quarters?.length ? quarters : Array.from({ length: N }, (_, i) => ({ label: `Phase ${i + 1}`, year: String(2026 + Math.floor(i / 4)) }))
+  const stepList = [
+    steps[0]?.title || 'Step One',
+    steps[1]?.title || 'Step Two',
+    steps[2]?.title || 'Step Three',
+    steps[3]?.title || 'Step Four',
+    steps[4]?.title || 'Step Five',
+  ]
 
-  const layoutMap = useMemo(() => {
-    const m = new Map<string, { cx: number }>()
-    milestones.forEach((_, i) => {
-      const cx = MARGIN_X + (N > 1 ? (i / (N - 1)) * availableW : availableW / 2)
-      m.set(`dot-${i}`, { cx })
-      m.set(`card-${i}`, { cx })
-      m.set(`tick-${i}`, { cx })
-      if (effectiveQuarters[i]) m.set(`year-${i}`, { cx })
-    })
-    return m
-  }, [milestones, effectiveQuarters])
+  const displayMilestones = milestones.length > 0 ? milestones : [
+    { title: 'Milestone', subtitle: 'Content and description to be\nadded here as required' },
+    { title: 'Milestone', subtitle: 'Content and description to be\nadded here as required' },
+    { title: 'Milestone', subtitle: 'Content and description to be\nadded here as required' },
+    { title: 'Milestone', subtitle: 'Content and description to be\nadded here as required' },
+  ]
 
-  const greyMap = useMemo(() => {
-    const m = new Map<string, Rect>()
-    m.set('timeline', { x: MARGIN_X - 20, y: TIMELINE_Y, width: availableW + 40, height: 2 })
-    m.set('start-label', { x: MARGIN_X - 60, y: TIMELINE_Y - 65, width: 50, height: 16 })
-    m.set('finish-label', { x: MARGIN_X + availableW + 10, y: TIMELINE_Y - 65, width: 50, height: 16 })
-    m.set('start-dot', { x: MARGIN_X - 26, y: TIMELINE_Y - 6, width: 12, height: 12 })
-    m.set('finish-dot', { x: MARGIN_X + availableW + 14, y: TIMELINE_Y - 6, width: 12, height: 12 })
-    return m
-  }, [availableW])
+  const defaultPositions = useMemo(() => {
+    const map = new Map<string, Rect>()
+    map.set('main-title', { x: 45, y: 35, width: 350, height: 50 })
+
+    // Step labels on ribbons
+    map.set('step-1', { x: 340, y: 458, width: 120, height: 35 })
+    map.set('step-2', { x: 540, y: 363, width: 120, height: 35 })
+    map.set('step-3', { x: 340, y: 268, width: 120, height: 35 })
+    map.set('step-4', { x: 550, y: 173, width: 120, height: 35 })
+    map.set('step-5', { x: 670, y: 83, width: 120, height: 35 })
+
+    // Milestone descriptions cleanly positioned away from turns
+    map.set('milestone-1', { x: 695, y: 355, width: 240, height: 90 })
+    map.set('milestone-2', { x: 80, y: 260, width: 240, height: 90 })
+    map.set('milestone-3', { x: 730, y: 165, width: 240, height: 90 })
+    map.set('milestone-4', { x: 80, y: 75, width: 240, height: 90 })
+    map.set('milestone-5', { x: 780, y: 35, width: 240, height: 90 })
+
+    for (let i = 5; i < displayMilestones.length; i++) {
+      const id = `milestone-${i + 1}`
+      const isLeft = i % 2 === 1
+      const yPos = Math.max(20, 75 - Math.floor((i - 3) / 2) * 70)
+      map.set(id, { x: isLeft ? 80 : 730, y: yPos, width: 240, height: 90 })
+    }
+
+    return map
+  }, [displayMilestones.length])
 
   useEffect(() => {
-    for (const id of [...layoutMap.keys(), ...greyMap.keys()]) {
-      if (pos[id]) continue
-      const r = getRect(id, pos, layoutMap, greyMap)
-      moveEl(id, { x: r.x, y: r.y })
-      resizeEl(id, { width: r.width, height: r.height })
+    for (const [id, rect] of defaultPositions.entries()) {
+      if (!pos[id]) {
+        moveEl(id, { x: rect.x, y: rect.y })
+        resizeEl(id, { width: rect.width, height: rect.height })
+      }
     }
-  }, [layoutMap, greyMap, pos, moveEl, resizeEl])
+  }, [defaultPositions, pos, moveEl, resizeEl])
 
-  const rects = new Map<string, Rect>()
-  for (const id of [...layoutMap.keys(), ...greyMap.keys()]) {
-    rects.set(id, getRect(id, pos, layoutMap, greyMap))
+  const getR = (id: string): Rect => {
+    const p = pos[id]
+    const d = defaultPositions.get(id) || { x: 0, y: 0, width: 100, height: 50 }
+    return {
+      x: p?.x ?? d.x,
+      y: p?.y ?? d.y,
+      width: p?.width || d.width,
+      height: p?.height || d.height,
+    }
   }
+
+  const titleR = getR('main-title')
+  const step1R = getR('step-1')
+  const step2R = getR('step-2')
+  const step3R = getR('step-3')
+  const step4R = getR('step-4')
+  const step5R = getR('step-5')
+
+  const c1 = tplColors['step-1'] || '#4cbfa0' // Teal
+  const c2 = tplColors['step-2'] || '#ffbe00' // Yellow
+  const c3 = tplColors['step-3'] || '#ff4a2b' // Coral Red
+  const c4 = tplColors['step-4'] || '#2d62ed' // Blue
+  const c5 = tplColors['step-5'] || '#23255a' // Navy
 
   return (
     <g ref={svgRef}>
-      {title && <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">{title}</text>}
+      {/* Header Title */}
+      {title && (
+        <g onMouseDown={e => startDrag(e, 'main-title', titleR)} style={{ cursor: 'pointer' }}>
+          <text
+            x={W / 2}
+            y={42}
+            textAnchor="middle"
+            fontFamily="Arial, sans-serif"
+            fontSize={22}
+            fontWeight={700}
+            fill={tplColors['main-title'] || '#1e3a5f'}
+          >
+            {title}
+          </text>
+          {selectedIds.has('main-title') && renderHandles(titleR, 'main-title')}
+        </g>
+      )}
 
-      {(() => {
-        const tr = rects.get('timeline')!
-        const stroke = tplStrokeColors['timeline'] ?? '#bbb'
-        return (
-          <g onMouseDown={e => startDrag(e, 'timeline', tr)} style={{ cursor: 'pointer' }}>
-            <line x1={tr.x} y1={tr.y} x2={tr.x + tr.width} y2={tr.y} stroke={stroke} strokeWidth={3} strokeLinecap="round" />
-            {selectedIds.has('timeline') && renderHandles(tr, 'timeline')}
-          </g>
-        )
-      })()}
+      {/* LAYER 1: RIBBON BODIES (Underneath layer) */}
+      {/* Step 1 Body: Teal horizontal bar */}
+      <rect x={160} y={452.5} width={315} height={45} fill={c1} />
 
-      {['start', 'finish'].map(kind => {
-        const dr = rects.get(`${kind}-dot`)!
-        const lr = rects.get(`${kind}-label`)!
-        const fill = tplColors[`${kind}-dot`] ?? '#bbb'
+      {/* Step 2 Body: Yellow start bar starting UNDER Teal arrow head (x=480), U-turn right to y=380 going left to x=550 */}
+      <path
+        d="M 480 475 L 640 475 A 47.5 47.5 0 0 0 640 380 L 550 380"
+        fill="none"
+        stroke={c2}
+        strokeWidth={45}
+        strokeLinecap="butt"
+        strokeLinejoin="round"
+      />
+
+      {/* Step 3 Body: Red start bar starting UNDER Yellow arrow head (x=545), U-turn left to y=285 going right to x=470 */}
+      <path
+        d="M 545 380 L 390 380 A 47.5 47.5 0 0 1 390 285 L 470 285"
+        fill="none"
+        stroke={c3}
+        strokeWidth={45}
+        strokeLinecap="butt"
+        strokeLinejoin="round"
+      />
+
+      {/* Step 4 Body: Blue start bar starting UNDER Red arrow head (x=475), U-turn right to y=190 going left to x=550 */}
+      <path
+        d="M 475 285 L 660 285 A 47.5 47.5 0 0 0 660 190 L 550 190"
+        fill="none"
+        stroke={c4}
+        strokeWidth={45}
+        strokeLinecap="butt"
+        strokeLinejoin="round"
+      />
+
+      {/* Step 5 Body: Navy start bar starting UNDER Blue arrow head (x=545), U-turn left to y=100 going right to x=770 */}
+      <path
+        d="M 545 190 L 390 190 A 45 45 0 0 1 390 100 L 770 100"
+        fill="none"
+        stroke={c5}
+        strokeWidth={45}
+        strokeLinecap="butt"
+        strokeLinejoin="round"
+      />
+
+      {/* LAYER 2: ARROW HEADS (Triangles sitting ON TOP of the next step's body) */}
+      {/* Step 1 Arrow Head (Teal pointing right) -> base x=470, tip x=510 completely covers Yellow start at x=480 */}
+      <path d="M 470 440 L 470 510 L 510 475 Z" fill={c1} />
+
+      {/* Step 2 Arrow Head (Yellow pointing left) -> base x=555, tip x=515 completely covers Red start at x=545 */}
+      <path d="M 555 345 L 555 415 L 515 380 Z" fill={c2} />
+
+      {/* Step 3 Arrow Head (Red pointing right) -> base x=465, tip x=505 completely covers Blue start at x=475 */}
+      <path d="M 465 250 L 465 320 L 505 285 Z" fill={c3} />
+
+      {/* Step 4 Arrow Head (Blue pointing left) -> base x=555, tip x=515 completely covers Navy start at x=545 */}
+      <path d="M 555 155 L 555 225 L 515 190 Z" fill={c4} />
+
+      {/* Step 5 Arrow Head (Navy pointing right) */}
+      <path d="M 765 65 L 765 135 L 805 100 Z" fill={c5} />
+
+      {/* LAYER 3: INTERACTIVE STEP TEXT LABELS */}
+      <g onMouseDown={e => startDrag(e, 'step-1', step1R)} style={{ cursor: 'pointer' }}>
+        <text x={step1R.x + step1R.width / 2} y={step1R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[0]}</text>
+        {selectedIds.has('step-1') && renderHandles(step1R, 'step-1')}
+      </g>
+
+      <g onMouseDown={e => startDrag(e, 'step-2', step2R)} style={{ cursor: 'pointer' }}>
+        <text x={step2R.x + step2R.width / 2} y={step2R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[1]}</text>
+        {selectedIds.has('step-2') && renderHandles(step2R, 'step-2')}
+      </g>
+
+      <g onMouseDown={e => startDrag(e, 'step-3', step3R)} style={{ cursor: 'pointer' }}>
+        <text x={step3R.x + step3R.width / 2} y={step3R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[2]}</text>
+        {selectedIds.has('step-3') && renderHandles(step3R, 'step-3')}
+      </g>
+
+      <g onMouseDown={e => startDrag(e, 'step-4', step4R)} style={{ cursor: 'pointer' }}>
+        <text x={step4R.x + step4R.width / 2} y={step4R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[3]}</text>
+        {selectedIds.has('step-4') && renderHandles(step4R, 'step-4')}
+      </g>
+
+      <g onMouseDown={e => startDrag(e, 'step-5', step5R)} style={{ cursor: 'pointer' }}>
+        <text x={step5R.x + step5R.width / 2} y={step5R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[4]}</text>
+        {selectedIds.has('step-5') && renderHandles(step5R, 'step-5')}
+      </g>
+
+      {/* LAYER 4: MILESTONE TEXT ANNOTATIONS */}
+      {displayMilestones.map((ms, idx) => {
+        const id = `milestone-${idx + 1}`
+        const msR = getR(id)
+        const isLeft = (idx % 2 === 1)
+        const textX = isLeft ? msR.x + msR.width : msR.x
+        const textAnchor = isLeft ? 'end' : 'start'
+        const msColor = (ms as { color?: string }).color || "#23255a"
+
         return (
-          <g key={kind}>
-            <g onMouseDown={e => startDrag(e, `${kind}-dot`, dr)} style={{ cursor: 'pointer' }}>
-              <circle cx={dr.x + dr.width / 2} cy={dr.y + dr.height / 2} r={dr.width / 2} fill={fill} />
-              {selectedIds.has(`${kind}-dot`) && renderHandles(dr, `${kind}-dot`)}
-            </g>
-            <g onMouseDown={e => startDrag(e, `${kind}-label`, lr)} style={{ cursor: 'pointer' }}>
-              <text x={lr.x + lr.width / 2} y={lr.y + lr.height} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill="#888">
-                {kind === 'start' ? startLabel : finishLabel}
+          <g key={id} onMouseDown={e => startDrag(e, id, msR)} style={{ cursor: 'pointer' }}>
+            <text x={textX} y={msR.y + 22} textAnchor={textAnchor} fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill={msColor}>
+              {ms.title}
+            </text>
+            {ms.subtitle && ms.subtitle.split('\n').map((line, lIdx) => (
+              <text key={lIdx} x={textX} y={msR.y + 48 + lIdx * 20} textAnchor={textAnchor} fontFamily="Arial, sans-serif" fontSize={13} fill="#555555">
+                {line}
               </text>
-              {selectedIds.has(`${kind}-label`) && renderHandles(lr, `${kind}-label`)}
-            </g>
-          </g>
-        )
-      })}
-
-      {milestones.map((ms, i) => {
-        const cid = `dot-${i}`
-        const mid = `card-${i}`
-        const tid = `tick-${i}`
-        const yid = `year-${i}`
-        const dr = rects.get(cid)!
-        const mr = rects.get(mid)!
-        const tr = rects.get(tid)!
-        const yr = effectiveQuarters[i] ? rects.get(yid)! : null
-        const color = tplColors[mid] ?? ms.style?.fill ?? PALETTE[i % PALETTE.length]!
-        const isSel = selectedIds.has(mid)
-        const dotCx = dr.x + dr.width / 2
-        const dotCy = dr.y + dr.height / 2
-
-        const q = effectiveQuarters[i]!
-
-        return (
-          <g key={i}>
-            <g onMouseDown={e => startDrag(e, tid, tr)} style={{ cursor: 'pointer' }}>
-              <line x1={tr.x + tr.width / 2} y1={tr.y} x2={tr.x + tr.width / 2} y2={tr.y + tr.height} stroke={color} strokeWidth={2} />
-              {selectedIds.has(tid) && renderHandles(tr, tid)}
-            </g>
-            <g onMouseDown={e => startDrag(e, cid, dr)} style={{ cursor: 'pointer' }}>
-              <CircleBadge cx={dotCx} cy={dotCy} r={dr.width / 2} fill={color} label={String(i + 1)} fontSize={10} />
-              {selectedIds.has(cid) && renderHandles(dr, cid)}
-            </g>
-            {yr && (
-              <g onMouseDown={e => startDrag(e, yid, yr)} style={{ cursor: 'pointer' }}>
-                <text x={yr.x + yr.width / 2} y={yr.y} dominantBaseline="hanging" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={28} fontWeight={800} fill={color}>{q.label}</text>
-                {q.year && <text x={yr.x + yr.width / 2} y={yr.y + 30} dominantBaseline="hanging" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#aaa">{q.year}</text>}
-                {selectedIds.has(yid) && renderHandles(yr, yid)}
-              </g>
-            )}
-            <line x1={dotCx} y1={dotCy + dr.width / 2} x2={mr.x + mr.width / 2} y2={mr.y} stroke={color} strokeWidth={1.5} opacity={0.5} />
-            <g onMouseDown={e => startDrag(e, mid, mr)} style={{ cursor: 'pointer' }}>
-              <rect x={mr.x} y={mr.y} width={mr.width} height={mr.height} rx={10} fill="white" stroke={isSel ? '#4a90d9' : '#e0e0e0'} strokeWidth={isSel ? 2 : 1} />
-              <rect x={mr.x} y={mr.y} width={mr.width} height={28} rx={10} fill={color} opacity={0.12} />
-              <text x={mr.x + mr.width / 2} y={mr.y + 19} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill={color}>{ms.title}</text>
-              {ms.subtitle && (
-                <text x={mr.x + mr.width / 2} y={mr.y + 50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#777">{ms.subtitle.length > 22 ? ms.subtitle.slice(0, 19) + '...' : ms.subtitle}</text>
-              )}
-              {isSel && renderHandles(mr, mid)}
-            </g>
+            ))}
+            {selectedIds.has(id) && renderHandles(msR, id)}
           </g>
         )
       })}

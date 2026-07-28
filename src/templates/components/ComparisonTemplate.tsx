@@ -2,6 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { ComparisonData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { renderMultiLineText } from '../shared/primitives'
 
 const LEFT_COLOR = '#2563eb'
 const RIGHT_COLOR = '#dc2626'

@@ -78,6 +78,9 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
   const W = 900
@@ -119,7 +122,7 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
         const elementId = `segment-${i}`
         const startAngle = baseStartAngle + i * angleStep
         const endAngle = baseStartAngle + (i + 1) * angleStep + gapAngle
-        const color = PALETTE[i % PALETTE.length] ?? '#3768D6'
+        const color = tplColors[elementId] ?? PALETTE[i % PALETTE.length] ?? '#3768D6'
         const pos = positions[elementId]
 
         const defaultBbox = {
@@ -138,6 +141,8 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
             key={`body-${i}`}
             d={ringArcPath(cx, cy, innerR, outerR, startAngle, endAngle)}
             fill={color}
+            stroke={tplStrokeColors[elementId]}
+            strokeWidth={tplStrokeWidths[elementId]}
             transform={transform}
           />
         )
@@ -152,7 +157,9 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
         const startAngle = baseStartAngle + i * angleStep
         const endAngle = baseStartAngle + (i + 1) * angleStep
         const midAngle = (startAngle + endAngle) / 2
-        const color = PALETTE[i % PALETTE.length] ?? '#3768D6'
+        const color = tplColors[elementId] ?? PALETTE[i % PALETTE.length] ?? '#3768D6'
+        const strokeColor = tplStrokeColors[elementId]
+        const strokeW = tplStrokeWidths[elementId]
         const isSelected = selectedIds.has(elementId)
         const pos = positions[elementId]
 
@@ -210,8 +217,8 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
             <path
               d={arrowheadPath(cx, cy, innerR, outerR, baseAngle, baseAngle + arrowOverlap)}
               fill={color}
-              stroke={isSelected ? '#4a90d9' : 'none'}
-              strokeWidth={isSelected ? 3 : 0}
+              stroke={isSelected ? '#4a90d9' : (strokeColor || 'none')}
+              strokeWidth={isSelected ? 3 : (strokeW || 0)}
               onMouseDown={e => startDrag(e, elementId, bbox)}
               style={{ cursor: 'pointer' }}
             />

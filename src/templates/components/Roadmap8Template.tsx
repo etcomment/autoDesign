@@ -6,33 +6,15 @@ import { MIGSO_PALETTE } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#3498db']
 const W = 1000
-const TIMELINE_Y = 460
 const MARGIN_X = 60
-const CARD_W = 200
-const CARD_H = 70
 
 interface Rect { x: number; y: number; width: number; height: number }
 
-function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, { cx: number; isHigh: boolean }>, grey: Map<string, Rect>): Rect {
+function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, Rect>): Rect {
   const s = pos[id]
-  if (id.startsWith('card-')) {
-    const l = layout.get(id)
-    if (!l) return s || { x: 0, y: 0, width: 0, height: 0 }
-    const cardY = l.isHigh ? TIMELINE_Y - 180 : TIMELINE_Y - 100
-    const cardX = l.cx - CARD_W / 2
-    if (s) return { ...s, width: s.width || CARD_W, height: Math.max(s.height || CARD_H, CARD_H) }
-    return { x: cardX, y: cardY, width: CARD_W, height: CARD_H }
-  }
-  if (id.startsWith('dot-')) {
-    const l = layout.get(id)
-    if (!l) return s || { x: 0, y: 0, width: 0, height: 0 }
-    const dotSize = 12
-    if (s) return { ...s, width: s.width || dotSize, height: s.height || dotSize }
-    return { x: l.cx - dotSize / 2, y: TIMELINE_Y - dotSize / 2, width: dotSize, height: dotSize }
-  }
-  const g = grey.get(id)
-  if (g) return s ? { x: s.x, y: s.y, width: s.width || g.width, height: s.height || g.height } : g
-  return s || { x: 0, y: 0, width: 0, height: 0 }
+  const l = layout.get(id)
+  if (!l) return s || { x: 0, y: 0, width: 0, height: 0 }
+  return s ? { x: s.x, y: s.y, width: s.width || l.width, height: s.height || l.height } : l
 }
 
 export function Roadmap8Template({ data }: { data: RoadmapData }): ReactElement {
@@ -41,86 +23,143 @@ export function Roadmap8Template({ data }: { data: RoadmapData }): ReactElement 
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const pos = useTemplateStore(s => s.templateElementPositions)
   const moveEl = useTemplateStore(s => s.moveTemplateElement)
   const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
   const { title, milestones } = data
   const N = milestones.length
-  const availableW = W - MARGIN_X * 2
 
   const layoutMap = useMemo(() => {
-    const m = new Map<string, { cx: number; isHigh: boolean }>()
+    const m = new Map<string, Rect>()
+    m.set('main-title', { x: MARGIN_X, y: 60, width: 400, height: 40 })
+    m.set('title-underline', { x: MARGIN_X, y: 120, width: 80, height: 8 })
+
+    const availableW = W - MARGIN_X * 2
+    const colW = N > 0 ? availableW / N : availableW
+    
     milestones.forEach((_, i) => {
-      const cx = MARGIN_X + (N === 1 ? availableW / 2 : (i / (N - 1)) * availableW)
-      const isHigh = i % 2 === 0
-      m.set(`card-${i}`, { cx, isHigh })
-      m.set(`dot-${i}`, { cx, isHigh })
+      const cx = MARGIN_X + colW * i + colW / 2
+      const boxW = Math.min(180, colW * 0.85)
+      const boxH = 90
+      
+      m.set(`year-${i}`, { x: cx - 60, y: 185, width: 120, height: 30 })
+      m.set(`card-${i}`, { x: cx - boxW / 2, y: 250, width: boxW, height: boxH })
+      m.set(`desc-${i}`, { x: cx - boxW / 2, y: 370, width: boxW, height: 80 })
+      if (i < N - 1) {
+        m.set(`arrow-${i}`, { x: MARGIN_X + colW * (i + 1) - 10, y: 190, width: 16, height: 16 })
+      }
     })
     return m
-  }, [milestones, availableW])
-
-  const greyMap = useMemo(() => {
-    const m = new Map<string, Rect>()
-    m.set('timeline', { x: MARGIN_X - 20, y: TIMELINE_Y, width: availableW + 40, height: 2 })
-    return m
-  }, [availableW])
+  }, [milestones, N])
 
   useEffect(() => {
-    for (const id of [...layoutMap.keys(), ...greyMap.keys()]) {
+    for (const id of layoutMap.keys()) {
       if (pos[id]) continue
-      const r = getRect(id, pos, layoutMap, greyMap)
+      const r = getRect(id, pos, layoutMap)
       moveEl(id, { x: r.x, y: r.y })
       resizeEl(id, { width: r.width, height: r.height })
     }
-  }, [layoutMap, greyMap, pos, moveEl, resizeEl])
+  }, [layoutMap, pos, moveEl, resizeEl])
 
   const rects = new Map<string, Rect>()
-  for (const id of [...layoutMap.keys(), ...greyMap.keys()]) {
-    rects.set(id, getRect(id, pos, layoutMap, greyMap))
+  for (const id of layoutMap.keys()) {
+    rects.set(id, getRect(id, pos, layoutMap))
   }
 
   return (
     <g ref={svgRef}>
-      {title && <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">{title}</text>}
+      {(() => {
+        const id = 'main-title'
+        const r = rects.get(id)
+        if (!r || !title) return null
+        const fill = tplColors[id] ?? '#2c3e50'
+        const stroke = tplStrokeColors[id]
+        const sW = tplStrokeWidths[id] ?? 1
+        return (
+          <g onMouseDown={e => startDrag(e, id, r)} style={{ cursor: 'pointer' }}>
+            {title.split('\n').map((line, i) => (
+              <text key={i} x={r.x} y={r.y + 32 + i * 36} fontFamily="Arial, sans-serif" fontSize={42} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
+                {line}
+              </text>
+            ))}
+            {selectedIds.has(id) && renderHandles(r, id)}
+          </g>
+        )
+      })()}
 
       {(() => {
-        const tr = rects.get('timeline')!
-        const stroke = tplStrokeColors['timeline'] ?? '#ccc'
+        const id = 'title-underline'
+        const r = rects.get(id)
+        if (!r) return null
+        const fill = tplColors[id] ?? '#2c3e50'
         return (
-          <g onMouseDown={e => startDrag(e, 'timeline', tr)} style={{ cursor: 'pointer' }}>
-            <line x1={tr.x} y1={tr.y} x2={tr.x + tr.width} y2={tr.y} stroke={stroke} strokeWidth={3} strokeLinecap="round" />
-            {selectedIds.has('timeline') && renderHandles(tr, 'timeline')}
+          <g onMouseDown={e => startDrag(e, id, r)} style={{ cursor: 'pointer' }}>
+            <rect x={r.x} y={r.y} width={r.width} height={r.height} fill={fill} />
+            {selectedIds.has(id) && renderHandles(r, id)}
           </g>
         )
       })()}
 
       {milestones.map((ms, i) => {
-        const mid = `card-${i}`
-        const did = `dot-${i}`
-        const mr = rects.get(mid)!
+        const yid = `year-${i}`
+        const cid = `card-${i}`
+        const did = `desc-${i}`
+        const aid = `arrow-${i}`
+        
+        const yr = rects.get(yid)!
+        const cr = rects.get(cid)!
         const dr = rects.get(did)!
-        const color = tplColors[mid] ?? ms.style?.fill ?? PALETTE[i % PALETTE.length]!
-        const isSel = selectedIds.has(mid)
-        const barH = 24
-        const dotCx = dr.x + dr.width / 2
-        const dotCy = dr.y + dr.height / 2
+        const ar = rects.get(aid)
+
+        const color = tplColors[cid] ?? ms.style?.fill ?? PALETTE[i % PALETTE.length]!
+        const isSelCard = selectedIds.has(cid)
+        const isSelYear = selectedIds.has(yid)
+        const isSelDesc = selectedIds.has(did)
+        const isSelArr = ar && selectedIds.has(aid)
+
+        const styleFontSize = ms.style?.fontSize ?? 20
+        const styleFontWeight = ms.style?.fontWeight ?? 700
+        const styleFontColor = ms.style?.fontColor ?? 'white'
 
         return (
           <g key={i}>
-            <line x1={dotCx} y1={dotCy} x2={mr.x + mr.width / 2} y2={mr.y + mr.height} stroke={color} strokeWidth={1.5} opacity={0.4} />
-            <g onMouseDown={e => startDrag(e, did, dr)} style={{ cursor: 'pointer' }}>
-              <circle cx={dotCx} cy={dotCy} r={dr.width / 2} fill={color} />
-              {selectedIds.has(did) && renderHandles(dr, did)}
+            {ar && (
+              <g onMouseDown={e => startDrag(e, aid, ar)} style={{ cursor: 'pointer' }}>
+                <polygon points={`${ar.x},${ar.y} ${ar.x + ar.width},${ar.y + ar.height/2} ${ar.x},${ar.y + ar.height}`} fill={tplColors[aid] ?? '#dcdcdc'} />
+                {isSelArr && renderHandles(ar, aid)}
+              </g>
+            )}
+
+            <g onMouseDown={e => startDrag(e, yid, yr)} style={{ cursor: 'pointer' }}>
+              <text x={yr.x + yr.width/2} y={yr.y + 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={36} fontWeight={700} fill={tplColors[yid] ?? '#2c3e50'}>
+                {(ms as any).date || (2019 + i).toString()}
+              </text>
+              {isSelYear && renderHandles(yr, yid)}
             </g>
-            <g onMouseDown={e => startDrag(e, mid, mr)} style={{ cursor: 'pointer' }}>
-              <rect x={mr.x} y={mr.y} width={mr.width} height={mr.height} rx={10} fill="white" stroke={isSel ? '#4a90d9' : '#e0e0e0'} strokeWidth={isSel ? 2 : 1} />
-              <path d={`M${mr.x + 10} ${mr.y} L${mr.x + mr.width - 10} ${mr.y} Q${mr.x + mr.width} ${mr.y} ${mr.x + mr.width} ${mr.y + 10} L${mr.x + mr.width} ${mr.y + barH} L${mr.x} ${mr.y + barH} L${mr.x} ${mr.y + 10} Q${mr.x} ${mr.y} ${mr.x + 10} ${mr.y} Z`} fill={color} />
-              <text x={mr.x + mr.width / 2} y={mr.y + barH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">{ms.title}</text>
-              {ms.subtitle && (
-                <text x={mr.x + mr.width / 2} y={mr.y + barH + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#777">{ms.subtitle.length > 28 ? ms.subtitle.slice(0, 25) + '...' : ms.subtitle}</text>
-              )}
-              {isSel && renderHandles(mr, mid)}
+
+            <g onMouseDown={e => startDrag(e, cid, cr)} style={{ cursor: 'pointer' }}>
+              <rect x={cr.x} y={cr.y} width={cr.width} height={cr.height} fill={color} stroke={tplStrokeColors[cid] || (isSelCard ? '#4a90d9' : undefined)} strokeWidth={isSelCard ? 2 : (tplStrokeWidths[cid] ?? 0)} />
+              <text x={cr.x + cr.width / 2} y={cr.y + cr.height / 2 + 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>
+                {ms.title}
+              </text>
+              {isSelCard && renderHandles(cr, cid)}
+            </g>
+
+            <g onMouseDown={e => startDrag(e, did, dr)} style={{ cursor: 'pointer' }}>
+              <text x={dr.x + dr.width/2} y={dr.y + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fill={tplColors[did] ?? '#555'}>
+                {ms.subtitle ? ms.subtitle.split('\n').map((l, j) => (
+                  <tspan x={dr.x + dr.width/2} dy={j === 0 ? 0 : 20} key={j}>{l}</tspan>
+                )) : (
+                  <>
+                    <tspan x={dr.x + dr.width/2} dy="0">MIGSO-PCUBED</tspan>
+                    <tspan x={dr.x + dr.width/2} dy="20">content and words to be</tspan>
+                    <tspan x={dr.x + dr.width/2} dy="20">added here as required</tspan>
+                  </>
+                )}
+              </text>
+              {isSelDesc && renderHandles(dr, did)}
             </g>
           </g>
         )

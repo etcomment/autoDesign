@@ -13,7 +13,11 @@ export function ProductRoadmap4Template({ data }: { data: ProductRoadmap4Data })
   const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const pos = useTemplateStore(s => s.templateElementPositions)
+  const moveEl = useTemplateStore(s => s.moveTemplateElement)
+  const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
   const { title, quarters, milestones } = data
   const W = 1100
@@ -41,43 +45,61 @@ export function ProductRoadmap4Template({ data }: { data: ProductRoadmap4Data })
 
   return (
     <g ref={svgRef}>
-
-      {title && (
-        <text x={W / 2} y={36} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill="#1a1a2e">
-          {title}
-        </text>
-      )}
+      {(() => {
+        const r = pos['main-title'] ?? { x: W / 2 - 250, y: 10, width: 500, height: 35 }
+        const fill = tplColors['main-title'] ?? '#1a1a2e'
+        const stroke = tplStrokeColors['main-title']
+        const sW = tplStrokeWidths['main-title'] ?? 1
+        return title ? (
+          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+            {title.split('\n').map((line, i) => (
+              <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
+                {line}
+              </text>
+            ))}
+            {selectedIds.has('main-title') && renderHandles(r, 'main-title')}
+          </g>
+        ) : null
+      })()}
 
       {sorted.map((milestone, mi) => {
         const elementId = `milestone-${mi}`
         const qi = quarters.findIndex(q => q.label === milestone.quarter)
-        const color = tplColors[elementId] ?? PALETTE[qi >= 0 ? qi % PALETTE.length : mi % PALETTE.length]
-        const stroke = tplStrokeColors[elementId] || color
+        const color = tplColors[elementId] ?? milestone.style?.fill ?? PALETTE[qi >= 0 ? qi % PALETTE.length : mi % PALETTE.length]!
+        const stroke = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : (milestone.style?.stroke || color))
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1.5)
         const isSelected = selectedIds.has(elementId)
-        const x = leftOffset + mi * (stepW + gap)
-        const y = topMargin + (H - topMargin - stepH) / 2
-        const visualRect = { x, y, width: stepW, height: stepH }
+        const defaultX = leftOffset + mi * (stepW + gap)
+        const defaultY = topMargin + (H - topMargin - stepH) / 2
+        const defaultW = milestone.style?.boxWidth ?? stepW
+        const defaultH = milestone.style?.boxHeight ?? stepH
+        const visualRect = pos[elementId] ?? { x: defaultX, y: defaultY, width: defaultW, height: defaultH }
+        const { x, y, width: curW, height: curH } = visualRect
 
         const points = [
           `${x},${y}`,
-          `${x + stepW},${y}`,
-          `${x + stepW + CHEVRON_OFFSET},${y + stepH / 2}`,
-          `${x + stepW},${y + stepH}`,
-          `${x},${y + stepH}`,
-          `${x + CHEVRON_OFFSET},${y + stepH / 2}`,
+          `${x + curW},${y}`,
+          `${x + curW + CHEVRON_OFFSET},${y + curH / 2}`,
+          `${x + curW},${y + curH}`,
+          `${x},${y + curH}`,
+          `${x + CHEVRON_OFFSET},${y + curH / 2}`,
         ].join(' ')
+
+        const styleFontSize = milestone.style?.fontSize ?? 13
+        const styleFontWeight = milestone.style?.fontWeight ?? 700
+        const styleFontColor = milestone.style?.fontColor ?? color
 
         return (
           <g key={`m-${mi}`}>
             {mi < sorted.length - 1 && (
               <g>
                 <line
-                  x1={x + stepW + CHEVRON_OFFSET}
-                  y1={y + stepH / 2}
+                  x1={x + curW + CHEVRON_OFFSET}
+                  y1={y + curH / 2}
                   x2={leftOffset + (mi + 1) * (stepW + gap)}
-                  y2={y + stepH / 2}
-                  stroke={color}
-                  strokeWidth={2}
+                  y2={y + curH / 2}
+                  stroke={tplStrokeColors[`arrow-${mi}`] ?? color}
+                  strokeWidth={tplStrokeWidths[`arrow-${mi}`] ?? 2}
                   markerEnd={`url(#arrow-${mi % PALETTE.length})`}
                 />
               </g>
@@ -93,17 +115,15 @@ export function ProductRoadmap4Template({ data }: { data: ProductRoadmap4Data })
                 points={points}
                 fill={color}
                 opacity={isSelected ? 0.25 : 0.12}
-                stroke={isSelected ? '#4a90d9' : stroke}
-                strokeWidth={isSelected ? 2.5 : 1.5}
+                stroke={stroke}
+                strokeWidth={strokeWidth}
               />
-              <text x={x + stepW / 2 + CHEVRON_OFFSET / 2} y={y + stepH / 2 - 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={18} fontWeight={700} fill={color}>
+              <text x={x + curW / 2 + CHEVRON_OFFSET / 2} y={y + curH / 2 - 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={18} fontWeight={700} fill={color}>
                 {mi + 1}
               </text>
-              <text x={x + stepW / 2 + CHEVRON_OFFSET / 2} y={y + stepH / 2 + 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill={color}>
-                {milestone.title.length > 16 ? milestone.title.slice(0, 14) + '...' : milestone.title}
-              </text>
+              {milestone.title.split('\n').map((line, li) => (<text x={x + curW / 2 + CHEVRON_OFFSET / 2} key={li} y={y + curH / 2 + 12 + li * 12 - ((milestone.title.split('\\n').length - 1) * 6)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>{line}</text>))}
               {milestone.subtitle && (
-                <text x={x + stepW / 2 + CHEVRON_OFFSET / 2} y={y + stepH / 2 + 30} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#666">
+                <text x={x + curW / 2 + CHEVRON_OFFSET / 2} y={y + curH / 2 + 30} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#666">
                   {milestone.subtitle.length > 22 ? milestone.subtitle.slice(0, 20) + '...' : milestone.subtitle}
                 </text>
               )}

@@ -2,6 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { DecisionTreeData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { renderMultiLineText } from '../shared/primitives'
 
 interface NodePosition {
   x: number

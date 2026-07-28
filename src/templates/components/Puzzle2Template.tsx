@@ -48,11 +48,11 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const { title, pieces } = data
   const W = 900
-  const displayed = pieces.slice(0, 4)
-  const totalW = displayed.length * CELL_W
+  const totalW = pieces.length * CELL_W
   const startX = (W - totalW) / 2
   const startY = title ? 120 : 80
 
@@ -64,8 +64,12 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
         </text>
       )}
 
-      {displayed.map((piece, i) => {
-        const layout = PIECE_LAYOUTS[i]!
+      {pieces.map((piece, i) => {
+        const layout = i === 0
+          ? PIECE_LAYOUTS[0]!
+          : i === pieces.length - 1
+          ? PIECE_LAYOUTS[3]!
+          : PIECE_LAYOUTS[1]!
         const px = startX + i * CELL_W
         const py = startY
         const cx = px + CELL_W / 2
@@ -76,11 +80,25 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
         const color = tplColors[elementId] ?? defaultColor
         const stroke = tplStrokeColors[elementId] || 'white'
         const isSelected = selectedIds.has(elementId)
-        const visualRect = { x: px, y: py, width: CELL_W, height: CELL_H }
+
+        const defaultRect = { x: px, y: py, width: CELL_W, height: CELL_H }
+        const customPos = templateElementPositions[elementId]
+        const visualRect = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+        const scaleX = visualRect.width / defaultRect.width
+        const scaleY = visualRect.height / defaultRect.height
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g
+              transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}
+              onMouseDown={e => startDrag(e, elementId, visualRect)}
+              style={{ cursor: 'pointer' }}
+            >
               <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3.5 : 3} strokeLinejoin="round" />
               <circle cx={cx} cy={cy - 18} r={16} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
               <text x={cx} y={cy - 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">

@@ -12,18 +12,14 @@ const TAB_D = 18
 
 type Tab = { right?: boolean; bottom?: boolean; leftIndent?: boolean; topIndent?: boolean }
 
-const GRID: Tab[][] = [
-  [
-    { right: true, bottom: true },
-    { right: true, bottom: true, leftIndent: true },
-    { bottom: true, leftIndent: true },
-  ],
-  [
-    { right: true, topIndent: true },
-    { right: true, leftIndent: true, topIndent: true },
-    { leftIndent: true, topIndent: true },
-  ],
-]
+function getTabForCell(row: number, col: number, totalRows: number, cols: number): Tab {
+  return {
+    right: col < cols - 1,
+    bottom: row < totalRows - 1,
+    leftIndent: col > 0,
+    topIndent: row > 0,
+  }
+}
 
 function gridPath(x: number, y: number, t: Tab): string {
   const r = x + CELL_W
@@ -52,10 +48,10 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
   const { title, pieces } = data
   const W = 700
   const cols = 3
+  const totalRows = Math.ceil(pieces.length / cols)
   const gridW = cols * CELL_W
   const startX = (W - gridW) / 2
   const startY = title ? 110 : 70
-  const displayed = pieces.slice(0, 6)
 
   return (
     <g ref={svgRef}>
@@ -65,10 +61,10 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
         </text>
       )}
 
-      {displayed.map((piece, i) => {
+      {pieces.map((piece, i) => {
         const row = Math.floor(i / cols)
         const col = i % cols
-        const tabOpts = GRID[row]?.[col] ?? {}
+        const tabOpts = getTabForCell(row, col, totalRows, cols)
         const px = startX + col * CELL_W
         const py = startY + row * CELL_H
         const cx = px + CELL_W / 2

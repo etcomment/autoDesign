@@ -1,41 +1,25 @@
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 import type { RoadmapData } from '../types'
-import { CircleBadge } from '../shared/primitives'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#3498db']
+const PALETTE = ['#4363d8', '#f58231', '#3cb44b', '#ffe119', '#e6194B']
 const W = 1000
-const H = 500
-const START_X = 100
-const FINISH_X = 900
-const PATH_Y = 200
-const PATH_AMP = 80
-const CARD_W = 180
-const CARD_H = 65
+const H = 600
+const TRACK_W = 120
+const R = 60
 
 interface Rect { x: number; y: number; width: number; height: number }
 interface Point { x: number; y: number }
 
 function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, Point>, grey: Map<string, Rect>): Rect {
   const s = pos[id]
-  if (id.startsWith('circle-')) {
+  if (id.startsWith('node-')) {
     const p = layout.get(id)
     if (!p) return s || { x: 0, y: 0, width: 0, height: 0 }
-    const r = 14
-    if (s) return { ...s, width: s.width || r * 2, height: s.height || r * 2 }
-    return { x: p.x - r, y: p.y - r, width: r * 2, height: r * 2 }
-  }
-  if (id.startsWith('card-')) {
-    const p = layout.get(id)
-    if (!p) return s || { x: 0, y: 0, width: 0, height: 0 }
-    const idx = Number(id.split('-')[1])
-    const yOffset = idx % 2 === 0 ? -90 : 30
-    const cx = p.x - CARD_W / 2
-    const cy = p.y + yOffset
-    if (s) return { ...s, width: s.width || CARD_W, height: Math.max(s.height || CARD_H, CARD_H) }
-    return { x: cx, y: cy, width: CARD_W, height: CARD_H }
+    if (s) return { ...s, width: s.width || 60, height: s.height || 60 }
+    return { x: p.x - 30, y: p.y - 30, width: 60, height: 60 }
   }
   const g = grey.get(id)
   if (g) return s ? { x: s.x, y: s.y, width: s.width || g.width, height: s.height || g.height } : g
@@ -48,40 +32,52 @@ export function Roadmap16Template({ data }: { data: RoadmapData }): ReactElement
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const pos = useTemplateStore(s => s.templateElementPositions)
   const moveEl = useTemplateStore(s => s.moveTemplateElement)
   const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
-  const { title, milestones, startLabel = 'START', finishLabel = 'FINISH' } = data
+  const { title, milestones } = data
   const N = milestones.length
-  const totalX = FINISH_X - START_X
 
-  const curvePoints = useMemo(() => {
-    return milestones.map((_, i) => {
-      const t = N === 1 ? 0.5 : i / (N - 1)
-      const x = START_X + t * totalX
-      const wave = Math.sin(t * Math.PI * 3)
-      const y = PATH_Y + wave * PATH_AMP
-      return { x, y }
-    })
-  }, [milestones, totalX])
+  const pathSegments = useMemo(() => {
+    // S-curve logic
+    const startX = 200, startY = 150
+    const endX1 = 800
+    const endX2 = 200
+    const stepY = 160
+    
+    // START circle: cx=150, cy=150
+    const pathD = `M ${startX} ${startY} L ${endX1 - R} ${startY} A ${R} ${R} 0 0 1 ${endX1} ${startY + R} A ${R} ${R} 0 0 1 ${endX1 - R} ${startY + 2*R} L ${endX2 + R} ${startY + 2*R} A ${R} ${R} 0 0 0 ${endX2} ${startY + 3*R} A ${R} ${R} 0 0 0 ${endX2 + R} ${startY + 4*R} L ${endX1} ${startY + 4*R}`
+    
+    return pathD
+  }, [])
 
   const layoutMap = useMemo(() => {
     const m = new Map<string, Point>()
-    curvePoints.forEach((pt, i) => {
-      m.set(`circle-${i}`, pt)
-      m.set(`card-${i}`, pt)
+    const startX = 200, startY = 150
+    const endX1 = 800, endX2 = 200
+    
+    // Simplified distribution for up to 5 points
+    const points = [
+      { x: 400, y: 150 },
+      { x: 650, y: 150 },
+      { x: 350, y: 270 },
+      { x: 600, y: 270 },
+      { x: 450, y: 390 }
+    ]
+    
+    milestones.forEach((_, i) => {
+      m.set(`node-${i}`, points[i % points.length]!)
     })
     return m
-  }, [curvePoints])
+  }, [milestones])
 
   const greyMap = useMemo(() => {
     const m = new Map<string, Rect>()
-    m.set('curved-path', { x: 0, y: 0, width: W, height: H })
-    m.set('start-label', { x: START_X - 60, y: PATH_Y - 40, width: 60, height: 16 })
-    m.set('finish-label', { x: FINISH_X + 10, y: PATH_Y - 40, width: 60, height: 16 })
-    m.set('start-dot', { x: START_X - 6, y: PATH_Y - 6, width: 12, height: 12 })
-    m.set('finish-dot', { x: FINISH_X - 6, y: PATH_Y - 6, width: 12, height: 12 })
+    m.set('main-title', { x: 45, y: 45, width: 300, height: 40 })
+    m.set('start', { x: 100, y: 120, width: 80, height: 80 })
+    m.set('finish', { x: 800, y: 350, width: 80, height: 80 })
     return m
   }, [])
 
@@ -99,74 +95,73 @@ export function Roadmap16Template({ data }: { data: RoadmapData }): ReactElement
     rects.set(id, getRect(id, pos, layoutMap, greyMap))
   }
 
-  const pathD = curvePoints.length > 1
-    ? curvePoints.map((p, i) => {
-        if (i === 0) return `M${p.x} ${p.y}`
-        const prev = curvePoints[i - 1]!
-        const cpx = (prev.x + p.x) / 2
-        return `C${cpx} ${prev.y} ${cpx} ${p.y} ${p.x} ${p.y}`
-      }).join(' ')
-    : ''
-
   return (
     <g ref={svgRef}>
-      {title && <text x={W / 2} y={40} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">{title}</text>}
-
-      {pathD && (
-        <path d={pathD} fill="none" stroke={tplStrokeColors['curved-path'] ?? '#bbb'} strokeWidth={3} strokeLinecap="round" />
-      )}
       {(() => {
-        const pr = rects.get('curved-path')!
-        return selectedIds.has('curved-path') ? renderHandles(pr, 'curved-path') : null
+        const r = rects.get('main-title')!
+        const fill = tplColors['main-title'] ?? '#282c61'
+        const stroke = tplStrokeColors['main-title']
+        const sW = tplStrokeWidths['main-title'] ?? 1
+        return title ? (
+          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+            <text x={r.x} y={r.y + 30} fontFamily="Arial, sans-serif" fontSize={36} fontWeight={800} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
+              {title}
+            </text>
+            <line x1={r.x} y1={r.y + 45} x2={r.x + 60} y2={r.y + 45} stroke={fill} strokeWidth={6} />
+            {selectedIds.has('main-title') && renderHandles(r, 'main-title')}
+          </g>
+        ) : null
       })()}
 
+      <path d={pathSegments} fill="none" stroke="#a9a9a9" strokeWidth={18} strokeLinecap="round" strokeLinejoin="round" />
+
       {['start', 'finish'].map(kind => {
-        const dr = rects.get(`${kind}-dot`)!
-        const lr = rects.get(`${kind}-label`)!
-        const fill = tplColors[`${kind}-dot`] ?? '#999'
+        const r = rects.get(kind)!
+        const fill = tplColors[kind] ?? '#282c61'
+        const stroke = tplStrokeColors[kind]
+        const sW = tplStrokeWidths[kind] ?? 1
+        const cx = r.x + r.width / 2
+        const cy = r.y + r.height / 2
         return (
-          <g key={kind}>
-            <g onMouseDown={e => startDrag(e, `${kind}-dot`, dr)} style={{ cursor: 'pointer' }}>
-              <circle cx={dr.x + dr.width / 2} cy={dr.y + dr.height / 2} r={dr.width / 2} fill={fill} />
-              {selectedIds.has(`${kind}-dot`) && renderHandles(dr, `${kind}-dot`)}
-            </g>
-            <g onMouseDown={e => startDrag(e, `${kind}-label`, lr)} style={{ cursor: 'pointer' }}>
-              <text x={lr.x + lr.width / 2} y={lr.y + lr.height} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill="#888">
-                {kind === 'start' ? startLabel : finishLabel}
-              </text>
-              {selectedIds.has(`${kind}-label`) && renderHandles(lr, `${kind}-label`)}
-            </g>
+          <g key={kind} onMouseDown={e => startDrag(e, kind, r)} style={{ cursor: 'pointer' }}>
+            <circle cx={cx} cy={cy} r={r.width / 2} fill="white" stroke={fill} strokeWidth={4} />
+            <text x={cx} y={cy + 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={16} fontWeight={800} fill={fill}>
+              {kind.toUpperCase()}
+            </text>
+            {selectedIds.has(kind) && renderHandles(r, kind)}
           </g>
         )
       })}
 
       {milestones.map((ms, i) => {
-        const cid = `circle-${i}`
-        const mid = `card-${i}`
-        const cr = rects.get(cid)!
-        const mr = rects.get(mid)!
-        const color = tplColors[mid] ?? ms.style?.fill ?? PALETTE[i % PALETTE.length]!
-        const isSel = selectedIds.has(mid)
-        const circleCx = cr.x + cr.width / 2
-        const circleCy = cr.y + cr.height / 2
-        const circleRad = Math.max(5, cr.width / 2)
-        const barH = 22
+        const iid = `node-${i}`
+        const r = rects.get(iid)!
+        const color = tplColors[iid] ?? ms.style?.fill ?? PALETTE[i % PALETTE.length]!
+        const isSel = selectedIds.has(iid)
+        const cx = r.x + r.width / 2
+        const cy = r.y + r.height / 2
+        const labelY = (i === 0 || i === 1) ? cy + 60 : (i === 2 || i === 3) ? cy - 60 : cy + 60
 
         return (
-          <g key={i}>
-            <line x1={circleCx} y1={circleCy + circleRad} x2={mr.x + mr.width / 2} y2={mr.y + barH} stroke={color} strokeWidth={1.5} opacity={0.35} />
-            <g onMouseDown={e => startDrag(e, cid, cr)} style={{ cursor: 'pointer' }}>
-              <CircleBadge cx={circleCx} cy={circleCy} r={circleRad} fill={color} label={String(i + 1)} />
-              {selectedIds.has(cid) && renderHandles(cr, cid)}
-            </g>
-            <g onMouseDown={e => startDrag(e, mid, mr)} style={{ cursor: 'pointer' }}>
-              <rect x={mr.x} y={mr.y} width={mr.width} height={mr.height} rx={8} fill="white" stroke={isSel ? '#4a90d9' : '#e0e0e0'} strokeWidth={isSel ? 2 : 1} />
-              <rect x={mr.x} y={mr.y} width={mr.width} height={barH} rx={8} fill={color} opacity={0.12} />
-              <text x={mr.x + mr.width / 2} y={mr.y + barH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill={color}>
-                {i === 0 ? `${startLabel}: ${ms.title}` : i === N - 1 ? `${finishLabel}: ${ms.title}` : ms.title}
+          <g key={i} onMouseDown={e => startDrag(e, iid, r)} style={{ cursor: 'pointer' }}>
+            <circle cx={cx} cy={cy} r={r.width / 2} fill="white" stroke={color} strokeWidth={4} />
+            <circle cx={cx} cy={cy} r={r.width / 2 - 8} fill="none" stroke={color} strokeWidth={1} />
+            
+            <text x={cx} y={labelY} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={16} fontWeight={800} fill="#222">
+              {ms.title}
+            </text>
+            {ms.subtitle && (
+              <text x={cx} y={labelY + 20} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fill="#555">
+                {ms.subtitle.length > 30 ? ms.subtitle.slice(0, 27) + '...' : ms.subtitle}
               </text>
-              {isSel && renderHandles(mr, mid)}
-            </g>
+            )}
+            {ms.date && (
+              <text x={cx} y={labelY + (ms.subtitle ? 38 : 20)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="#888">
+                {ms.date}
+              </text>
+            )}
+            
+            {isSel && renderHandles(r, iid)}
           </g>
         )
       })}

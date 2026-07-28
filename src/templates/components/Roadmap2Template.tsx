@@ -1,160 +1,256 @@
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 import type { RoadmapData } from '../types'
-import { CircleBadge } from '../shared/primitives'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#3498db']
-const W = 1000
-const LINE_X = 120
-const CARD_START_X = 160
-const CARD_W = 680
-const CARD_H = 85
-const ITEM_H = 130
-const TOP_PAD = 90
-
-interface Rect { x: number; y: number; width: number; height: number }
-
-function getRect(
-  id: string,
-  pos: Record<string, Rect>,
-  layout: Map<string, { cy: number }>,
-  grey: Map<string, Rect>
-): Rect {
-  const s = pos[id]
-  if (id.startsWith('circle-')) {
-    const l = layout.get(id)
-    if (l) return s ? { ...s, width: s.width || 28, height: s.height || 28 } : { x: LINE_X - 14, y: l.cy - 14, width: 28, height: 28 }
-  }
-  if (id.startsWith('card-')) {
-    const l = layout.get(id)
-    if (l) return s ? { ...s, width: s.width || CARD_W, height: Math.max(s.height || CARD_H, CARD_H) } : { x: CARD_START_X, y: l.cy - CARD_H / 2, width: CARD_W, height: CARD_H }
-  }
-  const g = grey.get(id)
-  if (g) return s ? { x: s.x, y: s.y, width: s.width || g.width, height: s.height || g.height } : g
-  return s || { x: 0, y: 0, width: 0, height: 0 }
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
 }
+
+// Design from PDF Page 137:
+// Horizontal timeline with dots per year, slanted leader lines to text blocks above.
+// Bottom phase chevron banners (Phase One/Two/Three).
+// Years come from `quarters` DSL or from each milestone's `date:` field.
+// Default fallback: 2019–2028 (10 years).
 
 export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
-  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const pos = useTemplateStore(s => s.templateElementPositions)
   const moveEl = useTemplateStore(s => s.moveTemplateElement)
   const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
-  const { title, milestones, startLabel = 'START', finishLabel = 'FINISH' } = data
-  const N = milestones.length
-  const lineTop = TOP_PAD - 10
-  const lineBot = TOP_PAD + N * ITEM_H + 10
+  const { title, milestones, quarters } = data
+  const W = 1000
 
-  const layoutMap = useMemo(() => {
-    const m = new Map<string, { cy: number }>()
-    milestones.forEach((_, i) => {
-      const cy = TOP_PAD + i * ITEM_H + ITEM_H / 2
-      m.set(`card-${i}`, { cy })
-      m.set(`circle-${i}`, { cy })
+  // Build the list of year labels:
+  // Priority 1: each milestone's ms.date field
+  // Priority 2: quarters DSL list
+  // Priority 3: fallback 2019–2028
+  const years = useMemo(() => {
+    if (milestones.length > 0 && milestones.some(ms => ms.date)) {
+      return milestones.map((ms, i) => ms.date ?? String(2019 + i))
+    }
+    if (quarters && quarters.length > 0) {
+      return quarters.map(q => q.label)
+    }
+    return ['2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028']
+  }, [milestones, quarters])
+
+  const N = years.length
+  const startX = 80
+  const spacing = Math.min(95, (W - startX * 2) / Math.max(N - 1, 1))
+  const timelineY = 600
+
+  // Index considered the "pivot" year (where color changes). Default: index 4 (2023 in default mode).
+  // If custom years: pivot at the middle.
+  const pivotIdx = Math.floor(N / 2)
+
+  const defaultPositions = useMemo(() => {
+    const map = new Map<string, Rect>()
+    map.set('main-title', { x: 45, y: 40, width: 350, height: 60 })
+    map.set('phase-1', { x: 65, y: 740, width: 280, height: 100 })
+    map.set('phase-2', { x: 350, y: 740, width: 300, height: 100 })
+    map.set('phase-3', { x: 635, y: 740, width: 300, height: 100 })
+
+    years.forEach((_, i) => {
+      const cx = startX + i * spacing
+      map.set(`dot-${i}`, { x: cx - 10, y: timelineY - 10, width: 20, height: 20 })
+      map.set(`year-${i}`, { x: cx - 35, y: timelineY + 30, width: 70, height: 30 })
+      map.set(`text-${i}`, { x: cx - 80, y: 250 + (i % 2 === 0 ? 0 : 160), width: 150, height: 80 })
     })
-    return m
-  }, [milestones])
 
-  const greyMap = useMemo(() => {
-    const m = new Map<string, Rect>()
-    m.set('vline', { x: LINE_X, y: lineTop, width: 2, height: lineBot - lineTop })
-    m.set('start-label', { x: LINE_X - 50, y: TOP_PAD - 62, width: 100, height: 16 })
-    m.set('finish-label', { x: LINE_X - 50, y: lineBot + 8, width: 100, height: 16 })
-    m.set('start-dot', { x: LINE_X - 8, y: TOP_PAD - 37, width: 16, height: 16 })
-    m.set('finish-dot', { x: LINE_X - 8, y: lineBot + 38, width: 16, height: 16 })
-    return m
-  }, [lineTop, lineBot])
+    return map
+  }, [years, spacing])
 
   useEffect(() => {
-    for (const id of [...layoutMap.keys(), ...greyMap.keys()]) {
-      if (pos[id]) continue
-      const r = getRect(id, pos, layoutMap, greyMap)
-      moveEl(id, { x: r.x, y: r.y })
-      resizeEl(id, { width: r.width, height: r.height })
+    for (const [id, rect] of defaultPositions.entries()) {
+      if (!pos[id]) {
+        moveEl(id, { x: rect.x, y: rect.y })
+        resizeEl(id, { width: rect.width, height: rect.height })
+      }
     }
-  }, [layoutMap, greyMap, pos, moveEl, resizeEl])
+  }, [defaultPositions, pos, moveEl, resizeEl])
 
-  const rects = new Map<string, Rect>()
-  for (const id of [...layoutMap.keys(), ...greyMap.keys()]) {
-    rects.set(id, getRect(id, pos, layoutMap, greyMap))
+  const getR = (id: string): Rect => {
+    const p = pos[id]
+    const d = defaultPositions.get(id) || { x: 0, y: 0, width: 100, height: 50 }
+    return {
+      x: p?.x ?? d.x,
+      y: p?.y ?? d.y,
+      width: p?.width || d.width,
+      height: p?.height || d.height,
+    }
   }
+
+  const titleR = getR('main-title')
+  const p1R = getR('phase-1')
+  const p2R = getR('phase-2')
+  const p3R = getR('phase-3')
+
+  const pivotX = startX + pivotIdx * spacing
 
   return (
     <g ref={svgRef}>
-      {title && <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">{title}</text>}
+      {/* Title */}
+      {title && (
+        <g onMouseDown={e => startDrag(e, 'main-title', titleR)} style={{ cursor: 'pointer' }}>
+          <text
+            x={W / 2}
+            y={48}
+            textAnchor="middle"
+            fontFamily="Arial, sans-serif"
+            fontSize={22}
+            fontWeight={700}
+            fill={tplColors['main-title'] || '#1e3a5f'}
+          >
+            {title}
+          </text>
+          {selectedIds.has('main-title') && renderHandles(titleR, 'main-title')}
+        </g>
+      )}
 
-      {(() => {
-        const r = rects.get('vline')!
-        const stroke = tplStrokeColors['vline'] ?? '#ccc'
-        return (
-          <g onMouseDown={e => startDrag(e, 'vline', r)} style={{ cursor: 'pointer' }}>
-            <line x1={r.x} y1={r.y} x2={r.x} y2={r.y + r.height} stroke={stroke} strokeWidth={3} strokeLinecap="round" />
-            {selectedIds.has('vline') && renderHandles(r, 'vline')}
-          </g>
-        )
-      })()}
+      {/* Horizontal Axis Lines */}
+      <line x1={0} y1={timelineY} x2={pivotX} y2={timelineY} stroke="#ff4a2b" strokeWidth={5} />
+      <line x1={pivotX} y1={timelineY} x2={1000} y2={timelineY} stroke="#e0e0e0" strokeWidth={5} />
 
-      {['start', 'finish'].map(kind => {
-        const dr = rects.get(`${kind}-dot`)!
-        const lr = rects.get(`${kind}-label`)!
-        const fill = tplColors[`${kind}-dot`] ?? '#999'
-        const ctx = dr.x + dr.width / 2
-        const cty = dr.y + dr.height / 2
-        const cr = dr.width / 2
-        return (
-          <g key={kind}>
-            <g onMouseDown={e => startDrag(e, `${kind}-dot`, dr)} style={{ cursor: 'pointer' }}>
-              <circle cx={ctx} cy={cty} r={cr} fill={fill} />
-              {selectedIds.has(`${kind}-dot`) && renderHandles(dr, `${kind}-dot`)}
-            </g>
-            <g onMouseDown={e => startDrag(e, `${kind}-label`, lr)} style={{ cursor: 'pointer' }}>
-              <text x={lr.x + lr.width / 2} y={lr.y + lr.height} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#666">
-                {kind === 'start' ? startLabel : finishLabel}
-              </text>
-              {selectedIds.has(`${kind}-label`) && renderHandles(lr, `${kind}-label`)}
-            </g>
-          </g>
-        )
-      })}
+      {/* Year Points (Dots, Slanted Leader Lines & Text Blocks) */}
+      {years.map((yr, i) => {
+        const dotR = getR(`dot-${i}`)
+        const yrR = getR(`year-${i}`)
+        const txtR = getR(`text-${i}`)
 
-      {milestones.map((ms, i) => {
-        const cid = `circle-${i}`
-        const mid = `card-${i}`
-        const cr = rects.get(cid)!
-        const mr = rects.get(mid)!
-        const color = tplColors[mid] ?? ms.style?.fill ?? PALETTE[i % PALETTE.length]!
-        const isSel = selectedIds.has(mid)
-        const circleCx = cr.x + cr.width / 2
-        const circleCy = cr.y + cr.height / 2
-        const circleRad = Math.max(5, cr.width / 2)
-        const barH = 26
-        const sub = ms.subtitle?.split('\n').filter(Boolean) ?? []
+        const isDark = i <= pivotIdx
+        const dotColor = isDark ? '#1e204c' : '#2d62ed'
+        const ms = milestones[i]
+
+        const cx = dotR.x + dotR.width / 2
+        const cy = dotR.y + dotR.height / 2
+
+        const lineTopX = txtR.x + txtR.width - 20
+        const lineTopY = txtR.y + txtR.height + 20
 
         return (
           <g key={i}>
-            <line x1={circleCx + circleRad} y1={circleCy} x2={mr.x} y2={mr.y + barH / 2} stroke={color} strokeWidth={1.5} opacity={0.45} />
-            <g onMouseDown={e => startDrag(e, mid, mr)} style={{ cursor: 'pointer' }}>
-              <rect x={mr.x} y={mr.y} width={mr.width} height={mr.height} rx={8} fill="white" stroke={isSel ? '#4a90d9' : '#e0e0e0'} strokeWidth={isSel ? 2 : 1} />
-              <path d={`M${mr.x + 8} ${mr.y} L${mr.x + mr.width - 8} ${mr.y} Q${mr.x + mr.width} ${mr.y} ${mr.x + mr.width} ${mr.y + 8} L${mr.x + mr.width} ${mr.y + barH} L${mr.x} ${mr.y + barH} L${mr.x} ${mr.y + 8} Q${mr.x} ${mr.y} ${mr.x + 8} ${mr.y} Z`} fill={color} />
-              <text x={mr.x + mr.width / 2} y={mr.y + barH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">{ms.title}</text>
-              {sub.map((line, li) => (
-                <text key={li} x={mr.x + mr.width / 2} y={mr.y + barH + 18 + li * 14} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#777">{line.length > 80 ? line.slice(0, 77) + '...' : line}</text>
-              ))}
-              {isSel && renderHandles(mr, mid)}
+            {/* Slanted Leader Line */}
+            <line
+              x1={cx}
+              y1={cy - 12}
+              x2={lineTopX}
+              y2={lineTopY}
+              stroke="#cccccc"
+              strokeWidth={3}
+            />
+
+            {/* Text Box (milestone title+subtitle if available, else placeholder) */}
+            <g onMouseDown={e => startDrag(e, `text-${i}`, txtR)} style={{ cursor: 'pointer' }}>
+              {ms ? (
+                <>
+                  <text x={txtR.x} y={txtR.y + 18} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#222">{ms.title}</text>
+                  {ms.subtitle && ms.subtitle.split('\n').map((line, li) => (
+                    <text key={li} x={txtR.x} y={txtR.y + 36 + li * 18} fontFamily="Arial, sans-serif" fontSize={12} fill="#555">{line}</text>
+                  ))}
+                </>
+              ) : (
+                <>
+                  <text x={txtR.x} y={txtR.y + 20} fontFamily="Arial, sans-serif" fontSize={13} fill="#444444">Content and description</text>
+                  <text x={txtR.x} y={txtR.y + 38} fontFamily="Arial, sans-serif" fontSize={13} fill="#444444">to be added here as</text>
+                  <text x={txtR.x} y={txtR.y + 56} fontFamily="Arial, sans-serif" fontSize={13} fill="#444444">required for step</text>
+                </>
+              )}
+              {selectedIds.has(`text-${i}`) && renderHandles(txtR, `text-${i}`)}
             </g>
-            <g onMouseDown={e => startDrag(e, cid, cr)} style={{ cursor: 'pointer' }}>
-              <CircleBadge cx={circleCx} cy={circleCy} r={circleRad} fill={color} label={String(i + 1)} />
-              {selectedIds.has(cid) && renderHandles(cr, cid)}
+
+            {/* Dot */}
+            <g onMouseDown={e => startDrag(e, `dot-${i}`, dotR)} style={{ cursor: 'pointer' }}>
+              <circle cx={cx} cy={cy} r={12} fill={tplColors[`dot-${i}`] || dotColor} />
+              {selectedIds.has(`dot-${i}`) && renderHandles(dotR, `dot-${i}`)}
+            </g>
+
+            {/* Year Label */}
+            <g onMouseDown={e => startDrag(e, `year-${i}`, yrR)} style={{ cursor: 'pointer' }}>
+              <text
+                x={yrR.x + yrR.width / 2}
+                y={yrR.y + 20}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={24}
+                fontWeight="bold"
+                fill="#222222"
+              >
+                {yr}
+              </text>
+              {selectedIds.has(`year-${i}`) && renderHandles(yrR, `year-${i}`)}
             </g>
           </g>
         )
       })}
+
+      {/* Bottom Phase Banners (Chevrons) */}
+      {/* Phase One */}
+      <g onMouseDown={e => startDrag(e, 'phase-1', p1R)} style={{ cursor: 'pointer' }}>
+        <path
+          d={`M ${p1R.x} ${p1R.y} L ${p1R.x + p1R.width - 25} ${p1R.y} L ${p1R.x + p1R.width} ${p1R.y + p1R.height / 2} L ${p1R.x + p1R.width - 25} ${p1R.y + p1R.height} L ${p1R.x} ${p1R.y + p1R.height} Z`}
+          fill={tplColors['phase-1'] || '#23255a'}
+        />
+        <text
+          x={p1R.x + p1R.width / 2 - 10}
+          y={p1R.y + p1R.height / 2 + 8}
+          textAnchor="middle"
+          fontFamily="Arial, sans-serif"
+          fontSize={22}
+          fontWeight="bold"
+          fill="#ffffff"
+        >
+          Phase One
+        </text>
+        {selectedIds.has('phase-1') && renderHandles(p1R, 'phase-1')}
+      </g>
+
+      {/* Phase Two */}
+      <g onMouseDown={e => startDrag(e, 'phase-2', p2R)} style={{ cursor: 'pointer' }}>
+        <path
+          d={`M ${p2R.x} ${p2R.y} L ${p2R.x + p2R.width - 25} ${p2R.y} L ${p2R.x + p2R.width} ${p2R.y + p2R.height / 2} L ${p2R.x + p2R.width - 25} ${p2R.y + p2R.height} L ${p2R.x} ${p2R.y + p2R.height} L ${p2R.x + 25} ${p2R.y + p2R.height / 2} Z`}
+          fill={tplColors['phase-2'] || '#2d62ed'}
+        />
+        <text
+          x={p2R.x + p2R.width / 2}
+          y={p2R.y + p2R.height / 2 + 8}
+          textAnchor="middle"
+          fontFamily="Arial, sans-serif"
+          fontSize={22}
+          fontWeight="bold"
+          fill="#ffffff"
+        >
+          Phase Two
+        </text>
+        {selectedIds.has('phase-2') && renderHandles(p2R, 'phase-2')}
+      </g>
+
+      {/* Phase Three */}
+      <g onMouseDown={e => startDrag(e, 'phase-3', p3R)} style={{ cursor: 'pointer' }}>
+        <path
+          d={`M ${p3R.x} ${p3R.y} L ${p3R.x + p3R.width} ${p3R.y} L ${p3R.x + p3R.width} ${p3R.y + p3R.height} L ${p3R.x} ${p3R.y + p3R.height} L ${p3R.x + 25} ${p3R.y + p3R.height / 2} Z`}
+          fill={tplColors['phase-3'] || '#ff4a2b'}
+        />
+        <text
+          x={p3R.x + p3R.width / 2 + 10}
+          y={p3R.y + p3R.height / 2 + 8}
+          textAnchor="middle"
+          fontFamily="Arial, sans-serif"
+          fontSize={22}
+          fontWeight="bold"
+          fill="#ffffff"
+        >
+          Phase Three
+        </text>
+        {selectedIds.has('phase-3') && renderHandles(p3R, 'phase-3')}
+      </g>
     </g>
   )
 }

@@ -1,4 +1,5 @@
 import { useTemplateStore } from '../store'
+import { useDiagramStore } from '../../store/diagramStore'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
 const PRESET_COLORS = [
@@ -115,6 +116,7 @@ function updateElementField(
 export function TemplatePropertiesPanel() {
   const activeTemplate = useTemplateStore(s => s.activeTemplate)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const selectedShapeIds = useDiagramStore(s => s.selectedShapeIds)
   const templateColors = useTemplateStore(s => s.templateElementColors)
   const templateStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const templateStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
@@ -124,7 +126,7 @@ export function TemplatePropertiesPanel() {
   const updateTemplateStrokeWidth = useTemplateStore(s => s.updateTemplateStrokeWidth)
   const updateTemplateData = useTemplateStore(s => s.updateTemplateData)
 
-  if (!activeTemplate || selectedIds.size === 0) return null
+  if (!activeTemplate || selectedIds.size === 0 || selectedShapeIds.size > 0) return null
 
   const elements = [...selectedIds]
   const primaryId = elements[0]!

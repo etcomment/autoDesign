@@ -40,11 +40,11 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'roadmap',
       milestones: [
-        { title: 'Initiate', subtitle: 'Project kickoff' },
-        { title: 'Plan', subtitle: 'Detailed design' },
-        { title: 'Develop', subtitle: 'Core features' },
-        { title: 'Test', subtitle: 'QA & validation' },
-        { title: 'Deliver', subtitle: 'Production release' },
+        { title: 'Initiate', subtitle: 'Project kickoff', date: '2022' },
+        { title: 'Plan', subtitle: 'Detailed design', date: '2023' },
+        { title: 'Develop', subtitle: 'Core features', date: '2024' },
+        { title: 'Test', subtitle: 'QA & validation', date: '2025' },
+        { title: 'Deliver', subtitle: 'Production release', date: '2026' },
       ],
       startLabel: 'START',
       finishLabel: 'FINISH',
@@ -56,11 +56,14 @@ export const TEMPLATES: TemplateDefinition[] = [
     category: 'Roadmaps',
     defaultData: {
       type: 'roadmap',
+      quarters: [
+        { label: '2019' }, { label: '2020' }, { label: '2021' }, { label: '2022' },
+        { label: '2023' }, { label: '2024' }, { label: '2025' }, { label: '2026' },
+        { label: '2027' }, { label: '2028' },
+      ],
       milestones: [
-        { title: 'Research', subtitle: 'Market analysis' },
-        { title: 'Design', subtitle: 'UX/UI prototype' },
-        { title: 'Develop', subtitle: 'Sprint cycles' },
-        { title: 'Launch', subtitle: 'Go to market' },
+        { title: 'Research', subtitle: 'Market analysis', date: '2021' },
+        { title: 'Launch', subtitle: 'Go to market', date: '2026' },
       ],
       startLabel: 'START',
       finishLabel: 'FINISH',
@@ -95,11 +98,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'roadmap',
       milestones: [
-        { title: 'Discovery', subtitle: 'Understanding user needs and market fit' },
-        { title: 'Prototyping', subtitle: 'Building rapid prototypes for feedback' },
-        { title: 'Development', subtitle: 'Engineering the core modules' },
-        { title: 'Integration', subtitle: 'Connecting all components together' },
-        { title: 'Release', subtitle: 'Production deployment and monitoring' },
+        { title: 'Discovery', subtitle: 'Understanding user needs and market fit', date: '2024' },
+        { title: 'Prototyping', subtitle: 'Building rapid prototypes for feedback', date: '2025' },
+        { title: 'Development', subtitle: 'Engineering the core modules', date: '2026' },
+        { title: 'Release', subtitle: 'Production deployment and monitoring', date: '2027' },
       ],
     },
   },
@@ -109,15 +111,20 @@ export const TEMPLATES: TemplateDefinition[] = [
     category: 'Roadmaps',
     defaultData: {
       type: 'roadmap',
+      quarters: [
+        { label: '2024' },
+        { label: '2025' },
+        { label: '2026' },
+      ],
       milestones: [
-        { title: 'Setup env' },
-        { title: 'Login page' },
-        { title: 'Dashboard' },
-        { title: 'API layer' },
-        { title: 'DB schema' },
-        { title: 'Tests' },
-        { title: 'Deploy CI' },
-        { title: 'Launch' },
+        { title: 'Setup env', subtitle: 'Infrastructure', date: '2024' },
+        { title: 'Login page', subtitle: 'Auth module', date: '2024' },
+        { title: 'Dashboard', subtitle: 'Main UI', date: '2025' },
+        { title: 'API layer', subtitle: 'Backend REST', date: '2025' },
+        { title: 'DB schema', subtitle: 'Data model', date: '2025' },
+        { title: 'Tests', subtitle: 'QA coverage', date: '2026' },
+        { title: 'Deploy CI', subtitle: 'Pipeline setup', date: '2026' },
+        { title: 'Launch', subtitle: 'Go live', date: '2026' },
       ],
     },
   },
@@ -128,11 +135,9 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'roadmap',
       milestones: [
-        { title: 'Discovery', subtitle: 'Market research' },
-        { title: 'Design', subtitle: 'UX & architecture' },
-        { title: 'Prototype', subtitle: 'MVP build' },
-        { title: 'Validate', subtitle: 'User testing' },
-        { title: 'Launch', subtitle: 'Go to market' },
+        { title: '2023', subtitle: '458', date: '2023' },
+        { title: '2024', subtitle: '285', date: '2024' },
+        { title: '2025', subtitle: '853', date: '2025' },
       ],
       startLabel: 'START',
       finishLabel: 'FINISH',
@@ -145,10 +150,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'roadmap',
       milestones: [
-        { title: 'Research', subtitle: 'Competitive analysis' },
-        { title: 'Plan', subtitle: 'Scope definition' },
-        { title: 'Execute', subtitle: 'Development sprints' },
-        { title: 'Review', subtitle: 'Quality assurance' },
+        { title: 'Research', subtitle: 'Competitive analysis', date: '2023' },
+        { title: 'Plan', subtitle: 'Scope definition', date: '2024' },
+        { title: 'Execute', subtitle: 'Development sprints', date: '2025' },
+        { title: 'Review', subtitle: 'Quality assurance', date: '2026' },
       ],
     },
   },
@@ -175,10 +180,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'roadmap',
       milestones: [
-        { title: 'Ideation', subtitle: 'Brainstorm concepts' },
-        { title: 'Validation', subtitle: 'Customer interviews' },
-        { title: 'MVP Build', subtitle: 'Core features only' },
-        { title: 'Launch', subtitle: 'Public release' },
+        { title: 'Ideation', subtitle: 'Brainstorm concepts', date: 'JAN' },
+        { title: 'Validation', subtitle: 'Customer interviews', date: 'MAR' },
+        { title: 'MVP Build', subtitle: 'Core features only', date: 'JUN' },
+        { title: 'Launch', subtitle: 'Public release', date: 'SEP' },
       ],
     },
   },
@@ -189,11 +194,11 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'roadmap',
       milestones: [
-        { title: 'Initiate', subtitle: 'Project charter & team assembly' },
-        { title: 'Plan', subtitle: 'Timeline, budget & resource allocation' },
-        { title: 'Execute', subtitle: 'Development & integration phases' },
-        { title: 'Monitor', subtitle: 'KPI tracking & risk management' },
-        { title: 'Close', subtitle: 'Final delivery & retrospective' },
+        { title: 'Initiate', subtitle: 'Project charter & team assembly', date: 'JANUARY' },
+        { title: 'Plan', subtitle: 'Timeline, budget & resource allocation', date: 'FEBRUARY' },
+        { title: 'Execute', subtitle: 'Development & integration phases', date: 'MARCH' },
+        { title: 'Monitor', subtitle: 'KPI tracking & risk management', date: 'APRIL' },
+        { title: 'Close', subtitle: 'Final delivery & retrospective', date: 'MAY' },
       ],
     },
   },
@@ -218,14 +223,14 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'roadmap',
       milestones: [
-        { title: 'Kickoff', subtitle: 'Team alignment' },
-        { title: 'Research', subtitle: 'User interviews' },
-        { title: 'Wireframes', subtitle: 'Low-fidelity mockups' },
-        { title: 'Prototype', subtitle: 'Interactive demo' },
-        { title: 'Dev Sprint 1', subtitle: 'Core features' },
-        { title: 'Dev Sprint 2', subtitle: 'Polish & QA' },
-        { title: 'UAT', subtitle: 'User validation' },
-        { title: 'Release', subtitle: 'Production deploy' },
+        { title: 'Kickoff', subtitle: 'Team alignment', date: 'Week 1' },
+        { title: 'Research', subtitle: 'User interviews', date: 'Week 2' },
+        { title: 'Wireframes', subtitle: 'Low-fidelity mockups', date: 'Week 3' },
+        { title: 'Prototype', subtitle: 'Interactive demo', date: 'Week 4' },
+        { title: 'Dev Sprint 1', subtitle: 'Core features', date: 'Week 5' },
+        { title: 'Dev Sprint 2', subtitle: 'Polish & QA', date: 'Week 6' },
+        { title: 'UAT', subtitle: 'User validation', date: 'Week 7' },
+        { title: 'Release', subtitle: 'Production deploy', date: 'Week 8' },
       ],
     },
   },
@@ -236,10 +241,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'roadmap',
       milestones: [
-        { title: 'Foundation', subtitle: 'Core platform' },
-        { title: 'Growth', subtitle: 'Feature expansion' },
-        { title: 'Scale', subtitle: 'Infrastructure upgrade' },
-        { title: 'Optimize', subtitle: 'Performance & UX' },
+        { title: 'Foundation', subtitle: 'Core platform', date: '2023' },
+        { title: 'Growth', subtitle: 'Feature expansion', date: '2024' },
+        { title: 'Scale', subtitle: 'Infrastructure upgrade', date: '2025' },
+        { title: 'Optimize', subtitle: 'Performance & UX', date: '2026' },
       ],
     },
   },
@@ -250,11 +255,11 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'roadmap',
       milestones: [
-        { title: 'Research', subtitle: 'Market study' },
-        { title: 'Prototype', subtitle: 'Proof of concept' },
-        { title: 'Development', subtitle: 'Build phase' },
-        { title: 'Testing', subtitle: 'QA cycle' },
-        { title: 'Launch', subtitle: 'Go live' },
+        { title: 'Research', subtitle: 'Market study', date: 'Q1 2025' },
+        { title: 'Prototype', subtitle: 'Proof of concept', date: 'Q2 2025' },
+        { title: 'Development', subtitle: 'Build phase', date: 'Q3 2025' },
+        { title: 'Testing', subtitle: 'QA cycle', date: 'Q4 2025' },
+        { title: 'Launch', subtitle: 'Go live', date: 'Q1 2026' },
       ],
       startLabel: 'START',
       finishLabel: 'FINISH',
@@ -267,11 +272,11 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'roadmap',
       milestones: [
-        { title: 'Concept', subtitle: 'Idea validation' },
-        { title: 'Design', subtitle: 'UX & architecture' },
-        { title: 'Develop', subtitle: 'Core modules' },
-        { title: 'Test', subtitle: 'QA & UAT' },
-        { title: 'Deliver', subtitle: 'Production release' },
+        { title: 'Concept', subtitle: 'Idea validation', date: '2023' },
+        { title: 'Design', subtitle: 'UX & architecture', date: '2024' },
+        { title: 'Develop', subtitle: 'Core modules', date: '2025' },
+        { title: 'Test', subtitle: 'QA & UAT', date: '2026' },
+        { title: 'Deliver', subtitle: 'Production release', date: '2027' },
       ],
       startLabel: 'START',
       finishLabel: 'FINISH',
@@ -280,7 +285,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'productRoadmap',
     label: 'Product Roadmap 1',
-    category: 'Roadmaps',
+    category: 'Product Roadmaps',
     defaultData: {
       type: 'productRoadmap',
       quarters: [
@@ -306,7 +311,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'productRoadmap2',
     label: 'Product Roadmap 2',
-    category: 'Roadmaps',
+    category: 'Product Roadmaps',
     defaultData: {
       type: 'productRoadmap2',
       quarters: [
@@ -332,7 +337,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'productRoadmap3',
     label: 'Product Roadmap 3',
-    category: 'Roadmaps',
+    category: 'Product Roadmaps',
     defaultData: {
       type: 'productRoadmap3',
       quarters: [
@@ -358,7 +363,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'productRoadmap4',
     label: 'Product Roadmap 4',
-    category: 'Roadmaps',
+    category: 'Product Roadmaps',
     defaultData: {
       type: 'productRoadmap4',
       quarters: [
@@ -384,7 +389,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'productRoadmap5',
     label: 'Product Roadmap 5',
-    category: 'Roadmaps',
+    category: 'Product Roadmaps',
     defaultData: {
       type: 'productRoadmap5',
       quarters: [
@@ -410,7 +415,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'productRoadmap6',
     label: 'Product Roadmap 6',
-    category: 'Roadmaps',
+    category: 'Product Roadmaps',
     defaultData: {
       type: 'productRoadmap6',
       quarters: [
@@ -1054,7 +1059,7 @@ export const TEMPLATES: TemplateDefinition[] = [
     label: 'Business Vertical Hub',
     category: 'Business',
     defaultData: {
-      type: 'business',
+      type: 'business2',
       centerLabel: 'Strategy',
       nodes: [
         { title: 'Finance', subtitle: 'Budget & ROI' },
@@ -1391,7 +1396,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'productRoadmap7',
     label: 'Product Roadmap 7 (Quarters Grid)',
-    category: 'Roadmaps',
+    category: 'Product Roadmaps',
     defaultData: {
       type: 'productRoadmap',
       quarters: [
@@ -1412,7 +1417,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'productRoadmap8',
     label: 'Product Roadmap 8 (Calendar Grid)',
-    category: 'Roadmaps',
+    category: 'Product Roadmaps',
     defaultData: {
       type: 'productRoadmap',
       quarters: [
@@ -1438,7 +1443,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'productRoadmap9',
     label: 'Product Roadmap 9 (Timeline Bars)',
-    category: 'Roadmaps',
+    category: 'Product Roadmaps',
     defaultData: {
       type: 'productRoadmap',
       quarters: [
@@ -1459,7 +1464,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'productRoadmap10',
     label: 'Product Roadmap 10 (Team Gantt)',
-    category: 'Roadmaps',
+    category: 'Product Roadmaps',
     defaultData: {
       type: 'productRoadmap',
       quarters: [
@@ -1485,7 +1490,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'productRoadmap11',
     label: 'Product Roadmap 11 (Milestone Cards)',
-    category: 'Roadmaps',
+    category: 'Product Roadmaps',
     defaultData: {
       type: 'productRoadmap',
       quarters: [],
@@ -1502,7 +1507,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'productRoadmap12',
     label: 'Product Roadmap 12 (Quarter Badges)',
-    category: 'Roadmaps',
+    category: 'Product Roadmaps',
     defaultData: {
       type: 'productRoadmap',
       quarters: [

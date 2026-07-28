@@ -1,271 +1,472 @@
-# Template DSL — Syntaxe et Architecture
+# Template DSL — Documentation complète de la syntaxe et des templates
 
-Le **Template DSL** (Domain Specific Language) permet de décrire textuellement un template Roadmap et de l'afficher instantanément dans l'éditeur. C'est une syntaxe légère et lisible, conçue pour être saisie rapidement sans passer par l'interface graphique complète.
+Le **Template DSL** (Domain Specific Language) est un langage textuel déclaratif conçu pour construire et personnaliser dynamiquement tous les modèles visuels supportés par la plateforme (`Roadmaps`, `Business`, `Process`, `Strategy`, `Puzzle`, `Funnel`, `Dashboard`, `Table`, `Agenda`, `Comparison`, `Brain`, `Budget`, `DecisionTree`, `Goals`, `Manufacturing`, `ValueChain`, `Iceberg`, `Circle`).
+
+Il permet une génération rapide de schémas interactifs et modifiables instantanément au sein de l'éditeur sans manipulation manuelle complexe dans le canvas.
 
 ---
 
-## Référence de syntaxe
+## 1. Grammaire Globale du DSL
 
-### La commande `@roadmap`
+Chaque document DSL débute par un en-tête principal déclarant le type et la variante du template, optionnellement suivi du titre global entre guillemets.
 
-Tout script DSL commence obligatoirement par `@roadmap`, suivi optionnellement d'un titre entre guillemets :
+### Structure d'une commande d'en-tête
+```
+@<type>[variante] "[Titre principal]"
+```
+* **Exemples** : `@roadmap "Roadmap Globale"`, `@business3 "Modèle Hub & Spoke"`, `@process2 "Flux d'approbation"`
+
+### Directives et Mots-Clés Généraux
+Le parser découpe le texte ligne par ligne. Les lignes vides et les commentaires débutant par `//` sont ignorés.
 
 ```
-@roadmap "Titre de la roadmap"
+// Ceci est un commentaire ignoré
+@roadmap "Mon Titre"
+  start "Début"
+  finish "Fin"
 ```
 
-Les lignes vides et les commentaires `// ...` sont ignorés par le parser.
-
-### Les sous-commandes
-
-| Commande | Description |
-|---|---|
-| `start "..."` | Label de l'extrémité gauche de la timeline (par défaut `START`) |
-| `finish "..."` | Label de l'extrémité droite de la timeline (par défaut `FINISH`) |
-| `quarters Q1 Q2 Q3 Q4` | Déclenche le **mode Grid** (Product Roadmap) et définit les colonnes |
-| `lanes Dev UX QA` | Définit les lignes du mode Grid (utilisé uniquement avec `quarters`) |
-| `milestone "Titre" "Description"` | Déclare un milestone. Optionnellement préfixé par `quarter:lane` |
-| `style propriété valeur` | Définit un style pour le milestone en cours ou un style global |
-
-### Mode Simple vs Mode Grid
-
-**Mode Simple** — Quand `quarters` et `lanes` ne sont pas spécifiés, le parser produit un `RoadmapData` (type `roadmap`). Les milestones s'affichent sur une timeline horizontale, alternativement au-dessus et en-dessous.
-
-**Mode Grid** — Quand `quarters` et/ou `lanes` sont présents, le parser produit un `ProductRoadmapData` (type `productRoadmap`). Les milestones sont positionnés dans une grille trimestres x lanes.
-
-### Syntaxe des milestones
-
-```
-milestone "Titre" "Description optionnelle"
-```
-
-En mode Grid, on préfixe par le quarter et la lane :
-
-```
-milestone Q1:Development "Alpha" "Version interne"
-milestone Q2:Product "Beta" "Early access"
-milestone Q3:QA "RC1" "Release candidate"
-```
-
-### Directives `style`
-
-La directive `style` modifie l'apparence visuelle des éléments. Elle accepte les propriétés suivantes :
-
+### Directives de Style Complémentaires (`style`)
+Pour certains types de templates (notamment `roadmap`), des paramètres visuels peuvent être injectés globalement ou au niveau des éléments :
 | Propriété | Type | Description | Exemple |
 |---|---|---|---|
-| `boxWidth` | nombre | Largeur du bloc milestone en pixels | `style boxWidth 180` |
-| `boxHeight` | nombre | Hauteur minimale du bloc milestone en pixels | `style boxHeight 100` |
-| `fontSize` | nombre | Taille de police du titre (px) | `style fontSize 14` |
-| `fontWeight` | nombre | Graisse de la police (400, 600, 700, etc.) | `style fontWeight 600` |
-| `fontColor` | string | Couleur du texte (nom CSS ou hex) | `style fontColor white` |
-| `fill` | string | Couleur de fond du bloc milestone | `style fill #4a90d9` |
-| `stroke` | string | Couleur de bordure du bloc milestone | `style stroke #333` |
-
-### Styles globaux vs styles par milestone
-
-**Style global** : une directive `style` placée avant le premier `milestone` s'applique à tous les milestones (sauf ceux qui ont leur propre style).
-
-```
-@roadmap "Plan"
-  style boxWidth 150       ← s'applique à tous
-  style fontSize 13
-
-  milestone "Étape 1"
-  milestone "Étape 2"
-```
-
-**Style par milestone** : une directive `style` placée directement après un `milestone` s'applique uniquement à ce milestone et **remplace** le style global pour cette propriété.
-
-```
-  milestone "Étape 1"
-    style fill #e74c3c     ← uniquement Étape 1
-    style boxWidth 200
-
-  milestone "Étape 2"     ← utilise les styles globaux
-```
-
-### Sauts de ligne
-
-Utilisez `\n` dans les chaînes entre guillemets pour insérer des sauts de ligne :
-
-```
-milestone "Alpha" "Phase 1\nTests internes"
-```
-
-Le parser convertit `\n` littéral en vrai saut de ligne via `stripQuotes`.
+| `fill` | string | Couleur de fond / Remplissage du nœud | `style fill #4a90d9` |
+| `stroke` | string | Couleur de bordure | `style stroke #333333` |
+| `boxWidth` | number | Largeur du conteneur en pixels | `style boxWidth 180` |
+| `boxHeight` | number | Hauteur minimale en pixels | `style boxHeight 100` |
+| `fontSize` | number | Taille de la police de titre (px) | `style fontSize 14` |
+| `fontWeight` | number | Graisse de la police (ex: 400, 600, 700) | `style fontWeight 600` |
+| `fontColor` | string | Couleur du texte | `style fontColor white` |
 
 ---
 
-## Exemples complets
+## 2. Modificateurs Universels d'Éléments (Trailing Arguments)
 
-### Exemple 1 : Roadmap simple (mode timeline)
+Pour la quasi-totalité des éléments de liste (`milestone`, `step`, `block`, `piece`, `level`, `metric`, `item`, `comp`, `node`, `branch`, `line`, `station`, `primary`, `support`, `above`, `below`, `segment`), le parser prend en charge un ensemble de modificateurs optionnels positionnés après les arguments obligatoires :
 
+1. **Sous-titre / Description** : Deuxième argument sous forme de chaîne de caractères entre guillemets `"Mon sous-titre"`.
+2. **Valeur numérique / Métrique (`val:...`)** : Permet de définir une valeur textuelle ou numérique propre à l'élément (ex: `val:"$2.4M"` ou `val:"High"`).
+3. **Pourcentage (`pct:...`)** : Permet de définir un pourcentage d'avancement ou de répartition (ex: `pct:"75%"` ou `pct:"80"`).
+4. **Icône Lucide (`icon:...`)** : Nom de l'icône Lucide React associée à l'élément (ex: `icon:CheckCircle`, `icon:TrendingUp`, `icon:Target`, `icon:Zap`, `icon:Users`).
+5. **Couleur Hexadécimale (`#HEX`)** : Couleur spécifique attribuée au bloc ou au marqueur de l'élément (ex: `#4caf50`, `#e91e63`).
+
+#### Exemple de modificateurs combinés :
 ```
-@roadmap "Lancement Produit"
+  step "Analyse du besoin" "Étude d'impact initiale" val:"Urgent" pct:"100%" icon:CheckCircle #4caf50
+```
+
+---
+
+## 3. Guide et Exemples par Catégorie de Templates
+
+---
+
+### 3.1 Roadmaps (`Roadmaps`)
+
+**Variantes supportées** : `roadmap`, `roadmap2`, `roadmap3`, `roadmap4`, `roadmap5`, `roadmap6`, `roadmap7`, `roadmap8`, `roadmap9`, `roadmap10`, `roadmap11`, `roadmap12`, `roadmap13`, `roadmap14`, `roadmap15`, `roadmap16`, `productRoadmap`, `productRoadmap2`, `productRoadmap3`, `productRoadmap4`, `productRoadmap5`, `productRoadmap6`.
+
+#### Sintaxe et sous-commandes :
+* `start "Label"` : Marqueur de départ de la timeline.
+* `finish "Label"` : Marqueur de fin de la timeline.
+* `quarters Q1 Q2 Q3 Q4` : Active le mode grille (Trimestres / Timeline).
+* `lanes TeamA TeamB` : Colonnes / Rangées organisationnelles.
+* `milestone [Quarter:Lane] "Titre" ["Subtitle"]` : Milestone de roadmap.
+
+#### Exemple 1 : Timeline Simple (`@roadmap`)
+```
+@roadmap "Roadmap Lancement 2026"
   start "Kickoff"
-  finish "GA Release"
+  finish "Lancement Officiel"
 
-  style boxWidth 150
-  style fontSize 13
-
-  milestone "Alpha" "Tests internes\nphase 1/2"
-    style fill #4a90d9
-
-  milestone "Beta" "Early access"
-    style fill #2ecc71
-    style boxWidth 180
-
-  milestone "RC1" "Release candidate"
-
-  milestone "GA" "Go live"
+  milestone "Audit & Vision" "Étude de marché et cadrage" icon:Search #4a90d9
+  milestone "MVP Architecture" "Conception des APIs" icon:Code #7b68ee
+  milestone "Recette QA" "Validation sécurité et perfs" icon:ShieldCheck #ff9800
+  milestone "Déploiement PROD" "Mise en ligne progressive" icon:Rocket #4caf50
 ```
 
-Résultat : 4 milestones sur une timeline horizontale, Alpha et RC1 au-dessus, Beta et GA en-dessous. Alpha et Beta ont des couleurs personnalisées.
-
-### Exemple 2 : Product Roadmap (mode grid)
-
+#### Exemple 2 : Product Roadmap Grille (`@productRoadmap3`)
 ```
-@roadmap "Roadmap 2026"
-  quarters Q1 Q2 Q3 Q4
+@productRoadmap3 "Plan Produit Annuel"
+  quarters Q1:2026 Q2:2026 Q3:2026 Q4:2026
   lanes Development Product UX QA
 
-  milestone Q1:Development "API v2"
-  milestone Q2:Product "Dashboard"
-  milestone Q3:UX "Redesign"
-  milestone Q4:QA "Test suite"
-```
-
-Résultat : une grille 4x4 avec les milestones positionnés dans les cellules correspondantes.
-
-### Exemple 3 : Styles globaux sur Product Roadmap
-
-```
-@roadmap "Tech Roadmap"
-  quarters Q1 Q2
-  lanes Backend Frontend
-
-  style fontSize 11
-  style fontWeight 600
-
-  milestone Q1:Backend "Auth Service"
-    style fill #4caf50
-
-  milestone Q2:Frontend "UI Kit"
-    style fill #2196f3
+  milestone Q1:Development "Refonte Auth" "Support OAuth2 & SSO" icon:Lock
+  milestone Q2:Product "Module Analytics" "Rapports exportables PDF" icon:BarChart
+  milestone Q3:UX "Design System v2" "Composants accessibles" icon:Palette
+  milestone Q4:QA "Tests d'intégration" "Automatisation E2E" icon:CheckSquare
 ```
 
 ---
 
-## Architecture du parser
+### 3.2 Business (`Business 1-11`)
 
-### Fichier source
+**Variantes supportées** : `business`, `business2`, `business3`, `business4`, `business5`, `business6`, `business7`, `business8`, `business9`, `business10`, `business11`.
 
-`src/templates/dsl/parseTemplate.ts` (137 lignes)
+#### Syntaxe et sous-commandes :
+* `center "Nom central"` : Définition du nœud central / cœur de l'écosystème.
+* `nodes "A" "B" "C"` : Déclaration rapide de plusieurs nœuds.
+* `node "Titre" ["Sous-titre"] [options]` : Déclaration détaillée d'un nœud business.
 
-### Fonctions clés
-
-| Fonction | Rôle |
-|---|---|
-| `parseTemplateDsl(dsl)` | Point d'entrée. Détecte si le DSL commence par `@roadmap` et délègue à `parseRoadmap` |
-| `parseRoadmap(dsl)` | Parse complet du DSL roadmap. Retourne `RoadmapData` ou `ProductRoadmapData` |
-| `stripQuotes(s)` | Supprime les guillemets et convertit `\n` littéral en vrais sauts de ligne |
-| `parseStyleValue(value)` | Parse une valeur de style : essaie un nombre, sinon retourne la chaîne brute |
-| `styleObj(record)` | Convertit un `Record<string, string\|number>` en `TemplateElementStyle` ou `undefined` |
-| `flushMilestone()` | Fusionne le milestone en attente avec ses styles dans le tableau final |
-
-### Algorithme de parsing
-
-1. **Split** : le DSL est découpé en lignes, chaque ligne est nettoyée (`trim`).
-2. **Filtrage** : les lignes vides et les commentaires `//` sont ignorés.
-3. **Parsing ligne à ligne** : une boucle `for` itère sur chaque ligne :
-   - Si la ligne commence par `@roadmap`, extrait le titre
-   - Si `start "..."`, stocke `startLabel`
-   - Si `finish "..."`, stocke `finishLabel`
-   - Si `quarters ...`, active le mode grid et collecte les colonnes
-   - Si `lanes ...`, collecte les lignes de la grille
-   - Si `style key value`, applique au milestone en cours ou au style global
-   - Si `milestone ...`, `flushMilestone()` puis stocke un `pendingMilestone`
-4. **Flush final** : après la boucle, `flushMilestone()` est appelé pour traiter le dernier milestone.
-5. **Détection du mode** : si `quarters` ou `lanes` ont des valeurs → `ProductRoadmapData`, sinon → `RoadmapData`.
-6. **Fusion des styles** : pour chaque milestone, le style est fusionné : styles globaux + styles spécifiques au milestone (ces derniers écrasent les globaux).
-
-### Diagramme de flux du parser
-
+#### Exemple 1 : Business Hub Central (`@business3`)
 ```
-DSL (texte brut)
-    │
-    ▼
-parseTemplateDsl()
-    │
-    ├── ne commence pas par @roadmap → null
-    │
-    └── commence par @roadmap → parseRoadmap()
-            │
-            ├── Split en lignes, filter vides/commentaires
-            │
-            ├── Boucle ligne par ligne :
-            │     ├── @roadmap "Titre"    → title
-            │     ├── start "Label"       → startLabel
-            │     ├── finish "Label"      → finishLabel
-            │     ├── quarters Q1 Q2...   → active mode grid
-            │     ├── lanes Dev UX...     → lignes de la grille
-            │     ├── style key value     → style global ou pending
-            │     └── milestone "X" "Y"   → flush + nouveau pending
-            │
-            ├── flushMilestone() final
-            │
-            ├── quarters/lanes non vides ?
-            │     ├── OUI → ProductRoadmapData { type: 'productRoadmap' }
-            │     └── NON → RoadmapData { type: 'roadmap' }
-            │
-            └── Retourne TemplateData
+@business3 "Écosystème Entreprise"
+  center "Plateforme Core"
+
+  node "Partenaires" "Réseau d'intégrateurs" icon:Handshake #4a90d9
+  node "Clients" "Segment Enterprise" icon:Users #4caf50
+  node "Fournisseurs" "Infrastructure Cloud" icon:Server #ff9800
+  node "Investisseurs" "Gouvernance & Financement" icon:DollarSign #9c27b0
+```
+
+#### Exemple 2 : Business Grid (`@business7`)
+```
+@business7 "Piliers Stratégiques"
+  node "Innovation" "R&D continue" icon:Lightbulb #2196f3
+  node "Excellence" "Qualité de service" icon:Star #4caf50
+  node "Agilité" "Adaptation marché" icon:Zap #ff9800
+  node "Confiance" "Sécurité des données" icon:Shield #e91e63
 ```
 
 ---
 
-## Intégration dans l'éditeur
+### 3.3 Processus (`Process 1-5`)
 
-### Composant `TemplateDslEditor`
+**Variantes supportées** : `process`, `process2`, `process3` (via base `process`), `process4`, `process5`.
 
-`src/templates/panels/TemplateDslEditor.tsx` (99 lignes)
+#### Syntaxe et sous-commandes :
+* `step "Titre" ["Description"] [options]` : Étape numérotée séquentiellement.
 
-Ce composant React affiche une **zone de texte** (textarea) avec un exemple de DSL pré-rempli, et un bouton **"Parse & Render"**. 
-
-L'interface présente :
-- Une zone de texte monospace éditable
-- Un bouton pour parser et afficher le template
-- Une aide en bas avec les commandes disponibles
-
-### Flux de données : DSL → Parser → Store → Composant
-
+#### Exemple 1 : Processus Linéaire (`@process2`)
 ```
-TemplateDslEditor
-    │
-    │  [clic sur "Parse & Render"]
-    ▼
-parseTemplateDsl(dsl)
-    │
-    │  retourne TemplateData (RoadmapData ou ProductRoadmapData)
-    ▼
-selectTemplateWithData(data.type, data)
-    │
-    │  met à jour useTemplateStore :
-    │    - activeTemplate = data.type
-    │    - templateData = data
-    │    - réinitialise selectedIds, colors, positions
-    ▼
-TemplateRenderer
-    │
-    │  lit activeTemplate et templateData depuis le store
-    │  sélectionne le bon composant dans TEMPLATE_MAP
-    ▼
-RoadmapTemplate  ou  ProductRoadmapTemplate
-    │
-    │  rendu SVG via le Canvas de l'éditeur
-    ▼
-Affichage dans le Canvas
+@process2 "Workflow d'Intégration Client"
+  step "Inscription" "Création du compte et validation email" icon:UserPlus #4a90d9
+  step "Onboarding" "Tutoriel interactif et configuration" icon:BookOpen #7b68ee
+  step "Vérification" "Validation KYC et documents" icon:FileCheck #ff9800
+  step "Activation" "Accès complet aux fonctionnalités" icon:CheckCircle2 #4caf50
 ```
 
-### Coexistence avec les diagrammes Mermaid
+#### Exemple 2 : Processus Vertical (`@process5`)
+```
+@process5 "Pipeline CI/CD"
+  step "Source Code" "Commit dans le repository principal" icon:GitCommit
+  step "Build & Test" "Compilation et tests unitaires" icon:Cpu
+  step "Security Scan" "Analyse des vulnérabilités" icon:ShieldAlert
+  step "Deployment" "Déploiement sur cluster Kubernetes" icon:Server
+```
 
-Le `TemplateRenderer` est rendu dans le même Canvas SVG que les diagrammes Mermaid. Il est wrappé dans un `<g pointerEvents="all">` qui lui permet de recevoir les événements de souris (drag, clic) indépendamment des autres éléments SVG du Canvas. Les templates et les diagrammes Mermaid peuvent coexister côte à côte dans le même espace de dessin.
+---
+
+### 3.4 Stratégie (`Strategy 1-8`)
+
+**Variantes supportées** : `strategy`, `strategy2`, `strategy3`, `strategy4`, `strategy5`, `strategy6`, `strategy7`, `strategy8`.
+
+#### Syntaxe et sous-commandes :
+* `block "Numéro/Identifiant" "Titre" ["Sous-titre"] [options]` : Bloc de décision ou pilier stratégique.
+
+#### Exemple 1 : Pyramide Stratégique (`@strategy2`)
+```
+@strategy2 "Pyramide d'Alignement"
+  block "01" "Vision" "Devenir le leader européen du secteur" icon:Eye #3366cc
+  block "02" "Mission" "Offrir une expérience utilisateur irréprochable" icon:Target #2196f3
+  block "03" "Objectifs" "Croissance de 30% de l'ARR" icon:TrendingUp #4caf50
+  block "04" "Initiatives" "Lancement de la gamme Premium" icon:Rocket #ff9800
+  block "05" "Fondation" "Culture d'entreprise et valeurs" icon:Heart #e91e63
+```
+
+#### Exemple 2 : Timeline Stratégique (`@strategy5`)
+```
+@strategy5 "Plan de Transformation Digitale"
+  block "T1" "Audit Systèmes" "Cartographie de l'existant" icon:ClipboardList
+  block "T2" "Migration Cloud" "Transfert vers l'infrastructure Serverless" icon:Cloud
+  block "T3" "Formation Équipes" "Montée en compétences des développeurs" icon:GraduationCap
+  block "T4" "Optimisation AI" "Intégration des modèles LLM" icon:Brain
+```
+
+---
+
+### 3.5 Puzzles (`Puzzle 1-7`)
+
+**Variantes supportées** : `puzzle`, `puzzle2`, `puzzle3`, `puzzle4`, `puzzle5`, `puzzle6`, `puzzle7`.
+
+#### Syntaxe et sous-commandes :
+* `piece "Titre" ["Sous-titre"] [options]` : Pièce de puzzle interconnectée.
+
+#### Exemple : Puzzle 4 Pièces (`@puzzle4`)
+```
+@puzzle4 "Synergie des Facteurs de Succès"
+  piece "Recherche" "Compréhension fine des besoins" icon:Search #4a90d9
+  piece "Design" "Prototypage rapide et intuitif" icon:PenTool #e91e63
+  piece "Exécution" "Développement agile et solide" icon:Code #4caf50
+  piece "Mesure" "Analyse des métriques de rétention" icon:BarChart2 #ff9800
+```
+
+---
+
+### 3.6 Entonnoirs / Funnels (`Funnel 1-5`)
+
+**Variantes supportées** : `funnel`, `funnel2`, `funnel3`, `funnel4`, `funnel5`.
+
+#### Syntaxe et sous-commandes :
+* `level "Titre" [Pourcentage] ["Sous-titre"] [options]` : Niveau de l'entonnoir de conversion.
+
+#### Exemple : Entonnoir de Vente (`@funnel`)
+```
+@funnel "Funnel de Conversion Sales"
+  level "Impressions Web" 100 "Visiteurs uniques du site" icon:Globe #4a90d9
+  level "Leads Qualifiés (MQL)" 65 "Demandes de démonstration" icon:Filter #7b68ee
+  level "Opportunités (SQL)" 35 "Propositions commerciales envoyées" icon:FileText #e91e63
+  level "Clients Signés" 12 "Contrats validés" icon:CheckCircle #4caf50
+```
+
+---
+
+### 3.7 Tableaux de Bord / Dashboards (`Dashboard 1-5`)
+
+**Variantes supportées** : `dashboard`, `dashboard2`, `dashboard3`, `dashboard4`, `dashboard5`.
+
+#### Syntaxe et sous-commandes :
+* `metric "Intitulé" "Valeur" ["Évolution/Sous-titre"] [options]` : Indicateur clé de performance (KPI).
+
+#### Exemple : Dashboard Exécutif (`@dashboard`)
+```
+@dashboard "Indicateurs Clés du Mois"
+  metric "Chiffre d'Affaires" "$1.28M" "+14% vs M-1" val:"$1.28M" pct:"85%" icon:DollarSign #4caf50
+  metric "Nouveaux Utilisateurs" "12,450" "+8% de croissance" val:"12.4K" icon:UserCheck #2196f3
+  metric "Taux de Churn" "1.4%" "-0.3% vs objectif" val:"1.4%" icon:TrendingDown #ff9800
+  metric "Score CSAT" "94/100" "Satisfaisant" val:"94%" icon:Smile #9c27b0
+```
+
+---
+
+### 3.8 Tableaux (`Table 1-6`)
+
+**Variantes supportées** : `table`, `table2`, `table3`, `table4`, `table5`, `table6`.
+
+#### Syntaxe et sous-commandes :
+* `columns "Col 1" "Col 2" "Col 3"...` : Entêtes des colonnes du tableau.
+* `row "Label Ligne" "Cellule 1" "Cellule 2"...` : Ligne de données.
+
+#### Exemple : Matrice Comparative (`@table`)
+```
+@table "Matrice des Fonctionnalités"
+  columns "Fonctionnalité" "Offre Starter" "Offre Pro" "Offre Enterprise"
+  row "Support Utilisateur" "Email (48h)" "Prioritaire 24/7" "Dédié & Téléphone"
+  row "Stockage Cloud" "10 GB" "1 TB" "Illimité"
+  row "Accès API" "Restreint" "Complet" "Dédié + SLA"
+  row "SLA garanti" "99.0%" "99.9%" "99.99%"
+```
+
+---
+
+### 3.9 Agenda (`Agenda 1-4`)
+
+**Variantes supportées** : `agenda`, `agenda2`, `agenda3`, `agenda4`.
+
+#### Syntaxe et sous-commandes :
+* `item "Horaire/Numéro" "Titre" ["Description"] [options]` : Point ou créneau d'ordre du jour.
+
+#### Exemple : Agenda de Réunion Exécutive (`@agenda2`)
+```
+@agenda2 "Planning du Séminaire Annuel"
+  item "09:00" "Accueil & Mot d'ouverture" "Présentation des enjeux par la Direction" icon:Coffee #4a90d9
+  item "10:30" "Bilan Financier Q2" "Analyse des résultats et performances" icon:TrendingUp #2196f3
+  item "12:00" "Pause Déjeuner Netwoking" "Buffet dans le hall principal" icon:Utensils #4caf50
+  item "14:00" "Ateliers Stratégiques" "Brainstorming en groupes de travail" icon:Users #ff9800
+```
+
+---
+
+### 3.10 Comparaison (`Comparison 1-7`)
+
+**Variantes supportées** : `comparison`, `comparison2`, `comparison3`, `comparison4`, `comparison5`, `comparison6`, `comparison7`.
+
+#### Syntaxe et sous-commandes :
+* `left "Titre Colonne Gauche"` : Libellé du volet de gauche.
+* `right "Titre Colonne Droite"` : Libellé du volet de droite.
+* `comp "Critère" "Valeur Gauche" "Valeur Droite" [options]` : Point de comparaison.
+
+#### Exemple : Comparatif Avant / Après (`@comparison`)
+```
+@comparison "Analyse d'Impact Transformation"
+  left "Mode Traditionnel (Avant)"
+  right "Mode Agile & Automatisé (Après)"
+
+  comp "Déploiement" "Manuel / Mensuel" "Automatique / Quotidien" icon:Rocket #4caf50
+  comp "Gestion des Erreurs" "Réactive et lente" "Proactive avec monitoring" icon:AlertTriangle #ff9800
+  comp "Satisfaction Équipe" "Moyenne (stress)" "Élevée (autonomie)" icon:Smile #2196f3
+```
+
+---
+
+### 3.11 Brainstorm / Cartes Mentales (`Brain 1-4`)
+
+**Variantes supportées** : `brain`, `brain2`, `brain3`, `brain4`.
+
+#### Syntaxe et sous-commandes :
+* `center "Sujet Central"` : Nœud central de l'esprit / brainstorming.
+* `branch "Branche" ["Sous-titre"] [options]` : Branche de réflexion connectée au centre.
+
+#### Exemple : Brainstorm Produit (`@brain`)
+```
+@brain "Axes d'Innovation 2026"
+  center "Intelligence Artificielle"
+
+  branch "Copilote Code" "Assistance en temps réel" icon:Code #4a90d9
+  branch "Génération d'Assets" "Création automatique d'images" icon:Image #e91e63
+  branch "Analyse Prédictive" "Détection des anomalies" icon:BarChart #4caf50
+  branch "Agent conversationnel" "Support client autonome" icon:MessageSquare #ff9800
+```
+
+---
+
+### 3.12 Budget (`Budget 1-5`)
+
+**Variantes supportées** : `budget`, `budget2`, `budget3`, `budget4`, `budget5`.
+
+#### Syntaxe et sous-commandes :
+* `total "Montant Total"` : Enveloppe budgétaire globale.
+* `line "Poste de dépense" "Montant" Pourcentage ["Description"] [options]` : Ligne budgétaire.
+
+#### Exemple : Répartition Budgétaire (`@budget`)
+```
+@budget "Budget Opérationnel IT"
+  total "$500,000"
+
+  line "Infrastructures Cloud" "$200,000" 40 "Hébergement & Serveurs" icon:Server #4a90d9
+  line "Salaires & Prestations" "$175,000" 35 "Équipe d'ingénierie" icon:Users #2196f3
+  line "Licences Logiciels" "$75,000" 15 "Outils SaaS et sécurité" icon:Key #ff9800
+  line "Réserve d'Imprévus" "$50,000" 10 "Marge de sécurité" icon:Shield #4caf50
+```
+
+---
+
+### 3.13 Arbre de Déduction / Arbre de Décision (`DecisionTree`)
+
+**Variantes supportées** : `decision`, `decisionTree`.
+
+#### Syntaxe et sous-commandes :
+* `question "Question Principale"` : Point d'entrée de l'arbre décisionnel.
+* `yes "Noeud Source" -> "Noeud Cible"` : Branche positive ou conditionnelle.
+* `no "Noeud Source" -> "Noeud Cible"` : Branche négative.
+* `leaf "Noeud Source" -> "Résultat / Action Final"` : Feuille / Résultat de la décision.
+
+#### Exemple : Arbre de Qualification Bug (`@decisionTree`)
+```
+@decisionTree "Arbre de Diagnostic Incident"
+  question "Le bug impacte-t-il la production ?"
+
+  yes "Le bug impacte-t-il la production ?" -> "Pertes financières en cours ?"
+  no "Le bug impacte-t-il la production ?" -> "Planifier dans le sprint suivant"
+
+  yes "Pertes financières en cours ?" -> "Déclencher procédure P1 Urgent"
+  no "Pertes financières en cours ?" -> "Corriger sous 24 heures"
+
+  leaf "Déclencher procédure P1 Urgent" -> "Mobiliser la cellule de crise"
+  leaf "Corriger sous 24 heures" -> "Assigner au développeur d'astreinte"
+  leaf "Planifier dans me sprint suivant" -> "Créer un ticket Backlog"
+```
+
+---
+
+### 3.14 Objectifs & KPIs (`Goals 1-5`)
+
+**Variantes supportées** : `goals`, `goals2`, `goals3`, `goals4`, `goals5`.
+
+#### Syntaxe et sous-commandes :
+* `center "Objectif Suprême"` : Cible globale ou vision d'entreprise.
+* `metric "Indicateur" "Valeur Actuelle" "Cible Attendue" [options]` : Objectif mesurable.
+
+#### Exemple : Objectifs Annuels OKR (`@goals`)
+```
+@goals "Objectifs Clés Q3/Q4"
+  center "Leader Qualité Client"
+
+  metric "NPS Client" "65" "80" val:"65/80" pct:"81%" icon:Heart #e91e63
+  metric "Temps de Réponse Support" "4h" "1h" val:"4h -> 1h" pct:"75%" icon:Clock #ff9800
+  metric "Disponibilité Service" "99.5%" "99.99%" val:"99.5%" pct:"95%" icon:ShieldCheck #4caf50
+  metric "Couverture de Test" "60%" "90%" val:"60%" pct:"66%" icon:CheckSquare #2196f3
+```
+
+---
+
+### 3.15 Processus Industriel / Fabrication (`Manufacturing 1-8`)
+
+**Variantes supportées** : `manufacturing`, `manufacturing2`, `manufacturing3`, `manufacturing4`, `manufacturing5`, `manufacturing6`, `manufacturing7`, `manufacturing8`.
+
+#### Syntaxe et sous-commandes :
+* `station "Nom du Poste" ["Description"] [options]` : Station de travail ou poste de chaîne.
+
+#### Exemple : Chaîne d'Assemblage (`@manufacturing2`)
+```
+@manufacturing2 "Chaîne de Fabrication Électronique"
+  station "Réception Composants" "Inspection des matières premières" icon:Truck #4a90d9
+  station "Assemblage SMT" "Pose automatisée des puces" icon:Cpu #7b68ee
+  station "Brasage à Vague" "Fixation thermique des cartes" icon:Zap #ff9800
+  station "Contrôle Optique (AOI)" "Inspection haute précision" icon:Eye #e91e63
+  station "Conditionnement" "Emballage et étiquetage" icon:Package #4caf50
+```
+
+---
+
+### 3.16 Chaîne de Valeur (`ValueChain 1-2`)
+
+**Variantes supportées** : `valueChain`, `valueChain2`.
+
+#### Syntaxe et sous-commandes :
+* `primary "Activité Principale" ["Description"] [options]` : Activité de la chaîne principale (Logistique, Opérations, Ventes).
+* `support "Activité de Soutien" ["Description"] [options]` : Activité de support (Infrastructure, RH, R&D).
+
+#### Exemple : Modèle de Porter (`@valueChain`)
+```
+@valueChain "Chaîne de Valeur Entreprise"
+  support "Infrastructure de l'Entreprise" "Direction générale, finance, juridique" icon:Building
+  support "Gestion des Ressources Humaines" "Recrutement, formation, rémunération" icon:UserCheck
+  support "Développement Technologique" "R&D, composants informatiques" icon:Code
+  support "Achats & Approvisionnements" "Négociation fournisseurs et contrats" icon:ShoppingBag
+
+  primary "Logistique Interne" "Stockage et gestion des flux" icon:Inbox
+  primary "Fabrication & Opérations" "Transformation des produits" icon:Settings
+  primary "Logistique Externe" "Distribution et livraison" icon:Truck
+  primary "Marketing & Ventes" "Promotion et conversion" icon:Megaphone
+  primary "Services Après-Vente" "Support et maintenance client" icon:LifeBuoy
+```
+
+---
+
+### 3.17 Modèle de l'Iceberg (`Iceberg 1-2`)
+
+**Variantes supportées** : `iceberg`, `iceberg2`.
+
+#### Syntaxe et sous-commandes :
+* `above "Élément Emergé" ["Subtitle"] [options]` : Partie visible (au-dessus du niveau de la mer).
+* `below "Élément Immergé" ["Subtitle"] [options]` : Partie cachée (sous le niveau de la mer).
+
+#### Exemple : Modèle d'Analyse des Problèmes (`@iceberg`)
+```
+@iceberg "La Face Cachée d'un Projet Software"
+  above "Interface Graphique (UI)" "Ce que voit l'utilisateur final" icon:Layout #4a90d9
+  above "Fonctionnalités Clés" "Captures d'écran et démos" icon:Sparkles #2196f3
+
+  below "Architecture Microservices" "Complexité système et scalabilité" icon:Server #ff9800
+  below "Gestion de la Dette Technique" "Refactoring et tests automatisés" icon:Wrench #e91e63
+  below "Sécurité & Conformité GDPR" "Chiffrement et gestion d'accès" icon:Lock #9c27b0
+  below "Monitoring & Astreintes 24/7" "Résolution d'incidents sous pression" icon:Activity #4caf50
+```
+
+---
+
+### 3.18 Diagrammes Circulaires / Segments (`Circle`)
+
+**Variantes supportées** : `circle`.
+
+#### Syntaxe et sous-commandes :
+* `segment "Numéro" "Titre" "Description" [options]` : Segment d'un cycle circulaire répétitif.
+
+#### Exemple : Cycle d'Amélioration Continue PDCA (`@circle`)
+```
+@circle "Roue de Deming (PDCA)"
+  segment "01" "Plan (Planifier)" "Identifier le problème et préparer la solution" icon:Target #4a90d9
+  segment "02" "Do (Déployer)" "Mettre en œuvre le plan d'action sur le terrain" icon:Play #4caf50
+  segment "03" "Check (Contrôler)" "Vérifier l'efficacité et mesurer les résultats" icon:CheckCircle #ff9800
+  segment "04" "Act (Agir)" "Standardiser les améliorations ou corriger" icon:RefreshCw #e91e63
+```

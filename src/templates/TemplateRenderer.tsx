@@ -281,8 +281,9 @@ const TEMPLATE_MAP: Record<TemplateType, TemplateComponent> = {
 export function TemplateRenderer(): ReactElement | null {
   const activeTemplate = useTemplateStore(s => s.activeTemplate)
   const templateData = useTemplateStore(s => s.templateData)
+  const isTemplateHidden = useTemplateStore(s => s.isTemplateHidden)
 
-  if (!activeTemplate || !templateData) return null
+  if (!activeTemplate || !templateData || isTemplateHidden) return null
 
   const Component = TEMPLATE_MAP[activeTemplate]
   if (!Component) return null
