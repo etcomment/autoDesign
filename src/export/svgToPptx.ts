@@ -392,12 +392,14 @@ function addTextToSlide(
   const textAnchor = el.getAttribute('text-anchor') || 'start'
 
   let bounds: AbsBounds | null = null
+  let ctmScale = 1
   try {
     const bbox = el.getBBox()
     if (bbox.width > 0 && bbox.height > 0) {
       let ctm: DOMMatrix | null = null
       try { ctm = el.getCTM() } catch { /* skip */ }
       if (ctm) {
+        ctmScale = Math.hypot(ctm.a, ctm.b)
         const pt = svgRoot.createSVGPoint()
         const corners = [
           [bbox.x, bbox.y], [bbox.x + bbox.width, bbox.y],
@@ -421,7 +423,7 @@ function addTextToSlide(
   const y = toSlideY(bounds.y, vb, layout)
   const w = Math.max(0.2, toSlideW(bounds.w, layout))
   const h = Math.max(0.15, toSlideH(bounds.h, layout))
-  const pptxFontSize = Math.max(6, Math.round(fontSizePx * layout.scaleX * 72))
+  const pptxFontSize = Math.max(6, Math.round(fontSizePx * ctmScale * layout.scaleX * 72))
 
   let align: PptxGenJS.HAlign = 'left'
   if (textAnchor === 'middle') align = 'center'
@@ -493,11 +495,15 @@ export async function generateCanvasPptx(): Promise<Blob> {
   const layout = computeSlideLayout(vb)
 
   const container = document.createElement('div')
-  container.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;left:-99999px;top:0;width:1px;height:1px;overflow:hidden'
+  container.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;left:-99999px;top:0;'
   container.innerHTML = svgString
   document.body.appendChild(container)
 
   const svgRoot = container.querySelector('svg') as SVGSVGElement
+  // Remove viewBox, width and height so getCTM() returns pure unscaled user coordinates
+  svgRoot.removeAttribute('viewBox')
+  svgRoot.removeAttribute('width')
+  svgRoot.removeAttribute('height')
 
   slide.addShape('rect', {
     x: 0, y: 0, w: SLIDE_W, h: SLIDE_H,
