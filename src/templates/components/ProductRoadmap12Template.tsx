@@ -34,7 +34,7 @@ export function ProductRoadmap12Template({ data }: { data: ProductRoadmapData })
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             {title.split('\n').map((line, i) => (
               <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
                 {line}
@@ -62,7 +62,7 @@ export function ProductRoadmap12Template({ data }: { data: ProductRoadmapData })
 
         return (
           <g key={`q-${qi}`}>
-            <g onMouseDown={e => startDrag(e, headerId, headerRect)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, headerId, headerRect)} transform={getTransform(headerId, headerRect)} style={{ cursor: 'pointer' }}>
               <circle cx={headerRect.x + headerRect.width / 2} cy={headerRect.y + headerRect.height / 2} r={headerRect.width / 2} fill={headerFill} stroke={headerStroke} strokeWidth={headerStroke ? headerStrokeWidth : undefined} />
               <text x={headerRect.x + headerRect.width / 2} y={headerRect.y + headerRect.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
                 {q.label}
@@ -75,7 +75,7 @@ export function ProductRoadmap12Template({ data }: { data: ProductRoadmapData })
               const defaultYear = { x: centerX - 20, y: topY + circleR * 2 + 16 - 10, width: 40, height: 14 }
               const yr = pos[yearId] ?? defaultYear
               return (
-                <g onMouseDown={e => startDrag(e, yearId, yr)} style={{ cursor: 'pointer' }}>
+                <g onMouseDown={e => startDrag(e, yearId, yr)} transform={getTransform(yearId, yr)} style={{ cursor: 'pointer' }}>
                   <text x={yr.x + yr.width/2} y={yr.y + 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill={tplColors[yearId] ?? "#888"}>
                     {q.year}
                   </text>
@@ -89,8 +89,8 @@ export function ProductRoadmap12Template({ data }: { data: ProductRoadmapData })
               const defaultLine = { x: centerX - 1, y: topY + circleR * 2 + 24, width: 2, height: 12 }
               const lr = pos[lineId] ?? defaultLine
               return (
-                <g onMouseDown={e => startDrag(e, lineId, lr)} transform={`translate(${lr.x - defaultLine.x}, ${lr.y - defaultLine.y})`} style={{ cursor: 'pointer' }}>
-                  <line x1={defaultLine.x + 1} y1={defaultLine.y} x2={defaultLine.x + 1} y2={defaultLine.y + defaultLine.height} stroke={tplStrokeColors[lineId] ?? '#cbd5e0'} strokeWidth={tplStrokeWidths[lineId] ?? 1} />
+                <g onMouseDown={e => startDrag(e, lineId, lr)} transform={getTransform(lineId, lr)} style={{ cursor: 'pointer' }}>
+                  <line x1={lr.x + lr.width / 2} y1={lr.y} x2={lr.x + lr.width / 2} y2={lr.y + lr.height} stroke={tplStrokeColors[lineId] ?? '#cbd5e0'} strokeWidth={tplStrokeWidths[lineId] ?? 1} />
                   {selectedIds.has(lineId) && renderHandles(lr, lineId)}
                 </g>
               )
@@ -121,13 +121,13 @@ export function ProductRoadmap12Template({ data }: { data: ProductRoadmapData })
                     const defaultMLine = { x: centerX - 1, y: visualRect.y - 8, width: 2, height: 8 }
                     const lr = pos[mLineId] ?? defaultMLine
                     return (
-                      <g onMouseDown={e => startDrag(e, mLineId, lr)} transform={`translate(${lr.x - defaultMLine.x}, ${lr.y - defaultMLine.y})`} style={{ cursor: 'pointer' }}>
-                        <line x1={defaultMLine.x + 1} y1={defaultMLine.y} x2={defaultMLine.x + 1} y2={defaultMLine.y + defaultMLine.height} stroke={tplStrokeColors[mLineId] ?? '#cbd5e0'} strokeWidth={tplStrokeWidths[mLineId] ?? 1} />
+                      <g onMouseDown={e => startDrag(e, mLineId, lr)} transform={getTransform(mLineId, lr)} style={{ cursor: 'pointer' }}>
+                        <line x1={lr.x + lr.width / 2} y1={lr.y} x2={lr.x + lr.width / 2} y2={lr.y + lr.height} stroke={tplStrokeColors[mLineId] ?? '#cbd5e0'} strokeWidth={tplStrokeWidths[mLineId] ?? 1} />
                         {selectedIds.has(mLineId) && renderHandles(lr, mLineId)}
                       </g>
                     )
                   })()}
-                  <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+                  <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
                     <rect x={visualRect.x} y={visualRect.y} width={visualRect.width} height={visualRect.height} rx={visualRect.height / 2} fill={mColor} opacity={isSelected ? 1 : 0.85} stroke={customStroke || (isSelected ? '#333' : styleStroke)} strokeWidth={isSelected ? 2.5 : customStrokeWidth} />
                     <text x={visualRect.x + visualRect.width / 2} y={visualRect.y + visualRect.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>
                       {m.title}

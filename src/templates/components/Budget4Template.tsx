@@ -41,7 +41,7 @@ export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
           const scaleY = bbox.height / defaultBbox.height
 
           return (
-            <g onMouseDown={e => startDrag(e, elementId, bbox)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
               <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
                 <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
                   {title}
@@ -114,7 +114,7 @@ export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
           <g key={i}>
             {/* Divider Line */}
             {i > 0 && (
-              <g onMouseDown={e => startDrag(e, itemLineId, lineBbox)} style={{ cursor: 'pointer' }}>
+              <g onMouseDown={e => startDrag(e, itemLineId, lineBbox)} transform={getTransform(itemLineId, lineBbox)} style={{ cursor: 'pointer' }}>
                 <g transform={`translate(${lineBbox.x}, ${lineBbox.y}) scale(${lineScaleX}, ${lineScaleY}) translate(${-defaultLineBbox.x}, ${-defaultLineBbox.y})`}>
                   <line x1={x - gap / 2} y1={currentTop} x2={x + gap / 2} y2={currentTop} stroke="#aaa" strokeWidth={1} strokeDasharray="3 3" />
                 </g>
@@ -123,7 +123,7 @@ export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
             )}
 
             {/* Bar with Amount Text */}
-            <g onMouseDown={e => startDrag(e, itemBarId, barBbox)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, itemBarId, barBbox)} transform={getTransform(itemBarId, barBbox)} style={{ cursor: 'pointer' }}>
               <g transform={`translate(${barBbox.x}, ${barBbox.y}) scale(${barScaleX}, ${barScaleY}) translate(${-defaultBarBbox.x}, ${-defaultBarBbox.y})`}>
                 <rect x={x} y={visualRect.y} width={barW} height={visualRect.height} rx={4} fill={rectColor} opacity={0.85} stroke={isBarSelected ? '#4a90d9' : rectColor} strokeWidth={isBarSelected ? 2.5 : 0} strokeDasharray={isBarSelected ? '4 2' : undefined} />
                 <text x={x + barW / 2} y={visualRect.y + visualRect.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
@@ -134,7 +134,7 @@ export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
             </g>
 
             {/* Item Label */}
-            <g onMouseDown={e => startDrag(e, itemLabelId, labelBbox)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, itemLabelId, labelBbox)} transform={getTransform(itemLabelId, labelBbox)} style={{ cursor: 'pointer' }}>
               <g transform={`translate(${labelBbox.x}, ${labelBbox.y}) scale(${labelScaleX}, ${labelScaleY}) translate(${-defaultLabelBbox.x}, ${-defaultLabelBbox.y})`}>
                 <text x={x + barW / 2} y={baselineY + 30} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#333">
                   {item.label}
@@ -164,7 +164,7 @@ export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
         const scaleY = bbox.height / defaultBbox.height
 
         return (
-          <g onMouseDown={e => startDrag(e, elementId, bbox)} style={{ cursor: 'pointer' }}>
+          <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
             <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
               <rect x={startX - 60} y={baselineY - 100} width={80} height={30} rx={4} fill="#1a1a2e" />
               <text x={startX - 20} y={baselineY - 80} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">

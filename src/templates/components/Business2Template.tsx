@@ -216,7 +216,7 @@ export function Business2Template({ data }: { data: BusinessData }): ReactElemen
         return (
           <g key={i}>
             {/* Main Interactive Polygon Block */}
-            <g onMouseDown={e => startDrag(e, elementId, bbox)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
               <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
                 <polygon
                   points={poly}

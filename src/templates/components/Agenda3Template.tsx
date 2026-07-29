@@ -42,7 +42,7 @@ export function Agenda3Template({ data }: { data: AgendaData }): ReactElement {
   return (
     <g ref={svgRef}>
       {title && (
-        <g onMouseDown={e => startDrag(e, titleElementId, titleBbox)} style={{ cursor: 'pointer' }}>
+        <g onMouseDown={e => startDrag(e, titleElementId, titleBbox)} transform={getTransform(titleElementId, titleBbox)} style={{ cursor: 'pointer' }}>
           <g transform={`translate(${titleBbox.x}, ${titleBbox.y}) scale(${titleScaleX}, ${titleScaleY}) translate(${-titleDefaultBbox.x}, ${-titleDefaultBbox.y})`}>
             <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
               {title}
@@ -76,7 +76,7 @@ export function Agenda3Template({ data }: { data: AgendaData }): ReactElement {
 
         return (
           // Apply key directly to the interactive group and remove the redundant outer g
-          <g key={elementId} onMouseDown={e => startDrag(e, elementId, itemBbox)} style={{ cursor: 'pointer' }}>
+          <g key={elementId} data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, itemBbox)} transform={getTransform(elementId, itemBbox)} style={{ cursor: 'pointer' }}>
             <g transform={`translate(${itemBbox.x}, ${itemBbox.y}) scale(${itemScaleX}, ${itemScaleY}) translate(${-itemDefaultBbox.x}, ${-itemDefaultBbox.y})`}>
               {/* Original static SVG elements go here EXACTLY as they were */}
               <rect x={cx} y={cy} width={cardW} height={cardH} rx={12} fill="white" stroke={isItemSelected ? '#4a90d9' : color} strokeWidth={isItemSelected ? 2.5 : 2} strokeDasharray={isItemSelected ? '4 2' : undefined} />

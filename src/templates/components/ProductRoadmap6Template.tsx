@@ -32,7 +32,7 @@ export function ProductRoadmap6Template({ data }: { data: ProductRoadmapData }):
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             {title.split('\n').map((line, i) => (
               <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
                 {line}
@@ -47,7 +47,7 @@ export function ProductRoadmap6Template({ data }: { data: ProductRoadmapData }):
         const tId = 'timeline'
         const tr = pos[tId] ?? { x: marginX - 12, y: marginTop, width: 4, height: milestones.length * (barH + gap) }
         return (
-          <g onMouseDown={e => startDrag(e, tId, tr)} style={{ cursor: 'pointer' }}>
+          <g onMouseDown={e => startDrag(e, tId, tr)} transform={getTransform(tId, tr)} style={{ cursor: 'pointer' }}>
             <rect x={tr.x - 4} y={tr.y} width={tr.width + 8} height={tr.height} fill="transparent" />
             <line x1={tr.x + tr.width / 2} y1={tr.y} x2={tr.x + tr.width / 2} y2={tr.y + tr.height} stroke={tplStrokeColors[tId] ?? '#ddd'} strokeWidth={tplStrokeWidths[tId] ?? 2} />
             {selectedIds.has(tId) && renderHandles(tr, tId)}
@@ -78,7 +78,7 @@ export function ProductRoadmap6Template({ data }: { data: ProductRoadmapData }):
               const qr = pos[qId] ?? { x: marginX + 10, y: defaultY, width: 28, height: barH }
               const qc = tplColors[qId] ?? PALETTE[index % PALETTE.length]!
               return (
-                <g onMouseDown={e => startDrag(e, qId, qr)} style={{ cursor: 'pointer' }}>
+                <g onMouseDown={e => startDrag(e, qId, qr)} transform={getTransform(qId, qr)} style={{ cursor: 'pointer' }}>
                   <rect x={qr.x} y={qr.y} width={qr.width} height={qr.height} rx={4} fill={qc} />
                   <text x={qr.x + qr.width / 2} y={qr.y + qr.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill="white">
                     {milestone.quarter ?? '?'}
@@ -88,7 +88,7 @@ export function ProductRoadmap6Template({ data }: { data: ProductRoadmapData }):
               )
             })()}
 
-            <g onMouseDown={e => startDrag(e, elementId, rect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, rect)} transform={getTransform(elementId, rect)} style={{ cursor: 'pointer' }}>
               <rect x={rectX} y={rectY} width={rectW} height={rectH} rx={6} fill={cardColor} stroke={customStroke || (isSelected ? '#4a90d9' : (milestone.style?.stroke || '#e0e0e0'))} strokeWidth={isSelected ? 2.5 : customStrokeWidth} />
               {milestone.title.split('\n').map((line, li) => (<text x={rectX + 12} key={li} y={rectY + rectH / 2 + 4 + li * 12 - ((milestone.title.split('\\n').length - 1) * 6)} fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>{line}</text>))}
               {milestone.subtitle && (

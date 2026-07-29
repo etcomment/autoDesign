@@ -48,7 +48,7 @@ export function Dashboard5Template({ data }: { data: DashboardData }): ReactElem
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={px + 1} y={py + 1} width={CARD_W} height={CARD_H} rx={6} fill="black" opacity={0.06} />
               <rect x={px} y={py} width={CARD_W} height={CARD_H} rx={6} fill="white" stroke={isSelected ? '#4a90d9' : '#e2e8f0'} strokeWidth={isSelected ? 2 : 1} />
               <rect x={px} y={py} width={CARD_W} height={4} rx={2} fill={color} />

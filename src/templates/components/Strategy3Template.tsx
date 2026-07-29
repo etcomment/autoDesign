@@ -56,7 +56,7 @@ export function Strategy3Template({ data }: { data: Strategy3Data }): ReactEleme
           <g key={index}>
             <line x1={cx + hubR * Math.cos(angle)} y1={cy + hubR * Math.sin(angle)} x2={cardCx} y2={cardCy} stroke={color} strokeWidth={2} />
 
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
               <rect x={bx} y={by} width={cardW} height={cardH} rx={6} fill={color} opacity={0.15} stroke={color} strokeWidth={1.5} />
 
               {isSelected && (

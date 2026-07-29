@@ -55,8 +55,7 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
         return (
           <g>
             <g
-              onMouseDown={e => startDrag(e, elementId, visualRect)}
-              transform={getTransform(elementId, visualRect)}
+              data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)}
               style={{ cursor: 'pointer' }}
             >
               <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}>
@@ -127,8 +126,7 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
         return (
           <g key={i + 1}>
             <g
-              onMouseDown={e => startDrag(e, elementId, visualRect)}
-              transform={getTransform(elementId, visualRect)}
+              data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)}
               style={{ cursor: 'pointer' }}
             >
               <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}>

@@ -8,7 +8,7 @@ const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '
 
 export function Budget3Template({ data }: { data: BudgetData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
 
@@ -68,7 +68,7 @@ export function Budget3Template({ data }: { data: BudgetData }): ReactElement {
 
         return (
           <g key={i}>
-            <path d={d} fill={color} opacity={isSelected ? 1 : 0.8} stroke={isSelected ? '#4a90d9' : 'white'} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} style={{ cursor: 'pointer' }} onMouseDown={e => startDrag(e, elementId, { x: lx - 40, y: ly - 12, width: 80, height: 24 })} />
+            <path d={d} fill={color} opacity={isSelected ? 1 : 0.8} stroke={isSelected ? '#4a90d9' : 'white'} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} style={{ cursor: 'pointer' }} data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, { x: lx - 40, y: ly - 12, width: 80, height: 24 })} transform={getTransform(elementId, { x: lx - 40, y: ly - 12, width: 80, height: 24 })} />
             <text x={lx} y={ly - 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill="#333">
               {item.label}
             </text>

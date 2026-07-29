@@ -35,21 +35,29 @@ export function ProcessTemplate({ data }: { data: ProcessData }): ReactElement {
   const bottomY = 380
   const bottomWidth = bottomStartX - bottomEndX
 
-  const topPositions = topSteps.map((_, i) => ({
-    x: topStartX + (topWidth * i) / Math.max(topSteps.length - 1, 1),
-    y: topY,
-    stepIndex: i,
-  }))
+  const topPositions = topSteps.map((_, i) => {
+    const defaultX = topStartX + (topWidth * i) / Math.max(topSteps.length - 1, 1)
+    const custom = positions[`step-${i}`]
+    return {
+      x: custom?.x ?? defaultX,
+      y: custom?.y ?? topY,
+      stepIndex: i,
+    }
+  })
 
-  const bottomPositions = bottomSteps.map((_, i) => ({
-    x: bottomStartX - (bottomWidth * i) / Math.max(bottomSteps.length - 1, 1),
-    y: bottomY,
-    stepIndex: halfCount + i,
-  }))
+  const bottomPositions = bottomSteps.map((_, i) => {
+    const defaultX = bottomStartX - (bottomWidth * i) / Math.max(bottomSteps.length - 1, 1)
+    const custom = positions[`step-${halfCount + i}`]
+    return {
+      x: custom?.x ?? defaultX,
+      y: custom?.y ?? bottomY,
+      stepIndex: halfCount + i,
+    }
+  })
 
   const allPositions = [...topPositions, ...bottomPositions]
 
-  const startPoint = { x: 80, y: topY }
+  const startPoint = { x: 80, y: topPositions[0]?.y ?? topY }
 
   const lastPos = allPositions.length > 0 ? allPositions[allPositions.length - 1]! : { x: 180, y: topY }
   const outcomeX = lastPos.x
@@ -114,7 +122,7 @@ export function ProcessTemplate({ data }: { data: ProcessData }): ReactElement {
 
         return (
           <g key={pos.stepIndex}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <CircleBadge cx={finalX} cy={finalY} r={16} fill={color} label={String(step.number)} fontSize={12} />
               {(strokeColor || strokeW) && (
                 <circle cx={finalX} cy={finalY} r={16} fill="none" stroke={strokeColor || color} strokeWidth={strokeW || 1} />

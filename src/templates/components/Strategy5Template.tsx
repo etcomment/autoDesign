@@ -84,7 +84,7 @@ export function Strategy5Template({ data }: { data: Strategy5Data }): ReactEleme
 
               return (
                 <g key={blockIndex}>
-                  <g onMouseDown={e => startDrag(e, elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
+                  <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
                     <rect
                       x={bx}
                       y={by}

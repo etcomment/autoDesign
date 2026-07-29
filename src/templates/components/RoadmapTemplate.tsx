@@ -81,7 +81,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <g data-element-id="road-path" onMouseDown={e => startDrag(e, 'road-path', roadPathR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="road-path" onMouseDown={e => startDrag(e, 'road-path', roadPathR)} transform={getTransform('road-path', roadPathR)} style={{ cursor: 'pointer' }}>
         <g transform={`translate(${roadPathR.x - 300}, ${roadPathR.y - 220}) scale(${roadPathR.width / 400}, ${roadPathR.height / 440})`}>
           <path d={roadD} fill="none" stroke="#e0e0e0" strokeWidth={90} strokeLinecap="square" strokeLinejoin="round" />
           <path d={roadD} fill="none" stroke="#ffffff" strokeWidth={8} strokeDasharray="24 16" strokeLinecap="butt" strokeLinejoin="round" />
@@ -90,7 +90,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
       </g>
 
       {title && (
-        <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', titleR)} style={{ cursor: 'pointer' }}>
+        <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', titleR)} transform={getTransform('main-title', titleR)} style={{ cursor: 'pointer' }}>
           <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={tplColors['main-title'] || TITLE_COLOR}>{title}</text>
           {selectedIds.has('main-title') && renderHandles(titleR, 'main-title')}
         </g>
@@ -112,29 +112,35 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         return (
           <g key={idx} data-element-id={`milestone-${idx}`}>
             {hasBanner && (
-              <g data-element-id={bannerId} onMouseDown={e => startDrag(e, bannerId, bannerR)} style={{ cursor: 'pointer' }}>
+              <>
+                <line x1={bannerR.x + bannerR.width * (63/115)} y1={bannerR.y + bannerR.height * (35/70)} x2={bannerR.x + bannerR.width * (63/115)} y2={roadPathR.y + roadPathR.height * (50/440)} stroke={tplColors[bannerId] || '#4cbfa0'} strokeWidth={6} />
+                <g data-element-id={bannerId} onMouseDown={e => startDrag(e, bannerId, bannerR)} transform={getTransform(bannerId, bannerR)} style={{ cursor: 'pointer' }}>
                 <g transform={`translate(${bannerR.x - 560}, ${bannerR.y - 195}) scale(${bannerR.width / 115}, ${bannerR.height / 70})`}>
-                  <line x1={560 + 63} y1={195 + 35} x2={560 + 63} y2={195 + 75} stroke={tplColors[bannerId] || '#4cbfa0'} strokeWidth={6} />
+                  
                   <path d={`M ${560 + 25} ${195} L ${560 + 115} ${195} L ${560 + 115} ${195 + 70} L ${560 + 25} ${195 + 70} L ${560} ${195 + 35} Z`} fill={tplColors[bannerId] || '#4cbfa0'} />
                   <text x={560 + 65} y={195 + 42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight="bold" fill="#ffffff">Your title</text>
                 </g>
                 {selectedIds.has(bannerId) && renderHandles(bannerR, bannerId)}
               </g>
+              </>
             )}
 
             {hasCircle && (
-              <g data-element-id={circleId} onMouseDown={e => startDrag(e, circleId, circleR)} style={{ cursor: 'pointer' }}>
+              <>
+                <line x1={circleR.x + circleR.width / 2} y1={circleR.y + circleR.height / 2} x2={circleR.x + circleR.width / 2} y2={roadPathR.y + roadPathR.height * (230/440)} stroke={tplColors[circleId] || '#ffbe00'} strokeWidth={6} />
+                <g data-element-id={circleId} onMouseDown={e => startDrag(e, circleId, circleR)} transform={getTransform(circleId, circleR)} style={{ cursor: 'pointer' }}>
                 <g transform={`translate(${circleR.x - 370}, ${circleR.y - 335}) scale(${circleR.width / 66}, ${circleR.height / 66})`}>
-                  <line x1={370 + 33} y1={335 + 33} x2={370 + 33} y2={335 + 115} stroke={tplColors[circleId] || '#ffbe00'} strokeWidth={6} />
+                  
                   <circle cx={370 + 33} cy={335 + 33} r={33} fill={tplColors[circleId] || '#ffbe00'} />
                   <text x={370 + 33} y={335 + 26} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">YOUR</text>
                   <text x={370 + 33} y={335 + 42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">TITLE</text>
                 </g>
                 {selectedIds.has(circleId) && renderHandles(circleR, circleId)}
               </g>
+              </>
             )}
 
-            <g data-element-id={cardId} onMouseDown={e => startDrag(e, cardId, cardR)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={cardId} onMouseDown={e => startDrag(e, cardId, cardR)} transform={getTransform(cardId, cardR)} style={{ cursor: 'pointer' }}>
               <rect x={cardR.x} y={cardR.y} width={cardR.width} height={cardR.height} fill={tplColors[cardId] || (idx === 0 ? '#23255a' : idx === 1 ? '#2d62ed' : '#ff4a2b')} stroke={tplStrokeColors[cardId]} strokeWidth={tplStrokeWidths[cardId]} />
               <text x={cardR.x + cardR.width / 2} y={cardR.y + 50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{ms.title}</text>
               {ms.subtitle && ms.subtitle.split('\n').map((line, lIdx) => (

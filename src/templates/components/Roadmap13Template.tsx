@@ -82,7 +82,7 @@ export function Roadmap13Template({ data }: { data: RoadmapData }): ReactElement
       {(() => {
         const tr = rects.get('timeline')!
         return (
-          <g onMouseDown={e => startDrag(e, 'timeline', tr)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="timeline" onMouseDown={e => startDrag(e, 'timeline', tr)} transform={getTransform('timeline', tr)} style={{ cursor: 'pointer' }}>
             <line x1={tr.x} y1={tr.y + tr.height/2} x2={tr.x + tr.width} y2={tr.y + tr.height/2} stroke={tplColors['timeline'] || "#dcdcdc"} strokeWidth={tr.height} />
             {selectedIds.has('timeline') && renderHandles(tr, 'timeline')}
           </g>
@@ -114,14 +114,14 @@ export function Roadmap13Template({ data }: { data: RoadmapData }): ReactElement
               const nid = `node-${i}`
               const nr = rects.get(nid)!
               return (
-                <g onMouseDown={e => startDrag(e, nid, nr)} style={{ cursor: 'pointer' }}>
+                <g onMouseDown={e => startDrag(e, nid, nr)} transform={getTransform(nid, nr)} style={{ cursor: 'pointer' }}>
                   <circle cx={nr.x + nr.width/2} cy={nr.y + nr.height/2} r={Math.min(nr.width, nr.height)/2} fill={tplColors[nid] || "#dcdcdc"} />
                   {selectedIds.has(nid) && renderHandles(nr, nid)}
                 </g>
               )
             })()}
             
-            <g onMouseDown={e => startDrag(e, bid, br)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, bid, br)} transform={getTransform(bid, br)} style={{ cursor: 'pointer' }}>
               <circle cx={bcx} cy={bcy} r={radius} fill={color} />
               <path d={l.isTop ? dTop : dBot} fill={color} />
               <text x={bcx} y={bcy} textAnchor="middle" fill="white" fontSize={14} fontWeight="bold">
@@ -130,7 +130,7 @@ export function Roadmap13Template({ data }: { data: RoadmapData }): ReactElement
               {isSelBubble && renderHandles(br, bid)}
             </g>
 
-            <g onMouseDown={e => startDrag(e, wid, wr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, wid, wr)} transform={getTransform(wid, wr)} style={{ cursor: 'pointer' }}>
               <text x={wr.x + wr.width / 2} y={wr.y + 20} textAnchor="middle" fill="#1e375a" fontSize={16} fontWeight="bold">
                 {ms.date ?? `WEEK ${i + 1}`}
               </text>

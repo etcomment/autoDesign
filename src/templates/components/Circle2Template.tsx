@@ -210,7 +210,7 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
             <path
               d={ringArcPath(cx, cy, innerR, outerR, startAngle, endAngle + gapAngle)}
               fill="transparent"
-              onMouseDown={e => startDrag(e, elementId, bbox)}
+              data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)}
               style={{ cursor: 'pointer' }}
             />
             {/* Visible Triangular Arrowhead extending forward over next segment */}
@@ -219,7 +219,7 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
               fill={color}
               stroke={isSelected ? '#4a90d9' : (strokeColor || 'none')}
               strokeWidth={isSelected ? 3 : (strokeW || 0)}
-              onMouseDown={e => startDrag(e, elementId, bbox)}
+              data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)}
               style={{ cursor: 'pointer' }}
             />
             {item.icon && (

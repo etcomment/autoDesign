@@ -42,7 +42,7 @@ export function Comparison5Template({ data }: { data: Comparison5Data }): ReactE
 
         return (
           <g key={`entry-${i}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={cx} y={cardY} width={cardW} height={cardH} rx={12} fill="white" stroke={isSelected ? '#4a90d9' : '#e2e8f0'} strokeWidth={isSelected ? 2.5 : 1.5} />
 
               {isWinner && (

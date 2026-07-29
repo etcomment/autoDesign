@@ -34,7 +34,7 @@ export function ProductRoadmap8Template({ data }: { data: ProductRoadmapData }):
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             {title.split('\n').map((line, i) => (
               <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
                 {line}
@@ -50,7 +50,7 @@ export function ProductRoadmap8Template({ data }: { data: ProductRoadmapData }):
         const defaultR = { x: marginX + mi * monthW, y: topY - 5, width: monthW, height: 20 }
         const r = pos[id] ?? defaultR
         return (
-          <g key={id} onMouseDown={e => startDrag(e, id, r)} style={{ cursor: 'pointer' }}>
+          <g key={id} onMouseDown={e => startDrag(e, id, r)} transform={getTransform(id, r)} style={{ cursor: 'pointer' }}>
             <text x={r.x + r.width / 2} y={r.y + 13} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill={tplColors[id] ?? "#888"}>
               {m}
             </text>
@@ -71,7 +71,7 @@ export function ProductRoadmap8Template({ data }: { data: ProductRoadmapData }):
 
         return (
           <g key={`lane-${li}`}>
-            <g onMouseDown={e => startDrag(e, lId, lRect)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, lId, lRect)} transform={getTransform(lId, lRect)} style={{ cursor: 'pointer' }}>
               <rect x={lRect.x} y={lRect.y} width={lRect.width} height={lRect.height} rx={4} fill={laneColor} opacity={0.85} stroke={lStroke} strokeWidth={lStroke ? lStrokeWidth : undefined} />
               <text x={lRect.x + lRect.width / 2} y={lRect.y + lRect.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
                 {lane.label}
@@ -85,7 +85,7 @@ export function ProductRoadmap8Template({ data }: { data: ProductRoadmapData }):
               const stroke = tplStrokeColors[lineId] ?? '#e2e8f0'
               const sW = tplStrokeWidths[lineId] ?? 1
               return (
-                <g onMouseDown={e => startDrag(e, lineId, lRectLine)} style={{ cursor: 'pointer' }}>
+                <g onMouseDown={e => startDrag(e, lineId, lRectLine)} transform={getTransform(lineId, lRectLine)} style={{ cursor: 'pointer' }}>
                   <line x1={lRectLine.x} y1={lRectLine.y + lRectLine.height / 2} x2={lRectLine.x + lRectLine.width} y2={lRectLine.y + lRectLine.height / 2} stroke={stroke} strokeWidth={sW} />
                   {selectedIds.has(lineId) && renderHandles(lRectLine, lineId)}
                 </g>
@@ -119,7 +119,7 @@ export function ProductRoadmap8Template({ data }: { data: ProductRoadmapData }):
 
         return (
           <g key={`bar-${mi}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={visualRect.x} y={visualRect.y} width={visualRect.width} height={visualRect.height} rx={6} fill={color} opacity={isSelected ? 1 : 0.8} stroke={stroke} strokeWidth={stroke ? strokeWidth : undefined} />
               <text x={visualRect.x + visualRect.width / 2} y={visualRect.y + visualRect.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>
                 {m.title}
@@ -137,7 +137,7 @@ export function ProductRoadmap8Template({ data }: { data: ProductRoadmapData }):
         const stroke = tplStrokeColors[id] ?? '#e2e8f0'
         const sW = tplStrokeWidths[id] ?? 0.5
         return (
-          <g key={id} onMouseDown={e => startDrag(e, id, r)} style={{ cursor: 'pointer' }}>
+          <g key={id} onMouseDown={e => startDrag(e, id, r)} transform={getTransform(id, r)} style={{ cursor: 'pointer' }}>
             <line x1={r.x + r.width / 2} y1={r.y} x2={r.x + r.width / 2} y2={r.y + r.height} stroke={stroke} strokeWidth={sW} />
             {selectedIds.has(id) && renderHandles(r, id)}
           </g>

@@ -46,7 +46,7 @@ export function AgendaTemplate({ data }: { data: AgendaData }): ReactElement {
         const scaleY = bbox.height / defaultBbox.height
 
         return (
-          <g onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
+          <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
             <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
               <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
                 {title}
@@ -106,7 +106,7 @@ export function AgendaTemplate({ data }: { data: AgendaData }): ReactElement {
               const lineScaleY = lineBbox.height / defaultLineBbox.height
 
               return (
-                <g onMouseDown={e => startDrag(e, lineId, lineBbox)} style={{ cursor: 'pointer' }}>
+                <g onMouseDown={e => startDrag(e, lineId, lineBbox)} transform={getTransform(lineId, lineBbox)} style={{ cursor: 'pointer' }}>
                   <g transform={`translate(${lineBbox.x}, ${lineBbox.y}) scale(${lineScaleX}, ${lineScaleY}) translate(${-defaultLineBbox.x}, ${-defaultLineBbox.y})`}>
                     <line x1={circleX} y1={defaultBbox.y + cardH + 4} x2={circleX} y2={defaultBbox.y + cardH + gap} stroke="#cbd5e0" strokeWidth={2} />
                   </g>
@@ -116,7 +116,7 @@ export function AgendaTemplate({ data }: { data: AgendaData }): ReactElement {
             })()}
 
             {/* --- Agenda Card Item --- */}
-            <g onMouseDown={e => startDrag(e, elementId, bbox)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
               <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
                 <rect x={startX} y={y} width={cardW} height={cardH} rx={10} fill="white" stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 2.5 : 2} />
                 <rect x={startX} y={y} width={8} height={cardH} rx={4} fill={color} />

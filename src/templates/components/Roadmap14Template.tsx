@@ -103,7 +103,7 @@ export function Roadmap14Template({ data }: { data: RoadmapData }): ReactElement
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             <text x={r.x} y={r.y + 30} fontFamily="Arial, sans-serif" fontSize={36} fontWeight={800} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
               {title}
             </text>
@@ -133,7 +133,7 @@ export function Roadmap14Template({ data }: { data: RoadmapData }): ReactElement
               const aid = `arc-${i}`
               const ar = rects.get(aid)!
               return (
-                <g onMouseDown={e => startDrag(e, aid, ar)} style={{ cursor: 'pointer' }}>
+                <g onMouseDown={e => startDrag(e, aid, ar)} transform={getTransform(aid, ar)} style={{ cursor: 'pointer' }}>
                   <path 
                     d={`M ${ar.x} ${ar.y + ar.height} Q ${ar.x + ar.width/2} ${ar.y} ${ar.x + ar.width} ${ar.y + ar.height}`} 
                     fill="none" stroke={tplColors[aid] || tplStrokeColors[aid] || "#e0e0e0"} strokeWidth={tplStrokeWidths[aid] || 3} markerEnd="url(#arrowhead)" 
@@ -143,7 +143,7 @@ export function Roadmap14Template({ data }: { data: RoadmapData }): ReactElement
               )
             })()}
             
-            <g onMouseDown={e => startDrag(e, iid, r)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, iid, r)} transform={getTransform(iid, r)} style={{ cursor: 'pointer' }}>
               <text x={cx} y={r.y - 40} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={18} fontWeight={700} fill="#282c61">
                 {years[i]}
               </text>

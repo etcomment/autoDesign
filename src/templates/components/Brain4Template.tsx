@@ -2,298 +2,200 @@ import { useRef, type ReactElement } from 'react'
 import type { BrainData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { HEAD_PATH } from '../shared/headPath'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12']
+const PIECE_COLORS = ['#23255a', '#2d62ed', '#ffbe00', '#ff4a2b']
+
+/** 4 interlocking puzzle pieces in rectangle (ox,oy,pw,ph) with semicircular tabs */
+function makePuzzlePieces(ox: number, oy: number, pw: number, ph: number): string[] {
+  const mx = ox + pw / 2
+  const my = oy + ph / 2
+  const t = Math.min(pw, ph) * 0.10
+
+  // TL: right tab OUT, bottom tab OUT, left tab IN, top tab IN
+  const tl = `M ${ox} ${oy}
+    L ${mx - t} ${oy} A ${t} ${t} 0 0 0 ${mx + t} ${oy} L ${ox + pw} ${oy}
+    L ${ox + pw} ${my - t} A ${t} ${t} 0 0 1 ${ox + pw} ${my + t} L ${ox + pw} ${oy + ph}
+    L ${mx + t} ${oy + ph} A ${t} ${t} 0 0 1 ${mx - t} ${oy + ph} L ${ox} ${oy + ph}
+    L ${ox} ${my + t} A ${t} ${t} 0 0 0 ${ox} ${my - t} Z`
+
+  // TR: left tab IN (concave), bottom tab OUT, right straight, top straight
+  const tr = `M ${mx - t} ${oy} A ${t} ${t} 0 0 0 ${mx + t} ${oy}
+    L ${ox + pw} ${oy} L ${ox + pw} ${my - t} A ${t} ${t} 0 0 1 ${ox + pw} ${my + t}
+    L ${ox + pw} ${oy + ph}
+    L ${mx + t} ${oy + ph} A ${t} ${t} 0 0 1 ${mx - t} ${oy + ph}
+    L ${mx - t} ${my + t} A ${t} ${t} 0 0 1 ${mx + t} ${my - t} L ${mx + t} ${oy} Z`
+
+  // BL: right tab OUT, top tab IN (concave), left straight, bottom straight
+  const bl = `M ${ox} ${oy}
+    L ${mx - t} ${oy} A ${t} ${t} 0 0 0 ${mx + t} ${oy}
+    L ${mx + t} ${my - t} A ${t} ${t} 0 0 1 ${mx - t} ${my + t}
+    L ${mx - t} ${oy + ph} A ${t} ${t} 0 0 0 ${mx + t} ${oy + ph}
+    L ${ox + pw} ${oy + ph} L ${ox + pw} ${oy}
+    L ${ox} ${oy} Z`
+
+  // BR: left tab IN, top tab IN, right straight, bottom straight
+  const br = `M ${mx - t} ${oy} A ${t} ${t} 0 0 0 ${mx + t} ${oy}
+    L ${ox + pw} ${oy} L ${ox + pw} ${oy + ph}
+    L ${mx + t} ${oy + ph} A ${t} ${t} 0 0 0 ${mx - t} ${oy + ph}
+    L ${mx - t} ${my + t} A ${t} ${t} 0 0 1 ${mx + t} ${my - t}
+    L ${mx + t} ${oy} Z`
+
+  return [tl, tr, bl, br]
+}
 
 export function Brain4Template({ data }: { data: BrainData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const W = 900
-  const cx = W / 2
-  const rootY = 90
-  const trunkH = 60
-  const nodeW = 150
-  const nodeH = 44
-  const levelGap = 90
-  const levelsConfig = [1, 2, 3] // This array represents the number of nodes per level
+  const W = 1000, H = 600
+  const HX = 330, HY = 48, HW = 285, HH = 465
+  const clipId = 'brain4-head-clip'
 
-  // Step 1: Prepare all default element data
-  const allElementsDefaults: {
-    id: string,
-    defaultBbox: { x: number, y: number, width: number, height: number },
-    type: 'node' | 'line' | 'title',
-    // Specific data for nodes
-    branch?: typeof data.branches[number],
-    color?: string,
-    level?: number,
-    // Specific data for lines
-    x1?: number, y1?: number, x2?: number, y2?: number, // for initial line points
-    lineStrokeColor?: string,
-    parentId?: string | null,
-    childId?: string
-  }[] = []
+  const branches = data.branches.length > 0 ? data.branches : [
+    { title: 'Planning', subtitle: 'Strategic goals and analysis' },
+    { title: 'Idea', subtitle: 'Innovation and concepts' },
+    { title: 'Design', subtitle: 'Architecture and blueprints' },
+    { title: 'Marketing', subtitle: 'Go-to-market strategy' },
+  ]
+  const count = Math.min(branches.length, 4)
 
-  // --- TITLE ---
-  const titleElementId = 'title'
-  const defaultTitleBbox = { x: W / 2 - 150, y: 20, width: 300, height: 40 } // Estimated bbox for the title text
-  allElementsDefaults.push({ id: titleElementId, defaultBbox: defaultTitleBbox, type: 'title' })
+  // Brain/cranium area (top portion of the head)
+  const pX = HX + HW * 0.08
+  const pY = HY + HH * 0.03
+  const pW = HW * 0.82
+  const pH = HH * 0.53
+  const mx = pX + pW / 2
+  const my = pY + pH / 2
 
-  // --- CENTER NODE ---
-  const centerNodeId = 'center-node'
-  const defaultCenterNodeBbox = { x: cx - 30, y: rootY - 30, width: 60, height: 60 } // Bbox for the central circle
-  allElementsDefaults.push({ id: centerNodeId, defaultBbox: defaultCenterNodeBbox, type: 'node', branch: { title: data.centerLabel, color: '#1a1a2e' }, color: '#1a1a2e', level: -1 })
+  const pieceIds = ['piece-tl', 'piece-tr', 'piece-bl', 'piece-br']
+  const pieces = makePuzzlePieces(pX, pY, pW, pH)
+  const pieceCenters = [
+    { cx: pX + pW * 0.25, cy: pY + pH * 0.25 },
+    { cx: mx  + pW * 0.25, cy: pY + pH * 0.25 },
+    { cx: pX + pW * 0.25, cy: my  + pH * 0.25 },
+    { cx: mx  + pW * 0.25, cy: my  + pH * 0.25 },
+  ]
 
-  // --- BRANCH NODES & THEIR CONNECTING LINES (DATA) ---
-  let nodeIdx = 0
-  const nodesInLevels: string[][] = [] // Stores node IDs per level for parent lookup
+  const calloutCfg = [
+    { align: 'left',  dx: 22,           dy: pY + pH * 0.08 },
+    { align: 'right', dx: HX + HW + 38, dy: pY + pH * 0.08 },
+    { align: 'left',  dx: 22,           dy: my  + pH * 0.05 },
+    { align: 'right', dx: HX + HW + 38, dy: my  + pH * 0.05 },
+  ]
 
-  levelsConfig.forEach((count, li) => {
-    const levelY = rootY + trunkH + (li + 1) * levelGap
-    const totalRowW = count * nodeW + (count - 1) * 30
-    const rowStartX = cx - totalRowW / 2
-    const currentLevelNodes: string[] = []
-
-    Array.from({ length: count }).forEach((_, ci) => {
-      const branch = data.branches[nodeIdx % data.branches.length]!
-      const elementId = `node-${nodeIdx}`
-      const x = rowStartX + ci * (nodeW + 30)
-      const y = levelY - nodeH / 2
-      const defaultNodeBbox = { x, y, width: nodeW, height: nodeH }
-      const color = tplColors[elementId] ?? branch.color ?? PALETTE[li % PALETTE.length]!
-
-      let parentId: string | null = null
-      if (li === 0) {
-        parentId = centerNodeId // First level nodes connect to the center node
-      } else {
-        // Parent node is at index floor(ci/2) in the previous level
-        const parentNodeIdxInPreviousLevel = Math.floor(ci / 2);
-        parentId = nodesInLevels[li - 1]?.[parentNodeIdxInPreviousLevel] || null;
-      }
-
-      allElementsDefaults.push({
-        id: elementId,
-        defaultBbox: defaultNodeBbox,
-        type: 'node',
-        branch: branch,
-        color: color,
-        level: li,
-        parentId: parentId
-      })
-      currentLevelNodes.push(elementId)
-
-      // Add line data connecting this node to its parent (endpoints resolved dynamically during render)
-      if (parentId) {
-        const lineId = `line-${parentId}-${elementId}`
-        // For the defaultBbox of the line itself, we use the initial connection points
-        const parentDefaultBbox = allElementsDefaults.find(d => d.id === parentId)?.defaultBbox || defaultCenterNodeBbox;
-        const initialLineX1 = parentDefaultBbox.x + parentDefaultBbox.width / 2;
-        const initialLineY1 = parentDefaultBbox.y + parentDefaultBbox.height; // Connect from bottom of parent
-        const initialLineX2 = defaultNodeBbox.x + defaultNodeBbox.width / 2;
-        const initialLineY2 = defaultNodeBbox.y; // Connect to top of child
-
-        const defaultLineBbox = {
-          x: Math.min(initialLineX1, initialLineX2),
-          y: Math.min(initialLineY1, initialLineY2),
-          width: Math.abs(initialLineX2 - initialLineX1) || 1, // Ensure minimum width/height for bbox
-          height: Math.abs(initialLineY2 - initialLineY1) || 1
-        }
-
-        allElementsDefaults.push({
-          id: lineId,
-          defaultBbox: defaultLineBbox,
-          type: 'line',
-          parentId: parentId,
-          childId: elementId,
-          lineStrokeColor: color, // Line takes child's color
-          x1: initialLineX1, y1: initialLineY1, x2: initialLineX2, y2: initialLineY2 // Store initial points
-        })
-      }
-      nodeIdx++
-    })
-    nodesInLevels.push(currentLevelNodes)
-  })
-
-  // --- TRUNK LINE (from center node to the first branch node) ---
-  const trunkLineId = 'trunk-line'
-  // Find the first node of level 0 to determine the trunk line's endpoint
-  const firstNodeOfLevel0 = allElementsDefaults.find(el => el.type === 'node' && el.level === 0);
-  const firstNodeDefaultBbox = firstNodeOfLevel0?.defaultBbox;
-
-  const initialTrunkLineX1 = defaultCenterNodeBbox.x + defaultCenterNodeBbox.width / 2;
-  const initialTrunkLineY1 = defaultCenterNodeBbox.y + defaultCenterNodeBbox.height; // From bottom of center node
-  const initialTrunkLineX2 = firstNodeDefaultBbox ? firstNodeDefaultBbox.x + firstNodeDefaultBbox.width / 2 : cx; // To center of first child node or trunkH
-  const initialTrunkLineY2 = firstNodeDefaultBbox ? firstNodeDefaultBbox.y : (rootY + trunkH); // To top of first child node or trunkH
-
-  const defaultTrunkLineBbox = {
-    x: Math.min(initialTrunkLineX1, initialTrunkLineX2),
-    y: Math.min(initialTrunkLineY1, initialTrunkLineY2),
-    width: Math.abs(initialTrunkLineX2 - initialTrunkLineX1) || 4, // Trunk original strokeWidth was 4
-    height: Math.abs(initialTrunkLineY2 - initialTrunkLineY1) || 1
+  const titleId = 'title'
+  const titleDefault = { x: 28, y: 14, width: 280, height: 42 }
+  const titlePos = positions[titleId]
+  const titleBbox = {
+    x: titlePos?.x ?? titleDefault.x, y: titlePos?.y ?? titleDefault.y,
+    width: titlePos?.width ?? titleDefault.width, height: titlePos?.height ?? titleDefault.height
   }
-  allElementsDefaults.push({
-    id: trunkLineId,
-    defaultBbox: defaultTrunkLineBbox,
-    type: 'line',
-    x1: initialTrunkLineX1, y1: initialTrunkLineY1, x2: initialTrunkLineX2, y2: initialTrunkLineY2,
-    lineStrokeColor: '#8B4513',
-    parentId: centerNodeId,
-    childId: firstNodeOfLevel0?.id // Connects center node to the first node of level 0
-  })
-
-
-  // This map will store the *rendered* (transformed) bounding boxes of all elements.
-  // This is crucial for lines to connect to the *actual* positions of nodes.
-  const renderedElementBboxes: Record<string, typeof defaultTitleBbox> = {}
-
-  // Filter elements by type for controlled rendering order
-  const titleElements = allElementsDefaults.filter(el => el.type === 'title')
-  const nodeElements = allElementsDefaults.filter(el => el.type === 'node')
-  const lineElements = allElementsDefaults.filter(el => el.type === 'line')
 
   return (
     <g ref={svgRef}>
-      {/* Render Title */}
-      {titleElements.map(element => {
-        const customPos = templateElementPositions[element.id]
-        const isSelected = selectedIds.has(element.id)
-        const bbox = {
-          x: customPos?.x ?? element.defaultBbox.x,
-          y: customPos?.y ?? element.defaultBbox.y,
-          width: customPos?.width ?? element.defaultBbox.width,
-          height: customPos?.height ?? element.defaultBbox.height
-        }
-        renderedElementBboxes[element.id] = bbox; // Store for other elements if needed
-        const scaleX = bbox.width / element.defaultBbox.width
-        const scaleY = bbox.height / element.defaultBbox.height
+      <defs>
+        <clipPath id={clipId}>
+          <path
+            d={HEAD_PATH}
+            transform={`translate(${HX},${HY}) scale(${HW / 300},${HH / 420})`}
+          />
+        </clipPath>
+      </defs>
 
+      <rect x={0} y={0} width={W} height={H} fill="#f8f9fc" />
+
+      {/* Lower head (jaw/neck) — neutral fill clipped to head */}
+      <rect x={HX} y={pY + pH} width={HW} height={HY + HH - (pY + pH)}
+        fill="#d2d5de" clipPath={`url(#${clipId})`} />
+
+      {/* 4 puzzle pieces = the cranium */}
+      {pieces.slice(0, count).map((piecePath, i) => {
+        const pid = pieceIds[i] ?? `piece-${i}`
+        const color = tplColors[pid] ?? PIECE_COLORS[i % PIECE_COLORS.length]
+        const pc = pieceCenters[i] ?? { cx: mx, cy: my }
+        const pDef = { x: pc.cx - pW / 4, y: pc.cy - pH / 4, width: pW / 2, height: pH / 2 }
+        const pos = positions[pid]
+        const bbox = {
+          x: pos?.x ?? pDef.x, y: pos?.y ?? pDef.y,
+          width: pos?.width ?? pDef.width, height: pos?.height ?? pDef.height
+        }
+        const isSel = selectedIds.has(pid)
         return (
-          data.title && ( // Only render if title exists
-            <g key={element.id} onMouseDown={e => startDrag(e, element.id, bbox)} style={{ cursor: 'pointer' }}>
-              <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-element.defaultBbox.x}, ${-element.defaultBbox.y})`}>
-                {/* Original content, with coordinates relative to its defaultBbox origin */}
-                <text x={W / 2 - element.defaultBbox.x} y={42 - element.defaultBbox.y} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
-                  {data.title}
-                </text>
-              </g>
-              {isSelected && renderHandles(bbox, element.id)}
-            </g>
-          )
+          <g key={pid}
+            onMouseDown={e => startDrag(e, pid, bbox)}
+            transform={getTransform(pid, bbox)}
+            style={{ cursor: 'pointer' }}>
+            <path d={piecePath} fill={color} stroke="white" strokeWidth={2.5}
+              strokeLinejoin="round" opacity={isSel ? 0.8 : 1} />
+            <text x={pc.cx} y={pc.cy + 8} textAnchor="middle"
+              fontFamily="Arial, sans-serif" fontSize={18} fontWeight={900}
+              fill="rgba(255,255,255,0.28)">
+              0{i + 1}
+            </text>
+            {isSel && renderHandles(bbox, pid)}
+          </g>
         )
       })}
 
-      {/* Render Nodes (Center and Branches) - Populates renderedElementBboxes for lines */}
-      {nodeElements.map(element => {
-        const customPos = templateElementPositions[element.id]
-        const isSelected = selectedIds.has(element.id)
+      {/* Head outline */}
+      <path
+        d={HEAD_PATH}
+        transform={`translate(${HX},${HY}) scale(${HW / 300},${HH / 420})`}
+        fill="none" stroke="#1a1a2e" strokeWidth={1.5}
+      />
+
+      {/* Title */}
+      <g onMouseDown={e => startDrag(e, titleId, titleBbox)}
+        transform={getTransform(titleId, titleBbox)} style={{ cursor: 'pointer' }}>
+        <text x={titleBbox.x} y={titleBbox.y + 30}
+          fontFamily="Arial, sans-serif" fontSize={26} fontWeight={800} fill="#1a1a2e">
+          {data.title || 'Brain 4 Template'}
+        </text>
+        {selectedIds.has(titleId) && renderHandles(titleBbox, titleId)}
+      </g>
+
+      {/* Callouts */}
+      {calloutCfg.slice(0, count).map((cfg, i) => {
+        const id = `callout-${i}`
+        const color = tplColors[pieceIds[i] ?? ''] ?? PIECE_COLORS[i % PIECE_COLORS.length]
+        const isLeft = cfg.align === 'left'
+        const cW = 230, cH = 74
+        const pos = positions[id]
         const bbox = {
-          x: customPos?.x ?? element.defaultBbox.x,
-          y: customPos?.y ?? element.defaultBbox.y,
-          width: customPos?.width ?? element.defaultBbox.width,
-          height: customPos?.height ?? element.defaultBbox.height
+          x: pos?.x ?? cfg.dx, y: pos?.y ?? cfg.dy,
+          width: pos?.width ?? cW, height: pos?.height ?? cH
         }
-        renderedElementBboxes[element.id] = bbox; // Crucial: store actual rendered bbox for lines
-        const scaleX = bbox.width / element.defaultBbox.width
-        const scaleY = bbox.height / element.defaultBbox.height
-
-        const originalNodeX = element.defaultBbox.x
-        const originalNodeY = element.defaultBbox.y
-
-        if (element.id === centerNodeId) {
-          return (
-            <g key={element.id} onMouseDown={e => startDrag(e, element.id, bbox)} style={{ cursor: 'pointer' }}>
-              <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-originalNodeX}, ${-originalNodeY})`}>
-                {/* Original content, with coordinates relative to its defaultBbox origin */}
-                <circle cx={cx - originalNodeX} cy={rootY - originalNodeY} r={30} fill="#1a1a2e" />
-                <text x={cx - originalNodeX} y={(rootY + 5) - originalNodeY} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill="white">
-                  {data.centerLabel.length > 10 ? data.centerLabel.slice(0, 8) + '..' : data.centerLabel}
-                </text>
-              </g>
-              {isSelected && renderHandles(bbox, element.id)}
-            </g>
-          )
-        } else { // Regular branch node
-          return (
-            <g key={element.id} onMouseDown={e => startDrag(e, element.id, bbox)} style={{ cursor: 'pointer' }}>
-              <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-originalNodeX}, ${-originalNodeY})`}>
-                {/* Original content, with coordinates relative to its defaultBbox origin */}
-                <rect
-                  x={0} y={0} // Node rect's x,y are the same as its defaultBbox origin
-                  width={nodeW} height={nodeH}
-                  rx={8} fill="white" stroke={isSelected ? '#4a90d9' : element.color}
-                  strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined}
-                />
-                <text
-                  x={nodeW / 2} // Text x is relative to node's top-left, so half of nodeW
-                  y={nodeH / 2 + 4} // Text y is relative to node's top-left, so half of nodeH + baseline adjust
-                  textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#333"
-                >
-                  {element.branch!.title.length > 18 ? element.branch!.title.slice(0, 16) + '..' : element.branch!.title}
-                </text>
-              </g>
-              {isSelected && renderHandles(bbox, element.id)}
-            </g>
-          )
-        }
-      })}
-
-      {/* Render Lines - Uses renderedElementBboxes to get current node positions */}
-      {lineElements.map(element => {
-        const parentBbox = renderedElementBboxes[element.parentId!];
-        const childBbox = renderedElementBboxes[element.childId!];
-
-        if (!parentBbox || !childBbox) return null; // Skip if connected nodes aren't rendered yet
-
-        // Calculate CURRENT line endpoints based on CURRENT node positions
-        const currentLineX1 = parentBbox.x + parentBbox.width / 2;
-        const currentLineY1 = parentBbox.y + parentBbox.height; // Connect from bottom of parent
-        const currentLineX2 = childBbox.x + childBbox.width / 2;
-        const currentLineY2 = childBbox.y; // Connect to top of child
-
-        // The 'defaultBbox' for the line itself is derived from its *initial* calculated position.
-        // This is necessary for the scaling factor computation.
-        const lineDefaultBbox = element.defaultBbox;
-
-        // Now calculate the current position for the draggable line element.
-        // Its actual x,y,width,height are based on the current endpoints.
-        const actualLineBbox = {
-          x: Math.min(currentLineX1, currentLineX2),
-          y: Math.min(currentLineY1, currentLineY2),
-          width: Math.abs(currentLineX2 - currentLineX1) || 1,
-          height: Math.abs(currentLineY2 - currentLineY1) || 1
-        };
-
-        const customPos = templateElementPositions[element.id];
-        const isSelected = selectedIds.has(element.id);
-
-        const bbox = {
-          x: customPos?.x ?? actualLineBbox.x,
-          y: customPos?.y ?? actualLineBbox.y,
-          width: customPos?.width ?? actualLineBbox.width,
-          height: customPos?.height ?? actualLineBbox.height
-        };
-
-        // Scale factors are based on its *original* derived defaultBbox vs its *current transformed* bbox
-        const scaleX = bbox.width / lineDefaultBbox.width;
-        const scaleY = bbox.height / lineDefaultBbox.height;
+        const isSel = selectedIds.has(id)
+        const pc = pieceCenters[i] ?? { cx: mx, cy: my }
+        const connX = isLeft ? bbox.x + bbox.width : bbox.x
 
         return (
-          <g key={element.id} onMouseDown={e => startDrag(e, element.id, bbox)} style={{ cursor: 'pointer' }}>
-            <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-lineDefaultBbox.x}, ${-lineDefaultBbox.y})`}>
-              {/* Original content, with coordinates relative to its defaultBbox origin */}
-              <line
-                x1={currentLineX1 - lineDefaultBbox.x} y1={currentLineY1 - lineDefaultBbox.y}
-                x2={currentLineX2 - lineDefaultBbox.x} y2={currentLineY2 - lineDefaultBbox.y}
-                stroke={element.lineStrokeColor}
-                strokeWidth={element.id === trunkLineId ? 4 : 1.5}
-                opacity={0.4}
-              />
+          <g key={id}>
+            <line x1={connX} y1={bbox.y + bbox.height / 2}
+              x2={pc.cx} y2={pc.cy}
+              stroke={color} strokeWidth={1.5} strokeDasharray="5 3" />
+            <circle cx={pc.cx} cy={pc.cy} r={5} fill={color} />
+            <g onMouseDown={e => startDrag(e, id, bbox)}
+              transform={getTransform(id, bbox)} style={{ cursor: 'pointer' }}>
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8}
+                fill="white" stroke={color} strokeWidth={2}
+                filter="drop-shadow(0 2px 8px rgba(0,0,0,0.09))" />
+              <rect x={isLeft ? bbox.x : bbox.x + bbox.width - 6} y={bbox.y}
+                width={6} height={bbox.height} rx={3} fill={color} />
+              <text x={isLeft ? bbox.x + 16 : bbox.x + 12} y={bbox.y + 25}
+                fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#1a1a2e">
+                {branches[i]?.title ?? `Step ${i + 1}`}
+              </text>
+              <text x={isLeft ? bbox.x + 16 : bbox.x + 12} y={bbox.y + 48}
+                fontFamily="Arial, sans-serif" fontSize={11} fill="#666">
+                {branches[i]?.subtitle ?? `Description ${i + 1}`}
+              </text>
+              {isSel && renderHandles(bbox, id)}
             </g>
-            {isSelected && renderHandles(bbox, element.id)}
           </g>
         )
       })}

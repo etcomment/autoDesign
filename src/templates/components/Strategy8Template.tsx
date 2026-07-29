@@ -42,7 +42,7 @@ export function Strategy8Template({ data }: { data: StrategyData }): ReactElemen
 
         return (
           <g key={`step-${index}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={sx} y={sy} width={STEP_W} height={STEP_H} rx={8} fill={color} opacity={isSelected ? 1 : 0.85} stroke={isSelected ? '#333' : undefined} strokeWidth={isSelected ? 1.5 : undefined} />
               <text x={sx + STEP_W / 2} y={sy + STEP_H / 2 - 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
                 {block.number}. {block.title}

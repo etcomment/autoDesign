@@ -105,7 +105,7 @@ export function Roadmap10Template({ data }: { data: RoadmapData }): ReactElement
       {(() => {
         const tr = rects.get('timeline')!
         return (
-          <g onMouseDown={e => startDrag(e, 'timeline', tr)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="timeline" onMouseDown={e => startDrag(e, 'timeline', tr)} transform={getTransform('timeline', tr)} style={{ cursor: 'pointer' }}>
             <line x1={tr.x} y1={tr.y + tr.height/2} x2={tr.x + tr.width} y2={tr.y + tr.height/2} stroke={tplColors['timeline'] || "#e0e0e0"} strokeWidth={tr.height} />
             {selectedIds.has('timeline') && renderHandles(tr, 'timeline')}
           </g>
@@ -113,6 +113,7 @@ export function Roadmap10Template({ data }: { data: RoadmapData }): ReactElement
       })()}
 
       {milestones.map((ms, i) => {
+        const tr = rects.get('timeline')!
         const bid = `block-${i}`
         const br = rects.get(bid)!
         const layout = layoutMap.get(bid)!
@@ -134,42 +135,29 @@ export function Roadmap10Template({ data }: { data: RoadmapData }): ReactElement
 
         return (
           <g key={i}>
-            {/* Timeline connection */}
-            {(() => {
-              const nid = `node-${i}`
-              const nr = rects.get(nid)!
-              return (
-                <g onMouseDown={e => startDrag(e, nid, nr)} style={{ cursor: 'pointer' }}>
-                  <circle cx={nr.x + nr.width/2} cy={nr.y + nr.height/2} r={Math.min(nr.width, nr.height)/2} fill={tplColors[nid] || "#e0e0e0"} />
-                  {selectedIds.has(nid) && renderHandles(nr, nid)}
-                </g>
-              )
-            })()}
-            {(() => {
-              const cid = `conn-${i}`
-              const cr = rects.get(cid)!
-              return (
-                <g onMouseDown={e => startDrag(e, cid, cr)} style={{ cursor: 'pointer' }}>
-                  <line x1={cr.x + cr.width/2} y1={cr.y} x2={cr.x + cr.width/2} y2={cr.y + cr.height} stroke={tplColors[cid] || "#e0e0e0"} strokeWidth={cr.width || 3} />
-                  {selectedIds.has(cid) && renderHandles(cr, cid)}
-                </g>
-              )
-            })()}
-            {(() => {
-              const aid = `arrow-${i}`
-              const ar = rects.get(aid)!
-              return (
-                <g onMouseDown={e => startDrag(e, aid, ar)} style={{ cursor: 'pointer' }}>
-                  <polygon points={isTop 
-                    ? `${ar.x},${ar.y+ar.height} ${ar.x+ar.width},${ar.y+ar.height} ${ar.x+ar.width/2},${ar.y}`
-                    : `${ar.x},${ar.y} ${ar.x+ar.width},${ar.y} ${ar.x+ar.width/2},${ar.y+ar.height}`} fill={tplColors[aid] || "#e0e0e0"} />
-                  {selectedIds.has(aid) && renderHandles(ar, aid)}
-                </g>
-              )
-            })()}
+            {/* Timeline connection node */}
+            <circle cx={boxCx} cy={tr.y + tr.height / 2} r={8} fill={tplColors[`node-${i}`] || "#e0e0e0"} />
+            
+            {/* Dynamic line connecting timeline to arrow */}
+            <line
+              x1={boxCx}
+              y1={isTop ? tr.y : tr.y + tr.height}
+              x2={boxCx}
+              y2={isTop ? br.y + br.height + 8 : br.y - 8}
+              stroke={tplColors[`conn-${i}`] || "#e0e0e0"}
+              strokeWidth={3}
+            />
+
+            {/* Dynamic arrow pointing to block */}
+            <polygon
+              points={isTop 
+                ? `${boxCx - 6},${br.y + br.height + 8} ${boxCx + 6},${br.y + br.height + 8} ${boxCx},${br.y + br.height}`
+                : `${boxCx - 6},${br.y - 8} ${boxCx + 6},${br.y - 8} ${boxCx},${br.y}`}
+              fill={tplColors[`arrow-${i}`] || "#e0e0e0"}
+            />
 
             {/* Milestone Box */}
-            <g onMouseDown={e => startDrag(e, bid, br)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, bid, br)} transform={getTransform(bid, br)} style={{ cursor: 'pointer' }}>
               <rect 
                 x={br.x} y={br.y} width={br.width} height={br.height} 
                 fill={color} 

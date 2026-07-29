@@ -56,7 +56,7 @@ export function Manufacturing5Template({ data }: { data: ManufacturingData }): R
 
         return (
           <g key={`s-${i}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={pos.x - boxW / 2} y={pos.y - boxH / 2} width={boxW} height={boxH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 1.5} />
               <g transform={`translate(${pos.x - 14}, ${pos.y - boxH / 2 + 4})`}>
                 <GearIcon size={20} color={color} />

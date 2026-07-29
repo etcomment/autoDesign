@@ -56,7 +56,7 @@ export function Strategy6Template({ data }: { data: Strategy6Data }): ReactEleme
 
         return (
           <g key={`q-${i}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={qx} y={qy} width={qw} height={qh} rx={8} fill={bgColor} stroke={isSelected ? '#4a90d9' : '#cbd5e0'} strokeWidth={isSelected ? 2.5 : 1} />
               {quadrant && (
                 <>

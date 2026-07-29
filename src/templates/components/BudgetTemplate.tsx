@@ -47,7 +47,7 @@ export function BudgetTemplate({ data }: { data: BudgetData }): ReactElement {
             <text x={barX - 14} y={y + barH / 2 + 4} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={600} fill="#333">
               {item.label}
             </text>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={barX} y={y} width={barWidth} height={barH} rx={6} fill={color} opacity={0.9} stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 0} strokeDasharray={isSelected ? '4 2' : undefined} />
               <text x={barX + 14} y={y + barH / 2 + 4} fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
                 {Math.round(item.percentage)}%

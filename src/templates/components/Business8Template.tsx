@@ -229,7 +229,7 @@ export function Business8Template({ data }: { data: BusinessData }): ReactElemen
             </foreignObject>
 
             {/* Interactive Text Box & Selection */}
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRectX}, ${-defaultRectY})`}>
                 <rect
                   x={defaultRectX}

@@ -120,7 +120,7 @@ export function DecisionTreeTemplate({ data }: { data: DecisionTreeData }): Reac
 
         return (
           <g key={`n-${i}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={node.x} y={node.y} width={nodeW} height={nodeH} rx={rx} fill={fill} stroke={stroke} strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
               <text x={node.x + nodeW / 2} y={node.y + nodeH / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill={textFill}>
                 {node.label.length > 22 ? node.label.slice(0, 20) + '..' : node.label}

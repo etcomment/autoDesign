@@ -41,7 +41,7 @@ export function ProductRoadmap2Template({ data }: { data: ProductRoadmap2Data })
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             {title.split('\n').map((line, i) => (
               <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
                 {line}
@@ -64,7 +64,7 @@ export function ProductRoadmap2Template({ data }: { data: ProductRoadmap2Data })
         const isSelected = selectedIds.has(qId)
 
         return (
-          <g key={quarter.label} onMouseDown={e => startDrag(e, qId, qRect)} style={{ cursor: 'pointer' }}>
+          <g key={quarter.label} onMouseDown={e => startDrag(e, qId, qRect)} transform={getTransform(qId, qRect)} style={{ cursor: 'pointer' }}>
             <rect x={qRect.x} y={qRect.y} width={qRect.width} height={qRect.height} rx={4} fill={qColor} opacity={0.15} stroke={qStroke} strokeWidth={qStrokeWidth} />
             <text x={qRect.x + qRect.width / 2} y={qRect.y + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill={qColor}>
               {quarter.label}
@@ -97,7 +97,7 @@ export function ProductRoadmap2Template({ data }: { data: ProductRoadmap2Data })
               const defaultBg = { x: gridLeft, y: rowY, width: gridWidth, height: rowHeight }
               const r = pos[laneBgId] ?? defaultBg
               return (
-                <g onMouseDown={e => startDrag(e, laneBgId, r)} style={{ cursor: 'pointer' }}>
+                <g onMouseDown={e => startDrag(e, laneBgId, r)} transform={getTransform(laneBgId, r)} style={{ cursor: 'pointer' }}>
                   <rect x={r.x} y={r.y} width={r.width} height={r.height} fill={tplColors[laneBgId] ?? LANE_BG[li % LANE_BG.length]} rx={2} />
                   {selectedIds.has(laneBgId) && renderHandles(r, laneBgId)}
                 </g>
@@ -108,13 +108,13 @@ export function ProductRoadmap2Template({ data }: { data: ProductRoadmap2Data })
               const defaultMarker = { x: 0, y: rowY, width: 4, height: rowHeight }
               const mr = pos[laneMarkerId] ?? defaultMarker
               return (
-                <g onMouseDown={e => startDrag(e, laneMarkerId, mr)} style={{ cursor: 'pointer' }}>
+                <g onMouseDown={e => startDrag(e, laneMarkerId, mr)} transform={getTransform(laneMarkerId, mr)} style={{ cursor: 'pointer' }}>
                   <rect x={mr.x} y={mr.y} width={mr.width} height={mr.height} fill={tplColors[laneMarkerId] ?? laneColor} rx={2} />
                   {selectedIds.has(laneMarkerId) && renderHandles(mr, laneMarkerId)}
                 </g>
               )
             })()}
-            <g onMouseDown={e => startDrag(e, lId, lRect)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, lId, lRect)} transform={getTransform(lId, lRect)} style={{ cursor: 'pointer' }}>
               <rect x={lRect.x} y={lRect.y} width={lRect.width} height={lRect.height} rx={6} fill={laneColor} opacity={0.9} stroke={lStroke} strokeWidth={lStrokeWidth} />
               <text
                 x={lRect.x + lRect.width / 2}
@@ -135,12 +135,12 @@ export function ProductRoadmap2Template({ data }: { data: ProductRoadmap2Data })
               const defaultLine = { x: gridLeft + qi * colWidth - 0.5, y: rowY, width: 1, height: rowHeight }
               const lr = pos[lineId] ?? defaultLine
               return (
-                <g key={`grid-${li}-${qi}`} onMouseDown={e => startDrag(e, lineId, lr)} transform={`translate(${lr.x - defaultLine.x}, ${lr.y - defaultLine.y})`} style={{ cursor: 'pointer' }}>
+                <g key={`grid-${li}-${qi}`} onMouseDown={e => startDrag(e, lineId, lr)} transform={getTransform(lineId, lr)} style={{ cursor: 'pointer' }}>
                   <line
-                    x1={defaultLine.x + 0.5}
-                    y1={defaultLine.y}
-                    x2={defaultLine.x + 0.5}
-                    y2={defaultLine.y + defaultLine.height}
+                    x1={lr.x + lr.width / 2}
+                    y1={lr.y}
+                    x2={lr.x + lr.width / 2}
+                    y2={lr.y + lr.height}
                     stroke={tplStrokeColors[lineId] ?? "#d0d7de"}
                     strokeWidth={tplStrokeWidths[lineId] ?? 0.5}
                   />
@@ -153,8 +153,8 @@ export function ProductRoadmap2Template({ data }: { data: ProductRoadmap2Data })
               const defaultHLine = { x: gridLeft, y: rowY - 0.5, width: gridWidth, height: 1 }
               const hr = pos[hLineId] ?? defaultHLine
               return (
-                <g onMouseDown={e => startDrag(e, hLineId, hr)} transform={`translate(${hr.x - defaultHLine.x}, ${hr.y - defaultHLine.y})`} style={{ cursor: 'pointer' }}>
-                  <line x1={defaultHLine.x} y1={defaultHLine.y + 0.5} x2={defaultHLine.x + defaultHLine.width} y2={defaultHLine.y + 0.5} stroke={tplStrokeColors[hLineId] ?? "#c0c8d0"} strokeWidth={tplStrokeWidths[hLineId] ?? 1} />
+                <g onMouseDown={e => startDrag(e, hLineId, hr)} transform={getTransform(hLineId, hr)} style={{ cursor: 'pointer' }}>
+                  <line x1={hr.x} y1={hr.y + hr.height / 2} x2={hr.x + hr.width} y2={hr.y + hr.height / 2} stroke={tplStrokeColors[hLineId] ?? "#c0c8d0"} strokeWidth={tplStrokeWidths[hLineId] ?? 1} />
                   {selectedIds.has(hLineId) && renderHandles(hr, hLineId)}
                 </g>
               )
@@ -191,7 +191,7 @@ export function ProductRoadmap2Template({ data }: { data: ProductRoadmap2Data })
 
         return (
           <g key={`m-${mi}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={rX} y={rY} width={rW} height={rH} rx={4} fill={color} opacity={0.85} />
               <text x={rX + rW / 2} y={rY + rH / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>
                 {label}

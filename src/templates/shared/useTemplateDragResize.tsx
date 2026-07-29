@@ -21,6 +21,10 @@ interface Interaction {
   startRect: Rect
   hasMoved: boolean
   allStartRects?: Record<string, Rect>
+  allStartRotations?: Record<string, number>
+  screenCX?: number
+  screenCY?: number
+  startAngle?: number
 }
 
 const DRAG_THRESHOLD = 3
@@ -85,11 +89,21 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
 
     if (interaction.kind === 'rotate') {
       interaction.hasMoved = true
-      const centerX = interaction.startRect.x + interaction.startRect.width / 2
-      const centerY = interaction.startRect.y + interaction.startRect.height / 2
-      const rdx = x - centerX
-      const rdy = y - centerY
-      let angle = Math.atan2(rdy, rdx) * (180 / Math.PI) + 90
+      let angle = 0
+
+      // If we have screen coordinates for the center, use client coordinates for precise rotation
+      if (interaction.screenCX !== undefined && interaction.screenCY !== undefined) {
+        const dx = e.clientX - interaction.screenCX
+        const dy = e.clientY - interaction.screenCY
+        angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90
+      } else {
+        const centerX = interaction.startRect.x + interaction.startRect.width / 2
+        const centerY = interaction.startRect.y + interaction.startRect.height / 2
+        const rdx = x - centerX
+        const rdy = y - centerY
+        angle = Math.atan2(rdy, rdx) * (180 / Math.PI) + 90
+      }
+
       if (angle < 0) angle += 360
       if (angle >= 360) angle -= 360
 
@@ -102,9 +116,29 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
 
       setCurrentRotation(angle)
 
-      if (interaction.allStartRects) {
-        for (const sid of Object.keys(interaction.allStartRects)) {
-          rotateElement(sid, angle)
+      if (interaction.allStartRects && interaction.allStartRotations && Object.keys(interaction.allStartRects).length > 1) {
+        const deltaAngle = angle - (interaction.startAngle || 0)
+        const rad = (deltaAngle * Math.PI) / 180
+        const cos = Math.cos(rad)
+        const sin = Math.sin(rad)
+        const centerX = interaction.startRect.x + interaction.startRect.width / 2
+        const centerY = interaction.startRect.y + interaction.startRect.height / 2
+
+        for (const [sid, sRect] of Object.entries(interaction.allStartRects)) {
+          const sCenterX = sRect.x + sRect.width / 2
+          const sCenterY = sRect.y + sRect.height / 2
+          const relX = sCenterX - centerX
+          const relY = sCenterY - centerY
+          
+          const newCenterX = centerX + (relX * cos - relY * sin)
+          const newCenterY = centerY + (relX * sin + relY * cos)
+          
+          moveElement(sid, { x: newCenterX - sRect.width / 2, y: newCenterY - sRect.height / 2 })
+          
+          let newRot = (interaction.allStartRotations![sid] || 0) + deltaAngle
+          if (newRot < 0) newRot += 360
+          if (newRot >= 360) newRot -= 360
+          rotateElement(sid, newRot)
         }
       } else {
         rotateElement(interaction.id, angle)
@@ -264,6 +298,7 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
     const { x, y } = toSvgPoint(mouseEvent)
 
     const allStartRects: Record<string, Rect> = {}
+    const allStartRotations: Record<string, number> = {}
     let groupStartRect = rect
 
     const isMulti = selectedIds.size > 1 && selectedIds.has(id)
@@ -277,6 +312,7 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
     for (const sid of targetIds) {
       const pos = templateElementPositions[sid] || renderedRectsRef.current.get(sid) || (sid === id ? rect : { x: 0, y: 0, width: 40, height: 40 })
       allStartRects[sid] = { ...pos }
+      allStartRotations[sid] = templateElementRotations[sid] || 0
       minX = Math.min(minX, pos.x)
       minY = Math.min(minY, pos.y)
       maxX = Math.max(maxX, pos.x + pos.width)
@@ -289,6 +325,35 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
       groupStartRect = rect
     }
 
+    let screenCX: number | undefined
+    let screenCY: number | undefined
+    let startAngle: number | undefined
+
+    if (kind === 'rotate') {
+      screenCX = e.clientX
+      screenCY = e.clientY + 24
+      const svg = svgRef.current?.ownerSVGElement || svgRef.current
+      if (svg) {
+        const pt = (svg as SVGSVGElement).createSVGPoint()
+        pt.x = groupStartRect.x + groupStartRect.width / 2
+        pt.y = groupStartRect.y + groupStartRect.height / 2
+        const parentEl = (e.currentTarget as SVGElement).parentNode as SVGGraphicsElement | null
+        const ctm = parentEl?.getScreenCTM() || (svg as SVGSVGElement).getScreenCTM()
+        if (ctm) {
+          const screenCenter = pt.matrixTransform(ctm)
+          screenCX = screenCenter.x
+          screenCY = screenCenter.y
+        }
+      }
+      
+      const dx = e.clientX - screenCX
+      const dy = e.clientY - screenCY
+      let ang = Math.atan2(dy, dx) * (180 / Math.PI) + 90
+      if (ang < 0) ang += 360
+      if (ang >= 360) ang -= 360
+      startAngle = ang
+    }
+
     interactionRef.current = {
       id,
       kind,
@@ -297,6 +362,10 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
       startRect: groupStartRect,
       hasMoved: kind === 'resize' || kind === 'rotate',
       allStartRects,
+      allStartRotations,
+      screenCX,
+      screenCY,
+      startAngle,
     }
     window.addEventListener('mousemove', stableOnMouseMove)
     window.addEventListener('mouseup', stableOnMouseUp)

@@ -13,6 +13,7 @@ export function Process2Template({ data }: { data: Process2Data }): ReactElement
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const toggleElement = useTemplateStore(s => s.toggleTemplateElement)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const { title, steps, outcome } = data
   const W = 1000
@@ -46,24 +47,30 @@ export function Process2Template({ data }: { data: Process2Data }): ReactElement
         const by = isLast ? stepY - (largeH - normalH) / 2 : stepY
         const color = tplColors[elementId] ?? PALETTE[index % PALETTE.length]!
         const isSelected = selectedIds.has(elementId)
-        const visualRect = { x: bx, y: by, width: blockW, height: blockH }
+        const customPos = templateElementPositions[elementId]
+        const visualRect = {
+          x: customPos?.x ?? bx,
+          y: customPos?.y ?? by,
+          width: customPos?.width ?? blockW,
+          height: customPos?.height ?? blockH
+        }
 
         return (
           <g key={index}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
-              <ChevronArrow x={bx} y={by} width={blockW} height={blockH} fill={color} />
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
+              <ChevronArrow x={visualRect.x} y={visualRect.y} width={visualRect.width} height={visualRect.height} fill={color} />
               {isSelected && (
-                <rect x={bx - 1} y={by - 1} width={blockW + 2} height={blockH + 2} rx={2} fill="none" stroke="#4a90d9" strokeWidth={2.5} strokeDasharray="4 2" />
+                <rect x={visualRect.x - 1} y={visualRect.y - 1} width={visualRect.width + 2} height={visualRect.height + 2} rx={2} fill="none" stroke="#4a90d9" strokeWidth={2.5} strokeDasharray="4 2" />
               )}
 
-              <CircleBadge cx={bx + 36} cy={by + blockH / 2} r={circleR} fill={isLast ? '#fff' : 'white'} label={String(step.number)} fontSize={11} />
+              <CircleBadge cx={visualRect.x + 36} cy={visualRect.y + visualRect.height / 2} r={circleR} fill={isLast ? '#fff' : 'white'} label={String(step.number)} fontSize={11} />
               {isLast && (
-                <circle cx={bx + 36} cy={by + blockH / 2} r={circleR} fill="none" stroke="white" strokeWidth={1.5} />
+                <circle cx={visualRect.x + 36} cy={visualRect.y + visualRect.height / 2} r={circleR} fill="none" stroke="white" strokeWidth={1.5} />
               )}
 
               <text
-                x={bx + blockW / 2 + 12}
-                y={by + blockH / 2 + (blockH > 50 ? -4 : 4)}
+                x={visualRect.x + visualRect.width / 2 + 12}
+                y={visualRect.y + visualRect.height / 2 + (visualRect.height > 50 ? -4 : 4)}
                 textAnchor="middle"
                 fontFamily="Arial, sans-serif"
                 fontSize={isLast ? 14 : 11}
@@ -75,8 +82,8 @@ export function Process2Template({ data }: { data: Process2Data }): ReactElement
 
               {step.subtitle && (
                 <text
-                  x={bx + blockW / 2 + 12}
-                  y={by + blockH / 2 + (blockH > 50 ? 14 : 18)}
+                  x={visualRect.x + visualRect.width / 2 + 12}
+                  y={visualRect.y + visualRect.height / 2 + (visualRect.height > 50 ? 14 : 18)}
                   textAnchor="middle"
                   fontFamily="Arial, sans-serif"
                   fontSize={9}
@@ -89,13 +96,28 @@ export function Process2Template({ data }: { data: Process2Data }): ReactElement
               {isSelected && renderHandles(visualRect, elementId)}
             </g>
 
-            {index < steps.length - 1 && (
-              <Arrow
-                from={{ x: bx + blockW + 2, y: stepY + normalH / 2 }}
-                to={{ x: bx + blockW + gap - 2, y: stepY + normalH / 2 }}
-                color={color}
-              />
-            )}
+            {index < steps.length - 1 && (() => {
+              const nextId = `step-${index + 1}`
+              const isNextLast = (index + 1) === steps.length - 1
+              const nextBlockW = isNextLast ? largeW : normalW
+              const nextBlockH = isNextLast ? largeH : normalH
+              const nextBx = startX + (index + 1) * (normalW + gap) + (isNextLast ? (normalW - largeW) : 0)
+              const nextBy = isNextLast ? stepY - (largeH - normalH) / 2 : stepY
+              const nextCustomPos = templateElementPositions[nextId]
+              const nextVisualRect = {
+                x: nextCustomPos?.x ?? nextBx,
+                y: nextCustomPos?.y ?? nextBy,
+                width: nextCustomPos?.width ?? nextBlockW,
+                height: nextCustomPos?.height ?? nextBlockH
+              }
+              return (
+                <Arrow
+                  from={{ x: visualRect.x + visualRect.width + 2, y: visualRect.y + visualRect.height / 2 }}
+                  to={{ x: nextVisualRect.x - 2, y: nextVisualRect.y + nextVisualRect.height / 2 }}
+                  color={color}
+                />
+              )
+            })()}
           </g>
         )
       })}

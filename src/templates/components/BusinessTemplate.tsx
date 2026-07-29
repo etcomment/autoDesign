@@ -191,7 +191,7 @@ export function BusinessTemplate({ data }: { data: BusinessData }): ReactElement
 
             {/* Interactive Drag & Custom Color Container */}
             <g
-              onMouseDown={e => startDrag(e, elementId, bbox)}
+              data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)}
               style={{ cursor: 'pointer' }}
             >
               <rect

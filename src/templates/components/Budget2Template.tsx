@@ -49,7 +49,7 @@ export function Budget2Template({ data }: { data: BudgetData }): ReactElement {
           const { bbox, isSelected, scaleX, scaleY } = getInteractiveProps(elementId, defaultBbox)
 
           return (
-            <g onMouseDown={e => startDrag(e, elementId, bbox)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
               <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
                 <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
                   {title}
@@ -70,7 +70,7 @@ export function Budget2Template({ data }: { data: BudgetData }): ReactElement {
         const { bbox, isSelected, scaleX, scaleY } = getInteractiveProps(elementId, defaultBbox)
 
         return (
-          <g onMouseDown={e => startDrag(e, elementId, bbox)} style={{ cursor: 'pointer' }}>
+          <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
             <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
               <line x1={startX - 20} y1={baselineY} x2={startX + totalW + 20} y2={baselineY} stroke="#ccc" strokeWidth={lineStrokeWidth} />
             </g>
@@ -117,7 +117,7 @@ export function Budget2Template({ data }: { data: BudgetData }): ReactElement {
         return (
           <g key={i}>
             {/* Bar and its internal/amount texts */}
-            <g onMouseDown={e => startDrag(e, itemElementId, barBbox)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, itemElementId, barBbox)} transform={getTransform(itemElementId, barBbox)} style={{ cursor: 'pointer' }}>
               <g transform={`translate(${barBbox.x}, ${barBbox.y}) scale(${barScaleX}, ${barScaleY}) translate(${-defaultBarBbox.x}, ${-defaultBarBbox.y})`}>
                 {/* Bar */}
                 <rect x={x} y={y} width={barW} height={barHeight} rx={4} fill={color} opacity={0.85} stroke={isBarSelected ? '#4a90d9' : color} strokeWidth={isBarSelected ? 2.5 : 0} strokeDasharray={isBarSelected ? '4 2' : undefined} />
@@ -134,7 +134,7 @@ export function Budget2Template({ data }: { data: BudgetData }): ReactElement {
             </g>
 
             {/* Label text */}
-            <g onMouseDown={e => startDrag(e, labelElementId, labelBbox)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, labelElementId, labelBbox)} transform={getTransform(labelElementId, labelBbox)} style={{ cursor: 'pointer' }}>
               <g transform={`translate(${labelBbox.x}, ${labelBbox.y}) scale(${labelScaleX}, ${labelScaleY}) translate(${-defaultLabelBbox.x}, ${-defaultLabelBbox.y})`}>
                 <text x={x + barW / 2} y={labelTextY} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={labelTextFontSize} fontWeight={600} fill="#333">
                   {item.label}

@@ -60,7 +60,7 @@ export function Funnel3Template({ data }: { data: FunnelData }): ReactElement {
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <path d={s.d} fill={color} opacity={0.75} stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 1} />
               <path d={s.d} fill="black" opacity={0.12} transform="translate(0, 3)" stroke="none" />
 

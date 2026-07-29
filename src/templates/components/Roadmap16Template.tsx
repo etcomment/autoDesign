@@ -102,7 +102,7 @@ export function Roadmap16Template({ data }: { data: RoadmapData }): ReactElement
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             <text x={r.x} y={r.y + 30} fontFamily="Arial, sans-serif" fontSize={36} fontWeight={800} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
               {title}
             </text>
@@ -117,7 +117,7 @@ export function Roadmap16Template({ data }: { data: RoadmapData }): ReactElement
         const color = tplColors['path'] ?? '#a9a9a9'
         const sW = tplStrokeWidths['path'] ?? 18
         return (
-          <g onMouseDown={e => startDrag(e, 'path', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="path" onMouseDown={e => startDrag(e, 'path', r)} transform={getTransform('path', r)} style={{ cursor: 'pointer' }}>
             <svg x={r.x} y={r.y} width={r.width} height={r.height} viewBox="140 140 680 260" preserveAspectRatio="none">
               <path d={pathSegments} fill="none" stroke={color} strokeWidth={sW} strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -134,7 +134,7 @@ export function Roadmap16Template({ data }: { data: RoadmapData }): ReactElement
         const cx = r.x + r.width / 2
         const cy = r.y + r.height / 2
         return (
-          <g key={kind} onMouseDown={e => startDrag(e, kind, r)} style={{ cursor: 'pointer' }}>
+          <g key={kind} onMouseDown={e => startDrag(e, kind, r)} transform={getTransform(kind, r)} style={{ cursor: 'pointer' }}>
             <circle cx={cx} cy={cy} r={r.width / 2} fill="white" stroke={fill} strokeWidth={4} />
             <text x={cx} y={cy + 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={16} fontWeight={800} fill={fill}>
               {kind.toUpperCase()}
@@ -159,12 +159,12 @@ export function Roadmap16Template({ data }: { data: RoadmapData }): ReactElement
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, iid, r)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, iid, r)} transform={getTransform(iid, r)} style={{ cursor: 'pointer' }}>
               <circle cx={cx} cy={cy} r={r.width / 2} fill="white" stroke={color} strokeWidth={4} />
               <circle cx={cx} cy={cy} r={r.width / 2 - 8} fill="none" stroke={color} strokeWidth={1} />
               {isSel && renderHandles(r, iid)}
             </g>
-            <g onMouseDown={e => startDrag(e, tid, tr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, tid, tr)} transform={getTransform(tid, tr)} style={{ cursor: 'pointer' }}>
               <text x={tcx} y={tr.y + 20} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={16} fontWeight={800} fill={tplColors[tid] ?? "#222"}>
                 {ms.title}
               </text>

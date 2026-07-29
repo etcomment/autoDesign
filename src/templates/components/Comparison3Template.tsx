@@ -51,7 +51,7 @@ export function Comparison3Template({ data }: { data: ComparisonData }): ReactEl
 
         return (
           <g key={`item-${index}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={midX - MAX_BAR_W - 10 - leftW} y={rowY + (rowH - barH) / 2} width={leftW} height={barH} rx={6} fill={LEFT_COLOR} opacity={isSelected ? 1 : 0.7} />
               <text x={midX - MAX_BAR_W - 16 - leftW} y={rowY + rowH / 2 + 4} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#333">
                 {item.left}

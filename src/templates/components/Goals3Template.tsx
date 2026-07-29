@@ -63,7 +63,7 @@ export function Goals3Template({ data }: { data: GoalsData }): ReactElement {
               strokeWidth={14}
               strokeLinecap="round"
             />
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <text x={cx} y={cy + 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={18} fontWeight={700} fill="#1a1a2e">
                 {Math.round(pct * 100)}%
               </text>

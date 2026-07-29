@@ -62,7 +62,7 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={leftColX} y={rowY} width={colW} height={rowH} fill={isEven ? LEFT_BG : 'white'} />
               <rect x={rightColX} y={rowY} width={colW} height={rowH} fill={isEven ? RIGHT_BG : 'white'} />
               <rect x={labelColX + dividerW / 2} y={rowY} width={labelW} height={rowH} fill={isEven ? '#f8fafc' : '#f1f5f9'} />

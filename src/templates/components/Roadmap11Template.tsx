@@ -114,7 +114,7 @@ export function Roadmap11Template({ data }: { data: RoadmapData }): ReactElement
               const cid = `conn-${i}`
               const cr = rects.get(cid)!
               return (
-                <g onMouseDown={e => startDrag(e, cid, cr)} style={{ cursor: 'pointer' }}>
+                <g onMouseDown={e => startDrag(e, cid, cr)} transform={getTransform(cid, cr)} style={{ cursor: 'pointer' }}>
                   <line 
                     x1={cr.x + cr.width/2} 
                     y1={isTop ? cr.y + cr.height : cr.y} 
@@ -129,7 +129,7 @@ export function Roadmap11Template({ data }: { data: RoadmapData }): ReactElement
             })()}
 
             {/* Block */}
-            <g onMouseDown={e => startDrag(e, bid, br)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, bid, br)} transform={getTransform(bid, br)} style={{ cursor: 'pointer' }}>
               <rect 
                 x={br.x + 2} y={br.y} width={br.width - 4} height={br.height} 
                 fill={color} 
@@ -143,7 +143,7 @@ export function Roadmap11Template({ data }: { data: RoadmapData }): ReactElement
             </g>
 
             {/* Text Area */}
-            <g onMouseDown={e => startDrag(e, tid, tr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, tid, tr)} transform={getTransform(tid, tr)} style={{ cursor: 'pointer' }}>
               <rect x={tr.x} y={tr.y} width={tr.width} height={tr.height} fill="transparent" stroke={isSelText ? '#4a90d9' : 'none'} strokeWidth={1} strokeDasharray="4" />
               <text x={textCx - 10} y={tr.y + 15} textAnchor="end" dominantBaseline="hanging" fontFamily="Arial, sans-serif" fontSize={26} fontWeight={700} fill={color}>
                 {bigNum}

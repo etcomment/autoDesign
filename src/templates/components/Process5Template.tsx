@@ -13,6 +13,7 @@ export function Process5Template({ data }: { data: Process5Data }): ReactElement
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const toggleElement = useTemplateStore(s => s.toggleTemplateElement)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const { title, steps, outcome } = data
   const W = 920
@@ -50,25 +51,31 @@ export function Process5Template({ data }: { data: Process5Data }): ReactElement
         const by = cy - cardH / 2
         const isEven = index % 2 === 0
         const bgOpacity = isEven ? 0.1 : 0.18
-        const visualRect = { x: cardX, y: by, width: cardW, height: cardH }
+        const customPos = templateElementPositions[elementId]
+        const visualRect = {
+          x: customPos?.x ?? cardX,
+          y: customPos?.y ?? by,
+          width: customPos?.width ?? cardW,
+          height: customPos?.height ?? cardH
+        }
 
         return (
           <g key={index}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
-              <rect x={cardX} y={by} width={cardW} height={cardH} rx={8} fill={color} opacity={bgOpacity} stroke={color} strokeWidth={1.5} />
+            <line x1={circleX + circleR} y1={cy} x2={visualRect.x} y2={visualRect.y + visualRect.height / 2} stroke={color} strokeWidth={2} />
 
-              <line x1={circleX + circleR} y1={cy} x2={cardX} y2={cy} stroke={color} strokeWidth={2} />
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
+              <rect x={visualRect.x} y={visualRect.y} width={visualRect.width} height={visualRect.height} rx={8} fill={color} opacity={bgOpacity} stroke={color} strokeWidth={1.5} />
 
               {isSelected && (
-                <rect x={cardX - 1} y={by - 1} width={cardW + 2} height={cardH + 2} rx={8} fill="none" stroke="#4a90d9" strokeWidth={2} strokeDasharray="4 2" />
+                <rect x={visualRect.x - 1} y={visualRect.y - 1} width={visualRect.width + 2} height={visualRect.height + 2} rx={8} fill="none" stroke="#4a90d9" strokeWidth={2} strokeDasharray="4 2" />
               )}
 
-              <text x={cardX + 16} y={by + 26} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#333">
+              <text x={visualRect.x + 16} y={visualRect.y + 26} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#333">
                 {step.title.length > 28 ? step.title.slice(0, 26) + '...' : step.title}
               </text>
 
               {step.subtitle && (
-                <text x={cardX + 16} y={by + 44} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={10} fill="#777">
+                <text x={visualRect.x + 16} y={visualRect.y + 44} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={10} fill="#777">
                   {step.subtitle.length > 34 ? step.subtitle.slice(0, 32) + '...' : step.subtitle}
                 </text>
               )}

@@ -38,7 +38,7 @@ export function Decision2Template({ data }: { data: DecisionTreeData }): ReactEl
           <text x={(x + nx) / 2 + (color === '#2ecc71' ? 15 : -15)} y={(y + ny) / 2 - 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill={color}>
             {branch.answer === 'yes' ? 'Yes' : 'No'}
           </text>
-          <g onMouseDown={e => startDrag(e, id, visualRect)} style={{ cursor: 'pointer' }}>
+          <g onMouseDown={e => startDrag(e, id, visualRect)} transform={getTransform(id, visualRect)} style={{ cursor: 'pointer' }}>
             <rect x={nx} y={ny - nodeH / 2} width={nodeW} height={nodeH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} />
             <text x={nx + nodeW / 2} y={ny + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#333">
               {branch.label.length > 18 ? branch.label.slice(0, 16) + '..' : branch.label}

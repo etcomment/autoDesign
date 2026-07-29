@@ -40,7 +40,7 @@ export function ProductRoadmap9Template({ data }: { data: ProductRoadmapData }):
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             {title.split('\n').map((line, i) => (
               <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
                 {line}
@@ -71,12 +71,12 @@ export function ProductRoadmap9Template({ data }: { data: ProductRoadmapData }):
 
         return (
           <g key={`col-${ci}`}>
-            <g onMouseDown={e => startDrag(e, bgId, bgRect)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, bgId, bgRect)} transform={getTransform(bgId, bgRect)} style={{ cursor: 'pointer' }}>
               <rect x={bgRect.x} y={bgRect.y} width={bgRect.width} height={bgRect.height} rx={10} fill={bgFill} opacity={0.06} stroke={bgStroke} strokeWidth={bgStroke ? bgStrokeWidth : undefined} />
               {isBGSel && renderHandles(bgRect, bgId)}
             </g>
 
-            <g onMouseDown={e => startDrag(e, headerId, hRect)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, headerId, hRect)} transform={getTransform(headerId, hRect)} style={{ cursor: 'pointer' }}>
               <rect x={hRect.x} y={hRect.y} width={hRect.width} height={hRect.height} rx={6} fill={hColor} stroke={hStroke} strokeWidth={hStroke ? hStrokeWidth : undefined} />
               <text x={hRect.x + hRect.width / 2} y={hRect.y + hRect.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
                 {col.label}
@@ -112,7 +112,7 @@ export function ProductRoadmap9Template({ data }: { data: ProductRoadmapData }):
 
         return (
           <g key={`km-${mi}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={visualRect.x} y={visualRect.y} width={visualRect.width} height={visualRect.height} rx={8} fill="white" stroke={customStroke || (isSelected ? '#4a90d9' : (styleStroke || '#e2e8f0'))} strokeWidth={isSelected ? 2.5 : customStrokeWidth} />
               <rect x={visualRect.x} y={visualRect.y} width={4} height={visualRect.height} rx={2} fill={color} />
               <text x={visualRect.x + 14} y={visualRect.y + 24} fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>

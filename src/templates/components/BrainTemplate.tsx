@@ -1,179 +1,245 @@
 import { useRef, type ReactElement } from 'react'
 import type { BrainData } from '../types'
-import { CurvedPath, wrapTextByWidth } from '../shared/primitives'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
-import { useTemplateStore } from '../store' // templateElementPositions and selectedIds imported from here
+import { useTemplateStore } from '../store'
+import { HEAD_PATH } from '../shared/headPath'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#e74c3c']
+/**
+ * 3 vertical shade columns per horizontal band.
+ * Each entry: [light (face side), base (center), dark (back of skull)]
+ */
+const BAND_SHADES: [string, string, string][] = [
+  ['#5c5aa0', '#2c2b64', '#1a1a3e'],   // MIGSO navy
+  ['#6699e8', '#3366cc', '#1a3d88'],   // MIGSO blue
+  ['#ff8870', '#ff5338', '#c02010'],   // MIGSO red
+  ['#f5e060', '#f2cb13', '#b89400'],   // MIGSO yellow
+  ['#90d8bc', '#5cc29d', '#289060'],   // MIGSO green
+  ['#f5a0b8', '#f27798', '#b83060'],   // MIGSO pink
+]
+
+/** Simple white SVG icons, drawn at (0,0) */
+function BandIcon({ index }: { index: number }): ReactElement {
+  const icons: ReactElement[] = [
+    // 0: Blueprint/document
+    <g key="i0" stroke="white" strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <rect x={-12} y={-16} width={24} height={32} rx={2} />
+      <line x1={-7} y1={-6} x2={7} y2={-6} />
+      <line x1={-7} y1={2} x2={7} y2={2} />
+      <line x1={-7} y1={10} x2={3} y2={10} />
+    </g>,
+    // 1: Boxes/product
+    <g key="i1" stroke="white" strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <rect x={-13} y={-4} width={12} height={18} rx={2} />
+      <rect x={2} y={-12} width={12} height={26} rx={2} />
+      <line x1={8} y1={-16} x2={8} y2={-12} />
+    </g>,
+    // 2: Briefcase
+    <g key="i2" stroke="white" strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <rect x={-16} y={-10} width={32} height={24} rx={3} />
+      <path d="M -7,-10 L -7,-15 Q -7,-17 -5,-17 L 5,-17 Q 7,-17 7,-15 L 7,-10" />
+      <line x1={-16} y1={2} x2={16} y2={2} />
+    </g>,
+    // 3: Gear + people
+    <g key="i3" stroke="white" strokeWidth={2} fill="none" strokeLinecap="round">
+      <circle cx={0} cy={1} r={6} />
+      <circle cx={-13} cy={-11} r={4} />
+      <circle cx={13} cy={-11} r={4} />
+      <path d="M -18,8 Q -13,2 -6,4" />
+      <path d="M 18,8 Q 13,2 6,4" />
+    </g>,
+    // 4: Lightbulb
+    <g key="i4" stroke="white" strokeWidth={2} fill="none" strokeLinecap="round">
+      <path d="M 0,-16 A 11,11 0 1,1 -7,5 L 7,5 Z" />
+      <line x1={-6} y1={10} x2={6} y2={10} />
+      <line x1={-4} y1={15} x2={4} y2={15} />
+    </g>,
+    // 5: Chart
+    <g key="i5" stroke="white" strokeWidth={2} fill="none" strokeLinecap="round">
+      <polyline points="-14,10 -7,-6 0,2 7,-10 14,0" />
+      <line x1={-16} y1={14} x2={16} y2={14} />
+    </g>,
+  ]
+  return icons[index % icons.length] ?? <g key="empty" />
+}
 
 export function BrainTemplate({ data }: { data: BrainData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
-  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds) // Access selectedIds
+  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
-  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
-  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
-  const templateElementPositions = useTemplateStore(s => s.templateElementPositions) // Access templateElementPositions
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, centerLabel, branches } = data
-  const W = 900
-  const H = 600
-  const cx = W / 2
-  const cy = H / 2
-  const centerR = 55
-  const branchW2 = 200
-  const branchH2 = 66
+  const W = 1000, H = 600
 
-  const branchPositions: { angle: number; bx: number; by: number }[] = [
-    { angle: -90, bx: cx - branchW2 / 2, by: 130 },
-    { angle: 90, bx: cx - branchW2 / 2, by: H - 130 - branchH2 },
-    { angle: 0, bx: cx + centerR + 50, by: cy - branchH2 / 2 },
-    { angle: 180, bx: cx - centerR - 50 - branchW2, by: cy - branchH2 / 2 },
+  // Head bounding box
+  const HX = 335
+  const HY = 32
+  const HW = 295
+  const HH = 520   // scale the 300x420 path to 520px tall → natural proportions
+
+  const branches = data.branches.length > 0 ? data.branches : [
+    { title: 'Idea', subtitle: 'Define the concept' },
+    { title: 'Planning', subtitle: 'Structure the roadmap' },
+    { title: 'Design', subtitle: 'Visual identity' },
+    { title: 'Marketing', subtitle: 'Go to market' },
   ]
+  const count = Math.min(branches.length, MIGSO_PALETTE.length)
+  const bandH = HH / count
 
-  const usedBranches = branches.slice(0, 4)
+  // ── Crop at the START of the last band (yellow) — everything below is hidden ──
+  const CROP_Y = HY + (count - 1) * bandH
 
-  // Refactor: Title Element
+  // 3 vertical column widths as fractions of HW
+  const COL_L = HW * 0.30   // left — lighter (face/nose side)
+  const COL_M = HW * 0.40   // center — base color + icon
+  // right = remaining — darker (back of skull)
+
+  const clipHead = 'brain1-head'
+  const clipCrop = 'brain1-crop'
+
   const titleId = 'title'
-  // Estimated default bbox for the title text element based on original coordinates
-  // x: W/2 for center, width=300, so (W/2 - 150). y: 42 is text baseline, fontSize 22, so 42-22 = 20 for top edge.
-  const defaultTitleBbox = { x: W / 2 - 150, y: 20, width: 300, height: 30 }
-  const customTitlePos = templateElementPositions[titleId]
-  const isTitleSelected = selectedIds.has(titleId)
-
+  const titleDefault = { x: 28, y: 14, width: 280, height: 42 }
+  const titlePos = positions[titleId]
   const titleBbox = {
-    x: customTitlePos?.x ?? defaultTitleBbox.x,
-    y: customTitlePos?.y ?? defaultTitleBbox.y,
-    width: customTitlePos?.width ?? defaultTitleBbox.width,
-    height: customTitlePos?.height ?? defaultTitleBbox.height
+    x: titlePos?.x ?? titleDefault.x, y: titlePos?.y ?? titleDefault.y,
+    width: titlePos?.width ?? titleDefault.width, height: titlePos?.height ?? titleDefault.height
   }
-  const scaleTitleX = titleBbox.width / defaultTitleBbox.width
-  const scaleTitleY = titleBbox.height / defaultTitleBbox.height
-
-  // Refactor: Center Circle Element
-  const centerCircleId = 'center-circle'
-  // Default bbox for the circle: centered at cx, cy with radius centerR
-  const defaultCenterCircleBbox = { x: cx - centerR, y: cy - centerR, width: 2 * centerR, height: 2 * centerR }
-  const customCenterCirclePos = templateElementPositions[centerCircleId]
-  const isCenterCircleSelected = selectedIds.has(centerCircleId)
-
-  const centerCircleBbox = {
-    x: customCenterCirclePos?.x ?? defaultCenterCircleBbox.x,
-    y: customCenterCirclePos?.y ?? defaultCenterCircleBbox.y,
-    width: customCenterCirclePos?.width ?? defaultCenterCircleBbox.width,
-    height: customCenterCirclePos?.height ?? defaultCenterCircleBbox.height
-  }
-  const scaleCenterCircleX = centerCircleBbox.width / defaultCenterCircleBbox.width
-  const scaleCenterCircleY = centerCircleBbox.height / defaultCenterCircleBbox.height
-
-  // Refactor: Center Label Element
-  const centerLabelId = 'center-label'
-  // Default bbox for the center label text: centered at cx, y slightly above cy
-  // Estimated for text at cx, cy-6: x: cx-100, y: (cy-6 - fontSize 13) approx. cy-19 for top edge. Let's use cy-20 for a clean bbox top.
-  const defaultCenterLabelBbox = { x: cx - 100, y: cy - 20, width: 200, height: 30 }
-  const customCenterLabelPos = templateElementPositions[centerLabelId]
-  const isCenterLabelSelected = selectedIds.has(centerLabelId)
-
-  const centerLabelBbox = {
-    x: customCenterLabelPos?.x ?? defaultCenterLabelBbox.x,
-    y: customCenterLabelPos?.y ?? defaultCenterLabelBbox.y,
-    width: customCenterLabelPos?.width ?? defaultCenterLabelBbox.width,
-    height: customCenterLabelPos?.height ?? defaultCenterLabelBbox.height
-  }
-  const scaleCenterLabelX = centerLabelBbox.width / defaultCenterLabelBbox.width
-  const scaleCenterLabelY = centerLabelBbox.height / defaultCenterLabelBbox.height
-
 
   return (
     <g ref={svgRef}>
-      {/* Interactive Title Element */}
-      {title && (
-        <g onMouseDown={e => startDrag(e, titleId, titleBbox)} style={{ cursor: 'pointer' }}>
-          <g transform={`translate(${titleBbox.x}, ${titleBbox.y}) scale(${scaleTitleX}, ${scaleTitleY}) translate(${-defaultTitleBbox.x}, ${-defaultTitleBbox.y})`}>
-            {/* Original static SVG elements go here EXACTLY as they were */}
-            <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
-              {title}
-            </text>
+      <defs>
+        {/* Head silhouette clip */}
+        <clipPath id={clipHead}>
+          <path
+            d={HEAD_PATH}
+            transform={`translate(${HX},${HY}) scale(${HW / 300},${HH / 420})`}
+          />
+        </clipPath>
+
+      </defs>
+
+      <rect x={0} y={0} width={W} height={H} fill="#ffffff" />
+
+      {/* Bands + separators clipped to head shape */}
+      <g clipPath={`url(#${clipHead})`}>
+
+          {/* 3 vertical columns per horizontal band */}
+          {branches.slice(0, count).map((_, i) => {
+            const shades = BAND_SHADES[i % BAND_SHADES.length] ?? BAND_SHADES[0]!
+            const bandY = HY + i * bandH
+            const h = bandH + 1
+            const x0 = HX - 2
+            const x1 = HX + COL_L
+            const x2 = HX + COL_L + COL_M
+            const customBase = tplColors[`band-${i}`]
+            const cL = customBase ?? shades[0]
+            const cM = customBase ?? shades[1]
+            const cD = customBase ?? shades[2]
+            return (
+              <g key={`band-${i}`}>
+                <rect x={x0} y={bandY} width={COL_L + 3} height={h} fill={cL} />
+                <rect x={x1} y={bandY} width={COL_M + 1} height={h} fill={cM} />
+                <rect x={x2} y={bandY} width={HW - COL_L - COL_M + 4} height={h} fill={cD} />
+              </g>
+            )
+          })}
+
+          {/* Horizontal separators between bands */}
+          {branches.slice(0, count - 1).map((_, i) => (
+            <line key={`hsep-${i}`}
+              x1={HX - 2} y1={HY + (i + 1) * bandH}
+              x2={HX + HW + 2} y2={HY + (i + 1) * bandH}
+              stroke="white" strokeWidth={2.5}
+            />
+          ))}
+
+          {/* Vertical separators between columns (per band) */}
+          {branches.slice(0, count).map((_, i) => {
+            const bandY = HY + i * bandH
+            return (
+              <g key={`vsep-${i}`}>
+                <line x1={HX + COL_L} y1={bandY} x2={HX + COL_L} y2={bandY + bandH}
+                  stroke="white" strokeWidth={1.5} opacity={0.65} />
+                <line x1={HX + COL_L + COL_M} y1={bandY} x2={HX + COL_L + COL_M} y2={bandY + bandH}
+                  stroke="white" strokeWidth={1.5} opacity={0.65} />
+              </g>
+            )
+          })}
+
+      </g>{/* end head clip */}
+
+      {/* ── White rectangle covers neck below CROP_Y — always on top ── */}
+      <rect x={HX - 20} y={CROP_Y} width={HW + 40} height={HH + 60} fill="white" />
+
+      {/* Icons drawn OVER the bands (outside nested clips, so no double-clip issue) */}
+      {branches.slice(0, count).map((_, i) => {
+        const bandCy = HY + i * bandH + bandH / 2
+        // Only show icon if it's within crop area
+        if (bandCy > CROP_Y) return null
+        const iconCX = HX + COL_L + COL_M / 2
+        return (
+          <g key={`icon-${i}`}
+            transform={`translate(${iconCX}, ${bandCy})`}
+            style={{ pointerEvents: 'none' }}>
+            <BandIcon index={i} />
           </g>
-          {isTitleSelected && renderHandles(titleBbox, titleId)}
-        </g>
-      )}
+        )
+      })}
 
-      {/* Interactive Center Circle Element */}
-      <g onMouseDown={e => startDrag(e, centerCircleId, centerCircleBbox)} style={{ cursor: 'pointer' }}>
-        <g transform={`translate(${centerCircleBbox.x}, ${centerCircleBbox.y}) scale(${scaleCenterCircleX}, ${scaleCenterCircleY}) translate(${-defaultCenterCircleBbox.x}, ${-defaultCenterCircleBbox.y})`}>
-          {/* Original static SVG elements go here EXACTLY as they were */}
-          <circle cx={cx} cy={cy} r={centerR} fill="#1a1a2e" />
-        </g>
-        {isCenterCircleSelected && renderHandles(centerCircleBbox, centerCircleId)}
+      {/* Title */}
+      <g onMouseDown={e => startDrag(e, titleId, titleBbox)}
+        transform={getTransform(titleId, titleBbox)} style={{ cursor: 'pointer' }}>
+        <text x={titleBbox.x} y={titleBbox.y + 30}
+          fontFamily="Arial, sans-serif" fontSize={26} fontWeight={800} fill={MIGSO_PALETTE[0]}>
+          {data.title || 'Brain Template'}
+        </text>
+        {selectedIds.has(titleId) && renderHandles(titleBbox, titleId)}
       </g>
 
-      {/* Interactive Center Label Element */}
-      <g onMouseDown={e => startDrag(e, centerLabelId, centerLabelBbox)} style={{ cursor: 'pointer' }}>
-        <g transform={`translate(${centerLabelBbox.x}, ${centerLabelBbox.y}) scale(${scaleCenterLabelX}, ${scaleCenterLabelY}) translate(${-defaultCenterLabelBbox.x}, ${-defaultCenterLabelBbox.y})`}>
-          {/* Original static SVG elements go here EXACTLY as they were */}
-          <text x={cx} y={cy - 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
-            {centerLabel.length > 14 ? centerLabel.slice(0, 12) + '...' : centerLabel}
-          </text>
-        </g>
-        {isCenterLabelSelected && renderHandles(centerLabelBbox, centerLabelId)}
-      </g>
-
-      {usedBranches.map((branch, i) => {
-        const elementId = `branch-${i}`
-        const pos = branchPositions[i % branchPositions.length]! // Original static position for the branch card
-
-        // Default logical bounding box for the branch card (original size and position)
-        const defaultBranchBbox = { x: pos.bx, y: pos.by, width: branchW2, height: branchH2 }
-        
-        const customBranchPos = templateElementPositions[elementId]
-        const isBranchSelected = selectedIds.has(elementId)
-
-        // Current interactive bounding box, using custom position if available, otherwise default
-        const branchBbox = { 
-          x: customBranchPos?.x ?? defaultBranchBbox.x, 
-          y: customBranchPos?.y ?? defaultBranchBbox.y, 
-          width: customBranchPos?.width ?? defaultBranchBbox.width, 
-          height: customBranchPos?.height ?? defaultBranchBbox.height 
+      {/* Callouts alternating L/R */}
+      {branches.slice(0, count).map((branch, i) => {
+        const id = `callout-${i}`
+        const bandCy = HY + i * bandH + bandH / 2
+        // Don't render callout if its band is fully cropped
+        if (HY + i * bandH >= CROP_Y) return null
+        const isLeft = i % 2 === 0
+        const cW = 260, cH = 64
+        const cDefaultX = isLeft ? 18 : HX + HW + 36
+        const pos = positions[id]
+        const bbox = {
+          x: pos?.x ?? cDefaultX,
+          y: pos?.y ?? Math.min(bandCy - cH / 2, CROP_Y - cH),
+          width: pos?.width ?? cW, height: pos?.height ?? cH
         }
-        
-        // Scale factors for the content inside the transformed group
-        const scaleBranchX = branchBbox.width / defaultBranchBbox.width
-        const scaleBranchY = branchBbox.height / defaultBranchBbox.height
-
-        // Midpoints calculated from the *current* interactive branchBbox for the CurvedPath
-        const branchMidX = branchBbox.x + branchBbox.width / 2
-        const branchMidY = branchBbox.y + branchBbox.height / 2
-        
-        // Edge points remain connected to the (untransformed) center circle, assuming center circle itself might be moved but not scaled by this branch's transform
-        const edgeX = cx + centerR * Math.cos(pos.angle * Math.PI / 180)
-        const edgeY = cy + centerR * Math.sin(pos.angle * Math.PI / 180)
-
-        const color = tplColors[elementId] ?? branch.color ?? PALETTE[i % PALETTE.length]!
+        const isSel = selectedIds.has(id)
+        const shades = BAND_SHADES[i % BAND_SHADES.length] ?? BAND_SHADES[0]!
+        const color = tplColors[`band-${i}`] ?? shades[1]
+        const connX = isLeft ? HX : HX + HW
+        const connStartX = isLeft ? bbox.x + bbox.width : bbox.x
 
         return (
-          <g key={i}>
-            {/* CurvedPath connects to the current position of the branch card. It is not an individually draggable element here. */}
-            <CurvedPath points={[{ x: edgeX, y: edgeY }, { x: branchMidX, y: branchMidY }]} color={color} strokeWidth={2.5} />
-
-            {/* Interactive Group for the Branch Card (rect and text elements) */}
-            <g onMouseDown={e => startDrag(e, elementId, branchBbox)} style={{ cursor: 'pointer' }}>
-              <g transform={`translate(${branchBbox.x}, ${branchBbox.y}) scale(${scaleBranchX}, ${scaleBranchY}) translate(${-defaultBranchBbox.x}, ${-defaultBranchBbox.y})`}>
-                {/* Original static SVG elements of the branch card go here EXACTLY as they were */}
-                {/* x, y, width, height for rect and x, y for text are using their original, untransformed coordinates */}
-                <rect x={pos.bx} y={pos.by} width={branchW2} height={branchH2} rx={10} fill={color} opacity={isBranchSelected ? 0.25 : 0.15} stroke={isBranchSelected ? '#4a90d9' : color} strokeWidth={isBranchSelected ? 2.5 : 2} strokeDasharray={isBranchSelected ? '4 2' : undefined} />
-                <text x={pos.bx + branchW2 / 2} y={pos.by + branchH2 / 2 - 7} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill={color}>
-                  {branch.title}
-                </text>
-                {branch.subtitle && (
-                  <text x={pos.bx + branchW2 / 2} y={pos.by + branchH2 / 2 + 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#555">
-                    {/* wrapTextByWidth should use the original width for text flow calculation, as font size scales implicitly with the group's scale */}
-                    {wrapTextByWidth(branch.subtitle, Math.max(15, Math.floor(branchW2 / 6.5))).join(' ')}
-                  </text>
-                )}
-              </g>
-              {isBranchSelected && renderHandles(branchBbox, elementId)}
+          <g key={id}>
+            <line x1={connStartX} y1={bbox.y + bbox.height / 2}
+              x2={connX} y2={Math.min(bandCy, CROP_Y - 2)}
+              stroke={color} strokeWidth={1.5} strokeDasharray="4 3" />
+            <circle cx={connX} cy={Math.min(bandCy, CROP_Y - 2)} r={4} fill={color} />
+            <g onMouseDown={e => startDrag(e, id, bbox)}
+              transform={getTransform(id, bbox)} style={{ cursor: 'pointer' }}>
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6}
+                fill="white" stroke={color} strokeWidth={2}
+                filter="drop-shadow(0 2px 6px rgba(0,0,0,0.10))" />
+              <rect x={isLeft ? bbox.x : bbox.x + bbox.width - 5} y={bbox.y}
+                width={5} height={bbox.height} rx={3} fill={color} />
+              <text x={isLeft ? bbox.x + 14 : bbox.x + 10} y={bbox.y + 22}
+                fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill={MIGSO_PALETTE[0]}>
+                {branch.title}
+              </text>
+              <text x={isLeft ? bbox.x + 14 : bbox.x + 10} y={bbox.y + 44}
+                fontFamily="Arial, sans-serif" fontSize={11} fill="#555">
+                {branch.subtitle ?? `Step ${i + 1}`}
+              </text>
+              {isSel && renderHandles(bbox, id)}
             </g>
           </g>
         )

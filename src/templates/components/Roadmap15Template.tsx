@@ -86,7 +86,7 @@ export function Roadmap15Template({ data }: { data: RoadmapData }): ReactElement
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             <text x={r.x} y={r.y + 30} fontFamily="Arial, sans-serif" fontSize={36} fontWeight={800} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
               {title}
             </text>
@@ -101,7 +101,7 @@ export function Roadmap15Template({ data }: { data: RoadmapData }): ReactElement
         const stroke = tplStrokeColors['track-line'] ?? '#ccc'
         const sW = tplStrokeWidths['track-line'] ?? 2
         return (
-          <g onMouseDown={e => startDrag(e, 'track-line', tr)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="track-line" onMouseDown={e => startDrag(e, 'track-line', tr)} transform={getTransform('track-line', tr)} style={{ cursor: 'pointer' }}>
             <line x1={tr.x} y1={tr.y} x2={tr.x + tr.width} y2={tr.y} stroke={stroke} strokeWidth={sW} strokeDasharray="6 3" />
             {selectedIds.has('track-line') && renderHandles(tr, 'track-line')}
           </g>
@@ -112,7 +112,7 @@ export function Roadmap15Template({ data }: { data: RoadmapData }): ReactElement
         const sr = rects.get('start-label')!
         const fill = tplColors['start-label'] ?? '#888'
         return (
-          <g onMouseDown={e => startDrag(e, 'start-label', sr)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="start-label" onMouseDown={e => startDrag(e, 'start-label', sr)} transform={getTransform('start-label', sr)} style={{ cursor: 'pointer' }}>
             <text x={sr.x + sr.width / 2} y={sr.y + sr.height} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill={fill}>{startLabel}</text>
             {selectedIds.has('start-label') && renderHandles(sr, 'start-label')}
           </g>
@@ -123,7 +123,7 @@ export function Roadmap15Template({ data }: { data: RoadmapData }): ReactElement
         const fr = rects.get('finish-label')!
         const fill = tplColors['finish-label'] ?? '#888'
         return (
-          <g onMouseDown={e => startDrag(e, 'finish-label', fr)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="finish-label" onMouseDown={e => startDrag(e, 'finish-label', fr)} transform={getTransform('finish-label', fr)} style={{ cursor: 'pointer' }}>
             <text x={fr.x + fr.width / 2} y={fr.y + fr.height} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill={fill}>{finishLabel}</text>
             {selectedIds.has('finish-label') && renderHandles(fr, 'finish-label')}
           </g>
@@ -151,11 +151,11 @@ export function Roadmap15Template({ data }: { data: RoadmapData }): ReactElement
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, cid, cr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, cid, cr)} transform={getTransform(cid, cr)} style={{ cursor: 'pointer' }}>
               <line x1={cr.x + cr.width / 2} y1={cr.y + cr.height} x2={cr.x + cr.width / 2} y2={cr.y} stroke={cStroke} strokeWidth={cSW} opacity={0.5} />
               {isCSel && renderHandles(cr, cid)}
             </g>
-            <g onMouseDown={e => startDrag(e, bid, br)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, bid, br)} transform={getTransform(bid, br)} style={{ cursor: 'pointer' }}>
               <rect x={br.x} y={br.y} width={br.width} height={br.height} rx={12} fill="white" stroke={customStroke || (isSel ? '#4a90d9' : (styleStroke || '#e0e0e0'))} strokeWidth={isSel ? 2.5 : customStrokeWidth} />
               <rect x={br.x} y={br.y} width={br.width} height={6} rx={3} fill={color} opacity={0.15} />
               <rect x={br.x} y={br.y} width={br.width * progress} height={6} rx={3} fill={color} />

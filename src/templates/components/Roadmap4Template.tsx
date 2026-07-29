@@ -139,7 +139,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
     <g ref={svgRef}>
       {/* Header Title */}
       {title && (
-        <g onMouseDown={e => startDrag(e, 'main-title', titleR)} style={{ cursor: 'pointer' }}>
+        <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', titleR)} transform={getTransform('main-title', titleR)} style={{ cursor: 'pointer' }}>
           <text
             x={W / 2}
             y={42}
@@ -157,13 +157,13 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
       {/* LAYER 1: RIBBON BODIES (Underneath layer) */}
       {/* Step 1 Body: Teal horizontal bar */}
-      <g onMouseDown={e => startDrag(e, 'step-1-body', s1bR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-1-body" onMouseDown={e => startDrag(e, 'step-1-body', s1bR)} transform={getTransform('step-1-body', s1bR)} style={{ cursor: 'pointer' }}>
         <rect x={s1bR.x} y={s1bR.y} width={s1bR.width} height={s1bR.height} fill={c1} />
         {selectedIds.has('step-1-body') && renderHandles(s1bR, 'step-1-body')}
       </g>
 
       {/* Step 2 Body: Yellow start bar starting UNDER Teal arrow head (x=480), U-turn right to y=380 going left to x=550 */}
-      <g onMouseDown={e => startDrag(e, 'step-2-body', s2bR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-2-body" onMouseDown={e => startDrag(e, 'step-2-body', s2bR)} transform={getTransform('step-2-body', s2bR)} style={{ cursor: 'pointer' }}>
         <path
           d={`M ${s2bR.x} ${s2bR.y + s2bR.height} L ${s2bR.x + s2bR.width - s2bR.height / 2} ${s2bR.y + s2bR.height} A ${s2bR.height / 2} ${s2bR.height / 2} 0 0 0 ${s2bR.x + s2bR.width - s2bR.height / 2} ${s2bR.y} L ${s2bR.x + 70} ${s2bR.y}`}
           fill="none"
@@ -176,7 +176,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
       </g>
 
       {/* Step 3 Body: Red start bar starting UNDER Yellow arrow head (x=545), U-turn left to y=285 going right to x=470 */}
-      <g onMouseDown={e => startDrag(e, 'step-3-body', s3bR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-3-body" onMouseDown={e => startDrag(e, 'step-3-body', s3bR)} transform={getTransform('step-3-body', s3bR)} style={{ cursor: 'pointer' }}>
         <path
           d={`M ${s3bR.x + s3bR.width} ${s3bR.y + s3bR.height} L ${s3bR.x + s3bR.height / 2} ${s3bR.y + s3bR.height} A ${s3bR.height / 2} ${s3bR.height / 2} 0 0 1 ${s3bR.x + s3bR.height / 2} ${s3bR.y} L ${s3bR.x + s3bR.width - 75} ${s3bR.y}`}
           fill="none"
@@ -189,7 +189,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
       </g>
 
       {/* Step 4 Body: Blue start bar starting UNDER Red arrow head (x=475), U-turn right to y=190 going left to x=550 */}
-      <g onMouseDown={e => startDrag(e, 'step-4-body', s4bR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-4-body" onMouseDown={e => startDrag(e, 'step-4-body', s4bR)} transform={getTransform('step-4-body', s4bR)} style={{ cursor: 'pointer' }}>
         <path
           d={`M ${s4bR.x} ${s4bR.y + s4bR.height} L ${s4bR.x + s4bR.width - s4bR.height / 2} ${s4bR.y + s4bR.height} A ${s4bR.height / 2} ${s4bR.height / 2} 0 0 0 ${s4bR.x + s4bR.width - s4bR.height / 2} ${s4bR.y} L ${s4bR.x + 75} ${s4bR.y}`}
           fill="none"
@@ -202,7 +202,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
       </g>
 
       {/* Step 5 Body: Navy start bar starting UNDER Blue arrow head (x=545), U-turn left to y=100 going right to x=770 */}
-      <g onMouseDown={e => startDrag(e, 'step-5-body', s5bR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-5-body" onMouseDown={e => startDrag(e, 'step-5-body', s5bR)} transform={getTransform('step-5-body', s5bR)} style={{ cursor: 'pointer' }}>
         <path
           d={`M ${s5bR.x + 200} ${s5bR.y + s5bR.height} L ${s5bR.x + s5bR.height / 2} ${s5bR.y + s5bR.height} A ${s5bR.height / 2} ${s5bR.height / 2} 0 0 1 ${s5bR.x + s5bR.height / 2} ${s5bR.y} L ${s5bR.x + s5bR.width} ${s5bR.y}`}
           fill="none"
@@ -216,57 +216,57 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
       {/* LAYER 2: ARROW HEADS (Triangles sitting ON TOP of the next step's body) */}
       {/* Step 1 Arrow Head (Teal pointing right) -> base x=470, tip x=510 completely covers Yellow start at x=480 */}
-      <g onMouseDown={e => startDrag(e, 'step-1-arrow', s1aR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-1-arrow" onMouseDown={e => startDrag(e, 'step-1-arrow', s1aR)} transform={getTransform('step-1-arrow', s1aR)} style={{ cursor: 'pointer' }}>
         <path d={`M ${s1aR.x} ${s1aR.y} L ${s1aR.x} ${s1aR.y + s1aR.height} L ${s1aR.x + s1aR.width} ${s1aR.y + s1aR.height / 2} Z`} fill={c1} />
         {selectedIds.has('step-1-arrow') && renderHandles(s1aR, 'step-1-arrow')}
       </g>
 
       {/* Step 2 Arrow Head (Yellow pointing left) -> base x=555, tip x=515 completely covers Red start at x=545 */}
-      <g onMouseDown={e => startDrag(e, 'step-2-arrow', s2aR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-2-arrow" onMouseDown={e => startDrag(e, 'step-2-arrow', s2aR)} transform={getTransform('step-2-arrow', s2aR)} style={{ cursor: 'pointer' }}>
         <path d={`M ${s2aR.x + s2aR.width} ${s2aR.y} L ${s2aR.x + s2aR.width} ${s2aR.y + s2aR.height} L ${s2aR.x} ${s2aR.y + s2aR.height / 2} Z`} fill={c2} />
         {selectedIds.has('step-2-arrow') && renderHandles(s2aR, 'step-2-arrow')}
       </g>
 
       {/* Step 3 Arrow Head (Red pointing right) -> base x=465, tip x=505 completely covers Blue start at x=475 */}
-      <g onMouseDown={e => startDrag(e, 'step-3-arrow', s3aR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-3-arrow" onMouseDown={e => startDrag(e, 'step-3-arrow', s3aR)} transform={getTransform('step-3-arrow', s3aR)} style={{ cursor: 'pointer' }}>
         <path d={`M ${s3aR.x} ${s3aR.y} L ${s3aR.x} ${s3aR.y + s3aR.height} L ${s3aR.x + s3aR.width} ${s3aR.y + s3aR.height / 2} Z`} fill={c3} />
         {selectedIds.has('step-3-arrow') && renderHandles(s3aR, 'step-3-arrow')}
       </g>
 
       {/* Step 4 Arrow Head (Blue pointing left) -> base x=555, tip x=515 completely covers Navy start at x=545 */}
-      <g onMouseDown={e => startDrag(e, 'step-4-arrow', s4aR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-4-arrow" onMouseDown={e => startDrag(e, 'step-4-arrow', s4aR)} transform={getTransform('step-4-arrow', s4aR)} style={{ cursor: 'pointer' }}>
         <path d={`M ${s4aR.x + s4aR.width} ${s4aR.y} L ${s4aR.x + s4aR.width} ${s4aR.y + s4aR.height} L ${s4aR.x} ${s4aR.y + s4aR.height / 2} Z`} fill={c4} />
         {selectedIds.has('step-4-arrow') && renderHandles(s4aR, 'step-4-arrow')}
       </g>
 
       {/* Step 5 Arrow Head (Navy pointing right) */}
-      <g onMouseDown={e => startDrag(e, 'step-5-arrow', s5aR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-5-arrow" onMouseDown={e => startDrag(e, 'step-5-arrow', s5aR)} transform={getTransform('step-5-arrow', s5aR)} style={{ cursor: 'pointer' }}>
         <path d={`M ${s5aR.x} ${s5aR.y} L ${s5aR.x} ${s5aR.y + s5aR.height} L ${s5aR.x + s5aR.width} ${s5aR.y + s5aR.height / 2} Z`} fill={c5} />
         {selectedIds.has('step-5-arrow') && renderHandles(s5aR, 'step-5-arrow')}
       </g>
 
       {/* LAYER 3: INTERACTIVE STEP TEXT LABELS */}
-      <g onMouseDown={e => startDrag(e, 'step-1', step1R)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-1" onMouseDown={e => startDrag(e, 'step-1', step1R)} transform={getTransform('step-1', step1R)} style={{ cursor: 'pointer' }}>
         <text x={step1R.x + step1R.width / 2} y={step1R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[0]}</text>
         {selectedIds.has('step-1') && renderHandles(step1R, 'step-1')}
       </g>
 
-      <g onMouseDown={e => startDrag(e, 'step-2', step2R)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-2" onMouseDown={e => startDrag(e, 'step-2', step2R)} transform={getTransform('step-2', step2R)} style={{ cursor: 'pointer' }}>
         <text x={step2R.x + step2R.width / 2} y={step2R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[1]}</text>
         {selectedIds.has('step-2') && renderHandles(step2R, 'step-2')}
       </g>
 
-      <g onMouseDown={e => startDrag(e, 'step-3', step3R)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-3" onMouseDown={e => startDrag(e, 'step-3', step3R)} transform={getTransform('step-3', step3R)} style={{ cursor: 'pointer' }}>
         <text x={step3R.x + step3R.width / 2} y={step3R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[2]}</text>
         {selectedIds.has('step-3') && renderHandles(step3R, 'step-3')}
       </g>
 
-      <g onMouseDown={e => startDrag(e, 'step-4', step4R)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-4" onMouseDown={e => startDrag(e, 'step-4', step4R)} transform={getTransform('step-4', step4R)} style={{ cursor: 'pointer' }}>
         <text x={step4R.x + step4R.width / 2} y={step4R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[3]}</text>
         {selectedIds.has('step-4') && renderHandles(step4R, 'step-4')}
       </g>
 
-      <g onMouseDown={e => startDrag(e, 'step-5', step5R)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="step-5" onMouseDown={e => startDrag(e, 'step-5', step5R)} transform={getTransform('step-5', step5R)} style={{ cursor: 'pointer' }}>
         <text x={step5R.x + step5R.width / 2} y={step5R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[4]}</text>
         {selectedIds.has('step-5') && renderHandles(step5R, 'step-5')}
       </g>
@@ -281,7 +281,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         const msColor = (ms as { color?: string }).color || "#23255a"
 
         return (
-          <g key={id} onMouseDown={e => startDrag(e, id, msR)} style={{ cursor: 'pointer' }}>
+          <g key={id} onMouseDown={e => startDrag(e, id, msR)} transform={getTransform(id, msR)} style={{ cursor: 'pointer' }}>
             <text x={textX} y={msR.y + 22} textAnchor={textAnchor} fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill={msColor}>
               {ms.title}
             </text>

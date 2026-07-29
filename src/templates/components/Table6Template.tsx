@@ -52,7 +52,7 @@ export function Table6Template({ data }: { data: TableData }): ReactElement {
 
         return (
           <g key={`r-${ri}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={tableX} y={rowY} width={tableW} height={rowH} fill={isSelected ? '#dbeafe' : isEven ? 'white' : BLUE_ACCENT} />
               <rect x={tableX} y={rowY} width={labelW} height={rowH} fill="#eff6ff" />
 

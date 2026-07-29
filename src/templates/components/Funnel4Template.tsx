@@ -56,7 +56,7 @@ export function Funnel4Template({ data }: { data: FunnelData }): ReactElement {
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <path
                 d={`M ${cx - topHW} ${y} L ${cx + topHW} ${y} L ${cx + botHW} ${by} L ${cx - botHW} ${by} Z`}
                 fill={tplColors[elementId] ?? color}
@@ -95,7 +95,7 @@ export function Funnel4Template({ data }: { data: FunnelData }): ReactElement {
 
         return (
           <g key={topCount + i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <path
                 d={`M ${bx - startHW} ${y} L ${bx + startHW} ${y} L ${bx + endHW} ${by} L ${bx - endHW} ${by} Z`}
                 fill={tplColors[elementId] ?? color}

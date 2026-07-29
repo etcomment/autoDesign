@@ -148,7 +148,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
   return (
     <g ref={svgRef}>
       {title && (
-        <g onMouseDown={e => startDrag(e, 'main-title', titleR)} style={{ cursor: 'pointer' }}>
+        <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', titleR)} transform={getTransform('main-title', titleR)} style={{ cursor: 'pointer' }}>
           <text
             x={W / 2}
             y={48}
@@ -164,7 +164,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
         </g>
       )}
 
-      <g onMouseDown={e => startDrag(e, 'timeline-line', timelineLineR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="timeline-line" onMouseDown={e => startDrag(e, 'timeline-line', timelineLineR)} transform={getTransform('timeline-line', timelineLineR)} style={{ cursor: 'pointer' }}>
         <line x1={timelineLineR.x} y1={timelineY2} x2={progressLineX} y2={timelineY2} stroke="#ff4a2b" strokeWidth={5} />
         <line x1={progressLineX} y1={timelineY2} x2={timelineLineR.x + timelineLineR.width} y2={timelineY2} stroke="#e0e0e0" strokeWidth={5} />
         {selectedIds.has('timeline-line') && renderHandles(timelineLineR, 'timeline-line')}
@@ -192,14 +192,18 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, `conn-${i}`, connR)} style={{ cursor: 'pointer' }}>
-              <g transform={`translate(${connR.x - connMinX}, ${connR.y - connMinY}) scale(${connScaleX}, ${connScaleY})`}>
-                <line x1={defaultCx} y1={defaultCy - 12} x2={defaultLineTopX} y2={defaultLineTopY} stroke="#cccccc" strokeWidth={3} />
-              </g>
-              {selectedIds.has(`conn-${i}`) && renderHandles(connR, `conn-${i}`)}
+            <g data-element-id={`conn-${i}`}>
+              <line 
+                x1={dotR.x + dotR.width / 2} 
+                y1={dotR.y} 
+                x2={txtR.x + txtR.width / 2} 
+                y2={txtR.y + txtR.height + 5} 
+                stroke="#cccccc" 
+                strokeWidth={3} 
+              />
             </g>
 
-            <g onMouseDown={e => startDrag(e, `text-${i}`, txtR)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={`text-${i}`} onMouseDown={e => startDrag(e, `text-${i}`, txtR)} transform={getTransform(`text-${i}`, txtR)} style={{ cursor: 'pointer' }}>
               {ms ? (
                 <>
                   <text x={txtR.x} y={txtR.y + 18} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#222">{ms.title}</text>
@@ -217,12 +221,12 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
               {selectedIds.has(`text-${i}`) && renderHandles(txtR, `text-${i}`)}
             </g>
 
-            <g onMouseDown={e => startDrag(e, `dot-${i}`, dotR)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={`dot-${i}`} onMouseDown={e => startDrag(e, `dot-${i}`, dotR)} transform={getTransform(`dot-${i}`, dotR)} style={{ cursor: 'pointer' }}>
               <circle cx={dotR.x + 10} cy={dotR.y + 10} r={12} fill={tplColors[`dot-${i}`] || dotColor} />
               {selectedIds.has(`dot-${i}`) && renderHandles(dotR, `dot-${i}`)}
             </g>
 
-            <g onMouseDown={e => startDrag(e, `year-${i}`, yrR)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={`year-${i}`} onMouseDown={e => startDrag(e, `year-${i}`, yrR)} transform={getTransform(`year-${i}`, yrR)} style={{ cursor: 'pointer' }}>
               <text
                 x={yrR.x + yrR.width / 2}
                 y={yrR.y + 20}
@@ -244,7 +248,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
         const r = getR(`phase-${i}`)
         const fill = tplColors[`phase-${i}`] || phase.color
         return (
-          <g key={`phase-${i}`} onMouseDown={e => startDrag(e, `phase-${i}`, r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id={`phase-${i}`} key={`phase-${i}`} onMouseDown={e => startDrag(e, `phase-${i}`, r)} transform={getTransform(`phase-${i}`, r)} style={{ cursor: 'pointer' }}>
             <path d={chevronPath(r, i, phases.length)} fill={fill} />
             <text
               x={r.x + r.width / 2}

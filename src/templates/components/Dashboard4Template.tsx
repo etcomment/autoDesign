@@ -68,7 +68,7 @@ export function Dashboard4Template({ data }: { data: DashboardData }): ReactElem
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <g transform={`translate(${cx}, ${cy})`}>
                 {isSelected && (
                   <rect x={-GAUGE_R - 5} y={-GAUGE_R - 15} width={GAUGE_R * 2 + 10} height={GAUGE_R + 75} rx={8} fill="none" stroke="#4a90d9" strokeWidth={2} strokeDasharray="6 3" />

@@ -59,7 +59,7 @@ export function Strategy7Template({ data }: { data: StrategyData }): ReactElemen
 
               return (
                 <g key={`ri-${ri}-${ii}`}>
-                  <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+                  <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
                     <rect x={itemX - itemW / 2} y={itemY} width={itemW} height={itemH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : itemColor} strokeWidth={isSelected ? 2.5 : 1.5} />
                     <text x={itemX} y={itemY + 20} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill={itemColor}>
                       {item.title}

@@ -13,6 +13,7 @@ export function Process1Template({ data }: { data: ProcessData }): ReactElement 
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const { title, steps, outcome } = data
   const W = 960
@@ -38,31 +39,48 @@ export function Process1Template({ data }: { data: ProcessData }): ReactElement 
         const color = tplColors[elementId] ?? PALETTE[i % PALETTE.length]!
         const isSelected = selectedIds.has(elementId)
         const sx = startX + i * (stepW + gap)
-        const visualRect = { x: sx, y: stepY, width: stepW, height: stepH }
+        const customPos = templateElementPositions[elementId]
+        const visualRect = {
+          x: customPos?.x ?? sx,
+          y: customPos?.y ?? stepY,
+          width: customPos?.width ?? stepW,
+          height: customPos?.height ?? stepH
+        }
 
         return (
           <g key={`step-${i}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={sx} y={stepY} width={stepW} height={stepH} rx={12} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} />
-              <CircleBadge cx={sx + stepW / 2} cy={stepY + 24} r={16} fill={color} label={String(step.number)} fontSize={11} />
-              <text x={sx + stepW / 2} y={stepY + 58} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#333">
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
+              <rect x={visualRect.x} y={visualRect.y} width={visualRect.width} height={visualRect.height} rx={12} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} />
+              <CircleBadge cx={visualRect.x + visualRect.width / 2} cy={visualRect.y + 24} r={16} fill={color} label={String(step.number)} fontSize={11} />
+              <text x={visualRect.x + visualRect.width / 2} y={visualRect.y + 58} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#333">
                 {step.title}
               </text>
               {step.subtitle && (
-                <text x={sx + stepW / 2} y={stepY + stepH + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#888">
+                <text x={visualRect.x + visualRect.width / 2} y={visualRect.y + visualRect.height + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#888">
                   {step.subtitle.length > 22 ? step.subtitle.slice(0, 20) + '..' : step.subtitle}
                 </text>
               )}
               {isSelected && renderHandles(visualRect, elementId)}
             </g>
 
-            {i < useItems.length - 1 && (
-              <Arrow
-                from={{ x: sx + stepW + 2, y: stepY + stepH / 2 }}
-                to={{ x: sx + stepW + gap - 2, y: stepY + stepH / 2 }}
-                color={color}
-              />
-            )}
+            {i < useItems.length - 1 && (() => {
+              const nextId = `step-${i + 1}`
+              const nextCustomPos = templateElementPositions[nextId]
+              const nextSx = startX + (i + 1) * (stepW + gap)
+              const nextVisualRect = {
+                x: nextCustomPos?.x ?? nextSx,
+                y: nextCustomPos?.y ?? stepY,
+                width: nextCustomPos?.width ?? stepW,
+                height: nextCustomPos?.height ?? stepH
+              }
+              return (
+                <Arrow
+                  from={{ x: visualRect.x + visualRect.width + 2, y: visualRect.y + visualRect.height / 2 }}
+                  to={{ x: nextVisualRect.x - 2, y: nextVisualRect.y + nextVisualRect.height / 2 }}
+                  color={color}
+                />
+              )
+            })()}
           </g>
         )
       })}

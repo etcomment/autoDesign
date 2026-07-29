@@ -64,7 +64,7 @@ export function ProductRoadmap5Template({ data }: { data: ProductRoadmap5Data })
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             {title.split('\n').map((line, i) => (
               <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
                 {line}
@@ -89,7 +89,7 @@ export function ProductRoadmap5Template({ data }: { data: ProductRoadmap5Data })
         const isSelected = selectedIds.has(qId)
 
         return (
-          <g key={`qb-${bi}`} onMouseDown={e => startDrag(e, qId, qRect)} style={{ cursor: 'pointer' }}>
+          <g key={`qb-${bi}`} onMouseDown={e => startDrag(e, qId, qRect)} transform={getTransform(qId, qRect)} style={{ cursor: 'pointer' }}>
             <rect x={qRect.x} y={qRect.y} width={qRect.width} height={qRect.height} rx={6} fill={qColor} opacity={0.12} stroke={qStroke} strokeWidth={qStrokeWidth} />
             <text x={qRect.x + qRect.width / 2} y={qRect.y + qRect.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill={qColor}>
               {qb.label}
@@ -103,7 +103,7 @@ export function ProductRoadmap5Template({ data }: { data: ProductRoadmap5Data })
         const tId = 'timeline'
         const tr = pos[tId] ?? { x: startX, y: timelineY - 4, width: (sorted.length - 1) * spacing, height: 8 }
         return (
-          <g onMouseDown={e => startDrag(e, tId, tr)} style={{ cursor: 'pointer' }}>
+          <g onMouseDown={e => startDrag(e, tId, tr)} transform={getTransform(tId, tr)} style={{ cursor: 'pointer' }}>
             <rect x={tr.x} y={tr.y - 4} width={tr.width} height={tr.height + 8} fill="transparent" />
             <line x1={tr.x} y1={tr.y + tr.height / 2} x2={tr.x + tr.width} y2={tr.y + tr.height / 2} stroke={tplStrokeColors[tId] ?? '#b0b8c0'} strokeWidth={tplStrokeWidths[tId] ?? 3} strokeLinecap="round" />
             {selectedIds.has(tId) && renderHandles(tr, tId)}
@@ -137,7 +137,7 @@ export function ProductRoadmap5Template({ data }: { data: ProductRoadmap5Data })
               const pr = pos[pId] ?? { x: cx - 10, y: timelineY - 10, width: 20, height: 20 }
               const pColor = tplColors[pId] ?? color
               return (
-                <g onMouseDown={e => startDrag(e, pId, pr)} style={{ cursor: 'pointer' }}>
+                <g onMouseDown={e => startDrag(e, pId, pr)} transform={getTransform(pId, pr)} style={{ cursor: 'pointer' }}>
                   <line x1={pr.x + pr.width / 2} y1={isAbove ? mRectY + mRectH : pr.y + pr.height / 2} x2={pr.x + pr.width / 2} y2={isAbove ? pr.y + pr.height / 2 - 8 : mRectY} stroke={pColor} strokeWidth={1.5} strokeDasharray="3 3" />
                   <circle cx={pr.x + pr.width / 2} cy={pr.y + pr.height / 2} r={Math.min(pr.width, pr.height) / 2} fill={pColor} />
                   <circle cx={pr.x + pr.width / 2} cy={pr.y + pr.height / 2} r={Math.min(pr.width, pr.height) / 4} fill="#fff" />
@@ -149,7 +149,7 @@ export function ProductRoadmap5Template({ data }: { data: ProductRoadmap5Data })
               )
             })()}
 
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={mRectX} y={mRectY} width={mRectW} height={mRectH} rx={8} fill="#fff" stroke={stroke} strokeWidth={strokeWidth} />
               <rect x={mRectX} y={mRectY} width={mRectW} height={28} rx={8} fill={color} />
               <rect x={mRectX} y={mRectY + 20} width={mRectW} height={8} fill={color} />

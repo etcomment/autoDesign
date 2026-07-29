@@ -77,7 +77,7 @@ export function FunnelTemplate({ data }: { data: FunnelData }): ReactElement {
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <path d={p.d} fill={color} opacity={0.82} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={1.5} />
 
               <text x={labelX} y={p.y + levelH / 2 + 5} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={600} fill="#1a202c">

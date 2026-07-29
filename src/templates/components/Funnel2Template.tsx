@@ -61,7 +61,7 @@ export function Funnel2Template({ data }: { data: FunnelData }): ReactElement {
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <path d={d} fill={color} opacity={0.82} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={1.5} />
               <text x={x + segmentW / 2} y={cx - 20} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={600} fill="#1a202c">
                 {level.title}

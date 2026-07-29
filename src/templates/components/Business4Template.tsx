@@ -134,7 +134,7 @@ export function Business4Template({ data }: { data: BusinessData }): ReactElemen
             )}
 
             <g
-              onMouseDown={e => startDrag(e, elementId, visualRect)}
+              data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)}
               style={{ cursor: 'pointer' }}
             >
               <rect

@@ -45,7 +45,7 @@ export function Agenda2Template({ data }: { data: AgendaData }): ReactElement {
         const scaleY = bbox.height / defaultBbox.height
 
         return (
-          <g onMouseDown={e => startDrag(e, elementId, bbox)} style={{ cursor: 'pointer' }}>
+          <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
             <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
               <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
                 {title}
@@ -76,7 +76,7 @@ export function Agenda2Template({ data }: { data: AgendaData }): ReactElement {
         const scaleY = bbox.height / defaultBbox.height
 
         return (
-          <g onMouseDown={e => startDrag(e, elementId, bbox)} style={{ cursor: 'pointer' }}>
+          <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
             <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
               <line x1={startX + circleR} y1={lineY} x2={startX + totalW - circleR} y2={lineY} stroke="#cbd5e0" strokeWidth={lineStrokeWidth} />
             </g>
@@ -120,7 +120,7 @@ export function Agenda2Template({ data }: { data: AgendaData }): ReactElement {
         const scaleY = bbox.height / defaultBbox.height
 
         return (
-          <g key={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} style={{ cursor: 'pointer' }}>
+          <g key={elementId} data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
             <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
               <circle cx={circleCenterX} cy={circleCenterY} r={circleR} fill={color} />
               <text x={circleCenterX} y={lineY + 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">

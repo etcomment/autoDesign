@@ -51,7 +51,7 @@ export function Dashboard3Template({ data }: { data: DashboardData }): ReactElem
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={startX} y={y + 2} width={BAR_W} height={BAR_H - 2} rx={6} fill="#edf2f7" />
               <rect x={startX} y={y + 2} width={isSelected ? BAR_W : fillW} height={BAR_H - 2} rx={6} fill={isSelected ? '#4a90d9' : color} opacity={isSelected ? 0.3 : 0.85} />
               {isSelected && (

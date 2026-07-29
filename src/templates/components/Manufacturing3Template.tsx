@@ -48,7 +48,7 @@ export function Manufacturing3Template({ data }: { data: ManufacturingData }): R
             {i < topStations.length - 1 && (
               <Arrow from={{ x: sx + boxW + 2, y: topY + boxH / 2 }} to={{ x: sx + boxW + 18, y: topY + boxH / 2 }} color={color} />
             )}
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={sx} y={topY} width={boxW} height={boxH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 1.5} />
               <g transform={`translate(${sx + boxW / 2 - 12}, ${topY + 8})`}>
                 <GearIcon size={24} color={color} />
@@ -74,7 +74,7 @@ export function Manufacturing3Template({ data }: { data: ManufacturingData }): R
             {i < bottomStations.length - 1 && (
               <Arrow from={{ x: sx + boxW + 2, y: bottomY + boxH / 2 }} to={{ x: sx + boxW + 18, y: bottomY + boxH / 2 }} color={color} />
             )}
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={sx} y={bottomY} width={boxW} height={boxH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 1.5} />
               <g transform={`translate(${sx + boxW / 2 - 12}, ${bottomY + 8})`}>
                 <GearIcon size={24} color={color} />

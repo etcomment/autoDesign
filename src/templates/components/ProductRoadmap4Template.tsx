@@ -51,7 +51,7 @@ export function ProductRoadmap4Template({ data }: { data: ProductRoadmap4Data })
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             {title.split('\n').map((line, i) => (
               <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
                 {line}
@@ -97,7 +97,7 @@ export function ProductRoadmap4Template({ data }: { data: ProductRoadmap4Data })
               const arrStroke = tplStrokeColors[arrId] ?? color
               const arrStrokeW = tplStrokeWidths[arrId] ?? 2
               return (
-                <g onMouseDown={e => startDrag(e, arrId, arrRect)} style={{ cursor: 'pointer' }}>
+                <g onMouseDown={e => startDrag(e, arrId, arrRect)} transform={getTransform(arrId, arrRect)} style={{ cursor: 'pointer' }}>
                   <rect x={arrRect.x} y={arrRect.y} width={arrRect.width} height={arrRect.height} fill="transparent" />
                   <line
                     x1={arrRect.x}
@@ -118,7 +118,7 @@ export function ProductRoadmap4Template({ data }: { data: ProductRoadmap4Data })
               )
             })()}
 
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <polygon
                 points={points}
                 fill={color}

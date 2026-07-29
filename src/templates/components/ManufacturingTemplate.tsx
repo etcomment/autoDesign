@@ -60,7 +60,7 @@ export function ManufacturingTemplate({ data }: { data: ManufacturingData }): Re
 
           return (
             <g key={i}>
-              <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+              <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
                 <polygon
                   points={`${dmx},${dy} ${dx + diamondW},${dmy} ${dmx},${dy + diamondH} ${dx},${dmy}`}
                   fill="#fff3e0"
@@ -86,7 +86,7 @@ export function ManufacturingTemplate({ data }: { data: ManufacturingData }): Re
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={bx} y={y} width={boxW} height={boxH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} />
               <g transform={`translate(${bx + boxW / 2 - 12}, ${y + 10})`}>
                 <GearIcon size={24} color={color} />

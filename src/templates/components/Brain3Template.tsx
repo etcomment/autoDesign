@@ -2,168 +2,146 @@ import { useRef, type ReactElement } from 'react'
 import type { BrainData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { HEAD_PATH } from '../shared/headPath'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c']
+const ZONE_COLORS = ['#23255a', '#2d62ed', '#ff4a2b', '#ffbe00']
 
 export function Brain3Template({ data }: { data: BrainData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const getElementInfo = (elementId: string, initialBbox: { x: number; y: number; width: number; height: number }) => {
-    const customPos = templateElementPositions[elementId]
-    const bbox = {
-      x: customPos?.x ?? initialBbox.x,
-      y: customPos?.y ?? initialBbox.y,
-      width: customPos?.width ?? initialBbox.width,
-      height: customPos?.height ?? initialBbox.height,
-    }
-    return { cx: bbox.x + bbox.width / 2, cy: bbox.y + bbox.height / 2, bbox }
+  const W = 1000, H = 600
+  const HX = 352, HY = 52, HW = 278, HH = 460
+
+  const clipId = 'brain3-clip'
+
+  const branches = data.branches.length > 0 ? data.branches : [
+    { title: 'Idea', subtitle: 'Define the concept' },
+    { title: 'Planning', subtitle: 'Structure the roadmap' },
+    { title: 'Design', subtitle: 'Visual identity' },
+    { title: 'Marketing', subtitle: 'Launch strategy' },
+  ]
+  const count = Math.min(branches.length, 4)
+
+  // 4 zones tile the full head: 2 columns × 2 rows
+  const zW = HW / 2
+  const zH = HH / 2
+  const zones = [
+    { id: 'zone-0', col: 0, row: 0 },
+    { id: 'zone-1', col: 1, row: 0 },
+    { id: 'zone-2', col: 0, row: 1 },
+    { id: 'zone-3', col: 1, row: 1 },
+  ]
+
+  // Callout anchors
+  const calloutCfg = [
+    { align: 'left',  dx: 18,           dy: HY + zH * 0.5, zi: 0 },
+    { align: 'right', dx: HX + HW + 38, dy: HY + zH * 0.5, zi: 1 },
+    { align: 'left',  dx: 18,           dy: HY + zH * 1.5, zi: 2 },
+    { align: 'right', dx: HX + HW + 38, dy: HY + zH * 1.5, zi: 3 },
+  ]
+
+  const titleId = 'title'
+  const titleDefault = { x: 30, y: 14, width: 300, height: 42 }
+  const titlePos = positions[titleId]
+  const titleBbox = {
+    x: titlePos?.x ?? titleDefault.x, y: titlePos?.y ?? titleDefault.y,
+    width: titlePos?.width ?? titleDefault.width, height: titlePos?.height ?? titleDefault.height
   }
-
-  const { title, centerLabel, branches } = data
-  const W = 900
-  const H = 600
-  const cx_initial = W / 2
-  const cy_initial = H / 2 + 20
-  const centerR = 44
-  const orbitR = 200
-  const nodeW = 130
-  const nodeH = 46
-  const count = Math.min(branches.length, 8)
-
-  // --- Calculations for Center Node ---
-  const elementId_center = 'center-node'
-  const defaultBbox_center = { x: cx_initial - centerR, y: cy_initial - centerR, width: 2 * centerR, height: 2 * centerR }
-
-  const { cx: current_center_cx, cy: current_center_cy, bbox: bbox_center } = getElementInfo(elementId_center, defaultBbox_center)
-  const isSelected_center = selectedIds.has(elementId_center)
-
-  const scaleX_center = bbox_center.width / defaultBbox_center.width
-  const scaleY_center = bbox_center.height / defaultBbox_center.height
-  // Effective radius for connection lines based on the scaled width of the bbox.
-  // This assumes the circle is scaled uniformly to fit within the new bbox's width for connection points.
-  const current_center_effective_r = bbox_center.width / 2;
-
-
-  // --- Pre-calculate Branch Node positions and properties for consistent access ---
-  const branchNodes = branches.slice(0, count).map((branch, i) => {
-    const elementId = `branch-${i}`
-    const color = tplColors[elementId] ?? branch.color ?? PALETTE[i % PALETTE.length]!
-
-    // Calculate initial position for defaultBbox based on original static layout
-    const angle = (i / count) * 2 * Math.PI - Math.PI / 2
-    const initial_nx = cx_initial + orbitR * Math.cos(angle)
-    const initial_ny = cy_initial + orbitR * Math.sin(angle)
-    const initial_boxX = initial_nx - nodeW / 2
-    const initial_boxY = initial_ny - nodeH / 2
-    const defaultBbox = { x: initial_boxX, y: initial_boxY, width: nodeW, height: nodeH }
-
-    // Get current position and center from store or default
-    const { cx: current_nx, cy: current_ny, bbox } = getElementInfo(elementId, defaultBbox)
-    const isSelected = selectedIds.has(elementId)
-
-    const scaleX = bbox.width / defaultBbox.width
-    const scaleY = bbox.height / defaultBbox.height
-
-    return {
-      elementId,
-      color,
-      isSelected,
-      defaultBbox,
-      bbox,
-      scaleX,
-      scaleY,
-      current_nx, // Current center X of this branch node
-      current_ny, // Current center Y of this branch node
-      initial_boxX, // Original X for inner rect/text positioning relative to defaultBbox origin
-      initial_boxY, // Original Y for inner rect/text positioning relative to defaultBbox origin
-      initial_nx,   // Original X for inner text positioning relative to defaultBbox origin
-      initial_ny,   // Original Y for inner text positioning relative to defaultBbox origin
-      branchTitle: branch.title, // Pass title for text content
-    }
-  })
 
   return (
     <g ref={svgRef}>
-      {/* Title element */}
-      {title && (
-        (() => {
-          const elementId = 'title'
-          // Estimate logical bounding box for the title's initial position
-          // Assuming a default width of 300 centered at W/2, and height of 40 centered at y=42 (adjusting for font size 22)
-          const defaultBbox = { x: W / 2 - 150, y: 20, width: 300, height: 40 }
-          
-          const { bbox } = getElementInfo(elementId, defaultBbox)
-          const isSelected = selectedIds.has(elementId)
+      <defs>
+        <clipPath id={clipId}>
+          <path
+            d={HEAD_PATH}
+            transform={`translate(${HX},${HY}) scale(${HW / 300},${HH / 420})`}
+          />
+        </clipPath>
+      </defs>
 
-          const scaleX = bbox.width / defaultBbox.width
-          const scaleY = bbox.height / defaultBbox.height
+      <rect x={0} y={0} width={W} height={H} fill="#f5f7fb" />
 
-          return (
-            <g onMouseDown={e => startDrag(e, elementId, bbox)} style={{ cursor: 'pointer' }}>
-              <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
-                <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
-                  {title}
-                </text>
-              </g>
-              {isSelected && renderHandles(bbox, elementId)}
-            </g>
-          )
-        })()
-      )}
+      {/* === 4 colored zones clipped to head shape — THEY ARE the silhouette === */}
+      {zones.slice(0, count).map((z, i) => {
+        const color = tplColors[z.id] ?? ZONE_COLORS[i]
+        return (
+          <rect
+            key={z.id}
+            x={HX + z.col * zW - 1}
+            y={HY + z.row * zH - 1}
+            width={zW + 2}
+            height={zH + 2}
+            fill={color}
+            clipPath={`url(#${clipId})`}
+          />
+        )
+      })}
 
-      {/* Center Node (Circle + Text) element */}
-      <g onMouseDown={e => startDrag(e, elementId_center, bbox_center)} style={{ cursor: 'pointer' }}>
-        <g transform={`translate(${bbox_center.x}, ${bbox_center.y}) scale(${scaleX_center}, ${scaleY_center}) translate(${-defaultBbox_center.x}, ${-defaultBbox_center.y})`}>
-          <circle cx={cx_initial} cy={cy_initial} r={centerR} fill="#1a1a2e" />
-          <text x={cx_initial} y={cy_initial + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
-            {centerLabel.length > 10 ? centerLabel.slice(0, 8) + '..' : centerLabel}
-          </text>
-        </g>
-        {isSelected_center && renderHandles(bbox_center, elementId_center)}
+      {/* Thin white grid lines */}
+      <line x1={HX + zW} y1={HY} x2={HX + zW} y2={HY + HH}
+        stroke="white" strokeWidth={2.5} clipPath={`url(#${clipId})`} />
+      <line x1={HX} y1={HY + zH} x2={HX + HW} y2={HY + zH}
+        stroke="white" strokeWidth={2.5} clipPath={`url(#${clipId})`} />
+
+      {/* Title */}
+      <g onMouseDown={e => startDrag(e, titleId, titleBbox)}
+        transform={getTransform(titleId, titleBbox)} style={{ cursor: 'pointer' }}>
+        <text x={titleBbox.x} y={titleBbox.y + 30}
+          fontFamily="Arial, sans-serif" fontSize={26} fontWeight={800} fill="#1a1a2e">
+          {data.title || 'Brain 3 Template'}
+        </text>
+        {selectedIds.has(titleId) && renderHandles(titleBbox, titleId)}
       </g>
 
-      {/* Branch Nodes and their dynamic connections to the Center Node */}
-      {branchNodes.map((node, i) => {
-        // Calculate connection line endpoints based on current positions of center and branch nodes
-        const dx = node.current_nx - current_center_cx
-        const dy = node.current_ny - current_center_cy
-        const dist = Math.sqrt(dx * dx + dy * dy)
-
-        // Point on the edge of the scaled center circle, connecting to the current branch node center
-        const edgeX = current_center_cx + (dx / dist) * current_center_effective_r
-        const edgeY = current_center_cy + (dy / dist) * current_center_effective_r
+      {/* Callouts with connectors to zone centers */}
+      {calloutCfg.slice(0, count).map((cfg, i) => {
+        const id = `callout-${i}`
+        const color = tplColors[`zone-${i}`] ?? ZONE_COLORS[i]
+        const isLeft = cfg.align === 'left'
+        const cW = 228, cH = 78
+        const pos = positions[id]
+        const bbox = {
+          x: pos?.x ?? cfg.dx, y: pos?.y ?? (cfg.dy - cH / 2),
+          width: pos?.width ?? cW, height: pos?.height ?? cH
+        }
+        const isSel = selectedIds.has(id)
+        // Zone center
+        const zi = cfg.zi
+        const zCol = zi % 2, zRow = Math.floor(zi / 2)
+        const zoneCX = HX + (zCol + 0.5) * zW
+        const zoneCY = HY + (zRow + 0.5) * zH
+        const connX = isLeft ? bbox.x + bbox.width : bbox.x
 
         return (
-          <g key={i}>
-            {/* Connection line from center node to branch node */}
-            <line x1={edgeX} y1={edgeY} x2={node.current_nx} y2={node.current_ny} stroke={node.color} strokeWidth={1.5} opacity={0.5} />
-            
-            {/* Interactive group for the branch node itself (rect + text) */}
-            <g onMouseDown={e => startDrag(e, node.elementId, node.bbox)} style={{ cursor: 'pointer' }}>
-              <g transform={`translate(${node.bbox.x}, ${node.bbox.y}) scale(${node.scaleX}, ${node.scaleY}) translate(${-node.defaultBbox.x}, ${-node.defaultBbox.y})`}>
-                <rect x={node.initial_boxX} y={node.initial_boxY} width={nodeW} height={nodeH} rx={8} fill="white" stroke={node.isSelected ? '#4a90d9' : node.color} strokeWidth={node.isSelected ? 2.5 : 1.5} strokeDasharray={node.isSelected ? '4 2' : undefined} />
-                <text x={node.initial_nx} y={node.initial_ny + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#333">
-                  {node.branchTitle.length > 16 ? node.branchTitle.slice(0, 14) + '..' : node.branchTitle}
-                </text>
-              </g>
-              {node.isSelected && renderHandles(node.bbox, node.elementId)}
+          <g key={id}>
+            <line x1={connX} y1={bbox.y + bbox.height / 2}
+              x2={zoneCX} y2={zoneCY}
+              stroke={color} strokeWidth={1.5} strokeDasharray="5 3" />
+            <circle cx={zoneCX} cy={zoneCY} r={5} fill={color} />
+            <g onMouseDown={e => startDrag(e, id, bbox)}
+              transform={getTransform(id, bbox)} style={{ cursor: 'pointer' }}>
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8}
+                fill="white" stroke={color} strokeWidth={2}
+                filter="drop-shadow(0 2px 8px rgba(0,0,0,0.10))" />
+              <rect x={isLeft ? bbox.x : bbox.x + bbox.width - 6} y={bbox.y}
+                width={6} height={bbox.height} rx={3} fill={color} />
+              <text x={isLeft ? bbox.x + 16 : bbox.x + 12} y={bbox.y + 26}
+                fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#1a1a2e">
+                {branches[i]?.title ?? `Item ${i + 1}`}
+              </text>
+              <text x={isLeft ? bbox.x + 16 : bbox.x + 12} y={bbox.y + 50}
+                fontFamily="Arial, sans-serif" fontSize={11} fill="#666">
+                {branches[i]?.subtitle ?? `Description ${i + 1}`}
+              </text>
+              {isSel && renderHandles(bbox, id)}
             </g>
           </g>
         )
       })}
-
-      {/* Web Lines between Branch Nodes (dynamic connections) */}
-      {branchNodes.flatMap((node1, i) =>
-        branchNodes.slice(i + 1).map((node2, j) => {
-          // Connect current centers of branch nodes
-          return <line key={`web-${i}-${i + 1 + j}`} x1={node1.current_nx} y1={node1.current_ny} x2={node2.current_nx} y2={node2.current_ny} stroke="#d0d0d0" strokeWidth={0.8} strokeDasharray="3 4" opacity={0.4} />
-        })
-      )}
     </g>
   )
 }

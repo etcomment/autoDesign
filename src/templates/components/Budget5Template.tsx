@@ -8,7 +8,7 @@ const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '
 
 export function Budget5Template({ data }: { data: BudgetData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
 
@@ -60,7 +60,7 @@ export function Budget5Template({ data }: { data: BudgetData }): ReactElement {
 
         return (
           <g key={i}>
-            <path d={d} fill={color} opacity={isSelected ? 1 : 0.85} stroke={isSelected ? '#4a90d9' : 'white'} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} style={{ cursor: 'pointer' }} onMouseDown={e => startDrag(e, elementId, { x: ly, y: legendY, width: 180, height: 28 })} />
+            <path d={d} fill={color} opacity={isSelected ? 1 : 0.85} stroke={isSelected ? '#4a90d9' : 'white'} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} style={{ cursor: 'pointer' }} data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, { x: ly, y: legendY, width: 180, height: 28 })} transform={getTransform(elementId, { x: ly, y: legendY, width: 180, height: 28 })} />
           </g>
         )
       })}

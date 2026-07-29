@@ -39,7 +39,7 @@ export function Dashboard2Template({ data }: { data: DashboardData }): ReactElem
 
       {mainMetric && (
         <g>
-          <g onMouseDown={e => startDrag(e, 'metric-0', { x: (W - bigW) / 2, y: 80, width: bigW, height: bigH })} style={{ cursor: 'pointer' }}>
+          <g data-element-id="metric-0" onMouseDown={e => startDrag(e, 'metric-0', { x: (W - bigW) / 2, y: 80, width: bigW, height: bigH })} style={{ cursor: 'pointer' }}>
             <rect x={(W - bigW) / 2 + 3} y={83} width={bigW} height={bigH} rx={12} fill="black" opacity={0.08} />
             <rect x={(W - bigW) / 2} y={80} width={bigW} height={bigH} rx={12} fill="white" stroke={selectedIds.has('metric-0') ? '#4a90d9' : '#e2e8f0'} strokeWidth={selectedIds.has('metric-0') ? 2.5 : 1} />
             <rect x={(W - bigW) / 2} y={80} width={6} height={bigH} rx={3} fill={tplColors['metric-0'] ?? mainMetric.color ?? PALETTE[0]!} />
@@ -72,7 +72,7 @@ export function Dashboard2Template({ data }: { data: DashboardData }): ReactElem
 
         return (
           <g key={idx}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={px + 2} y={py + 2} width={smallW} height={smallH} rx={8} fill="black" opacity={0.06} />
               <rect x={px} y={py} width={smallW} height={smallH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : '#e2e8f0'} strokeWidth={isSelected ? 2.5 : 1} />
               <rect x={px} y={py} width={smallW} height={5} rx={2.5} fill={color} />

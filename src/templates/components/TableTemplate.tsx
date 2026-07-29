@@ -67,7 +67,7 @@ export function TableTemplate({ data }: { data: TableData }): ReactElement {
 
         return (
           <g key={'r-' + ri}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={tableX} y={rowY} width={tableW} height={rowH} fill={isEven ? 'white' : '#f1f5f9'} />
               <rect x={tableX} y={rowY} width={labelW} height={rowH} fill={color} />
 

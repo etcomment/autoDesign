@@ -59,7 +59,7 @@ export function GoalsTemplate({ data }: { data: GoalsData }): ReactElement {
         return (
           <g key={`label-${i}`}>
             <line x1={cx} y1={cy} x2={labelX} y2={labelY} stroke="#aaa" strokeWidth={1} strokeDasharray="3 3" opacity={0.5} />
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={boxX} y={boxY} width={boxW} height={boxH} rx={6} fill="white" stroke={isSelected ? '#4a90d9' : '#4a90d9'} strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
               <text x={labelX} y={labelY - 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill="#333">
                 {metric.label}

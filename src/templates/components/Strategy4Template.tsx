@@ -64,7 +64,7 @@ export function Strategy4Template({ data }: { data: Strategy4Data }): ReactEleme
 
                 return (
                   <g key={entry.blockIndex}>
-                    <g onMouseDown={e => startDrag(e, elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
+                    <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
                       <rect x={bx} y={by} width={cardW} height={cardH} rx={6} fill={color} opacity={0.12} stroke={color} strokeWidth={1.5} />
 
                       {isSelected && (

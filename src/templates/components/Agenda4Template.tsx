@@ -47,7 +47,7 @@ export function Agenda4Template({ data }: { data: AgendaData }): ReactElement {
           const scaleY = bbox.height / defaultBbox.height
 
           return (
-            <g onMouseDown={e => startDrag(e, elementId, bbox)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
               <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
                 {/* Original title text, with coordinates adjusted relative to defaultBbox.x, defaultBbox.y */}
                 <text
@@ -95,7 +95,7 @@ export function Agenda4Template({ data }: { data: AgendaData }): ReactElement {
 
         return (
           <g key={`item-wrapper-${i}`}>
-            <g onMouseDown={e => startDrag(e, elementId, bbox)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
               <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
                 {/* Original static SVG elements of the card, with coordinates adjusted relative to defaultBbox.x, defaultBbox.y */}
                 <rect x={3} y={3} width={cardW} height={cardH} rx={10} fill="#000" opacity={0.06} />

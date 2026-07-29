@@ -56,7 +56,7 @@ export function StrategyTemplate({ data }: { data: StrategyData }): ReactElement
               </g>
             )}
 
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
               <ChevronArrow x={bx} y={finalY} width={finalW} height={finalH} fill={color} />
               {isSelected && (
                 <rect x={bx} y={finalY} width={finalW} height={finalH} rx={2} fill="none" stroke="#4a90d9" strokeWidth={2.5} strokeDasharray="4 2" />

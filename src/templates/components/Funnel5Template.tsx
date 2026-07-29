@@ -45,7 +45,7 @@ export function Funnel5Template({ data }: { data: FunnelData }): ReactElement {
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
 
               <rect x={startX} y={y} width={BAR_W} height={BAR_H} rx={6} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 2.5 : 1.5} opacity={0.9} />
 

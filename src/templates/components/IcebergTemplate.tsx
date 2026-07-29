@@ -95,7 +95,7 @@ export function IcebergTemplate({ data }: { data: IcebergData }): ReactElement {
 
         return (
           <g key={'above-' + i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={x} y={y} width={baseW} height={aboveSectionH} rx={6} fill={color} opacity={0.85} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 2.5 : 0} />
               <text x={x + 16} y={y + aboveSectionH / 2 + 5} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
                 {section.title}
@@ -124,7 +124,7 @@ export function IcebergTemplate({ data }: { data: IcebergData }): ReactElement {
 
         return (
           <g key={'below-' + i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={x} y={y} width={baseW} height={belowSectionH} rx={6} fill={color} opacity={0.9} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 2.5 : 0} />
               <text x={x + 16} y={y + belowSectionH / 2 + 5} fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
                 {section.title}

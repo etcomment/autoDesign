@@ -167,7 +167,7 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
   return (
     <g ref={svgRef}>
       {title && (
-        <g onMouseDown={e => startDrag(e, 'main-title', titleR)} style={{ cursor: 'pointer' }}>
+        <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', titleR)} transform={getTransform('main-title', titleR)} style={{ cursor: 'pointer' }}>
           <text
             x={titleR.x + titleR.width / 2}
             y={titleR.y + titleR.height / 2 + 8}
@@ -199,19 +199,19 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
         return (
           <g key={`line-${mi}`}>
             {si === 0 && (
-              <g onMouseDown={e => startDrag(e, firstId, firstR)} style={{ cursor: 'pointer' }}>
+              <g onMouseDown={e => startDrag(e, firstId, firstR)} transform={getTransform(firstId, firstR)} style={{ cursor: 'pointer' }}>
                 <rect x={firstR.x} y={firstR.y} width={firstR.width} height={firstR.height} fill={tplColors[firstId] || color} />
                 {selectedIds.has(firstId) && renderHandles(firstR, firstId)}
               </g>
             )}
             {si > 0 && (
-              <g onMouseDown={e => startDrag(e, midId, midR)} style={{ cursor: 'pointer' }}>
+              <g onMouseDown={e => startDrag(e, midId, midR)} transform={getTransform(midId, midR)} style={{ cursor: 'pointer' }}>
                 <rect x={midR.x} y={midR.y} width={midR.width} height={midR.height} fill={tplColors[midId] || prevColor} />
                 {selectedIds.has(midId) && renderHandles(midR, midId)}
               </g>
             )}
             {si === sortedByDate.length - 1 && (
-              <g onMouseDown={e => startDrag(e, lastId, lastR)} style={{ cursor: 'pointer' }}>
+              <g onMouseDown={e => startDrag(e, lastId, lastR)} transform={getTransform(lastId, lastR)} style={{ cursor: 'pointer' }}>
                 <rect x={lastR.x} y={lastR.y} width={lastR.width} height={lastR.height} fill={tplColors[lastId] || "#e0e0e0"} />
                 {selectedIds.has(lastId) && renderHandles(lastR, lastId)}
               </g>
@@ -231,17 +231,25 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
 
         return (
           <g key={`card-${i}`}>
-            <g onMouseDown={e => startDrag(e, `vline-${i}`, getR(`vline-${i}`))} style={{ cursor: 'pointer' }}>
-              <rect
-                x={getR(`vline-${i}`).x}
-                y={getR(`vline-${i}`).y}
-                width={getR(`vline-${i}`).width}
-                height={getR(`vline-${i}`).height}
-                fill={tplColors[`vline-${i}`] || color}
-              />
-              {selectedIds.has(`vline-${i}`) && renderHandles(getR(`vline-${i}`), `vline-${i}`)}
-            </g>
-            <g onMouseDown={e => startDrag(e, `card-${i}`, r)} style={{ cursor: 'pointer' }}>
+            {(() => {
+              const pinYearIdx = pinIndices[i]!
+              const dotR = getR(`dot-${pinYearIdx}`)
+              const dotCx = dotR.x + dotR.width / 2
+              const dotCy = dotR.y + dotR.height / 2
+              const cardMiddleX = r.x + r.width / 2
+              const cardYEdge = above ? r.y + r.height : r.y
+              return (
+                <line
+                  x1={cardMiddleX}
+                  y1={cardYEdge}
+                  x2={dotCx}
+                  y2={dotCy}
+                  stroke={tplColors[`vline-${i}`] || color}
+                  strokeWidth={4}
+                />
+              )
+            })()}
+            <g data-element-id={`card-${i}`} onMouseDown={e => startDrag(e, `card-${i}`, r)} transform={getTransform(`card-${i}`, r)} style={{ cursor: 'pointer' }}>
               <path d={cardPath(r, above, leftArrow)} fill={tplColors[`card-${i}`] || color} />
               <text
                 x={textX}
@@ -290,11 +298,11 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, `dot-${i}`, dotR)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={`dot-${i}`} onMouseDown={e => startDrag(e, `dot-${i}`, dotR)} transform={getTransform(`dot-${i}`, dotR)} style={{ cursor: 'pointer' }}>
               <circle cx={cx} cy={cy} r={Math.min(dotR.width, dotR.height) / 2} fill={tplColors[`dot-${i}`] || dotColor} />
               {selectedIds.has(`dot-${i}`) && renderHandles(dotR, `dot-${i}`)}
             </g>
-            <g onMouseDown={e => startDrag(e, `year-${i}`, yrR)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={`year-${i}`} onMouseDown={e => startDrag(e, `year-${i}`, yrR)} transform={getTransform(`year-${i}`, yrR)} style={{ cursor: 'pointer' }}>
               <text
                 x={yrR.x + yrR.width / 2}
                 y={yrR.y + yrR.height / 2 + 6}
