@@ -12,12 +12,12 @@ export async function generateJpg(model: DiagramModel): Promise<Blob> {
 }
 
 export async function generateCanvasPng(): Promise<Blob> {
-  const svg = getContentSvg()
+  const svg = await getContentSvg()
   return rasterizeSvg(svg, 'image/png')
 }
 
 export async function generateCanvasJpg(): Promise<Blob> {
-  const svg = getContentSvg()
+  const svg = await getContentSvg()
   return rasterizeSvg(svg, 'image/jpeg', 0.9)
 }
 
@@ -29,13 +29,19 @@ async function rasterizeSvg(svg: string, mimeType: string, quality?: number): Pr
 
     img.onload = () => {
       const canvas = document.createElement('canvas')
-      canvas.width = img.width
-      canvas.height = img.height
+      const scale = 3
+      canvas.width = (img.naturalWidth || img.width) * scale
+      canvas.height = (img.naturalHeight || img.height) * scale
       const ctx = canvas.getContext('2d')
       if (!ctx) {
         URL.revokeObjectURL(url)
         reject(new Error('Canvas context not available'))
         return
+      }
+      ctx.scale(scale, scale)
+      if (mimeType === 'image/jpeg') {
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale)
       }
       ctx.drawImage(img, 0, 0)
       canvas.toBlob(
@@ -72,7 +78,7 @@ export function downloadBlob(blob: Blob, filename: string): void {
 export async function copyCanvasToClipboard(): Promise<boolean> {
   let svgString: string
   try {
-    svgString = getContentSvg()
+    svgString = await getContentSvg()
   } catch {
     return false
   }

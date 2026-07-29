@@ -337,8 +337,8 @@ export async function generateCanvasPptx(): Promise<Blob> {
       slide.addShape('line', {
         x: sx,
         y: sy,
-        w: ex - sx,
-        h: ey - sy,
+        w: Math.max(0.01, Math.abs(ex - sx)),
+        h: Math.max(0.01, Math.abs(ey - sy)),
         line: {
           color: hexStroke,
           width: Math.max(0.5, strokeWidth * scale * 0.75),
@@ -346,7 +346,31 @@ export async function generateCanvasPptx(): Promise<Blob> {
         flipV: ey < sy,
         flipH: ex < sx,
       })
-    } else if (tagName === 'polygon' || tagName === 'path') {
+    } else if (tagName === 'polygon') {
+      const pointsAttr = el.getAttribute('points')
+      if (pointsAttr) {
+        const coords = pointsAttr.trim().split(/\s+|,/).map(parseFloat).filter(n => !isNaN(n))
+        if (coords.length >= 6) {
+          const points = []
+          for (let i = 0; i < coords.length; i += 2) {
+            points.push({ x: mapX(coords[i]!), y: mapY(coords[i+1]!) })
+          }
+          const pathOpts: any = {
+            x: 0,
+            y: 0,
+            w: slideW,
+            h: slideH,
+            points,
+            close: true
+          }
+          if (hexFill) pathOpts.fill = { color: hexFill }
+          if (hexStroke) pathOpts.line = { color: hexStroke, width: Math.max(0.5, strokeWidth * scale * 0.75) }
+          
+          slide.addShape(((pres.ShapeType as any).customGeometry || 'customGeometry'), pathOpts)
+          continue
+        }
+      }
+    } else if (tagName === 'path') {
       try {
         const svgEl = el as SVGGraphicsElement
         const bbox = svgEl.getBBox()
@@ -377,11 +401,8 @@ export async function generateCanvasPptx(): Promise<Blob> {
   // 2. Convert SVG text elements to native, editable PowerPoint text boxes
   const textElements = Array.from(clonedSvg.querySelectorAll('text'))
   for (const el of textElements) {
-    const textContent = el.textContent?.trim()
-    if (!textContent) continue
+    if (!el.textContent?.trim()) continue
 
-    const x = parseFloat(el.getAttribute('x') || '0')
-    const y = parseFloat(el.getAttribute('y') || '0')
     const fontSizeSvg = parseFloat(el.getAttribute('font-size') || '14')
     const fontFamily = el.getAttribute('font-family') || 'Arial, sans-serif'
     const svgEl = el as SVGElement
@@ -392,31 +413,72 @@ export async function generateCanvasPptx(): Promise<Blob> {
 
     const pptxFontSize = Math.max(9, Math.round(fontSizeSvg * scale * 72 / 96))
 
-
     let align: PptxGenJS.HAlign = 'left'
     if (textAnchor === 'middle') align = 'center'
     else if (textAnchor === 'end') align = 'right'
 
-    const estWidth = Math.max(1.8, (textContent.length * fontSizeSvg * 0.65 * scale) / 96)
-    const estHeight = Math.max(0.4, (fontSizeSvg * 1.5 * scale) / 96)
+    let realX = parseFloat(el.getAttribute('x') || '0')
+    let realY = parseFloat(el.getAttribute('y') || '0')
+    let realW = Math.max(20, el.textContent.length * fontSizeSvg * 0.65)
+    let realH = fontSizeSvg * 1.5
 
-    let pptxX = mapX(x)
-    if (textAnchor === 'middle') pptxX -= estWidth / 2
-    else if (textAnchor === 'end') pptxX -= estWidth
+    try {
+      const bbox = (el as SVGGraphicsElement).getBBox()
+      if (bbox && bbox.width > 0 && bbox.height > 0) {
+        realX = bbox.x
+        realY = bbox.y
+        realW = bbox.width
+        realH = bbox.height
+      } else if (textAnchor === 'middle') {
+        realX -= realW / 2
+      } else if (textAnchor === 'end') {
+        realX -= realW
+      }
+    } catch {
+      if (textAnchor === 'middle') realX -= realW / 2
+      else if (textAnchor === 'end') realX -= realW
+    }
 
-    const pptxY = mapY(y) - estHeight / 2
+    const pptxX = mapX(realX)
+    const pptxY = mapY(realY)
+    const pptxW = mapW(realW)
+    const pptxH = mapH(realH)
 
-    slide.addText(textContent, {
-      x: Math.max(0, pptxX),
-      y: Math.max(0, pptxY),
-      w: estWidth,
-      h: estHeight,
-      fontSize: pptxFontSize,
-      fontFace: fontFamily.replace(/['",]/g, ''),
-      color: hexColor,
-      align,
-      valign: 'middle',
-    })
+    const tspans = Array.from(el.querySelectorAll('tspan'))
+    
+    if (tspans.length > 0) {
+      const textArray = tspans.map((tspan, idx) => ({
+        text: tspan.textContent || '',
+        options: { breakLine: idx < tspans.length - 1 }
+      }))
+      slide.addText(textArray, {
+        x: Math.max(0, pptxX),
+        y: Math.max(0, pptxY),
+        w: pptxW,
+        h: pptxH,
+        fontSize: pptxFontSize,
+        fontFace: fontFamily.replace(/['",]/g, ''),
+        color: hexColor,
+        align,
+        valign: 'middle',
+        margin: 0,
+        wrap: true,
+      })
+    } else {
+      slide.addText(el.textContent || '', {
+        x: Math.max(0, pptxX),
+        y: Math.max(0, pptxY),
+        w: pptxW,
+        h: pptxH,
+        fontSize: pptxFontSize,
+        fontFace: fontFamily.replace(/['",]/g, ''),
+        color: hexColor,
+        align,
+        valign: 'middle',
+        margin: 0,
+        wrap: true,
+      })
+    }
   }
 
   // Remove the cloned SVG from DOM
