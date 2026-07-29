@@ -1,6 +1,9 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useDiagramStore } from '../../store/diagramStore'
 import { snapToGrid } from '../../core/grid'
+import { calculateSmartGuides } from '../../core/smartGuides'
+import { useSmartGuidesStore } from '../../store/smartGuidesStore'
+import { useTemplateStore } from '../../templates/store'
 import type { Shape } from '../../core/model/Shape'
 
 interface ResizeHandlesProps {
@@ -28,6 +31,7 @@ export function ResizeHandles({ shape }: ResizeHandlesProps) {
   const updateShapeRotation = useDiagramStore(s => s.updateShapeRotation)
   const isDragging = useRef(false)
   const isRotating = useRef(false)
+  const [currentRotation, setCurrentRotation] = useState<number | null>(null)
   const handleRef = useRef<HandlePosition | null>(null)
   const startMouse = useRef({ x: 0, y: 0 })
   const startDimensions = useRef({ width: 0, height: 0 })
@@ -79,6 +83,44 @@ export function ResizeHandles({ shape }: ResizeHandlesProps) {
             break
         }
 
+        if (!moveEvent.altKey) {
+          const diagramStore = useDiagramStore.getState()
+          const templateStore = useTemplateStore.getState()
+          const targetBoxes = []
+          for (const s of diagramStore.shapes) {
+            if (s.id !== shape.id) {
+              targetBoxes.push({ x: s.position.x, y: s.position.y, width: s.dimensions.width, height: s.dimensions.height })
+            }
+          }
+          for (const pos of Object.values(templateStore.templateElementPositions)) {
+            targetBoxes.push({ x: pos.x, y: pos.y, width: pos.width, height: pos.height })
+          }
+
+          const activeBox = { x: newX, y: newY, width: newW, height: newH }
+          const { snappedBBox, guides } = calculateSmartGuides(activeBox, targetBoxes, 5)
+          useSmartGuidesStore.getState().setActiveGuides(guides)
+
+          if (hPos === 'bottom-right') {
+            if (snappedBBox.x !== newX) newW += (snappedBBox.x - newX)
+            if (snappedBBox.y !== newY) newH += (snappedBBox.y - newY)
+          } else if (hPos === 'top-left') {
+            newW += (newX - snappedBBox.x)
+            newH += (newY - snappedBBox.y)
+            newX = snappedBBox.x
+            newY = snappedBBox.y
+          } else if (hPos === 'top-right') {
+            if (snappedBBox.x !== newX) newW += (snappedBBox.x - newX)
+            newH += (newY - snappedBBox.y)
+            newY = snappedBBox.y
+          } else if (hPos === 'bottom-left') {
+            newW += (newX - snappedBBox.x)
+            newX = snappedBBox.x
+            if (snappedBBox.y !== newY) newH += (snappedBBox.y - newY)
+          }
+        } else {
+          useSmartGuidesStore.getState().clearGuides()
+        }
+
         const minSize = 10
         if (newW < minSize) {
           if (hPos === 'top-left' || hPos === 'bottom-left') {
@@ -104,6 +146,7 @@ export function ResizeHandles({ shape }: ResizeHandlesProps) {
         handleRef.current = null
         window.removeEventListener('mousemove', handleMouseMove)
         window.removeEventListener('mouseup', handleMouseUp)
+        useSmartGuidesStore.getState().clearGuides()
       }
 
       window.addEventListener('mousemove', handleMouseMove)
@@ -140,17 +183,24 @@ export function ResizeHandles({ shape }: ResizeHandlesProps) {
       const dx = moveEvent.clientX - screenCX
       const dy = moveEvent.clientY - screenCY
       let angle = Math.atan2(dy, dx) * (180 / Math.PI)
-      // The natural angle of the rotation handle relative to the center is -90 degrees (straight up).
-      // So we adjust the angle to make the handle's initial position 0 degrees.
       angle += 90
       if (angle < 0) angle += 360
       if (angle >= 360) angle -= 360
-      // Snap to 15 degrees if shift is pressed, optional. Let's just round it.
-      updateShapeRotation(shape.id, Math.round(angle))
+      
+      if (moveEvent.shiftKey) {
+        angle = Math.round(angle / 15) * 15
+        if (angle === 360) angle = 0
+      } else {
+        angle = Math.round(angle)
+      }
+      
+      setCurrentRotation(angle)
+      updateShapeRotation(shape.id, angle)
     }
 
     const handleMouseUp = () => {
       isRotating.current = false
+      setCurrentRotation(null)
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
     }
@@ -200,6 +250,31 @@ export function ResizeHandles({ shape }: ResizeHandlesProps) {
         style={{ cursor: 'grab' }}
         onMouseDown={onRotateMouseDown}
       />
+      {currentRotation !== null && (
+        <g transform={`translate(${shape.position.x + shape.dimensions.width / 2}, ${shape.position.y - 45})`}>
+          <rect
+            x={-20}
+            y={-12}
+            width={40}
+            height={24}
+            rx={12}
+            fill="#2196F3"
+            pointerEvents="none"
+          />
+          <text
+            x={0}
+            y={4}
+            fill="white"
+            fontSize={12}
+            fontFamily="sans-serif"
+            fontWeight="bold"
+            textAnchor="middle"
+            pointerEvents="none"
+          >
+            {currentRotation}°
+          </text>
+        </g>
+      )}
     </>
   )
 }

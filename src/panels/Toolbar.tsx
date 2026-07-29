@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
+import { useTemplateStore } from '../templates/store'
 import { Undo2, Redo2, Trash2, MousePointer2, Download, Link2, ChevronsUp, ChevronUp, ChevronDown, ChevronsDown, Group, Ungroup } from 'lucide-react'
 import { downloadContentSvg } from '../export/generateSvg'
 import { downloadCanvasPptx } from '../export/generatePptx'
@@ -24,9 +25,15 @@ export function Toolbar() {
   const ungroupSelectedShapes = useDiagramStore(s => s.ungroupSelectedShapes)
   const shapes = useDiagramStore(s => s.shapes)
 
+  const selectedTemplateIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const templateElementGroupIds = useTemplateStore(s => s.templateElementGroupIds)
+  
   const selectedShapesArray = shapes.filter(s => selectedShapeIds.has(s.id))
-  const canGroup = selectedShapeIds.size >= 2
-  const canUngroup = selectedShapesArray.some(s => s.groupId !== undefined)
+  
+  const canGroup = selectedShapeIds.size >= 2 || selectedTemplateIds.size >= 2
+  const canUngroup = selectedShapesArray.some(s => s.groupId !== undefined) || 
+    Array.from(selectedTemplateIds).some(id => templateElementGroupIds[id] !== undefined)
+
 
   const [exportOpen, setExportOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -126,7 +133,13 @@ export function Toolbar() {
         <button
           style={{ ...styles.button, opacity: canGroup ? 1 : 0.4 }}
           disabled={!canGroup}
-          onClick={groupSelectedShapes}
+          onClick={() => {
+            if (selectedTemplateIds.size > 0) {
+              useTemplateStore.getState().groupTemplateElements()
+            } else {
+              groupSelectedShapes()
+            }
+          }}
           title="Grouper (Ctrl+G)"
         >
           <Group size={18} />
@@ -134,7 +147,13 @@ export function Toolbar() {
         <button
           style={{ ...styles.button, opacity: canUngroup ? 1 : 0.4 }}
           disabled={!canUngroup}
-          onClick={ungroupSelectedShapes}
+          onClick={() => {
+            if (selectedTemplateIds.size > 0) {
+              useTemplateStore.getState().ungroupTemplateElements()
+            } else {
+              ungroupSelectedShapes()
+            }
+          }}
           title="Dégrouper (Ctrl+Shift+G)"
         >
           <Ungroup size={18} />

@@ -1,6 +1,9 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useDiagramStore } from '../../store/diagramStore'
 import { snapToGrid } from '../../core/grid'
+import { calculateSmartGuides } from '../../core/smartGuides'
+import { useSmartGuidesStore } from '../../store/smartGuidesStore'
+import { useTemplateStore } from '../../templates/store'
 
 interface GroupBox {
   id: string
@@ -36,6 +39,7 @@ export function GroupResizeHandles({ groupBox }: GroupResizeHandlesProps) {
   
   const isDragging = useRef(false)
   const isRotating = useRef(false)
+  const [currentRotation, setCurrentRotation] = useState<number | null>(null)
   const handleRef = useRef<HandlePosition | null>(null)
   
   const startMouse = useRef({ x: 0, y: 0 })
@@ -90,6 +94,45 @@ export function GroupResizeHandles({ groupBox }: GroupResizeHandlesProps) {
             break
         }
 
+        if (!moveEvent.altKey) {
+          const diagramStore = useDiagramStore.getState()
+          const templateStore = useTemplateStore.getState()
+          const targetBoxes = []
+          const shapeIdSet = new Set(groupBox.shapeIds)
+          for (const s of diagramStore.shapes) {
+            if (!shapeIdSet.has(s.id)) {
+              targetBoxes.push({ x: s.position.x, y: s.position.y, width: s.dimensions.width, height: s.dimensions.height })
+            }
+          }
+          for (const pos of Object.values(templateStore.templateElementPositions)) {
+            targetBoxes.push({ x: pos.x, y: pos.y, width: pos.width, height: pos.height })
+          }
+
+          const activeBox = { x: newX, y: newY, width: newW, height: newH }
+          const { snappedBBox, guides } = calculateSmartGuides(activeBox, targetBoxes, 5)
+          useSmartGuidesStore.getState().setActiveGuides(guides)
+
+          if (hPos === 'bottom-right') {
+            if (snappedBBox.x !== newX) newW += (snappedBBox.x - newX)
+            if (snappedBBox.y !== newY) newH += (snappedBBox.y - newY)
+          } else if (hPos === 'top-left') {
+            newW += (newX - snappedBBox.x)
+            newH += (newY - snappedBBox.y)
+            newX = snappedBBox.x
+            newY = snappedBBox.y
+          } else if (hPos === 'top-right') {
+            if (snappedBBox.x !== newX) newW += (snappedBBox.x - newX)
+            newH += (newY - snappedBBox.y)
+            newY = snappedBBox.y
+          } else if (hPos === 'bottom-left') {
+            newW += (newX - snappedBBox.x)
+            newX = snappedBBox.x
+            if (snappedBBox.y !== newY) newH += (snappedBBox.y - newY)
+          }
+        } else {
+          useSmartGuidesStore.getState().clearGuides()
+        }
+
         const minSize = 20
         if (newW < minSize) {
           if (hPos === 'top-left' || hPos === 'bottom-left') newX = pos.minX + pos.width - minSize
@@ -117,6 +160,7 @@ export function GroupResizeHandles({ groupBox }: GroupResizeHandlesProps) {
         handleRef.current = null
         window.removeEventListener('mousemove', handleMouseMove)
         window.removeEventListener('mouseup', handleMouseUp)
+        useSmartGuidesStore.getState().clearGuides()
       }
 
       window.addEventListener('mousemove', handleMouseMove)
@@ -163,6 +207,14 @@ export function GroupResizeHandles({ groupBox }: GroupResizeHandlesProps) {
       if (angle < 0) angle += 360
       if (angle >= 360) angle -= 360
       
+      if (moveEvent.shiftKey) {
+        angle = Math.round(angle / 15) * 15
+        if (angle === 360) angle = 0
+      } else {
+        angle = Math.round(angle)
+      }
+      
+      setCurrentRotation(angle)
       const deltaAngle = angle
       const rad = (deltaAngle * Math.PI) / 180
       const cos = Math.cos(rad)
@@ -186,6 +238,7 @@ export function GroupResizeHandles({ groupBox }: GroupResizeHandlesProps) {
 
     const handleMouseUp = () => {
       isRotating.current = false
+      setCurrentRotation(null)
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
     }
@@ -236,6 +289,31 @@ export function GroupResizeHandles({ groupBox }: GroupResizeHandlesProps) {
         style={{ cursor: 'grab', pointerEvents: 'auto' }}
         onMouseDown={onRotateMouseDown}
       />
+      {currentRotation !== null && (
+        <g transform={`translate(${groupBox.minX + groupBox.width / 2}, ${groupBox.minY - 45})`}>
+          <rect
+            x={-20}
+            y={-12}
+            width={40}
+            height={24}
+            rx={12}
+            fill="#2196F3"
+            pointerEvents="none"
+          />
+          <text
+            x={0}
+            y={4}
+            fill="white"
+            fontSize={12}
+            fontFamily="sans-serif"
+            fontWeight="bold"
+            textAnchor="middle"
+            pointerEvents="none"
+          >
+            {currentRotation}°
+          </text>
+        </g>
+      )}
     </>
   )
 }

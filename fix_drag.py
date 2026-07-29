@@ -1,7 +1,10 @@
-import { useRef, useCallback } from 'react'
+import re
+
+with open("src/templates/shared/useTemplateDragResize.tsx", "r") as f:
+    content = f.read()
+
+new_code = """import { useRef, useCallback } from 'react'
 import { useTemplateStore } from '../store'
-import { useSmartGuidesStore } from '../../store/smartGuidesStore'
-import { calculateSmartGuides } from '../../core/smartGuides'
 import { useDiagramStore } from '../../store/diagramStore'
 
 interface Rect {
@@ -60,7 +63,6 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
     interactionRef.current = null
     window.removeEventListener('mousemove', stableOnMouseMove)
     window.removeEventListener('mouseup', stableOnMouseUp)
-    useSmartGuidesStore.getState().clearGuides()
     if (!interaction.hasMoved) {
       if (e.ctrlKey || e.metaKey) {
         toggleElement(interaction.id)
@@ -275,3 +277,7 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
 
   return { startDrag, startResize, renderHandles, toSvgPoint }
 }
+"""
+
+with open("src/templates/shared/useTemplateDragResize.tsx", "w") as f:
+    f.write(new_code)

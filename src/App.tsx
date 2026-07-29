@@ -11,6 +11,7 @@ import { MermaidEditor } from './panels/MermaidEditor'
 import { SubgraphStylePanel } from './panels/SubgraphStylePanel'
 import { LayersPanel } from './panels/LayersPanel'
 import { useDiagramStore } from './store/diagramStore'
+import { useTemplateStore } from './templates/store'
 import type { Shape, ShapeStyle, ShapeText, ShapeType, Position, Dimensions } from './core/model/Shape'
 
 interface ClipboardShape {
@@ -89,11 +90,22 @@ export function App() {
         const target = e.target as HTMLElement
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
         e.preventDefault()
+        
         const state = useDiagramStore.getState()
+        const tState = useTemplateStore.getState()
+
         if (e.shiftKey) {
-          state.ungroupSelectedShapes()
+          if (tState.selectedTemplateElementIds.size > 0) {
+            tState.ungroupTemplateElements()
+          } else {
+            state.ungroupSelectedShapes()
+          }
         } else {
-          state.groupSelectedShapes()
+          if (tState.selectedTemplateElementIds.size > 0) {
+            tState.groupTemplateElements()
+          } else {
+            state.groupSelectedShapes()
+          }
         }
         return
       }
