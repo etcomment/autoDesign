@@ -1,7 +1,9 @@
+import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { IcebergData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { renderMultiLineText } from '../shared/primitives'
 
 const ABOVE_COLOR = '#e3f2fd'
 const BELOW_COLOR = '#0f2b46'
@@ -38,6 +40,8 @@ export function IcebergTemplate({ data }: { data: IcebergData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
   const { title, sections } = data
   const W = 900
@@ -73,7 +77,7 @@ export function IcebergTemplate({ data }: { data: IcebergData }): ReactElement {
       <path d={waveLine} fill="none" stroke="#5db9e8" strokeWidth={3} opacity={0.9} />
 
       {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
+        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
           {title}
         </text>
       )}

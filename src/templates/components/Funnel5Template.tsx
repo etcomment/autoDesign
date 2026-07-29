@@ -2,7 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { FunnelData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#7b68ee', '#e91e63', '#4caf50']
 const BAR_W = 460
@@ -20,8 +20,6 @@ export function Funnel5Template({ data }: { data: FunnelData }): ReactElement {
   const W = 900
   const count = levels.length
   const gap = 20
-  const totalH = count * BAR_H + (count - 1) * (ARROW_H + gap) + 140
-  const H = Math.max(600, totalH + 60)
   const cx = W / 2
   const startX = (W - BAR_W) / 2
   const startY = title ? 100 : 70
@@ -30,9 +28,8 @@ export function Funnel5Template({ data }: { data: FunnelData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
-        <text x={cx} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
+        <text x={cx} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
           {title}
         </text>
       )}

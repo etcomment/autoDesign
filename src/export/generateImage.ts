@@ -1,4 +1,4 @@
-import { generateSvg, exportCanvasToSvg } from './generateSvg'
+import { generateSvg, getContentSvg } from './generateSvg'
 import type { DiagramModel } from '../core/model/DiagramModel'
 
 export async function generatePng(model: DiagramModel): Promise<Blob> {
@@ -12,12 +12,12 @@ export async function generateJpg(model: DiagramModel): Promise<Blob> {
 }
 
 export async function generateCanvasPng(): Promise<Blob> {
-  const svg = exportCanvasToSvg()
+  const svg = getContentSvg()
   return rasterizeSvg(svg, 'image/png')
 }
 
 export async function generateCanvasJpg(): Promise<Blob> {
-  const svg = exportCanvasToSvg()
+  const svg = getContentSvg()
   return rasterizeSvg(svg, 'image/jpeg', 0.9)
 }
 
@@ -67,4 +67,60 @@ export function downloadBlob(blob: Blob, filename: string): void {
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
+}
+
+export async function copyCanvasToClipboard(): Promise<boolean> {
+  let svgString: string
+  try {
+    svgString = getContentSvg()
+  } catch {
+    return false
+  }
+
+  const svgBlob = new Blob([svgString], { type: 'image/svg+xml' })
+  const url = URL.createObjectURL(svgBlob)
+
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = async () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width * 2
+      canvas.height = img.height * 2
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        URL.revokeObjectURL(url)
+        resolve(false)
+        return
+      }
+      ctx.scale(2, 2)
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, img.width, img.height)
+      ctx.drawImage(img, 0, 0)
+      URL.revokeObjectURL(url)
+
+      try {
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            resolve(false)
+            return
+          }
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob }),
+            ])
+            resolve(true)
+          } catch {
+            resolve(false)
+          }
+        }, 'image/png')
+      } catch {
+        resolve(false)
+      }
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      resolve(false)
+    }
+    img.src = url
+  })
 }

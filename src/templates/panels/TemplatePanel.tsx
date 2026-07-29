@@ -1,10 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useTemplateStore } from '../store'
 import { getTemplatesByCategory } from '../registry'
-import { TEMPLATE_ICONS } from '../shared/icons'
 import type { TemplateType } from '../types'
-
-const ICON_SIZE = 40
 
 export function TemplatePanel() {
   const activeTemplate = useTemplateStore(s => s.activeTemplate)
@@ -16,7 +13,6 @@ export function TemplatePanel() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     () => new Set(categoryNames.length > 0 ? [categoryNames[0]!] : [])
   )
-  const [showIcons, setShowIcons] = useState(false)
   const [tplCollapsed, setTplCollapsed] = useState(false)
 
   const toggleCategory = (category: string) => {
@@ -28,16 +24,8 @@ export function TemplatePanel() {
     })
   }
 
-  const iconNames = useMemo(() => Object.keys(TEMPLATE_ICONS).sort(), [])
-
   return (
     <div style={styles.panel}>
-      <style>{`
-        .ad-icon-item:hover {
-          background: #e8edf3;
-        }
-      `}</style>
-
       <h3 style={{ ...styles.title, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={() => setTplCollapsed(!tplCollapsed)}>
         <span>{tplCollapsed ? '▶' : '▼'}</span>
         Templates
@@ -77,32 +65,6 @@ export function TemplatePanel() {
           </div>
         )
       })}
-
-      <button style={styles.iconToggle} onClick={() => setShowIcons(!showIcons)}>
-        {showIcons ? 'Hide Icons' : 'Browse Icons'} ({iconNames.length})
-      </button>
-
-      {showIcons && (
-        <div style={styles.iconGrid}>
-          {iconNames.map(name => {
-            const Icon = TEMPLATE_ICONS[name]!
-            return (
-              <div
-                key={name}
-                style={styles.iconItem}
-                title={name}
-              >
-                <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" style={{ display: 'block', border: '1px solid #eee', borderRadius: 4, background: 'white', padding: 2 }}>
-                  <g stroke="#333" strokeWidth={1.5} fill="none" strokeLinecap="round" strokeLinejoin="round">
-                    <Icon size={20} color="currentColor" />
-                  </g>
-                </svg>
-                <div style={styles.iconLabel}>{name}</div>
-              </div>
-            )
-          })}
-        </div>
-      )}
 
       {activeTemplate && (
         <button style={styles.clearButton} onClick={clearTemplate}>
@@ -162,49 +124,6 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     border: '1px solid #e2e8f0',
     marginBottom: 3,
-  },
-  iconToggle: {
-    width: '100%',
-    padding: '6px 0',
-    borderRadius: 4,
-    fontSize: 11,
-    fontWeight: 600,
-    cursor: 'pointer',
-    border: '1px solid #e2e8f0',
-    background: '#f7fafc',
-    color: '#4a5568',
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  iconGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(52px, 1fr))',
-    gap: 4,
-    marginBottom: 10,
-    padding: 6,
-    background: '#f9f9f9',
-    borderRadius: 4,
-    maxHeight: 280,
-    overflowY: 'auto',
-  },
-  iconItem: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    padding: 3,
-    cursor: 'pointer',
-    borderRadius: 4,
-    transition: 'background 0.15s',
-  },
-  iconLabel: {
-    fontSize: 8,
-    color: '#666',
-    marginTop: 2,
-    textAlign: 'center' as const,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap' as const,
-    maxWidth: 52,
   },
   clearButton: {
     width: '100%',

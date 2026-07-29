@@ -10,7 +10,6 @@ export function Goals2Template({ data }: { data: GoalsData }): ReactElement {
 
   const { title, centerGoal, metrics } = data
   const W = 900
-  const H = 600
   const peakX = W / 2
   const peakY = 130
   const baseY = 430
@@ -27,7 +26,6 @@ export function Goals2Template({ data }: { data: GoalsData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={46} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
           {title}

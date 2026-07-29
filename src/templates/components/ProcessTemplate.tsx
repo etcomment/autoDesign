@@ -5,6 +5,7 @@ import { StarIcon } from '../shared/icons'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
+import { renderMultiLineText } from '../shared/primitives'
 
 const COLORS = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db']
 
@@ -13,10 +14,12 @@ export function ProcessTemplate({ data }: { data: ProcessData }): ReactElement {
   const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
   const { title, steps, outcome } = data
   const W = 1000
-  const H = 600
 
   const halfCount = Math.ceil(steps.length / 2)
   const topSteps = steps.slice(0, halfCount)
@@ -75,7 +78,6 @@ export function ProcessTemplate({ data }: { data: ProcessData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
 
       {title && (
         <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
@@ -94,33 +96,44 @@ export function ProcessTemplate({ data }: { data: ProcessData }): ReactElement {
         const elementId = `step-${pos.stepIndex}`
         const defaultColor = COLORS[pos.stepIndex % COLORS.length]!
         const color = tplColors[elementId] ?? defaultColor
+        const strokeColor = tplStrokeColors[elementId]
+        const strokeW = tplStrokeWidths[elementId]
         
+        const customPos = positions[elementId]
+        const finalX = customPos?.x ?? pos.x
+        const finalY = customPos?.y ?? pos.y
+        const finalW = customPos?.width ?? 110
+        const finalH = customPos?.height ?? 64
+
         const isSelected = selectedIds.has(elementId)
         const isTop = topPositions.some(tp => tp.stepIndex === pos.stepIndex)
         const labelOffsetY = isTop ? 28 : -28
         const visualRect = isTop
-          ? { x: pos.x - 55, y: pos.y - 20, width: 110, height: 64 }
-          : { x: pos.x - 55, y: pos.y - 50, width: 110, height: 64 }
+          ? { x: finalX - finalW/2, y: finalY - 20, width: finalW, height: finalH }
+          : { x: finalX - finalW/2, y: finalY - finalH + 14, width: finalW, height: finalH }
 
         return (
           <g key={pos.stepIndex}>
             <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <CircleBadge cx={pos.x} cy={pos.y} r={16} fill={color} label={String(step.number)} fontSize={12} />
+              <CircleBadge cx={finalX} cy={finalY} r={16} fill={color} label={String(step.number)} fontSize={12} />
+              {(strokeColor || strokeW) && (
+                <circle cx={finalX} cy={finalY} r={16} fill="none" stroke={strokeColor || color} strokeWidth={strokeW || 1} />
+              )}
               {isSelected && (
                 <>
-                  <circle cx={pos.x} cy={pos.y} r={18} fill="none" stroke="#4a90d9" strokeWidth={2.5} strokeDasharray="4 2" />
+                  <circle cx={finalX} cy={finalY} r={18} fill="none" stroke="#4a90d9" strokeWidth={2.5} strokeDasharray="4 2" />
                   <rect x={visualRect.x} y={visualRect.y} width={visualRect.width} height={visualRect.height} rx={4} fill="none" stroke="#4a90d9" strokeWidth={1} strokeDasharray="4 2" opacity={0.5} />
                 </>
               )}
 
-              <text x={pos.x} y={pos.y + labelOffsetY} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="#333">
-                {step.title}
-              </text>
+              {renderMultiLineText(step.title, finalX, finalY + labelOffsetY, {
+                textAnchor: "middle", fontFamily: "Arial, sans-serif", fontSize: 11, fontWeight: 700, fill: "#333"
+              })}
 
-              {step.subtitle && (
-                <text x={pos.x} y={pos.y + labelOffsetY + 15} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#777">
-                  {step.subtitle.length > 24 ? step.subtitle.slice(0, 22) + '...' : step.subtitle}
-                </text>
+              {step.subtitle && renderMultiLineText(
+                step.subtitle.length > 24 ? step.subtitle.slice(0, 22) + '...' : step.subtitle,
+                finalX, finalY + labelOffsetY + 15,
+                { textAnchor: "middle", fontFamily: "Arial, sans-serif", fontSize: 9, fill: "#777" }
               )}
 
               {isSelected && renderHandles(visualRect, elementId)}

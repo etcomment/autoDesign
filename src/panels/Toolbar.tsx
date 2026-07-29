@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
-import { Undo2, Redo2, Trash2, MousePointer2, Download, Link2 } from 'lucide-react'
-import { downloadCanvasSvg } from '../export/generateSvg'
+import { Undo2, Redo2, Trash2, MousePointer2, Download, Link2, ChevronsUp, ChevronUp, ChevronDown, ChevronsDown, Group, Ungroup } from 'lucide-react'
+import { downloadContentSvg } from '../export/generateSvg'
 import { downloadCanvasPptx } from '../export/generatePptx'
-import { generateCanvasPng, generateCanvasJpg, downloadBlob } from '../export/generateImage'
+import { generateCanvasPng, generateCanvasJpg, downloadBlob, copyCanvasToClipboard } from '../export/generateImage'
 
 export function Toolbar() {
   const canUndo = useDiagramStore(s => s.canUndo)
@@ -15,8 +15,36 @@ export function Toolbar() {
   const clearSelection = useDiagramStore(s => s.clearSelection)
   const isConnectMode = useDiagramStore(s => s.isConnectMode)
   const toggleConnectMode = useDiagramStore(s => s.toggleConnectMode)
+  const bringToFront = useDiagramStore(s => s.bringToFront)
+  const sendToBack = useDiagramStore(s => s.sendToBack)
+  const bringForward = useDiagramStore(s => s.bringForward)
+  const sendBackward = useDiagramStore(s => s.sendBackward)
+
+  const groupSelectedShapes = useDiagramStore(s => s.groupSelectedShapes)
+  const ungroupSelectedShapes = useDiagramStore(s => s.ungroupSelectedShapes)
+  const shapes = useDiagramStore(s => s.shapes)
+
+  const selectedShapesArray = shapes.filter(s => selectedShapeIds.has(s.id))
+  const canGroup = selectedShapeIds.size >= 2
+  const canUngroup = selectedShapesArray.some(s => s.groupId !== undefined)
 
   const [exportOpen, setExportOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const hasSelection = selectedShapeIds.size > 0
+
+  const handleBringToFront = () => {
+    for (const id of selectedShapeIds) bringToFront(id)
+  }
+  const handleSendToBack = () => {
+    for (const id of selectedShapeIds) sendToBack(id)
+  }
+  const handleBringForward = () => {
+    for (const id of selectedShapeIds) bringForward(id)
+  }
+  const handleSendBackward = () => {
+    for (const id of selectedShapeIds) sendBackward(id)
+  }
 
   const handleDelete = () => {
     for (const id of selectedShapeIds) {
@@ -27,7 +55,7 @@ export function Toolbar() {
 
   const handleExportSvg = () => {
     try {
-      downloadCanvasSvg()
+      downloadContentSvg()
     } catch {
       return
     }
@@ -49,6 +77,14 @@ export function Toolbar() {
   const handleExportPptx = async () => {
     await downloadCanvasPptx()
     setExportOpen(false)
+  }
+
+  const handleCopyImage = async () => {
+    const ok = await copyCanvasToClipboard()
+    if (ok) {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
   }
 
   return (
@@ -86,6 +122,60 @@ export function Toolbar() {
         </button>
       </div>
       <div style={styles.separator} />
+      <div style={styles.group}>
+        <button
+          style={{ ...styles.button, opacity: canGroup ? 1 : 0.4 }}
+          disabled={!canGroup}
+          onClick={groupSelectedShapes}
+          title="Grouper (Ctrl+G)"
+        >
+          <Group size={18} />
+        </button>
+        <button
+          style={{ ...styles.button, opacity: canUngroup ? 1 : 0.4 }}
+          disabled={!canUngroup}
+          onClick={ungroupSelectedShapes}
+          title="Dégrouper (Ctrl+Shift+G)"
+        >
+          <Ungroup size={18} />
+        </button>
+      </div>
+      <div style={styles.separator} />
+      <div style={styles.group}>
+        <button
+          style={{ ...styles.button, opacity: hasSelection ? 1 : 0.4 }}
+          disabled={!hasSelection}
+          onClick={handleBringToFront}
+          title="Premier plan (Ctrl+Shift+]"
+        >
+          <ChevronsUp size={18} />
+        </button>
+        <button
+          style={{ ...styles.button, opacity: hasSelection ? 1 : 0.4 }}
+          disabled={!hasSelection}
+          onClick={handleBringForward}
+          title="Avancer (Ctrl+])"
+        >
+          <ChevronUp size={18} />
+        </button>
+        <button
+          style={{ ...styles.button, opacity: hasSelection ? 1 : 0.4 }}
+          disabled={!hasSelection}
+          onClick={handleSendBackward}
+          title="Reculer (Ctrl+[)"
+        >
+          <ChevronDown size={18} />
+        </button>
+        <button
+          style={{ ...styles.button, opacity: hasSelection ? 1 : 0.4 }}
+          disabled={!hasSelection}
+          onClick={handleSendToBack}
+          title="Arrière-plan (Ctrl+Shift+[)"
+        >
+          <ChevronsDown size={18} />
+        </button>
+      </div>
+      <div style={styles.separator} />
       <button
         style={{ ...styles.button, opacity: selectedShapeIds.size > 0 ? 1 : 0.4 }}
         disabled={selectedShapeIds.size === 0}
@@ -117,6 +207,10 @@ export function Toolbar() {
             <button style={styles.dropdownItem} onClick={handleExportPng}>PNG</button>
             <button style={styles.dropdownItem} onClick={handleExportJpg}>JPG</button>
             <button style={styles.dropdownItem} onClick={handleExportPptx}>PPTX</button>
+            <div style={{ height: 1, background: '#555', margin: '4px 0' }} />
+            <button style={styles.dropdownItem} onClick={handleCopyImage}>
+              {copied ? 'Copié !' : 'Copier image'}
+            </button>
           </div>
         )}
       </div>

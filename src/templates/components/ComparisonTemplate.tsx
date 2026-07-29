@@ -1,7 +1,9 @@
+import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { ComparisonData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { renderMultiLineText } from '../shared/primitives'
 
 const LEFT_COLOR = '#2563eb'
 const RIGHT_COLOR = '#dc2626'
@@ -15,7 +17,6 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
 
   const { title, leftTitle, rightTitle, items } = data
   const W = 900
-  const H = 600
 
   const colW = 320
   const labelW = 100
@@ -32,9 +33,8 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
+        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
           {title}
         </text>
       )}

@@ -2,7 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { PuzzleData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50', '#ff9800']
 const CX = 450
@@ -46,26 +46,25 @@ export function Puzzle5Template({ data }: { data: PuzzleData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const { title, pieces } = data
-  const W = 900
-  const H = 500
-  const displayed = pieces.slice(0, 4)
+  const count = pieces.length
+  const stepAngle = 360 / count
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       <circle cx={CX} cy={CY} r={INNER_R} fill="#eef2f6" stroke="#cbd5e0" strokeWidth={2} />
-      <text x={CX} y={CY - 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="#1e3a5f">
+      <text x={CX} y={CY - 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill={TITLE_COLOR}>
         {title || 'Puzzle'}
       </text>
       <text x={CX} y={CY + 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fill="#718096">
-        {displayed.length} pièces
+        {count} pièces
       </text>
 
-      {displayed.map((piece, i) => {
-        const startDeg = i * 90 + GAP_ANGLE / 2
-        const endDeg = startDeg + 90 - GAP_ANGLE
+      {pieces.map((piece, i) => {
+        const startDeg = i * stepAngle + GAP_ANGLE / 2
+        const endDeg = startDeg + stepAngle - GAP_ANGLE
         const midDeg = (startDeg + endDeg) / 2
         const midRad = (midDeg * Math.PI) / 180
         const labelX = CX + (INNER_R + OUTER_R) / 2 * Math.cos(midRad)
@@ -76,11 +75,25 @@ export function Puzzle5Template({ data }: { data: PuzzleData }): ReactElement {
         const color = tplColors[elementId] ?? defaultColor
         const stroke = tplStrokeColors[elementId] || 'white'
         const isSelected = selectedIds.has(elementId)
-        const visualRect = { x: CX - OUTER_R, y: CY - OUTER_R, width: OUTER_R * 2, height: OUTER_R * 2 }
+
+        const defaultRect = { x: CX - OUTER_R, y: CY - OUTER_R, width: OUTER_R * 2, height: OUTER_R * 2 }
+        const customPos = templateElementPositions[elementId]
+        const visualRect = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+        const scaleX = visualRect.width / defaultRect.width
+        const scaleY = visualRect.height / defaultRect.height
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g
+              transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}
+              onMouseDown={e => startDrag(e, elementId, visualRect)}
+              style={{ cursor: 'pointer' }}
+            >
               <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3.5 : 2.5} strokeLinejoin="round" />
               <text x={labelX} y={labelY - 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
                 {piece.title}

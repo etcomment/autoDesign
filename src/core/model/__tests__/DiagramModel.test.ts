@@ -127,4 +127,72 @@ describe('DiagramModel', () => {
     expect(model.shapes).toHaveLength(types.length)
     expect(model.shapes.map(s => s.type)).toEqual(types)
   })
+
+  describe('Z-Index reordering', () => {
+    it('bringToFront place la forme en dernier dans le tableau (premier plan)', () => {
+      const s1 = model.addShape('rectangle', { x: 0, y: 0 }, { width: 50, height: 50 })
+      const s2 = model.addShape('ellipse', { x: 10, y: 10 }, { width: 50, height: 50 })
+      const s3 = model.addShape('diamond', { x: 20, y: 20 }, { width: 50, height: 50 })
+
+      expect(model.shapes.map(s => s.id)).toEqual([s1.id, s2.id, s3.id])
+
+      model.bringToFront(s1.id)
+      expect(model.shapes.map(s => s.id)).toEqual([s2.id, s3.id, s1.id])
+    })
+
+    it('sendToBack place la forme en premier dans le tableau (arriere-plan)', () => {
+      const s1 = model.addShape('rectangle', { x: 0, y: 0 }, { width: 50, height: 50 })
+      const s2 = model.addShape('ellipse', { x: 10, y: 10 }, { width: 50, height: 50 })
+      const s3 = model.addShape('diamond', { x: 20, y: 20 }, { width: 50, height: 50 })
+
+      model.sendToBack(s3.id)
+      expect(model.shapes.map(s => s.id)).toEqual([s3.id, s1.id, s2.id])
+    })
+
+    it('bringForward avance la forme d un cran', () => {
+      const s1 = model.addShape('rectangle', { x: 0, y: 0 }, { width: 50, height: 50 })
+      const s2 = model.addShape('ellipse', { x: 10, y: 10 }, { width: 50, height: 50 })
+      const s3 = model.addShape('diamond', { x: 20, y: 20 }, { width: 50, height: 50 })
+
+      model.bringForward(s1.id)
+      expect(model.shapes.map(s => s.id)).toEqual([s2.id, s1.id, s3.id])
+
+      // Avancer la forme deja en premier plan ne change rien
+      model.bringForward(s3.id)
+      expect(model.shapes.map(s => s.id)).toEqual([s2.id, s1.id, s3.id])
+    })
+
+    it('sendBackward recule la forme d un cran', () => {
+      const s1 = model.addShape('rectangle', { x: 0, y: 0 }, { width: 50, height: 50 })
+      const s2 = model.addShape('ellipse', { x: 10, y: 10 }, { width: 50, height: 50 })
+      const s3 = model.addShape('diamond', { x: 20, y: 20 }, { width: 50, height: 50 })
+
+      model.sendBackward(s3.id)
+      expect(model.shapes.map(s => s.id)).toEqual([s1.id, s3.id, s2.id])
+
+      // Reculer la forme deja en arrière-plan ne change rien
+      model.sendBackward(s1.id)
+      expect(model.shapes.map(s => s.id)).toEqual([s1.id, s3.id, s2.id])
+    })
+
+    it('fonctionne entre deux icônes et entre formes et icônes', () => {
+      const s1 = model.addShape('icon', { x: 0, y: 0 }, { width: 50, height: 50 }, 'user')
+      const s2 = model.addShape('icon', { x: 10, y: 10 }, { width: 50, height: 50 }, 'cog')
+      const s3 = model.addShape('rectangle', { x: 20, y: 20 }, { width: 50, height: 50 })
+
+      expect(model.shapes.map(s => s.id)).toEqual([s1.id, s2.id, s3.id])
+
+      model.bringToFront(s1.id)
+      expect(model.shapes.map(s => s.id)).toEqual([s2.id, s3.id, s1.id])
+
+      model.sendToBack(s1.id)
+      expect(model.shapes.map(s => s.id)).toEqual([s1.id, s2.id, s3.id])
+
+      model.bringForward(s1.id)
+      expect(model.shapes.map(s => s.id)).toEqual([s2.id, s1.id, s3.id])
+
+      model.sendBackward(s1.id)
+      expect(model.shapes.map(s => s.id)).toEqual([s1.id, s2.id, s3.id])
+    })
+  })
 })

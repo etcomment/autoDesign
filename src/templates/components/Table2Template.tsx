@@ -2,7 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { TableData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db']
 
@@ -14,7 +14,6 @@ export function Table2Template({ data }: { data: TableData }): ReactElement {
 
   const { title, columns, rows } = data
   const W = 900
-  const H = 600
   const labelW = 100
   const tableX = 40
   const tableW = W - tableX * 2
@@ -23,15 +22,14 @@ export function Table2Template({ data }: { data: TableData }): ReactElement {
   const colW = (tableW - labelW) / Math.max(columns.length, 1)
   const tableH = headerH + rows.length * rowH
   const tableY = title ? 100 : 70
-  const headerColor = '#1e3a5f'
+  const headerColor = TITLE_COLOR
   const stripeA = '#ffffff'
   const stripeB = '#f1f5f9'
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
+        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
           {title}
         </text>
       )}

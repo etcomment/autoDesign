@@ -2,7 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { IcebergData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#3a7bc8', '#1a5ca6', '#0d4d95']
 
@@ -50,7 +50,7 @@ export function Iceberg2Template({ data }: { data: IcebergData }): ReactElement 
       <path d={wavePath(W, waterY, H)} fill="url(#waterGrad2)" />
       <path d={wavePath(W, waterY)} fill="none" stroke="#5db9e8" strokeWidth={3} opacity={0.9} />
       {title && (
-        <text x={cx} y={44} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">{title}</text>
+        <text x={cx} y={44} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>{title}</text>
       )}
       {above.length > 0 && above.map((section, i) => {
         const si = sections.indexOf(section)

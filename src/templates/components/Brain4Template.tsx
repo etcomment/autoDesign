@@ -14,7 +14,6 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
 
   const { title, centerLabel, branches } = data
   const W = 900
-  const H = 600
   const cx = W / 2
   const rootY = 90
   const trunkH = 60
@@ -27,7 +26,6 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
           {title}

@@ -2,7 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { AgendaData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50', '#ff9800', '#9c27b0', '#00bcd4', '#607d8b', '#795548']
 
@@ -15,7 +15,6 @@ export function AgendaTemplate({ data }: { data: AgendaData }): ReactElement {
 
   const { title, items } = data
   const W = 900
-  const H = 600
 
   const startX = 220
   const circleX = 140
@@ -27,9 +26,8 @@ export function AgendaTemplate({ data }: { data: AgendaData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
+        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
           {title}
         </text>
       )}

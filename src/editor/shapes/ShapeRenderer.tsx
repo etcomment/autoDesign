@@ -1,5 +1,6 @@
 import type { Shape } from '../../core/model/Shape'
 import { ResizeHandles } from './ResizeHandles'
+import { TEMPLATE_ICONS } from '../../templates/shared/icons'
 
 const diamondPoints = (x: number, y: number, w: number, h: number): string => {
   const cx = x + w / 2
@@ -43,6 +44,9 @@ interface ShapeRendererProps {
 }
 
 export function ShapeRenderer({ shape, isSelected }: ShapeRendererProps) {
+  if (shape.isHidden) {
+    return null
+  }
   const { dimensions, position, style, text, type } = shape
   const { width: w, height: h } = dimensions
   const { x, y } = position
@@ -60,6 +64,29 @@ export function ShapeRenderer({ shape, isSelected }: ShapeRendererProps) {
     y: y - 1,
     width: w + 2,
     height: h + 2,
+  }
+
+  if (type === 'icon' && shape.iconName) {
+    const Icon = TEMPLATE_ICONS[shape.iconName]
+    if (Icon) {
+      const iconSize = Math.min(w, h) * 0.7
+      return (
+        <g>
+          <rect x={x} y={y} width={w} height={h} fill={style.fill} stroke="none" opacity={0} cursor="pointer" />
+          <g transform={`translate(${x + w / 2 - iconSize / 2}, ${y + h / 2 - iconSize / 2})`}>
+            <g stroke={style.stroke} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round">
+              <Icon size={iconSize} color={style.stroke} />
+            </g>
+          </g>
+          {isSelected && (
+            <>
+              <rect {...bounds} fill="none" stroke="#4a90d9" strokeWidth={1} strokeDasharray="4 2" />
+              <ResizeHandles shape={shape} />
+            </>
+          )}
+        </g>
+      )
+    }
   }
 
   return (
@@ -287,6 +314,8 @@ function renderShape(
           />
         </g>
       )
+    case 'icon':
+      return <rect x={x} y={y} width={w} height={h} rx={4} ry={4} {...props} />
     default:
       return (
         <rect x={x} y={y} width={w} height={h} rx={4} ry={4} {...props} />

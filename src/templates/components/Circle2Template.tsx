@@ -3,166 +3,259 @@ import type { CircleData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 
-const PALETTE = ['#2D2B55', '#4169E1', '#FF6347', '#E74C3C', '#2ECC71', '#F39C12', '#9B59B6', '#1ABC9C']
+const PALETTE = ['#2D2C59', '#3768D6', '#FF5338']
 
-function segmentWithArrowPath(
+function ringArcPath(
   cx: number,
   cy: number,
   innerR: number,
   outerR: number,
   startAngle: number,
   endAngle: number,
-  arrowSize: number,
 ): string {
   const cos = Math.cos
   const sin = Math.sin
 
-  const outerStart = { x: cx + outerR * cos(startAngle), y: cy + outerR * sin(startAngle) }
-  const innerStart = { x: cx + innerR * cos(startAngle), y: cy + innerR * sin(startAngle) }
-  const outerEnd = { x: cx + outerR * cos(endAngle), y: cy + outerR * sin(endAngle) }
-  const innerEnd = { x: cx + innerR * cos(endAngle), y: cy + innerR * sin(endAngle) }
+  const xStartOuter = cx + outerR * cos(startAngle)
+  const yStartOuter = cy + outerR * sin(startAngle)
 
-  const arrowTip = {
-    x: cx + (outerR + arrowSize) * cos(endAngle),
-    y: cy + (outerR + arrowSize) * sin(endAngle),
-  }
-  const arrowBaseOffset = 0.25
-  const arrowBaseAngle = endAngle - arrowBaseOffset
-  const arrowBaseOuter = {
-    x: cx + outerR * cos(arrowBaseAngle),
-    y: cy + outerR * sin(arrowBaseAngle),
-  }
-  const arrowBaseInner = {
-    x: cx + innerR * cos(arrowBaseAngle),
-    y: cy + innerR * sin(arrowBaseAngle),
-  }
+  const xEndOuter = cx + outerR * cos(endAngle)
+  const yEndOuter = cy + outerR * sin(endAngle)
 
-  const large = endAngle - startAngle > Math.PI ? 1 : 0
+  const xEndInner = cx + innerR * cos(endAngle)
+  const yEndInner = cy + innerR * sin(endAngle)
+
+  const xStartInner = cx + innerR * cos(startAngle)
+  const yStartInner = cy + innerR * sin(startAngle)
+
+  const largeArc = endAngle - startAngle > Math.PI ? 1 : 0
 
   return [
-    `M ${outerStart.x.toFixed(1)} ${outerStart.y.toFixed(1)}`,
-    `A ${outerR} ${outerR} 0 0 1 ${outerEnd.x.toFixed(1)} ${outerEnd.y.toFixed(1)}`,
-    `L ${cx + (outerR + 45) * cos(endAngle)} ${cy + (outerR + 45) * sin(endAngle)}`,
-    `L ${arrowBaseOuter.x.toFixed(1)} ${arrowBaseOuter.y.toFixed(1)}`,
-    `L ${cx + innerR * cos(arrowBaseAngle)} ${cy + innerR * sin(arrowBaseAngle)}`,
-    `A ${innerR} ${innerR} 0 0 0 ${innerStart.x.toFixed(1)} ${innerStart.y.toFixed(1)}`,
+    `M ${xStartOuter.toFixed(1)} ${yStartOuter.toFixed(1)}`,
+    `A ${outerR} ${outerR} 0 ${largeArc} 1 ${xEndOuter.toFixed(1)} ${yEndOuter.toFixed(1)}`,
+    `L ${xEndInner.toFixed(1)} ${yEndInner.toFixed(1)}`,
+    `A ${innerR} ${innerR} 0 ${largeArc} 0 ${xStartInner.toFixed(1)} ${yStartInner.toFixed(1)}`,
     `Z`,
   ].join(' ')
 }
+
+function arrowheadPath(
+  cx: number,
+  cy: number,
+  innerR: number,
+  outerR: number,
+  baseAngle: number,
+  tipAngle: number,
+): string {
+  const cos = Math.cos
+  const sin = Math.sin
+  const midR = (innerR + outerR) / 2
+
+  const outerFlareR = outerR + 28
+  const innerFlareR = innerR - 18
+
+  // Base outer wing
+  const xWingOuter = cx + outerFlareR * cos(baseAngle)
+  const yWingOuter = cy + outerFlareR * sin(baseAngle)
+
+  // Arrow tip pointing along midR at tipAngle
+  const xTip = cx + midR * cos(tipAngle)
+  const yTip = cy + midR * sin(tipAngle)
+
+  // Base inner wing
+  const xWingInner = cx + innerFlareR * cos(baseAngle)
+  const yWingInner = cy + innerFlareR * sin(baseAngle)
+
+  return [
+    `M ${xWingOuter.toFixed(1)} ${yWingOuter.toFixed(1)}`,
+    `L ${xTip.toFixed(1)} ${yTip.toFixed(1)}`,
+    `L ${xWingInner.toFixed(1)} ${yWingInner.toFixed(1)}`,
+    `Z`,
+  ].join(' ')
 }
 
 export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
   const W = 900
   const H = 600
   const cx = W / 2
   const cy = H / 2 + 20
-  const innerR = 65
-  const outerR = 170
-  const arrowSize = 50
-  const labelR = outerR + arrowSize + 40
+  const innerR = 75
+  const outerR = 180
 
   const segments = data.segments
   const n = segments.length
   if (n < 2)
     return (
       <g>
-        <rect width={W} height={H} fill="white" rx={8} />
         <text x={cx} y={cy} textAnchor="middle" fontSize={16} fill="#999">
           Minimum 2 segments
         </text>
       </g>
     )
 
-  const segmentAngle = (Math.PI * 2) / n
+  const angleStep = (Math.PI * 2) / n
+  const gapAngle = 0.005
+  const arrowOverlap = 0.35 // Arrowhead tip extends 0.35 rad into the next segment
+  const baseStartAngle = -Math.PI / 2 + 0.15
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {data.title && (
         <>
-          <text x={50} y={42} fontFamily="Arial, sans-serif" fontSize={28} fontWeight={700} fill="#2D2B55">
+          <text x={50} y={50} fontFamily="Arial, sans-serif" fontSize={32} fontWeight={700} fill="#2D2B55">
             {data.title}
           </text>
-          <rect x={50} y={52} width={60} height={5} fill="#2D2B55" rx={2} />
+          <rect x={50} y={62} width={70} height={5} fill="#2D2B55" rx={2} />
         </>
       )}
 
-      <circle cx={cx} cy={cy} r={innerR} fill="white" stroke="#ddd" strokeWidth={1} />
-
-      {segments.map((item, i) => {
+      {/* 1. Render all segment ring bodies first */}
+      {segments.map((_, i) => {
         const elementId = `segment-${i}`
-        const startAngle = i * segmentAngle
-        const endAngle = (i + 1) * segmentAngle
-        const midAngle = (startAngle + endAngle) / 2
-        const color = PALETTE[i % PALETTE.length] ?? '#4169E1'
-        const isSelected = selectedIds.has(elementId)
+        const startAngle = baseStartAngle + i * angleStep
+        const endAngle = baseStartAngle + (i + 1) * angleStep + gapAngle
+        const color = tplColors[elementId] ?? PALETTE[i % PALETTE.length] ?? '#3768D6'
+        const pos = positions[elementId]
 
-        const midR = innerR + (outerR - innerR) / 2
-        const iconX = cx + midR * Math.cos(midAngle)
-        const iconY = cy + midR * Math.sin(midAngle)
-        const numberX = cx + (outerR - 22) * Math.cos(midAngle)
-        const numberY = cy + (outerR - 22) * Math.sin(midAngle)
-
-        const labelX = cx + labelR * Math.cos(midAngle)
-        const labelY = cy + labelR * Math.sin(midAngle)
-        const normalized = ((midAngle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2)
-        const labelAlign = normalized < Math.PI ? 'end' : ('start' as const)
-
-        const bbox = {
-          x: cx - outerR - arrowSize,
-          y: cy - outerR - arrowSize,
-          width: (outerR + arrowSize) * 2,
-          height: (outerR + arrowSize) * 2,
+        const defaultBbox = {
+          x: cx - outerR,
+          y: cy - outerR,
+          width: outerR * 2,
+          height: outerR * 2,
         }
 
+        const transform = pos
+          ? `translate(${pos.x - defaultBbox.x}, ${pos.y - defaultBbox.y}) scale(${pos.width / defaultBbox.width}, ${pos.height / defaultBbox.height})`
+          : undefined
+
         return (
-          <g key={i}>
+          <path
+            key={`body-${i}`}
+            d={ringArcPath(cx, cy, innerR, outerR, startAngle, endAngle)}
+            fill={color}
+            stroke={tplStrokeColors[elementId]}
+            strokeWidth={tplStrokeWidths[elementId]}
+            transform={transform}
+          />
+        )
+      })}
+
+      {/* 2. White center hole circle rendered BEFORE arrowheads */}
+      <circle cx={cx} cy={cy} r={innerR - 1} fill="white" />
+
+      {/* 3. Render all arrowheads ON TOP of all bodies with unified interaction & transform */}
+      {segments.map((item, i) => {
+        const elementId = `segment-${i}`
+        const startAngle = baseStartAngle + i * angleStep
+        const endAngle = baseStartAngle + (i + 1) * angleStep
+        const midAngle = (startAngle + endAngle) / 2
+        const color = tplColors[elementId] ?? PALETTE[i % PALETTE.length] ?? '#3768D6'
+        const strokeColor = tplStrokeColors[elementId]
+        const strokeW = tplStrokeWidths[elementId]
+        const isSelected = selectedIds.has(elementId)
+        const pos = positions[elementId]
+
+        const cosMid = Math.cos(midAngle)
+        const sinMid = Math.sin(midAngle)
+
+        const iconRadius = (innerR + outerR) / 2
+        const iconX = cx + iconRadius * cosMid
+        const iconY = cy + iconRadius * sinMid
+
+        const numberRadius = outerR - 25
+        const numberX = cx + numberRadius * cosMid
+        const numberY = cy + numberRadius * sinMid
+
+        let labelAnchor: 'start' | 'end' | 'middle' = 'start'
+        if (cosMid < -0.2) {
+          labelAnchor = 'end'
+        } else if (cosMid > 0.2) {
+          labelAnchor = 'start'
+        } else {
+          labelAnchor = 'middle'
+        }
+
+        const labelRadius = outerR + 55
+        const labelX = cx + labelRadius * cosMid
+        const labelY = cy + labelRadius * sinMid
+
+        const defaultBbox = {
+          x: cx - outerR,
+          y: cy - outerR,
+          width: outerR * 2,
+          height: outerR * 2,
+        }
+
+        const bbox = pos
+          ? { x: pos.x, y: pos.y, width: pos.width, height: pos.height }
+          : defaultBbox
+
+        const transform = pos
+          ? `translate(${pos.x - defaultBbox.x}, ${pos.y - defaultBbox.y}) scale(${pos.width / defaultBbox.width}, ${pos.height / defaultBbox.height})`
+          : undefined
+
+        const baseAngle = endAngle - 0.03
+
+        return (
+          <g key={i} transform={transform}>
+            {/* Invisible clickable layer over body for unified selection */}
             <path
-              d={segmentWithArrowPath(cx, cy, innerR, outerR, startAngle, endAngle, arrowSize)}
-              fill={color}
-              stroke={isSelected ? '#4a90d9' : 'none'}
-              strokeWidth={isSelected ? 3 : 0}
+              d={ringArcPath(cx, cy, innerR, outerR, startAngle, endAngle + gapAngle)}
+              fill="transparent"
               onMouseDown={e => startDrag(e, elementId, bbox)}
               style={{ cursor: 'pointer' }}
             />
+            {/* Visible Triangular Arrowhead extending forward over next segment */}
+            <path
+              d={arrowheadPath(cx, cy, innerR, outerR, baseAngle, baseAngle + arrowOverlap)}
+              fill={color}
+              stroke={isSelected ? '#4a90d9' : (strokeColor || 'none')}
+              strokeWidth={isSelected ? 3 : (strokeW || 0)}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            />
+            {item.icon && (
+              <text x={iconX} y={iconY + 7} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={28} fill="white">
+                {item.icon}
+              </text>
+            )}
             <text
               x={numberX}
-              y={numberY + 8}
+              y={numberY + 7}
               textAnchor="middle"
               fontFamily="Arial, sans-serif"
-              fontSize={22}
+              fontSize={24}
               fontWeight={700}
               fill="white"
             >
               {item.number}
             </text>
-            {item.icon && (
-              <text x={iconX} y={iconY + 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={26} fill="white">
-                {item.icon}
-              </text>
-            )}
             <text
               x={labelX}
-              y={labelY - 12}
-              textAnchor={labelAlign}
+              y={labelY - 6}
+              textAnchor={labelAnchor}
               fontFamily="Arial, sans-serif"
               fontSize={16}
               fontWeight={700}
-              fill="#222"
+              fill="#111"
             >
               {item.title}
             </text>
             <text
               x={labelX}
-              y={labelY + 8}
-              textAnchor={labelAlign}
+              y={labelY + 14}
+              textAnchor={labelAnchor}
               fontFamily="Arial, sans-serif"
               fontSize={12}
-              fill="#444"
+              fill="#555"
             >
               {item.description.length > 45 ? item.description.slice(0, 42) + '...' : item.description}
             </text>

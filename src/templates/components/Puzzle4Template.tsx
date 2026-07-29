@@ -2,7 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { PuzzleData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50', '#ff9800', '#9b59b6', '#00bcd4']
 const CELL_W = 160
@@ -12,18 +12,14 @@ const TAB_D = 18
 
 type Tab = { right?: boolean; bottom?: boolean; leftIndent?: boolean; topIndent?: boolean }
 
-const GRID: Tab[][] = [
-  [
-    { right: true, bottom: true },
-    { right: true, bottom: true, leftIndent: true },
-    { bottom: true, leftIndent: true },
-  ],
-  [
-    { right: true, topIndent: true },
-    { right: true, leftIndent: true, topIndent: true },
-    { leftIndent: true, topIndent: true },
-  ],
-]
+function getTabForCell(row: number, col: number, totalRows: number, cols: number): Tab {
+  return {
+    right: col < cols - 1,
+    bottom: row < totalRows - 1,
+    leftIndent: col > 0,
+    topIndent: row > 0,
+  }
+}
 
 function gridPath(x: number, y: number, t: Tab): string {
   const r = x + CELL_W
@@ -51,26 +47,24 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
 
   const { title, pieces } = data
   const W = 700
-  const H = 480
   const cols = 3
+  const totalRows = Math.ceil(pieces.length / cols)
   const gridW = cols * CELL_W
   const startX = (W - gridW) / 2
   const startY = title ? 110 : 70
-  const displayed = pieces.slice(0, 6)
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
+        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
           {title}
         </text>
       )}
 
-      {displayed.map((piece, i) => {
+      {pieces.map((piece, i) => {
         const row = Math.floor(i / cols)
         const col = i % cols
-        const tabOpts = GRID[row]?.[col] ?? {}
+        const tabOpts = getTabForCell(row, col, totalRows, cols)
         const px = startX + col * CELL_W
         const py = startY + row * CELL_H
         const cx = px + CELL_W / 2

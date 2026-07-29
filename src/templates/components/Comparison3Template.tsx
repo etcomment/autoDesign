@@ -1,3 +1,4 @@
+import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { ComparisonData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
@@ -14,7 +15,6 @@ export function Comparison3Template({ data }: { data: ComparisonData }): ReactEl
 
   const { title, leftTitle, rightTitle, items } = data
   const W = 800
-  const H = title ? 550 : 510
   const midX = W / 2
   const rowH = 40
   const barH = 24
@@ -26,9 +26,8 @@ export function Comparison3Template({ data }: { data: ComparisonData }): ReactEl
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
+        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
           {title}
         </text>
       )}

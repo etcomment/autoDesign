@@ -11,11 +11,14 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
   const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const pos = useTemplateStore(s => s.templateElementPositions)
+  const moveEl = useTemplateStore(s => s.moveTemplateElement)
+  const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
   const { title, quarters, milestones, lanes } = data
   const W = 1000
-  const H = 640
   const topMargin = 50
   const headerHeight = 60
   const timelineY = topMargin + headerHeight
@@ -43,13 +46,22 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
-
-      {title && (
-        <text x={W / 2} y={28} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill="#1a1a2e">
-          {title}
-        </text>
-      )}
+      {(() => {
+        const r = pos['main-title'] ?? { x: W / 2 - 250, y: 10, width: 500, height: 35 }
+        const fill = tplColors['main-title'] ?? '#1a1a2e'
+        const stroke = tplStrokeColors['main-title']
+        const sW = tplStrokeWidths['main-title'] ?? 1
+        return title ? (
+          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+            {title.split('\n').map((line, i) => (
+              <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
+                {line}
+              </text>
+            ))}
+            {selectedIds.has('main-title') && renderHandles(r, 'main-title')}
+          </g>
+        ) : null
+      })()}
 
       {quarters.map((quarter, qi) => {
         const qKey = quarter.label
@@ -61,50 +73,61 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
         const qStartX = startX + firstIdx * cardSpacing - 10
         const qEndX = startX + lastIdx * cardSpacing + cardW + 10
         const qWidth = qEndX - qStartX
-        const color = PALETTE[qi % PALETTE.length]
+        const qId = `quarter-${qi}`
+        const qRect = pos[qId] ?? { x: qStartX, y: topMargin, width: qWidth, height: headerHeight }
+        const defaultColor = PALETTE[qi % PALETTE.length]!
+        const color = tplColors[qId] ?? defaultColor
+        const stroke = tplStrokeColors[qId] ?? (selectedIds.has(qId) ? '#4a90d9' : color)
+        const strokeWidth = tplStrokeWidths[qId] ?? (selectedIds.has(qId) ? 2.5 : 1.5)
+        const isSelected = selectedIds.has(qId)
 
         return (
-          <g key={`q-group-${qKey}`}>
-            <rect x={qStartX} y={topMargin} width={qWidth} height={headerHeight} rx={8} fill={color} opacity={0.1} stroke={color} strokeWidth={1.5} />
-            <text x={qStartX + qWidth / 2} y={topMargin + headerHeight / 2} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill={color}>
+          <g key={`q-group-${qKey}`} onMouseDown={e => startDrag(e, qId, qRect)} style={{ cursor: 'pointer' }}>
+            <rect x={qRect.x} y={qRect.y} width={qRect.width} height={qRect.height} rx={8} fill={color} opacity={0.1} stroke={stroke} strokeWidth={strokeWidth} />
+            <text x={qRect.x + qRect.width / 2} y={qRect.y + qRect.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill={color}>
               {qKey} {quarter.year ? quarter.year : ''}
             </text>
+            {isSelected && renderHandles(qRect, qId)}
           </g>
         )
       })}
 
-      <line x1={startX} y1={timelineY + 30} x2={startX + (totalCards - 1) * cardSpacing + cardW} y2={timelineY + 30} stroke="#c0c8d0" strokeWidth={2} />
+      <line x1={startX} y1={timelineY + 30} x2={startX + (totalCards - 1) * cardSpacing + cardW} y2={timelineY + 30} stroke={tplStrokeColors['timeline'] ?? '#c0c8d0'} strokeWidth={tplStrokeWidths['timeline'] ?? 2} />
 
       {sortedMilestones.map((milestone, mi) => {
         const elementId = `milestone-${mi}`
         const qi = quarters.findIndex(q => q.label === milestone.quarter)
-        const color = tplColors[elementId] ?? PALETTE[qi >= 0 ? qi % PALETTE.length : mi % PALETTE.length]
-        const stroke = tplStrokeColors[elementId] || color
+        const color = tplColors[elementId] ?? milestone.style?.fill ?? PALETTE[qi >= 0 ? qi % PALETTE.length : mi % PALETTE.length]!
+        const stroke = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : (milestone.style?.stroke || color))
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1)
         const isSelected = selectedIds.has(elementId)
         const cardX = startX + mi * cardSpacing
         const cardY = topMargin + headerHeight + 20
-        const visualRect = { x: cardX, y: cardY, width: cardW, height: cardH }
+        const defaultMRect = { x: cardX, y: cardY, width: milestone.style?.boxWidth ?? cardW, height: milestone.style?.boxHeight ?? cardH }
+        const visualRect = pos[elementId] ?? defaultMRect
+        const mRectX = visualRect.x; const mRectY = visualRect.y; const mRectW = visualRect.width; const mRectH = visualRect.height
 
         const laneColor = lanes.find(l => l.label === milestone.lane)
           ? PALETTE[lanes.findIndex(l => l.label === milestone.lane) % PALETTE.length]
           : color
+        const styleFontSize = milestone.style?.fontSize ?? 11
+        const styleFontWeight = milestone.style?.fontWeight ?? 700
+        const styleFontColor = milestone.style?.fontColor ?? color
 
         return (
           <g key={`m-${mi}`}>
             <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={cardX} y={cardY} width={cardW} height={cardH} rx={8} fill="#fff" stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 2.5 : 1} />
-              <rect x={cardX} y={cardY} width={cardW} height={32} rx={8} fill={color} opacity={0.15} />
-              <rect x={cardX} y={cardY + 24} width={cardW} height={8} fill={color} opacity={0.15} />
-              <rect x={cardX + 4} y={cardY + 3} width={4} height={26} rx={2} fill={laneColor} />
-              <text x={cardX + 14} y={cardY + 20} fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill={color}>
-                {milestone.title.length > 18 ? milestone.title.slice(0, 16) + '...' : milestone.title}
-              </text>
+              <rect x={mRectX} y={mRectY} width={mRectW} height={mRectH} rx={8} fill="#fff" stroke={stroke} strokeWidth={strokeWidth} />
+              <rect x={mRectX} y={mRectY} width={mRectW} height={32} rx={8} fill={color} opacity={0.15} />
+              <rect x={mRectX} y={mRectY + 24} width={mRectW} height={8} fill={color} opacity={0.15} />
+              <rect x={mRectX + 4} y={mRectY + 3} width={4} height={26} rx={2} fill={laneColor} />
+              {milestone.title.split('\n').map((line, li) => (<text x={mRectX + 14} key={li} y={mRectY + 20 + li * 12 - ((milestone.title.split('\\n').length - 1) * 6)} fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>{line}</text>))}
               {milestone.subtitle && (
-                <text x={cardX + cardW / 2} y={cardY + 52} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#666">
+                <text x={mRectX + mRectW / 2} y={mRectY + 52} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#666">
                   {milestone.subtitle.length > 24 ? milestone.subtitle.slice(0, 22) + '...' : milestone.subtitle}
                 </text>
               )}
-              <text x={cardX + cardW / 2} y={cardY + 72} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={8} fill="#aaa">
+              <text x={mRectX + mRectW / 2} y={mRectY + mRectH - 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={8} fill="#aaa">
                 {milestone.lane ?? ''}  ·  {milestone.quarter ?? ''}
               </text>
               {isSelected && renderHandles(visualRect, elementId)}

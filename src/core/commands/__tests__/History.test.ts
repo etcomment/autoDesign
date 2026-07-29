@@ -137,6 +137,58 @@ describe('History (Undo/Redo)', () => {
     })
   })
 
+  describe('undo/redo sur le réordonnancement (Z-Index)', () => {
+    it('bringToFront / undo / redo', () => {
+      const s1 = history.addShape('rectangle', { x: 0, y: 0 }, { width: 50, height: 50 })
+      const s2 = history.addShape('ellipse', { x: 10, y: 10 }, { width: 50, height: 50 })
+      const s3 = history.addShape('diamond', { x: 20, y: 20 }, { width: 50, height: 50 })
+
+      expect(model.shapes.map(s => s.id)).toEqual([s1.id, s2.id, s3.id])
+
+      history.bringToFront(s1.id)
+      expect(model.shapes.map(s => s.id)).toEqual([s2.id, s3.id, s1.id])
+
+      history.undo()
+      expect(model.shapes.map(s => s.id)).toEqual([s1.id, s2.id, s3.id])
+
+      history.redo()
+      expect(model.shapes.map(s => s.id)).toEqual([s2.id, s3.id, s1.id])
+    })
+
+    it('sendToBack / undo / redo', () => {
+      const s1 = history.addShape('rectangle', { x: 0, y: 0 }, { width: 50, height: 50 })
+      const s2 = history.addShape('ellipse', { x: 10, y: 10 }, { width: 50, height: 50 })
+      const s3 = history.addShape('diamond', { x: 20, y: 20 }, { width: 50, height: 50 })
+
+      history.sendToBack(s3.id)
+      expect(model.shapes.map(s => s.id)).toEqual([s3.id, s1.id, s2.id])
+
+      history.undo()
+      expect(model.shapes.map(s => s.id)).toEqual([s1.id, s2.id, s3.id])
+
+      history.redo()
+      expect(model.shapes.map(s => s.id)).toEqual([s3.id, s1.id, s2.id])
+    })
+
+    it('bringForward / sendBackward / undo / redo', () => {
+      const s1 = history.addShape('rectangle', { x: 0, y: 0 }, { width: 50, height: 50 })
+      const s2 = history.addShape('ellipse', { x: 10, y: 10 }, { width: 50, height: 50 })
+      const s3 = history.addShape('diamond', { x: 20, y: 20 }, { width: 50, height: 50 })
+
+      history.bringForward(s1.id)
+      expect(model.shapes.map(s => s.id)).toEqual([s2.id, s1.id, s3.id])
+
+      history.undo()
+      expect(model.shapes.map(s => s.id)).toEqual([s1.id, s2.id, s3.id])
+
+      history.sendBackward(s3.id)
+      expect(model.shapes.map(s => s.id)).toEqual([s1.id, s3.id, s2.id])
+
+      history.undo()
+      expect(model.shapes.map(s => s.id)).toEqual([s1.id, s2.id, s3.id])
+    })
+  })
+
   describe('undo/redo ne fait rien si vide', () => {
     it('undo sur pile vide ne jette pas', () => {
       expect(() => history.undo()).not.toThrow()

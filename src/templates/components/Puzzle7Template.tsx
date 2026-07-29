@@ -2,7 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { PuzzleData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50', '#ff9800']
 const BIG_W = 240
@@ -18,13 +18,12 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const { title, pieces } = data
   const W = 900
-  const H = 550
-  const displayed = pieces.slice(0, 4)
 
-  const smallPositions = [
+  const staticSmallPositions = [
     { x: BIG_X - SMALL_W - 30, y: BIG_Y - 20 },
     { x: BIG_X + BIG_W + 30, y: BIG_Y - 20 },
     { x: BIG_X + (BIG_W - SMALL_W) / 2, y: BIG_Y + BIG_H + 30 },
@@ -32,60 +31,104 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
-        <text x={W / 2} y={50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
+        <text x={W / 2} y={50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
           {title}
         </text>
       )}
 
-      {displayed.length > 0 && (() => {
-        const main = displayed[0]!
-        return (
-        <g>
-          <g onMouseDown={e => startDrag(e, 'piece-0', { x: BIG_X, y: BIG_Y, width: BIG_W, height: BIG_H })} style={{ cursor: 'pointer' }}>
-            <rect x={BIG_X + 3} y={BIG_Y + 3} width={BIG_W} height={BIG_H} rx={12} fill="black" opacity={0.15} />
-            <rect
-              x={BIG_X}
-              y={BIG_Y}
-              width={BIG_W}
-              height={BIG_H}
-              rx={10}
-              fill={(tplColors['piece-0'] ?? main.color) || PALETTE[0]!}
-              stroke={selectedIds.has('piece-0') ? '#4a90d9' : tplStrokeColors['piece-0'] || 'white'}
-              strokeWidth={selectedIds.has('piece-0') ? 3.5 : 3}
-            />
-            <circle cx={BIG_X + 36} cy={BIG_Y + 44} r={18} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
-            <text x={BIG_X + 36} y={BIG_Y + 50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={16} fontWeight={700} fill="white">
-              {main.number}
-            </text>
-            <text x={BIG_X + BIG_W / 2} y={BIG_Y + BIG_H / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill="white">
-              {main.title}
-            </text>
-            {main.subtitle && (
-              <text x={BIG_X + BIG_W / 2} y={BIG_Y + BIG_H / 2 + 26} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fill="rgba(255,255,255,0.85)">
-                {main.subtitle}
-              </text>
-            )}
-            {selectedIds.has('piece-0') && renderHandles({ x: BIG_X, y: BIG_Y, width: BIG_W, height: BIG_H }, 'piece-0')}
-          </g>
-        </g>
-      )})()}
+      {pieces.length > 0 && (() => {
+        const main = pieces[0]!
+        const elementId = 'piece-0'
+        const defaultRect = { x: BIG_X, y: BIG_Y, width: BIG_W, height: BIG_H }
+        const customPos = templateElementPositions[elementId]
+        const visualRect = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+        const scaleX = visualRect.width / defaultRect.width
+        const scaleY = visualRect.height / defaultRect.height
+        const isSelected = selectedIds.has(elementId)
 
-      {displayed.slice(1).map((piece, i) => {
-        const pos = smallPositions[i]!
-        const px = pos.x
-        const py = pos.y
+        return (
+          <g>
+            <g
+              transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}
+              onMouseDown={e => startDrag(e, elementId, visualRect)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect x={BIG_X + 3} y={BIG_Y + 3} width={BIG_W} height={BIG_H} rx={12} fill="black" opacity={0.15} />
+              <rect
+                x={BIG_X}
+                y={BIG_Y}
+                width={BIG_W}
+                height={BIG_H}
+                rx={10}
+                fill={(tplColors[elementId] ?? main.color) || PALETTE[0]!}
+                stroke={isSelected ? '#4a90d9' : tplStrokeColors[elementId] || 'white'}
+                strokeWidth={isSelected ? 3.5 : 3}
+              />
+              <circle cx={BIG_X + 36} cy={BIG_Y + 44} r={18} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
+              <text x={BIG_X + 36} y={BIG_Y + 50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={16} fontWeight={700} fill="white">
+                {main.number}
+              </text>
+              <text x={BIG_X + BIG_W / 2} y={BIG_Y + BIG_H / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill="white">
+                {main.title}
+              </text>
+              {main.subtitle && (
+                <text x={BIG_X + BIG_W / 2} y={BIG_Y + BIG_H / 2 + 26} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fill="rgba(255,255,255,0.85)">
+                  {main.subtitle}
+                </text>
+              )}
+              {isSelected && renderHandles(visualRect, elementId)}
+            </g>
+          </g>
+        )
+      })()}
+
+      {pieces.slice(1).map((piece, i) => {
+        let px: number
+        let py: number
+
+        if (i < staticSmallPositions.length) {
+          px = staticSmallPositions[i]!.x
+          py = staticSmallPositions[i]!.y
+        } else {
+          const smallCount = pieces.length - 1
+          const angle = (i / smallCount) * 2 * Math.PI - Math.PI / 2
+          const radius = 220
+          const centerPx = BIG_X + BIG_W / 2
+          const centerPy = BIG_Y + BIG_H / 2
+          px = centerPx + radius * Math.cos(angle) - SMALL_W / 2
+          py = centerPy + radius * Math.sin(angle) - SMALL_H / 2
+        }
+
         const elementId = `piece-${i + 1}`
         const defaultColor = piece.color || PALETTE[(i + 1) % PALETTE.length]!
         const color = tplColors[elementId] ?? defaultColor
         const stroke = tplStrokeColors[elementId] || 'white'
         const isSelected = selectedIds.has(elementId)
-        const visualRect = { x: px, y: py, width: SMALL_W, height: SMALL_H }
+
+        const defaultRect = { x: px, y: py, width: SMALL_W, height: SMALL_H }
+        const customPos = templateElementPositions[elementId]
+        const visualRect = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+        const scaleX = visualRect.width / defaultRect.width
+        const scaleY = visualRect.height / defaultRect.height
 
         return (
           <g key={i + 1}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g
+              transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}
+              onMouseDown={e => startDrag(e, elementId, visualRect)}
+              style={{ cursor: 'pointer' }}
+            >
               <rect x={px + 2} y={py + 2} width={SMALL_W} height={SMALL_H} rx={8} fill="black" opacity={0.1} />
               <rect x={px} y={py} width={SMALL_W} height={SMALL_H} rx={8} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3 : 2} />
               <circle cx={px + 24} cy={py + 28} r={11} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={1.5} />

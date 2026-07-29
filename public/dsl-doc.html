@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>autoDesign — Documentation du DSL</title>
+<style>
+  :root {
+    --indigo: #2D2B55;
+    --blue: #4169E1;
+    --red: #FF6347;
+    --bg: #0f1117;
+    --bg-card: #1a1d27;
+    --bg-code: #141720;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --border: #2a2d3a;
+    --accent: #818cf8;
+    --sidebar-w: 280px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    display: flex;
+    min-height: 100vh;
+  }
+  /* Sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-w);
+    height: 100vh;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 24px 0;
+    z-index: 100;
+    transition: transform .3s;
+  }
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .sidebar-header h2 {
+    font-size: 18px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .sidebar-header .subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+  .sidebar nav { padding: 0 12px; }
+  .sidebar nav a {
+    display: block;
+    padding: 6px 12px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    border-radius: 6px;
+    transition: all .15s;
+    margin: 1px 0;
+  }
+  .sidebar nav a:hover, .sidebar nav a.active {
+    color: var(--text);
+    background: rgba(129,140,248,.1);
+  }
+  .sidebar nav .cat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--blue);
+    font-weight: 700;
+    padding: 14px 12px 4px;
+    display: block;
+  }
+  /* Main content */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    padding: 40px 48px 80px;
+    max-width: 960px;
+  }
+  h1 {
+    font-size: 32px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .intro { color: var(--text-muted); font-size: 15px; margin-bottom: 40px; max-width: 640px; }
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+  }
+  h2 .anchor { color: var(--blue); text-decoration: none; margin-left: 8px; font-size: 16px; }
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+    margin: 24px 0 8px;
+  }
+  p, li { font-size: 14px; color: var(--text-muted); }
+  p { margin-bottom: 10px; }
+  ul { margin: 0 0 16px 20px; }
+  li { margin-bottom: 4px; }
+  /* Badges */
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin: 0 3px;
+    vertical-align: middle;
+  }
+  .badge-blue { background: rgba(65,105,225,.15); color: var(--blue); }
+  .badge-red { background: rgba(255,99,71,.15); color: var(--red); }
+  .badge-green { background: rgba(72,187,120,.15); color: #48bb78; }
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px;
+    font-size: 13px;
+  }
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    background: rgba(65,105,225,.08);
+    color: var(--accent);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    vertical-align: top;
+  }
+  td code, p code, li code, h3 code {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    background: var(--bg-code);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #c4b5fd;
+  }
+  /* Code blocks */
+  pre {
+    background: var(--bg-code);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 10px 0 20px;
+    position: relative;
+  }
+  pre code {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+  .copy-btn {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .copy-btn:hover { color: var(--text); border-color: var(--accent); }
+  /* Syntax highlighting */
+  .hl-comment { color: #6b7280; font-style: italic; }
+  .hl-header { color: var(--accent); font-weight: 700; }
+  .hl-keyword { color: #f59e0b; }
+  .hl-string { color: #34d399; }
+  .hl-param { color: #60a5fa; }
+  .hl-number { color: #f472b6; }
+  .hl-color { color: #fb923c; }
+  .hl-arrow { color: #94a3b8; }
+  /* Variants grid */
+  .variants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 16px;
+  }
+  .variant-tag {
+    font-size: 11px;
+    background: rgba(45,43,85,.5);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: var(--text-muted);
+  }
+  /* Section divider */
+  .section-note {
+    background: rgba(65,105,225,.06);
+    border-left: 3px solid var(--blue);
+    padding: 10px 16px;
+    border-radius: 0 6px 6px 0;
+    margin: 12px 0;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  /* Hamburger */
+  .hamburger {
+    display: none;
+    position: fixed;
+    top: 12px; left: 12px;
+    z-index: 200;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    font-size: 20px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+  }
+  @media (max-width: 860px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; padding: 60px 20px 60px; }
+    .hamburger { display: flex; }
+  }
+  /* Back to top */
+  .back-top {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    width: 40px; height: 40px;
+    background: var(--indigo);
+    border: none;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 18px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .3s;
+    z-index: 100;
+  }
+  .back-top.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<button class="hamburger" onclick="document.querySelector('.sidebar').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h2>autoDesign DSL</h2>
+    <div class="subtitle">Documentation de reference</div>
+  </div>
+  <nav>
+    <a href="#introduction">Introduction</a>
+    <a href="#syntaxe-generale">Syntaxe generale</a>
+    <span class="cat-label">Templates</span>
+    <a href="#roadmap">Roadmap</a>
+    <a href="#process">Process</a>
+    <a href="#strategy">Strategy</a>
+    <a href="#puzzle">Puzzle</a>
+    <a href="#funnel">Funnel</a>
+    <a href="#iceberg">Iceberg</a>
+    <a href="#dashboard">Dashboard</a>
+    <a href="#table">Table</a>
+    <a href="#agenda">Agenda</a>
+    <a href="#comparison">Comparison</a>
+    <a href="#business">Business Model</a>
+    <a href="#brain">Brain</a>
+    <a href="#budget">Budget</a>
+    <a href="#decision-tree">Decision Tree</a>
+    <a href="#goals">Goals</a>
+    <a href="#manufacturing">Manufacturing</a>
+    <a href="#value-chain">Value Chain</a>
+    <a href="#circle">Circle</a>
+    <a href="#product-roadmap">Product Roadmap</a>
+    <span class="cat-label">Reference</span>
+    <a href="#ref-rapide">Tableau recapitulatif</a>
+    <span class="cat-label">Fonctionnalites</span>
+    <a href="#icons">Icônes</a>
+    <a href="#dragdrop">Drag &amp; Drop</a>
+    <a href="#export">Export</a>
+    <a href="#interface">Interface</a>
+  </nav>
+</aside>
+
+<main class="main">
+
+<!-- ========== INTRODUCTION ========== -->
+<section id="introduction">
+  <h1>Documentation du DSL autoDesign</h1>
+  <p class="intro">
+    autoDesign utilise un <strong>Domain Specific Language</strong> (DSL) pour representer les templates visuels sous forme de texte.
+    Ce DSL est parse par le moteur du template system et converti en donnees structurees (objets TypeScript) que le rendu graphique utilise ensuite.
+  </p>
+  <p class="intro">
+    Le DSL est concu pour etre lisible et editable manuellement. Chaque template est defini par un <strong>en-tete</strong> (header) qui declare son type et optionnellement un titre, suivi de <strong>champs</strong> definissant le contenu.
+  </p>
+  <p class="intro">
+    <strong>Nouveautes</strong> : drag &amp; drop de shapes et icônes, export SVG/PNG/JPG/PPTX avec contenu complet, copier-coller image vers d'autres applications, 53 icônes SVG intégrées.
+  </p>
+</section>
+
+<!-- ========== SYNTAXE GENERALE ========== -->
+<section id="syntaxe-generale">
+  <h2>Syntaxe generale <a class="anchor" href="#syntaxe-generale">#</a></h2>
+
+  <h3>En-tete (Header)</h3>
+  <p>Chaque fichier DSL commence par un en-tete unique sur la premiere ligne :</p>
+  <pre><code><span class="hl-header">@type variante "Titre du template"</span></code></pre>
+  <ul>
+    <li><code>@type</code> — le type de base du template (ex: <code>roadmap</code>, <code>process</code>, <code>strategy</code>)</li>
+    <li><code>variante</code> — un numero optionnel (ex: <code>4</code> pour <code>@roadmap 4</code>). Sans numero, c'est la variante 1.</li>
+    <li><code>"Titre"</code> — un titre optionnel, entre guillemets simples ou doubles</li>
+  </ul>
+
+  <h3>Syntaxe des champs</h3>
+  <ul>
+    <li>Les champs sont sur des lignes separees, <strong>indentes avec au moins 2 espaces</strong> (le parser les trim, l'indentation est donc indicative)</li>
+    <li>Syntaxe : <code>motcle valeur</code> ou <code>motcle "valeur avec espaces"</code></li>
+    <li>Les guillemets simples et doubles sont equivalents — le parser les retire automatiquement</li>
+    <li>Les sauts de ligne dans les textes s'ecrivent <code>\n</code> (convertis en vrais sauts de ligne)</li>
+    <li>Les commentaires commencent par <code>//</code> et sont ignores</li>
+    <li>Les lignes vides sont ignorees</li>
+  </ul>
+
+  <h3>Types de valeurs</h3>
+  <table>
+    <tr><th>Type</th><th>Exemple</th><th>Description</th></tr>
+    <tr><td>Chaine</td><td><code>"Hello World"</code></td><td>Texte entre guillemets</td></tr>
+    <tr><td>Nombre</td><td><code>42</code></td><td>Entier ou decimal</td></tr>
+    <tr><td>Couleur</td><td><code>#FF6347</code></td><td>Code hexadecimal CSS</td></tr>
+    <tr><td>Liste inline</td><td><code>Q1:2026 Q2:2026</code></td><td>Espacee, sans guillemets</td></tr>
+  </table>
+
+  <div class="section-note">
+    <strong>Astuce :</strong> Le parser est tolerant : il trim les espaces en debut/fin de ligne, ignore les commentaires <code>//</code> et les lignes vides. Vous pouvez formater votre DSL comme bon vous semble.
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<!--                     ROADMAP                                      -->
+<!-- ================================================================ -->
+<section id="roadmap">
+  <h2>Roadmap <a class="anchor" href="#roadmap">#</a></h2>
+  <p>Les roadmaps representent un parcours temporal avec des jalons (milestones). Il existe 16 variantes visuelles, des plus simples aux plus complexes.</p>
+
+  <div class="variants">
+    <span class="variant-tag">roadmap</span>
+    <span class="variant-tag">roadmap 2</span>
+    <span class="variant-tag">roadmap 3</span>
+    <span class="variant-tag">roadmap 4</span>
+    <span class="variant-tag">roadmap 5 ... 16</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@roadmap</span>                  <span class="hl-comment">// variante 1</span>
+<span class="hl-header">@roadmap 4</span>               <span class="hl-comment">// variante 4</span>
+<span class="hl-header">@roadmap 8 "Ma Roadmap"</span> <span class="hl-comment">// avec titre</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>start</code></td>
+      <td><code>start "DEBUT"</code></td>
+      <td>Label du point de depart (optionnel)</td>
+    </tr>
+    <tr>
+      <td><code>finish</code></td>
+      <td><code>finish "FIN"</code></td>
+      <td>Label du point d'arrivee (optionnel)</td>
+    </tr>
+    <tr>
+      <td><code>quarters</code></td>
+      <td><code>quarters Q1:2026 Q2:2026 Q3:2026 Q4:2026</code></td>
+      <td>Periodes temporelles. Format: <code>label:annee</code></td>
+    </tr>
+    <tr>
+      <td><code>lanes</code></td>
+      <td><code>lanes "Phase One":#23255a "Phase Two":#2d62ed</code></td>
+      <td>Voies/colonnes (swimlanes). Format: <code>nom:#couleur</code> (couleur optionnelle). Espaces separes.</td>
+    </tr>
+    <tr>
+      <td><code>progress</code></td>
+      <td><code>progress 2024</code></td>
+      <td>Position de la barre de progression rouge (annee ou index). Defaut: milieu.</td>
+    </tr>
+    <tr>
+      <td><code>milestone</code></td>
+      <td><code>milestone Q1:Dev "Titre" "Sous-titre"</code></td>
+      <td>Jalon. Place <code>quarter:lane</code> optionnel. Sous-titre optionnel.</td>
+    </tr>
+    <tr>
+      <td><code>style</code></td>
+      <td><code>style fill #4169E1</code></td>
+      <td>Style global ou relatif au milestone courant.</td>
+    </tr>
+  </table>
+
+  <div class="section-note">
+    <strong>Variantes 1-3 :</strong> Utilisent uniquement les milestones simples, start/finish.<br>
+    <strong>Variantes 4+ :</strong> Supportent les quarters, lanes, et l'assignation de milestone a un quarter/lane precis via <code>milestone Q1:Dev "Titre"</code>.<br>
+    <strong>Variante 15 :</strong> Utilise une structure <code>phases</code> interne differente mais le DSL est le meme.
+  </div>
+
+  <h3>Exemple — Roadmap simple (variante 1)</h3>
+  <pre><code><span class="hl-header">@roadmap "Feuille de route 2026"</span>
+  <span class="hl-keyword">start</span> <span class="hl-string">"DEBUT"</span>
+  <span class="hl-keyword">finish</span> <span class="hl-string">"FIN"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-string">"Recherche"</span> <span class="hl-string">"Analyse de marche"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-string">"Design"</span> <span class="hl-string">"Prototype UX/UI"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-string">"Developpement"</span> <span class="hl-string">"Sprints d'iteration"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-string">"Lancement"</span> <span class="hl-string">"Mise sur le marche"</span></code></pre>
+
+  <h3>Exemple — Roadmap avec quarters et lanes (variante 4)</h3>
+  <pre><code><span class="hl-header">@roadmap 4 "Planning 2026"</span>
+  <span class="hl-keyword">start</span> <span class="hl-string">"DEBUT"</span>
+  <span class="hl-keyword">finish</span> <span class="hl-string">"FIN"</span>
+  <span class="hl-keyword">quarters</span> <span class="hl-param">Q1:2026 Q2:2026 Q3:2026 Q4:2026</span>
+  <span class="hl-keyword">lanes</span> <span class="hl-param">Dev Product QA</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-param">Q1:Dev</span> <span class="hl-string">"Alpha"</span> <span class="hl-string">"Prototype interne"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-param">Q2:Product</span> <span class="hl-string">"Beta"</span> <span class="hl-string">"Preview privee"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-param">Q3:QA</span> <span class="hl-string">"RC1"</span> <span class="hl-string">"Stabilisation"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-param">Q4:Dev</span> <span class="hl-string">"GA"</span> <span class="hl-string">"Disponibilite generale"</span></code></pre>
+
+  <h3>Exemple — Roadmap 2 avec phases colorees (variante 2)</h3>
+  <pre><code><span class="hl-header">@roadmap 2 "Timeline Project"</span>
+  <span class="hl-keyword">progress</span> <span class="hl-param">2024</span>
+  <span class="hl-keyword">lanes</span> <span class="hl-param">"Phase One":#23255a "Phase Two":#2d62ed "Phase Three":#ff4a2b</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-string">"Initiate"</span> <span class="hl-string">"Project kickoff"</span> <span class="hl-param">date:2022 lane:"Phase One"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-string">"Plan"</span> <span class="hl-string">"Detailed design"</span> <span class="hl-param">date:2023 lane:"Phase One"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-string">"Develop"</span> <span class="hl-string">"Core features"</span> <span class="hl-param">date:2024 lane:"Phase Two"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-string">"Test"</span> <span class="hl-string">"QA &amp; validation"</span> <span class="hl-param">date:2025 lane:"Phase Two"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-string">"Deliver"</span> <span class="hl-string">"Production release"</span> <span class="hl-param">date:2026 lane:"Phase Three"</span></code></pre>
+  <p>La barre rouge s'etend du debut jusqu'a l'annee specifiee par <code>progress</code>. Les phases sont affichees en bas comme des bandes colorees en chevron. Les milestones assignees a un lane sont colorees selon la couleur du lane.</p>
+</section>
+
+<!-- ================================================================ -->
+<!--                     PROCESS                                      -->
+<!-- ================================================================ -->
+<section id="process">
+  <h2>Process <a class="anchor" href="#process">#</a></h2>
+  <p>Les processus decrivent une sequence d'etapes ordonnees. Le numero de chaque etape est affecte automatiquement.</p>
+
+  <div class="variants">
+    <span class="variant-tag">process</span>
+    <span class="variant-tag">process 1</span>
+    <span class="variant-tag">process 2</span>
+    <span class="variant-tag">process 4</span>
+    <span class="variant-tag">process 5</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@process</span>
+<span class="hl-header">@process 4 "Mon Processus"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>step</code></td>
+      <td><code>step "Titre" "Sous-titre"</code></td>
+      <td>Une etape du processus. Le numero est auto-incremente. Sous-titre optionnel.</td>
+    </tr>
+  </table>
+
+  <h3>Exemple — Processus agile</h3>
+  <pre><code><span class="hl-header">@process 1 "Cycle Agile"</span>
+  <span class="hl-keyword">step</span> <span class="hl-string">"Analyser"</span> <span class="hl-string">"Comprendre le probleme"</span>
+  <span class="hl-keyword">step</span> <span class="hl-string">"Concevoir"</span> <span class="hl-string">"Creer la solution"</span>
+  <span class="hl-keyword">step</span> <span class="hl-string">"Implementer"</span> <span class="hl-string">"Construire la solution"</span>
+  <span class="hl-keyword">step</span> <span class="hl-string">"Valider"</span> <span class="hl-string">"Tester et verifier"</span>
+  <span class="hl-keyword">step</span> <span class="hl-string">"Deployer"</span> <span class="hl-string">"Mettre en production"</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     STRATEGY                                     -->
+<!-- ================================================================ -->
+<section id="strategy">
+  <h2>Strategy <a class="anchor" href="#strategy">#</a></h2>
+  <p>Les blocs strategiques representent les piliers d'une strategie. Chaque bloc a un numero, un titre et un sous-titre optionnel.</p>
+
+  <div class="variants">
+    <span class="variant-tag">strategy</span>
+    <span class="variant-tag">strategy 2 (Pyramide)</span>
+    <span class="variant-tag">strategy 3 (Hub &amp; Spoke)</span>
+    <span class="variant-tag">strategy 4 (3 Colonnes)</span>
+    <span class="variant-tag">strategy 5 (Timeline)</span>
+    <span class="variant-tag">strategy 6 (Quadrant)</span>
+    <span class="variant-tag">strategy 7 (Cercles imbriques)</span>
+    <span class="variant-tag">strategy 8 (Escalier)</span>
+  </div>
+
+  <div class="section-note">
+    <strong>Variante 6 (Quadrant Matrix) :</strong> Cette variante utilise une structure de donnees specifique (axisX, axisY, quadrants) qui n'est pas parsable via le DSL. Elle utilise les <code>block</code> du parser standard, le rendu affiche ensuite les donnees sous forme de matrice 2x2.
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@strategy</span>
+<span class="hl-header">@strategy 2 "Ma Strategie"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>block</code></td>
+      <td><code>block "01" "Titre" "Sous-titre"</code></td>
+      <td>Un bloc strategique. Le premier argument est le numero (chaine). Sous-titre optionnel.</td>
+    </tr>
+  </table>
+
+  <h3>Exemple — Strategie pyramide</h3>
+  <pre><code><span class="hl-header">@strategy 2 "Strategie d'entreprise"</span>
+  <span class="hl-keyword">block</span> <span class="hl-string">"01"</span> <span class="hl-string">"Vision"</span> <span class="hl-string">"Direction pole etoile"</span>
+  <span class="hl-keyword">block</span> <span class="hl-string">"02"</span> <span class="hl-string">"Mission"</span> <span class="hl-string">"Ce que nous faisons et pourquoi"</span>
+  <span class="hl-keyword">block</span> <span class="hl-string">"03"</span> <span class="hl-string">"Objectifs"</span> <span class="hl-string">"Cibles mesurables"</span>
+  <span class="hl-keyword">block</span> <span class="hl-string">"04"</span> <span class="hl-string">"Initiatives"</span> <span class="hl-string">"Programmes cles"</span>
+  <span class="hl-keyword">block</span> <span class="hl-string">"05"</span> <span class="hl-string">"Fondation"</span> <span class="hl-string">"Capacites de base"</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     PUZZLE                                       -->
+<!-- ================================================================ -->
+<section id="puzzle">
+  <h2>Puzzle <a class="anchor" href="#puzzle">#</a></h2>
+  <p>Les puzzles representent des elements interconnectes, comme les pieces d'un casse-tete. Chaque piece a un titre, un sous-titre optionnel et une couleur.</p>
+
+  <div class="variants">
+    <span class="variant-tag">puzzle</span>
+    <span class="variant-tag">puzzle 2 (Horizontal)</span>
+    <span class="variant-tag">puzzle 3 (Vertical)</span>
+    <span class="variant-tag">puzzle 4 (Grille 2x3)</span>
+    <span class="variant-tag">puzzle 5 (Circulaire)</span>
+    <span class="variant-tag">puzzle 6 (Diamant)</span>
+    <span class="variant-tag">puzzle 7 (Focus)</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@puzzle</span>
+<span class="hl-header">@puzzle 4 "Mon Puzzle"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>piece</code></td>
+      <td><code>piece "Titre" "Sous-titre" #couleur</code></td>
+      <td>Une piece du puzzle. Sous-titre optionnel. Couleur optionnelle (hex, defaut: <code>#4a90d9</code>).</td>
+    </tr>
+  </table>
+
+  <div class="section-note">
+    <strong>Note :</strong> Le parser utilise <code>tokenizeLine</code> pour les pieces — les arguments sont separes par des espaces, guillemets ou non. La couleur est detectee si elle commence par <code>#</code>.
+  </div>
+
+  <h3>Exemple — Puzzle colore</h3>
+  <pre><code><span class="hl-header">@puzzle "Puzzle Strategique"</span>
+  <span class="hl-keyword">piece</span> <span class="hl-string">"Identifier"</span> <span class="hl-string">"Trouver les opportunites"</span> <span class="hl-color">#4a90d9</span>
+  <span class="hl-keyword">piece</span> <span class="hl-string">"Innover"</span> <span class="hl-string">"Creer des solutions"</span> <span class="hl-color">#e91e63</span>
+  <span class="hl-keyword">piece</span> <span class="hl-string">"Ameliorer"</span> <span class="hl-string">"Optimiser le processus"</span> <span class="hl-color">#4caf50</span>
+  <span class="hl-keyword">piece</span> <span class="hl-string">"Gerer"</span> <span class="hl-string">"Piloter les equipes"</span> <span class="hl-color">#ff9800</span></code></pre>
+
+  <h3>Exemple — Puzzle sans sous-titre</h3>
+  <pre><code><span class="hl-header">@puzzle 4 "Vision et Execution"</span>
+  <span class="hl-keyword">piece</span> <span class="hl-string">"Vision"</span> <span class="hl-color">#2c2b64</span>
+  <span class="hl-keyword">piece</span> <span class="hl-string">"Mission"</span> <span class="hl-color">#3366cc</span>
+  <span class="hl-keyword">piece</span> <span class="hl-string">"Strategie"</span> <span class="hl-color">#ff5338</span>
+  <span class="hl-keyword">piece</span> <span class="hl-string">"Execution"</span> <span class="hl-color">#f2cb13</span>
+  <span class="hl-keyword">piece</span> <span class="hl-string">"Metriques"</span> <span class="hl-color">#5cc29d</span>
+  <span class="hl-keyword">piece</span> <span class="hl-string">"Croissance"</span> <span class="hl-color">#f27798</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     FUNNEL                                       -->
+<!-- ================================================================ -->
+<section id="funnel">
+  <h2>Funnel <a class="anchor" href="#funnel">#</a></h2>
+  <p>Les entonnoirs (funnels) representent un processus de filtration avec des niveaux de plus en plus restreints.</p>
+
+  <div class="variants">
+    <span class="variant-tag">funnel</span>
+    <span class="variant-tag">funnel 2 (Horizontal)</span>
+    <span class="variant-tag">funnel 3 (3D)</span>
+    <span class="variant-tag">funnel 4 (Split)</span>
+    <span class="variant-tag">funnel 5 (Steps)</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@funnel</span>
+<span class="hl-header">@funnel 2 "Mon Entonnoir"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>level</code></td>
+      <td><code>level "Titre" pourcentage #couleur</code></td>
+      <td>Un niveau du funnel. Pourcentage et couleur optionnels.</td>
+    </tr>
+  </table>
+
+  <h3>Exemple — Tunnel de conversion</h3>
+  <pre><code><span class="hl-header">@funnel "Entonnoir de conversion"</span>
+  <span class="hl-keyword">level</span> <span class="hl-string">"Notoriete"</span> <span class="hl-number">100</span> <span class="hl-color">#4a90d9</span>
+  <span class="hl-keyword">level</span> <span class="hl-string">"Interet"</span> <span class="hl-number">75</span> <span class="hl-color">#7b68ee</span>
+  <span class="hl-keyword">level</span> <span class="hl-string">"Consideration"</span> <span class="hl-number">50</span> <span class="hl-color">#e91e63</span>
+  <span class="hl-keyword">level</span> <span class="hl-string">"Achat"</span> <span class="hl-number">25</span> <span class="hl-color">#4caf50</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     ICEBERG                                      -->
+<!-- ================================================================ -->
+<section id="iceberg">
+  <h2>Iceberg <a class="anchor" href="#iceberg">#</a></h2>
+  <p>L'iceberg montre la partie visible (au-dessus de l'eau) et les couches cachees (en dessous).</p>
+
+  <div class="variants">
+    <span class="variant-tag">iceberg</span>
+    <span class="variant-tag">iceberg 2 (Vertical)</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@iceberg</span>
+<span class="hl-header">@iceberg 2 "Mon Iceberg"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>above</code></td>
+      <td><code>above "Titre" "Sous-titre"</code></td>
+      <td>Section visible (au-dessus de la ligne d'eau). Sous-titre optionnel.</td>
+    </tr>
+    <tr>
+      <td><code>below</code></td>
+      <td><code>below "Titre" "Sous-titre"</code></td>
+      <td>Section cachee (en dessous). Sous-titre optionnel.</td>
+    </tr>
+  </table>
+
+  <h3>Exemple — Modele de l'iceberg</h3>
+  <pre><code><span class="hl-header">@iceberg "Modele de l'Iceberg"</span>
+  <span class="hl-keyword">above</span> <span class="hl-string">"Resultats"</span> <span class="hl-string">"Resultats visibles"</span>
+  <span class="hl-keyword">below</span> <span class="hl-string">"Strategie"</span> <span class="hl-string">"Planification cachee"</span>
+  <span class="hl-keyword">below</span> <span class="hl-string">"Culture"</span> <span class="hl-string">"Valeurs cachees"</span>
+  <span class="hl-keyword">below</span> <span class="hl-string">"Processus"</span> <span class="hl-string">"Fondation cachee"</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     DASHBOARD                                    -->
+<!-- ================================================================ -->
+<section id="dashboard">
+  <h2>Dashboard <a class="anchor" href="#dashboard">#</a></h2>
+  <p>Les tableaux de bord presentent des metriques cles avec leurs valeurs et variations.</p>
+
+  <div class="variants">
+    <span class="variant-tag">dashboard</span>
+    <span class="variant-tag">dashboard 2 (Grandes metriques)</span>
+    <span class="variant-tag">dashboard 3 (Barres KPI)</span>
+    <span class="variant-tag">dashboard 4 (Jauges)</span>
+    <span class="variant-tag">dashboard 5 (Compact)</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@dashboard</span>
+<span class="hl-header">@dashboard 2 "Mon Dashboard"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>metric</code></td>
+      <td><code>metric "Label" "Valeur" "Variation"</code></td>
+      <td>Une metrique. La variation est optionnelle (ex: <code>+12%</code>).</td>
+    </tr>
+  </table>
+
+  <h3>Exemple — Dashboard SaaS</h3>
+  <pre><code><span class="hl-header">@dashboard "KPIs SaaS"</span>
+  <span class="hl-keyword">metric</span> <span class="hl-string">"Revenu"</span> <span class="hl-string">"2,4 M$"</span> <span class="hl-string">"+12%"</span>
+  <span class="hl-keyword">metric</span> <span class="hl-string">"Utilisateurs"</span> <span class="hl-string">"48,5K"</span> <span class="hl-string">"+8%"</span>
+  <span class="hl-keyword">metric</span> <span class="hl-string">"Churn"</span> <span class="hl-string">"2,1%"</span> <span class="hl-string">"-0,5%"</span>
+  <span class="hl-keyword">metric</span> <span class="hl-string">"NPS"</span> <span class="hl-string">"72"</span> <span class="hl-string">"+5"</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     TABLE                                        -->
+<!-- ================================================================ -->
+<section id="table">
+  <h2>Table <a class="anchor" href="#table">#</a></h2>
+  <p>Les tableaux presentent des donnees structurees en colonnes et lignes.</p>
+
+  <div class="variants">
+    <span class="variant-tag">table</span>
+    <span class="variant-tag">table 2 (Raye)</span>
+    <span class="variant-tag">table 3 (Cartes)</span>
+    <span class="variant-tag">table 4 (En-tetes)</span>
+    <span class="variant-tag">table 5 (Minimal)</span>
+    <span class="variant-tag">table 6 (Bleu)</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@table</span>
+<span class="hl-header">@table 2 "Mon Tableau"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>columns</code></td>
+      <td><code>columns "Col1" "Col2" "Col3"</code></td>
+      <td>Definition des en-tetes de colonnes (liste inline).</td>
+    </tr>
+    <tr>
+      <td><code>row</code></td>
+      <td><code>row "Label" "Cell1" "Cell2"</code></td>
+      <td>Une ligne de donnees. Le premier argument est le label de la ligne.</td>
+    </tr>
+  </table>
+
+  <div class="section-note">
+    <strong>Note :</strong> Le parser utilise <code>tokenizeLine</code> pour les colonnes et lignes — les arguments sont separes par des espaces, guillemets simples ou doubles.
+  </div>
+
+  <h3>Exemple — Tableau financier</h3>
+  <pre><code><span class="hl-header">@table "Resultats financiers"</span>
+  <span class="hl-keyword">columns</span> <span class="hl-string">"Revenu"</span> <span class="hl-string">"Cout"</span> <span class="hl-string">"Profit"</span> <span class="hl-string">"Marge"</span>
+  <span class="hl-keyword">row</span> <span class="hl-string">"Produit A"</span> <span class="hl-string">"500K$"</span> <span class="hl-string">"300K$"</span> <span class="hl-string">"200K$"</span> <span class="hl-string">"40%"</span>
+  <span class="hl-keyword">row</span> <span class="hl-string">"Produit B"</span> <span class="hl-string">"350K$"</span> <span class="hl-string">"180K$"</span> <span class="hl-string">"170K$"</span> <span class="hl-string">"49%"</span>
+  <span class="hl-keyword">row</span> <span class="hl-string">"Produit C"</span> <span class="hl-string">"220K$"</span> <span class="hl-string">"150K$"</span> <span class="hl-string">"70K$"</span> <span class="hl-string">"32%"</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     AGENDA                                       -->
+<!-- ================================================================ -->
+<section id="agenda">
+  <h2>Agenda <a class="anchor" href="#agenda">#</a></h2>
+  <p>Les agendas listent des points de reunions ou d'evenements dans l'ordre chronologique.</p>
+
+  <div class="variants">
+    <span class="variant-tag">agenda</span>
+    <span class="variant-tag">agenda 2 (Timeline horizontale)</span>
+    <span class="variant-tag">agenda 3 (Grille)</span>
+    <span class="variant-tag">agenda 4 (Pile de cartes)</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@agenda</span>
+<span class="hl-header">@agenda 3 "Ordre du jour"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>item</code></td>
+      <td><code>item "01" "Titre" "Sous-titre"</code></td>
+      <td>Un point d'agenda. Le premier argument est le numero (chaine). Sous-titre optionnel.</td>
+    </tr>
+  </table>
+
+  <h3>Exemple — Reunion strategique</h3>
+  <pre><code><span class="hl-header">@agenda 2 "Comite Strategique"</span>
+  <span class="hl-keyword">item</span> <span class="hl-string">"01"</span> <span class="hl-string">"Introduction"</span> <span class="hl-string">"10 min"</span>
+  <span class="hl-keyword">item</span> <span class="hl-string">"02"</span> <span class="hl-string">"Revue du projet"</span> <span class="hl-string">"20 min"</span>
+  <span class="hl-keyword">item</span> <span class="hl-string">"03"</span> <span class="hl-string">"Discussion"</span> <span class="hl-string">"15 min"</span>
+  <span class="hl-keyword">item</span> <span class="hl-string">"04"</span> <span class="hl-string">"Prochaines etapes"</span> <span class="hl-string">"10 min"</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     COMPARISON                                   -->
+<!-- ================================================================ -->
+<section id="comparison">
+  <h2>Comparison <a class="anchor" href="#comparison">#</a></h2>
+  <p>Les comparaisons mettent en face a face deux options, produits ou approches.</p>
+
+  <div class="variants">
+    <span class="variant-tag">comparison</span>
+    <span class="variant-tag">comparison 2 (Radar)</span>
+    <span class="variant-tag">comparison 3 (Barres)</span>
+    <span class="variant-tag">comparison 4 (Cercles)</span>
+    <span class="variant-tag">comparison 5 (Scores)</span>
+    <span class="variant-tag">comparison 6 (Checklist)</span>
+    <span class="variant-tag">comparison 7 (Pros/Cons)</span>
+  </div>
+
+  <div class="section-note">
+    <strong>Variantes speciales :</strong> Les variantes 2 (Radar), 5 (Scores), 6 (Checklist) et 7 (Pros/Cons) utilisent des structures de donnees specifiques. Le parser ne prend en charge que le format standard (<code>left</code>/<code>right</code>/<code>comp</code>) pour les variantes 1, 3 et 4. Les autres variantes sont rendues a partir des donnees par defaut ou editees via l'interface.
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@comparison</span>
+<span class="hl-header">@comparison 3 "Comparaison A vs B"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>left</code></td>
+      <td><code>left "Option A"</code></td>
+      <td>Titre de la colonne de gauche.</td>
+    </tr>
+    <tr>
+      <td><code>right</code></td>
+      <td><code>right "Option B"</code></td>
+      <td>Titre de la colonne de droite.</td>
+    </tr>
+    <tr>
+      <td><code>comp</code></td>
+      <td><code>comp "Critere" "Valeur gauche" "Valeur droite"</code></td>
+      <td>Une ligne de comparaison.</td>
+    </tr>
+  </table>
+
+  <h3>Exemple — Comparaison de solutions</h3>
+  <pre><code><span class="hl-header">@comparison "Cloud vs On-premise"</span>
+  <span class="hl-keyword">left</span> <span class="hl-string">"Cloud"</span>
+  <span class="hl-keyword">right</span> <span class="hl-string">"On-premise"</span>
+  <span class="hl-keyword">comp</span> <span class="hl-string">"Cout"</span> <span class="hl-string">"10K$"</span> <span class="hl-string">"15K$"</span>
+  <span class="hl-keyword">comp</span> <span class="hl-string">"Delai"</span> <span class="hl-string">"3 mois"</span> <span class="hl-string">"6 mois"</span>
+  <span class="hl-keyword">comp</span> <span class="hl-string">"Risque"</span> <span class="hl-string">"Faible"</span> <span class="hl-string">"Moyen"</span>
+  <span class="hl-keyword">comp</span> <span class="hl-string">"ROI"</span> <span class="hl-string">"Eleve"</span> <span class="hl-string">"Moyen"</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     BUSINESS                                     -->
+<!-- ================================================================ -->
+<section id="business">
+  <h2>Business Model <a class="anchor" href="#business">#</a></h2>
+  <p>Les modeles d'affaires representent un noyau central entoure de differentes composantes de l'entreprise.</p>
+
+  <div class="variants">
+    <span class="variant-tag">business</span>
+    <span class="variant-tag">business 2 (Hub vertical)</span>
+    <span class="variant-tag">business 3 (Matrice 2x3)</span>
+    <span class="variant-tag">business 4 (Chevron)</span>
+    <span class="variant-tag">business 5 (Diamant)</span>
+    <span class="variant-tag">business 6 (Barres empilees)</span>
+    <span class="variant-tag">business 7 (Cercle)</span>
+    <span class="variant-tag">business 8 (Liste verticale)</span>
+    <span class="variant-tag">business 9 (Grille 3x3)</span>
+    <span class="variant-tag">business 10 (Pyramide)</span>
+    <span class="variant-tag">business 11 (Timeline)</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@business</span>
+<span class="hl-header">@business 3 "Modele d'affaires"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>center</code></td>
+      <td><code>center "Noyau"</code></td>
+      <td>Label du centre du diagramme.</td>
+    </tr>
+    <tr>
+      <td><code>nodes</code></td>
+      <td><code>nodes "Noeud1" "Noeud2" "Noeud3"</code></td>
+      <td>Liste des noeuds autour du centre (separes par espaces).</td>
+    </tr>
+  </table>
+
+  <h3>Exemple — Ecosysteme d'entreprise</h3>
+  <pre><code><span class="hl-header">@business 7 "Ecosysteme d'entreprise"</span>
+  <span class="hl-keyword">center</span> <span class="hl-string">"Coeur"</span>
+  <span class="hl-keyword">nodes</span> <span class="hl-string">"Strategie"</span> <span class="hl-string">"Finance"</span> <span class="hl-string">"Produit"</span> <span class="hl-string">"Ventes"</span> <span class="hl-string">"Support"</span> <span class="hl-string">"RH"</span> <span class="hl-string">"Marketing"</span> <span class="hl-string">"Juridique"</span></code></pre>
+
+  <h3>Exemple — Modele pyramide</h3>
+  <pre><code><span class="hl-header">@business 10 "Organisation"</span>
+  <span class="hl-keyword">center</span> <span class="hl-string">"Pyramide"</span>
+  <span class="hl-keyword">nodes</span> <span class="hl-string">"CEO Vision"</span> <span class="hl-string">"VPs"</span> <span class="hl-string">"Directeurs"</span> <span class="hl-string">"Managers"</span> <span class="hl-string">"Chef d'equipe"</span> <span class="hl-string">"Ingenieurs"</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     BRAIN                                        -->
+<!-- ================================================================ -->
+<section id="brain">
+  <h2>Brain <a class="anchor" href="#brain">#</a></h2>
+  <p>Les diagrammes de type cerveau (mind maps) presentent un idee centrale avec des branches qui s'en ecartent.</p>
+
+  <div class="variants">
+    <span class="variant-tag">brain</span>
+    <span class="variant-tag">brain 2 (Gauche/Droite)</span>
+    <span class="variant-tag">brain 3 (Toile d'araignee)</span>
+    <span class="variant-tag">brain 4 (Arbre)</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@brain</span>
+<span class="hl-header">@brain 2 "Ma Mind Map"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>center</code></td>
+      <td><code>center "Idee centrale"</code></td>
+      <td>Le noeud central du diagramme.</td>
+    </tr>
+    <tr>
+      <td><code>branch</code></td>
+      <td><code>branch "Titre" "Sous-titre"</code></td>
+      <td>Une branche partant du centre. Sous-titre optionnel.</td>
+    </tr>
+  </table>
+
+  <h3>Exemple — Mind map projet</h3>
+  <pre><code><span class="hl-header">@brain "Mind Map Projet"</span>
+  <span class="hl-keyword">center</span> <span class="hl-string">"Projet Alpha"</span>
+  <span class="hl-keyword">branch</span> <span class="hl-string">"Recherche"</span> <span class="hl-string">"Etude de marche"</span>
+  <span class="hl-keyword">branch</span> <span class="hl-string">"Design"</span> <span class="hl-string">"UX/UI"</span>
+  <span class="hl-keyword">branch</span> <span class="hl-string">"Developpement"</span> <span class="hl-string">"Sprints"</span>
+  <span class="hl-keyword">branch</span> <span class="hl-string">"Tests"</span> <span class="hl-string">"QA"</span>
+  <span class="hl-keyword">branch</span> <span class="hl-string">"Lancement"</span> <span class="hl-string">"Go-to-market"</span>
+  <span class="hl-keyword">branch</span> <span class="hl-string">"Croissance"</span> <span class="hl-string">"Scale"</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     BUDGET                                       -->
+<!-- ================================================================ -->
+<section id="budget">
+  <h2>Budget <a class="anchor" href="#budget">#</a></h2>
+  <p>Les budgets presentent la repartition financiere avec des lignes de depenses et un total.</p>
+
+  <div class="variants">
+    <span class="variant-tag">budget</span>
+    <span class="variant-tag">budget 2 (Barres verticales)</span>
+    <span class="variant-tag">budget 3 (Donut)</span>
+    <span class="variant-tag">budget 4 (Waterfall)</span>
+    <span class="variant-tag">budget 5 (Pie)</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@budget</span>
+<span class="hl-header">@budget 3 "Budget 2026"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>total</code></td>
+      <td><code>total "500K$"</code></td>
+      <td>Le montant total du budget.</td>
+    </tr>
+    <tr>
+      <td><code>line</code></td>
+      <td><code>line "Categorie" "Montant" pourcentage</code></td>
+      <td>Une ligne budgetaire. Le pourcentage est un entier.</td>
+    </tr>
+  </table>
+
+  <h3>Exemple — Budget annuel</h3>
+  <pre><code><span class="hl-header">@budget "Budget Annuel 2026"</span>
+  <span class="hl-keyword">total</span> <span class="hl-string">"500K$"</span>
+  <span class="hl-keyword">line</span> <span class="hl-string">"Engineering"</span> <span class="hl-string">"200K$"</span> <span class="hl-number">40</span>
+  <span class="hl-keyword">line</span> <span class="hl-string">"Marketing"</span> <span class="hl-string">"150K$"</span> <span class="hl-number">30</span>
+  <span class="hl-keyword">line</span> <span class="hl-string">"Operations"</span> <span class="hl-string">"100K$"</span> <span class="hl-number">20</span>
+  <span class="hl-keyword">line</span> <span class="hl-string">"Admin"</span> <span class="hl-string">"50K$"</span> <span class="hl-number">10</span></code></pre>
+
+  <h3>Exemple — Budget waterfall</h3>
+  <pre><code><span class="hl-header">@budget 4 "Cash Flow"</span>
+  <span class="hl-keyword">total</span> <span class="hl-string">"350K$"</span>
+  <span class="hl-keyword">line</span> <span class="hl-string">"Revenus"</span> <span class="hl-string">"+500K$"</span> <span class="hl-number">100</span>
+  <span class="hl-keyword">line</span> <span class="hl-string">"COGS"</span> <span class="hl-string">"-150K$"</span> <span class="hl-number">-30</span>
+  <span class="hl-keyword">line</span> <span class="hl-string">"Marketing"</span> <span class="hl-string">"-80K$"</span> <span class="hl-number">-16</span>
+  <span class="hl-keyword">line</span> <span class="hl-string">"Operations"</span> <span class="hl-string">"-60K$"</span> <span class="hl-number">-12</span>
+  <span class="hl-keyword">line</span> <span class="hl-string">"R&D"</span> <span class="hl-string">"+140K$"</span> <span class="hl-number">28</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     DECISION TREE                                -->
+<!-- ================================================================ -->
+<section id="decision-tree">
+  <h2>Decision Tree <a class="anchor" href="#decision-tree">#</a></h2>
+  <p>L'arbre de decision modelise un processus de choix binaire (oui/non) avec des feuilles d'action.</p>
+
+  <div class="variants">
+    <span class="variant-tag">decisionTree</span>
+    <span class="variant-tag">decision 2 (Horizontal)</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@decisionTree</span>
+<span class="hl-header">@decision 2 "Arbre de decision"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>question</code></td>
+      <td><code>question "Question racine?"</code></td>
+      <td>La question de depart de l'arbre.</td>
+    </tr>
+    <tr>
+      <td><code>yes</code></td>
+      <td><code>yes "Source" -&gt; "Cible"</code></td>
+      <td>Branche positive d'un noeud vers un sous-noeud.</td>
+    </tr>
+    <tr>
+      <td><code>no</code></td>
+      <td><code>no "Source" -&gt; "Cible"</code></td>
+      <td>Branche negative d'un noeud vers un sous-noeud.</td>
+    </tr>
+    <tr>
+      <td><code>leaf</code></td>
+      <td><code>leaf "Source" -&gt; "Resultat"</code></td>
+      <td>Feuille terminale — un resultat final.</td>
+    </tr>
+  </table>
+
+  <div class="section-note">
+    <strong>Comment ca fonctionne :</strong> Les aretes sont definies par des paires source-target. Le parser reconstruit l'arbre en detectant les noeuds racines (ceux qui ne sont jamais cibles) et en construisant recursivement les sous-arbres. Le format est : <code>type "noeudSource" -&gt; "noeudCible"</code>.
+  </div>
+
+  <h3>Exemple — Lancement de projet</h3>
+  <pre><code><span class="hl-header">@decisionTree "Lancer le projet?"</span>
+  <span class="hl-keyword">question</span> <span class="hl-string">"Demarrer le projet?"</span>
+  <span class="hl-keyword">yes</span> <span class="hl-string">"Budget OK?"</span> <span class="hl-arrow">-&gt;</span> <span class="hl-string">"Budget Verifie"</span>
+  <span class="hl-keyword">no</span> <span class="hl-string">"Budget OK?"</span> <span class="hl-arrow">-&gt;</span> <span class="hl-string">"Reporter"</span>
+  <span class="hl-keyword">yes</span> <span class="hl-string">"Budget Verifie"</span> <span class="hl-arrow">-&gt;</span> <span class="hl-string">"Ressources?"</span>
+  <span class="hl-keyword">no</span> <span class="hl-string">"Budget Verifie"</span> <span class="hl-arrow">-&gt;</span> <span class="hl-string">"Embaucher d'abord"</span>
+  <span class="hl-keyword">leaf</span> <span class="hl-string">"Ressources?"</span> <span class="hl-arrow">-&gt;</span> <span class="hl-string">"Lancer"</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     GOALS                                        -->
+<!-- ================================================================ -->
+<section id="goals">
+  <h2>Goals <a class="anchor" href="#goals">#</a></h2>
+  <p>Les objectifs (goals) presentent un objectif central entoure de metriques avec leurs valeurs actuelles et cibles.</p>
+
+  <div class="variants">
+    <span class="variant-tag">goals</span>
+    <span class="variant-tag">goals 1 (Cible)</span>
+    <span class="variant-tag">goals 2 (Montagne)</span>
+    <span class="variant-tag">goals 3 (Jauge)</span>
+    <span class="variant-tag">goals 4 (Barres de progression)</span>
+    <span class="variant-tag">goals 5 (Thermometre)</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@goals</span>
+<span class="hl-header">@goals 3 "Mes Objectifs"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>center</code></td>
+      <td><code>center "Objectif central"</code></td>
+      <td>Le label de l'objectif central.</td>
+    </tr>
+    <tr>
+      <td><code>metric</code></td>
+      <td><code>metric "Label" "Valeur" "Cible"</code></td>
+      <td>Une metrique avec valeur actuelle et cible.</td>
+    </tr>
+  </table>
+
+  <h3>Exemple — KPIs 2026</h3>
+  <pre><code><span class="hl-header">@goals 1 "Vision 2026"</span>
+  <span class="hl-keyword">center</span> <span class="hl-string">"Vision 2026"</span>
+  <span class="hl-keyword">metric</span> <span class="hl-string">"Revenu"</span> <span class="hl-string">"2M$"</span> <span class="hl-string">"5M$"</span>
+  <span class="hl-keyword">metric</span> <span class="hl-string">"Utilisateurs"</span> <span class="hl-string">"10K"</span> <span class="hl-string">"50K"</span>
+  <span class="hl-keyword">metric</span> <span class="hl-string">"Marches"</span> <span class="hl-string">"3"</span> <span class="hl-string">"10"</span>
+  <span class="hl-keyword">metric</span> <span class="hl-string">"NPS"</span> <span class="hl-string">"72"</span> <span class="hl-string">"90"</span>
+  <span class="hl-keyword">metric</span> <span class="hl-string">"ROI"</span> <span class="hl-string">"18%"</span> <span class="hl-string">"30%"</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     MANUFACTURING                                -->
+<!-- ================================================================ -->
+<section id="manufacturing">
+  <h2>Manufacturing <a class="anchor" href="#manufacturing">#</a></h2>
+  <p>Les diagrammes de fabrication representent un flux de production avec des postes de travail.</p>
+
+  <div class="variants">
+    <span class="variant-tag">manufacturing</span>
+    <span class="variant-tag">manufacturing 2 (Vertical)</span>
+    <span class="variant-tag">manufacturing 3 (U-shape)</span>
+    <span class="variant-tag">manufacturing 4 (Parallele)</span>
+    <span class="variant-tag">manufacturing 5 (Diamant)</span>
+    <span class="variant-tag">manufacturing 6 (Hub &amp; Spoke)</span>
+    <span class="variant-tag">manufacturing 7 (Timeline)</span>
+    <span class="variant-tag">manufacturing 8 (Circulaire)</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@manufacturing</span>
+<span class="hl-header">@manufacturing 3 "Flux de production"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>station</code></td>
+      <td><code>station "Titre" "Sous-titre"</code></td>
+      <td>Un poste de travail ou etape de production. Sous-titre optionnel.</td>
+    </tr>
+  </table>
+
+  <h3>Exemple — Ligne de production</h3>
+  <pre><code><span class="hl-header">@manufacturing "Chaine de production"</span>
+  <span class="hl-keyword">station</span> <span class="hl-string">"Materiaux premiers"</span> <span class="hl-string">"Entree"</span>
+  <span class="hl-keyword">station</span> <span class="hl-string">"Transformation"</span> <span class="hl-string">"Processus"</span>
+  <span class="hl-keyword">station</span> <span class="hl-string">"Controle qualite"</span> <span class="hl-string">"Verification"</span>
+  <span class="hl-keyword">station</span> <span class="hl-string">"Assemblage"</span> <span class="hl-string">"Construction"</span>
+  <span class="hl-keyword">station</span> <span class="hl-string">"Expedition"</span> <span class="hl-string">"Livraison"</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     VALUE CHAIN                                  -->
+<!-- ================================================================ -->
+<section id="value-chain">
+  <h2>Value Chain <a class="anchor" href="#value-chain">#</a></h2>
+  <p>La chaine de valeur decrit les activites principales et de support d'une organisation (modele de Porter).</p>
+
+  <div class="variants">
+    <span class="variant-tag">valueChain</span>
+    <span class="variant-tag">valueChain 2 (Vertical)</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@valueChain</span>
+<span class="hl-header">@valueChain 2 "Chaine de valeur"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>primary</code></td>
+      <td><code>primary "Titre" "Sous-titre"</code></td>
+      <td>Une activite primaire (chaine de valeur principale).</td>
+    </tr>
+    <tr>
+      <td><code>support</code></td>
+      <td><code>support "Titre" "Sous-titre"</code></td>
+      <td>Une activite de support.</td>
+    </tr>
+  </table>
+
+  <h3>Exemple — Modele de Porter</h3>
+  <pre><code><span class="hl-header">@valueChain "Chaine de Valeur"</span>
+  <span class="hl-keyword">primary</span> <span class="hl-string">"Logistique entree"</span> <span class="hl-string">"Approvisionnement"</span>
+  <span class="hl-keyword">primary</span> <span class="hl-string">"Operations"</span> <span class="hl-string">"Production"</span>
+  <span class="hl-keyword">primary</span> <span class="hl-string">"Logistique sortie"</span> <span class="hl-string">"Distribution"</span>
+  <span class="hl-keyword">primary</span> <span class="hl-string">"Ventes"</span> <span class="hl-string">"Revenus"</span>
+  <span class="hl-keyword">primary</span> <span class="hl-string">"Service"</span> <span class="hl-string">"Support client"</span>
+  <span class="hl-keyword">support</span> <span class="hl-string">"Infrastructure"</span> <span class="hl-string">"IT et Systemes"</span>
+  <span class="hl-keyword">support</span> <span class="hl-string">"RH"</span> <span class="hl-string">"Talents"</span>
+  <span class="hl-keyword">support</span> <span class="hl-string">"R&D"</span> <span class="hl-string">"Innovation"</span>
+  <span class="hl-keyword">support</span> <span class="hl-string">"Approvisionnement"</span> <span class="hl-string">"Achats"</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     CIRCLE                                       -->
+<!-- ================================================================ -->
+<section id="circle">
+  <h2>Circle <a class="anchor" href="#circle">#</a></h2>
+  <p>Le diagramme circulaire presente des segments numerotes dans un anneau, avec un titre, une description et optionnellement une icon.</p>
+
+  <div class="variants">
+    <span class="variant-tag">circle</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@circle "Mon Cycle"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>segment</code></td>
+      <td><code>segment "01" "Titre" "Description" icone</code></td>
+      <td>Un segment du cercle. L'icone est optionnelle (emoji ou texte).</td>
+    </tr>
+  </table>
+
+  <h3>Exemple — Cycle PDCA</h3>
+  <pre><code><span class="hl-header">@circle "Cycle PDCA"</span>
+  <span class="hl-keyword">segment</span> <span class="hl-string">"01"</span> <span class="hl-string">"Planifier"</span> <span class="hl-string">"Definir les objectifs et le plan d'action"</span>
+  <span class="hl-keyword">segment</span> <span class="hl-string">"02"</span> <span class="hl-string">"Executer"</span> <span class="hl-string">"Mettre en oeuvre le plan"</span>
+  <span class="hl-keyword">segment</span> <span class="hl-string">"03"</span> <span class="hl-string">"Verifier"</span> <span class="hl-string">"Controler les resultats"</span>
+  <span class="hl-keyword">segment</span> <span class="hl-string">"04"</span> <span class="hl-string">"Agir"</span> <span class="hl-string">"Ajuster et ameliorer"</span></code></pre>
+
+  <h3>Exemple — Avec icons</h3>
+  <pre><code><span class="hl-header">@circle "Cycle de vie"</span>
+  <span class="hl-keyword">segment</span> <span class="hl-string">"01"</span> <span class="hl-string">"Concept"</span> <span class="hl-string">"Validation de l'idee"</span>
+  <span class="hl-keyword">segment</span> <span class="hl-string">"02"</span> <span class="hl-string">"Prototype"</span> <span class="hl-string">"MVP fonctionnel"</span> <span class="hl-color">&#128295;</span>
+  <span class="hl-keyword">segment</span> <span class="hl-string">"03"</span> <span class="hl-string">"Lancement"</span> <span class="hl-string">"Mise sur le marche"</span> <span class="hl-color">&#128640;</span></code></pre>
+</section>
+
+<!-- ================================================================ -->
+<!--                     PRODUCT ROADMAP                              -->
+<!-- ================================================================ -->
+<section id="product-roadmap">
+  <h2>Product Roadmap <a class="anchor" href="#product-roadmap">#</a></h2>
+  <p>Les roadmaps produit sont des tableaux de bord temporels organisant les jalons par voie (swimlane) et par trimestre.</p>
+
+  <div class="variants">
+    <span class="variant-tag">productRoadmap</span>
+    <span class="variant-tag">productRoadmap 2</span>
+    <span class="variant-tag">productRoadmap 3</span>
+    <span class="variant-tag">productRoadmap 4</span>
+    <span class="variant-tag">productRoadmap 5</span>
+    <span class="variant-tag">productRoadmap 6</span>
+    <span class="variant-tag">productRoadmap 7 (Grille)</span>
+    <span class="variant-tag">productRoadmap 8 (Calendrier)</span>
+    <span class="variant-tag">productRoadmap 9 (Barres)</span>
+    <span class="variant-tag">productRoadmap 10 (Gantt)</span>
+    <span class="variant-tag">productRoadmap 11 (Cartes)</span>
+    <span class="variant-tag">productRoadmap 12 (Badges)</span>
+  </div>
+
+  <h3>En-tete</h3>
+  <pre><code><span class="hl-header">@productRoadmap</span>
+<span class="hl-header">@productRoadmap 8 "Roadmap Produit"</span></code></pre>
+
+  <h3>Champs disponibles</h3>
+  <p>Les product roadmaps utilisent le meme parser que les roadmaps classiques :</p>
+  <table>
+    <tr><th>Champ</th><th>Syntaxe</th><th>Description</th></tr>
+    <tr>
+      <td><code>quarters</code></td>
+      <td><code>quarters Q1:2026 Q2:2026 Q3:2026 Q4:2026</code></td>
+      <td>Les trimestres de la timeline.</td>
+    </tr>
+    <tr>
+      <td><code>lanes</code></td>
+      <td><code>lanes Dev Product UX QA</code></td>
+      <td>Les voies (swimlanes) du tableau. Supporte les couleurs: <code>lanes "Frontend":#3366cc "Backend":#2c2b64</code></td>
+    </tr>
+    <tr>
+      <td><code>milestone</code></td>
+      <td><code>milestone Q1:Dev "Titre" "Sous-titre"</code></td>
+      <td>Un jalons assigne a un trimestre et une voie.</td>
+    </tr>
+  </table>
+
+  <div class="section-note">
+    <strong>Difference avec roadmap :</strong> Les productRoadmaps imposent toujours la structure quarters + lanes + milestones. Certaines variantes (11, 12) peuvent fonctionner sans quarters ni lanes. Le parser est identique a celui des roadmaps.
+  </div>
+
+  <h3>Exemple — Roadmap produit Gantt</h3>
+  <pre><code><span class="hl-header">@productRoadmap 10 "Roadmap Produit"</span>
+  <span class="hl-keyword">quarters</span> <span class="hl-param">Q1:2026 Q2:2026 Q3:2026 Q4:2026</span>
+  <span class="hl-keyword">lanes</span> <span class="hl-param">Frontend Backend DevOps</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-param">Q1:Frontend</span> <span class="hl-string">"Dashboard"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-param">Q2:Backend</span> <span class="hl-string">"API v1"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-param">Q1:DevOps</span> <span class="hl-string">"CI/CD"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-param">Q3:Backend</span> <span class="hl-string">"Auth"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-param">Q4:DevOps</span> <span class="hl-string">"Monitoring"</span></code></pre>
+
+  <h3>Exemple — Roadmap produit avec sous-titres</h3>
+  <pre><code><span class="hl-header">@productRoadmap 3 "Planification Produit"</span>
+  <span class="hl-keyword">quarters</span> <span class="hl-param">Q1:2026 Q2:2026 Q3:2026 Q4:2026</span>
+  <span class="hl-keyword">lanes</span> <span class="hl-param">Dev Product QA</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-param">Q1:Dev</span> <span class="hl-string">"Alpha"</span> <span class="hl-string">"Prototype fonctionnel"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-param">Q2:Product</span> <span class="hl-string">"Beta"</span> <span class="hl-string">"Fonctionnalites completes"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-param">Q3:QA</span> <span class="hl-string">"RC1"</span> <span class="hl-string">"Candidat au release"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-param">Q4:Dev</span> <span class="hl-string">"GA"</span> <span class="hl-string">"Release publique"</span></code></pre>
+</section>
+
+<!-- ========== REFERENCE RAPIDE ========== -->
+<section id="ref-rapide">
+  <h2>Reference rapide <a class="anchor" href="#ref-rapide">#</a></h2>
+  <p>Tableau recapitulatif de tous les types, leur en-tete et les mots-cles de champs.</p>
+  <table>
+    <tr><th>Type</th><th>En-tete DSL</th><th>Mots-cles</th><th>Variantes</th></tr>
+    <tr><td>Roadmap</td><td><code>@roadmap [N]</code></td><td><code>start</code>, <code>finish</code>, <code>quarters</code>, <code>lanes</code>, <code>milestone</code>, <code>style</code></td><td>1-16</td></tr>
+    <tr><td>Process</td><td><code>@process [N]</code></td><td><code>step</code></td><td>, 1, 2, 4, 5</td></tr>
+    <tr><td>Strategy</td><td><code>@strategy [N]</code></td><td><code>block</code></td><td>1-8</td></tr>
+    <tr><td>Puzzle</td><td><code>@puzzle [N]</code></td><td><code>piece</code></td><td>1-7</td></tr>
+    <tr><td>Funnel</td><td><code>@funnel [N]</code></td><td><code>level</code></td><td>1-5</td></tr>
+    <tr><td>Iceberg</td><td><code>@iceberg [N]</code></td><td><code>above</code>, <code>below</code></td><td>1-2</td></tr>
+    <tr><td>Dashboard</td><td><code>@dashboard [N]</code></td><td><code>metric</code></td><td>1-5</td></tr>
+    <tr><td>Table</td><td><code>@table [N]</code></td><td><code>columns</code>, <code>row</code></td><td>1-6</td></tr>
+    <tr><td>Agenda</td><td><code>@agenda [N]</code></td><td><code>item</code></td><td>1-4</td></tr>
+    <tr><td>Comparison</td><td><code>@comparison [N]</code></td><td><code>left</code>, <code>right</code>, <code>comp</code></td><td>1-7</td></tr>
+    <tr><td>Business</td><td><code>@business [N]</code></td><td><code>center</code>, <code>nodes</code></td><td>1-11</td></tr>
+    <tr><td>Brain</td><td><code>@brain [N]</code></td><td><code>center</code>, <code>branch</code></td><td>1-4</td></tr>
+    <tr><td>Budget</td><td><code>@budget [N]</code></td><td><code>total</code>, <code>line</code></td><td>1-5</td></tr>
+    <tr><td>Decision Tree</td><td><code>@decisionTree</code> / <code>@decision 2</code></td><td><code>question</code>, <code>yes</code>, <code>no</code>, <code>leaf</code></td><td>1-2</td></tr>
+    <tr><td>Goals</td><td><code>@goals [N]</code></td><td><code>center</code>, <code>metric</code></td><td>, 1-5</td></tr>
+    <tr><td>Manufacturing</td><td><code>@manufacturing [N]</code></td><td><code>station</code></td><td>1-8</td></tr>
+    <tr><td>Value Chain</td><td><code>@valueChain [N]</code></td><td><code>primary</code>, <code>support</code></td><td>1-2</td></tr>
+    <tr><td>Circle</td><td><code>@circle</code></td><td><code>segment</code></td><td>1</td></tr>
+    <tr><td>Product Roadmap</td><td><code>@productRoadmap [N]</code></td><td><code>quarters</code>, <code>lanes</code>, <code>milestone</code></td><td>1-12</td></tr>
+  </table>
+</section>
+
+<!-- ========== ICONES ========== -->
+<section id="icons">
+  <h2>Icônes <a class="anchor" href="#icons">#</a></h2>
+  <p>53 icônes SVG intégrées, disponibles dans le panneau <strong>Icons</strong> de la sidebar. Chaque icône peut être déposée sur le canvas par drag &amp; drop.</p>
+
+  <h3>Catégories</h3>
+  <table>
+    <tr><th>Catégorie</th><th>Icônes</th></tr>
+    <tr><td>Général</td><td><code>user</code>, <code>chart</code>, <code>gear</code>, <code>target</code>, <code>lightbulb</code>, <code>flag</code>, <code>star</code>, <code>check</code>, <code>arrowUp</code>, <code>arrowDown</code></td></tr>
+    <tr><td>Communication</td><td><code>mail</code>, <code>phone</code>, <code>chat</code>, <code>globe</code>, <code>wifi</code>, <code>bluetooth</code></td></tr>
+    <tr><td>Business / Finance</td><td><code>dollar</code>, <code>euro</code>, <code>creditCard</code>, <code>wallet</code>, <code>pieChart</code>, <code>barChart</code>, <code>lineChart</code></td></tr>
+    <tr><td>Technologie</td><td><code>laptop</code>, <code>mobile</code>, <code>tablet</code>, <code>cloud</code>, <code>database</code>, <code>code</code>, <code>shield</code>, <code>key</code>, <code>mapPin</code></td></tr>
+    <tr><td>Personnes / RH</td><td><code>people</code>, <code>handshake</code>, <code>trophy</code>, <code>badge</code>, <code>award</code></td></tr>
+    <tr><td>Bureau / Documents</td><td><code>file</code>, <code>folder</code>, <code>clipboard</code>, <code>calendar</code>, <code>clock</code></td></tr>
+    <tr><td>Transport / Logistique</td><td><code>truck</code>, <code>plane</code>, <code>ship</code>, <code>package</code></td></tr>
+    <tr><td>Environnement</td><td><code>leaf</code>, <code>tree</code>, <code>recycle</code>, <code>waterDrop</code></td></tr>
+  </table>
+
+  <h3>Propriétés</h3>
+  <ul>
+    <li><strong>Type</strong> : <code>icon</code> (forme de type spécial)</li>
+    <li><strong>Champ</strong> : <code>iconName</code> — nom de l'icône dans la table ci-dessus</li>
+    <li><strong>Fill</strong> : couleur de remplissage (via PropertiesPanel)</li>
+    <li><strong>Stroke</strong> : couleur du trait (via PropertiesPanel)</li>
+    <li><strong>Redimensionnement</strong> : poignées de resize aux 4 coins</li>
+  </ul>
+</section>
+
+<!-- ========== DRAG & DROP ========== -->
+<section id="dragdrop">
+  <h2>Drag &amp; Drop <a class="anchor" href="#dragdrop">#</a></h2>
+  <p>Les formes et icônes peuvent être déposées directement sur le canvas.</p>
+
+  <h3>Sources</h3>
+  <table>
+    <tr><th>Panneau source</th><th>Éléments</th><th>Action</th></tr>
+    <tr><td><strong>Shapes</strong></td><td>Rectangle, Stadium, Ellipse, Diamond, Hexagon, Cylinder, Parallelogram, Subroutine</td><td>Glisser → déposer sur le canvas</td></tr>
+    <tr><td><strong>Icons</strong></td><td>53 icônes SVG</td><td>Glisser → déposer sur le canvas</td></tr>
+  </table>
+
+  <h3>Comportement</h3>
+  <ul>
+    <li>L'élément apparaît à la position exacte du curseur au moment du drop</li>
+    <li>Les coordonnées sont snappées à la grille (10px)</li>
+    <li>Les shapes sont créées en <strong>120×80px</strong> par défaut</li>
+    <li>Les icônes sont créées en <strong>80×80px</strong> par défaut</li>
+    <li>L'élément déposé est automatiquement sélectionné</li>
+  </ul>
+
+  <h3>Modification après dépôt</h3>
+  <ul>
+    <li><strong>Clic</strong> : sélectionner l'élément</li>
+    <li><strong>Poignées</strong> : redimensionner via les 4 coins</li>
+    <li><strong>Drag</strong> : déplacer en maintenant le clic</li>
+    <li><strong>PropertiesPanel</strong> : changer fill, stroke, stroke width, texte</li>
+    <li><strong>Supprimer</strong> : touche Delete/Backspace</li>
+  </ul>
+</section>
+
+<!-- ========== EXPORT ========== -->
+<section id="export">
+  <h2>Export <a class="anchor" href="#export">#</a></h2>
+  <p>Tous les formats exportent le contenu complet du canvas (shapes + templates + icônes).</p>
+
+  <h3>Formats disponibles</h3>
+  <table>
+    <tr><th>Format</th><th>Méthode</th><th>Détails</th></tr>
+    <tr><td><strong>SVG</strong></td><td>Bouton Export → SVG</td><td>SVG vectoriel propre, fond blanc, sans artefacts UI</td></tr>
+    <tr><td><strong>PNG</strong></td><td>Bouton Export → PNG</td><td>Rasterisation 2x (haute résolution), fond blanc</td></tr>
+    <tr><td><strong>JPG</strong></td><td>Bouton Export → JPG</td><td>Rasterisation avec compression 90%, fond blanc</td></tr>
+    <tr><td><strong>PPTX</strong></td><td>Bouton Export → PPTX</td><td>Image rasterisée dans une diapositive PowerPoint</td></tr>
+    <tr><td><strong>Copier image</strong></td><td>Bouton Export → Copier image</td><td>Copie le canvas en PNG dans le presse-papiers</td></tr>
+  </table>
+
+  <h3>Copier-coller</h3>
+  <p>La fonction <strong>"Copier image"</strong> copie le canvas en PNG (2x) dans le presse-papiers système. Vous pouvez ensuite coller directement dans :</p>
+  <ul>
+    <li>Figma, Sketch, Adobe XD</li>
+    <li>Microsoft Word, PowerPoint, Outlook</li>
+    <li>Slack, Teams, Discord</li>
+    <li>N'importe quel éditeur d'images</li>
+  </ul>
+
+  <h3>Copier-coller interne</h3>
+  <p>Les formes du diagramme (pas les templates) supportent le copier-coller interne :</p>
+  <ul>
+    <li><strong>Ctrl/Cmd + C</strong> : copier la sélection</li>
+    <li><strong>Ctrl/Cmd + V</strong> : coller (décalé de +30px)</li>
+    <li>Le format JSON <code>{ source: "autoDesign", shapes: [...] }</code> est utilisé</li>
+  </ul>
+</section>
+
+<!-- ========== INTERFACE ========== -->
+<section id="interface">
+  <h2>Interface <a class="anchor" href="#interface">#</a></h2>
+  <p>L'interface se compose de 3 zones : sidebar gauche, canvas central, panneau droite.</p>
+
+  <h3>Sidebar gauche</h3>
+  <table>
+    <tr><th>Panneau</th><th>Description</th></tr>
+    <tr><td><strong>Shapes</strong></td><td>8 formes de base cliquables et draggables</td></tr>
+    <tr><td><strong>Icons</strong></td><td>53 icônes SVG draggables (expandable)</td></tr>
+    <tr><td><strong>Mermaid</strong></td><td>Éditeur de texte pour importer des diagrammes Mermaid</td></tr>
+    <tr><td><strong>Subgraph</strong></td><td>Style des sous-graphes (couleur, bordure)</td></tr>
+    <tr><td><strong>Templates</strong></td><td>116+ templates organisés par catégorie (expandable)</td></tr>
+    <tr><td><strong>DSL Editor</strong></td><td>Éditeur de texte DSL pour le template actif</td></tr>
+  </table>
+
+  <h3>Canvas central</h3>
+  <ul>
+    <li><strong>Clic</strong> : sélectionner un élément</li>
+    <li><strong>Clic + Drag</strong> : déplacer</li>
+    <li><strong>Molette</strong> : zoom avant/arrière</li>
+    <li><strong>Clic milieu</strong> : pan (déplacer la vue)</li>
+    <li><strong>Marquee</strong> : clic + glisser sur le fond pour sélection multiple</li>
+    <li><strong>Ctrl/Cmd + clic</strong> : ajout à la sélection</li>
+    <li><strong>Mode connexion</strong> : bouton 🔗 dans la toolbar, puis clic source → clic cible</li>
+  </ul>
+
+  <h3>Panneau droite</h3>
+  <table>
+    <tr><th>Panneau</th><th>Description</th></tr>
+    <tr><td><strong>Properties</strong></td><td>Propriétés de la forme sélectionnée (fill, stroke, texte, etc.)</td></tr>
+    <tr><td><strong>Template Properties</strong></td><td>Propriétés de l'élément template sélectionné (titre, description, couleurs, stroke width)</td></tr>
+  </table>
+
+  <h3>Toolbar</h3>
+  <ul>
+    <li><strong>autoDesign</strong> : logo/brand</li>
+    <li><strong>🔗</strong> : mode connexion (relier les formes)</li>
+    <li><strong>↩ ↪</strong> : undo / redo (Ctrl+Z / Ctrl+Y)</li>
+    <li><strong>🗑</strong> : supprimer la sélection</li>
+    <li><strong>⤡</strong> : désélectionner tout</li>
+    <li><strong>⬇</strong> : menu export (SVG, PNG, JPG, PPTX, Copier image)</li>
+  </ul>
+</section>
+
+</main>
+
+<button class="back-top" id="backTop" onclick="window.scrollTo({top:0})" aria-label="Retour en haut">&#8593;</button>
+
+<script>
+// Active sidebar link tracking
+(function() {
+  var sections = document.querySelectorAll('section[id]');
+  var links = document.querySelectorAll('.sidebar nav a');
+  var backBtn = document.getElementById('backTop');
+
+  function updateActive() {
+    var current = '';
+    sections.forEach(function(s) {
+      if (window.scrollY >= s.offsetTop - 80) current = s.id;
+    });
+    links.forEach(function(a) {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+    });
+    backBtn.classList.toggle('show', window.scrollY > 400);
+  }
+
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+
+  // Close sidebar on link click (mobile)
+  links.forEach(function(a) {
+    a.addEventListener('click', function() {
+      document.querySelector('.sidebar').classList.remove('open');
+    });
+  });
+})();
+
+// Copy code blocks
+document.querySelectorAll('pre').forEach(function(pre) {
+  var btn = document.createElement('button');
+  btn.className = 'copy-btn';
+  btn.textContent = 'Copier';
+  btn.addEventListener('click', function() {
+    var code = pre.querySelector('code');
+    navigator.clipboard.writeText(code.textContent).then(function() {
+      btn.textContent = 'Copie !';
+      setTimeout(function() { btn.textContent = 'Copier'; }, 1500);
+    });
+  });
+  pre.appendChild(btn);
+});
+</script>
+</body>
+</html>

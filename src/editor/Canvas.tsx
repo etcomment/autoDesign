@@ -1,5 +1,6 @@
 import { useCallback, useRef, useMemo, useState } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
+import { useTemplateStore } from '../templates/store'
 import { ShapeRenderer } from './shapes/ShapeRenderer'
 import { ConnectionLines } from './shapes/ConnectionLines'
 import { SubgraphRenderer } from './shapes/SubgraphRenderer'
@@ -26,8 +27,10 @@ import { VennRenderer } from './shapes/VennRenderer'
 import { TreemapRenderer } from './shapes/TreemapRenderer'
 import { IshikawaRenderer } from './shapes/IshikawaRenderer'
 import { ErDiagramRenderer } from './shapes/ErDiagramRenderer'
+import { GroupSelectionRenderer } from './shapes/GroupSelectionRenderer'
 import { TemplateRenderer } from '../templates/TemplateRenderer'
 import { GRID_SIZE, snapToGrid } from '../core/grid'
+import type { ShapeType } from '../core/model/Shape'
 
 interface MarqueeRect {
   startX: number
@@ -40,10 +43,12 @@ export function Canvas() {
   const shapes = useDiagramStore(s => s.shapes)
   const selectedShapeIds = useDiagramStore(s => s.selectedShapeIds)
   const diagramType = useDiagramStore(s => s.diagramType)
+  const templateZIndex = useDiagramStore(s => s.templateZIndex)
   const viewBox = useDiagramStore(s => s.viewBox)
   const setViewBox = useDiagramStore(s => s.setViewBox)
   const clearSelection = useDiagramStore(s => s.clearSelection)
   const clearDiagramElementSelection = useDiagramStore(s => s.clearDiagramElementSelection)
+  const clearTemplateElementSelection = useTemplateStore(s => s.clearTemplateElementSelection)
   const toggleSelection = useDiagramStore(s => s.toggleSelection)
   const selectShape = useDiagramStore(s => s.selectShape)
   const moveShape = useDiagramStore(s => s.moveShape)
@@ -55,7 +60,7 @@ export function Canvas() {
   const panStart = useRef({ x: 0, y: 0 })
   const dragTarget = useRef<string | null>(null)
   const dragStartMouse = useRef({ x: 0, y: 0 })
-  const dragStartPos = useRef({ x: 0, y: 0 })
+  const dragStartPositions = useRef<Map<string, { x: number; y: number }>>(new Map())
   const isDragging = useRef(false)
   const connectSourceId = useRef<string | null>(null)
 
@@ -128,31 +133,40 @@ export function Canvas() {
 
         if (e.ctrlKey || e.metaKey) {
           toggleSelection(shapeId)
-        } else if (!selectedSet.has(shapeId)) {
+        } else {
           clearSelection()
+          clearDiagramElementSelection()
+          clearTemplateElementSelection()
           selectShape(shapeId)
         }
 
-        dragTarget.current = shapeId
         dragStartMouse.current = { x: e.clientX, y: e.clientY }
-        const shape = shapes.find(s => s.id === shapeId)
-        if (shape) {
-          dragStartPos.current = { x: shape.position.x, y: shape.position.y }
+        const currentSelectedIds = Array.from(useDiagramStore.getState().selectedShapeIds)
+        dragStartPositions.current.clear()
+        for (const sId of currentSelectedIds) {
+          const s = shapes.find(item => item.id === sId)
+          if (s && !s.isLocked) {
+            dragStartPositions.current.set(sId, { x: s.position.x, y: s.position.y })
+          }
+        }
+        if (dragStartPositions.current.size > 0) {
+          dragTarget.current = shapeId
         }
         return
       }
 
       connectSourceId.current = null
 
-      // Start marquee selection
+      // Click on background / Start marquee selection
       if (!e.ctrlKey && !e.metaKey) {
         clearSelection()
         clearDiagramElementSelection()
+        clearTemplateElementSelection()
       }
       const canvas = screenToCanvas(e.clientX, e.clientY)
       setMarquee({ startX: canvas.x, startY: canvas.y, endX: canvas.x, endY: canvas.y })
     },
-    [toggleSelection, clearSelection, viewBox, isConnectMode, addConnection, selectShape, selectedSet, screenToCanvas, shapes],
+    [toggleSelection, clearSelection, viewBox, isConnectMode, addConnection, selectShape, screenToCanvas, shapes, clearDiagramElementSelection, clearTemplateElementSelection],
   )
 
   const onMouseMove = useCallback(
@@ -174,10 +188,12 @@ export function Canvas() {
         const dx = (e.clientX - dragStartMouse.current.x) / viewBox.scale
         const dy = (e.clientY - dragStartMouse.current.y) / viewBox.scale
         isDragging.current = true
-        moveShape(dragTarget.current, {
-          x: dragStartPos.current.x + dx,
-          y: dragStartPos.current.y + dy,
-        })
+        for (const [sId, startPos] of dragStartPositions.current.entries()) {
+          moveShape(sId, {
+            x: startPos.x + dx,
+            y: startPos.y + dy,
+          })
+        }
       }
     },
     [viewBox, moveShape, setViewBox, isConnectMode, marquee, screenToCanvas],
@@ -186,23 +202,39 @@ export function Canvas() {
   const onMouseUp = useCallback(() => {
     isPanning.current = false
 
-    if (isDragging.current && dragTarget.current) {
-      const shape = shapes.find(s => s.id === dragTarget.current)
-      if (shape) {
-        moveShape(dragTarget.current, {
-          x: snapToGrid(shape.position.x),
-          y: snapToGrid(shape.position.y),
-        })
+    if (isDragging.current && dragStartPositions.current.size > 0) {
+      for (const [sId] of dragStartPositions.current.entries()) {
+        const shape = shapes.find(s => s.id === sId)
+        if (shape) {
+          moveShape(sId, {
+            x: snapToGrid(shape.position.x),
+            y: snapToGrid(shape.position.y),
+          })
+        }
       }
       isDragging.current = false
     }
     dragTarget.current = null
+    dragStartPositions.current.clear()
 
     if (marquee) {
       // Select shapes inside marquee
       for (const shape of shapes) {
         if (isShapeInsideMarquee(shape, marquee)) {
           selectShape(shape.id)
+        }
+      }
+      // Select template elements inside marquee
+      const templateElementPositions = useTemplateStore.getState().templateElementPositions
+      const toggleTemplateElement = useTemplateStore.getState().toggleTemplateElement
+      const selectedTemplateElementIds = useTemplateStore.getState().selectedTemplateElementIds
+      for (const [tId, pos] of Object.entries(templateElementPositions)) {
+        if (pos.width > 0 && pos.height > 0) {
+          if (isShapeInsideMarquee({ position: { x: pos.x, y: pos.y }, dimensions: { width: pos.width, height: pos.height } }, marquee)) {
+            if (!selectedTemplateElementIds.has(tId)) {
+              toggleTemplateElement(tId)
+            }
+          }
         }
       }
       setMarquee(null)
@@ -223,11 +255,37 @@ export function Canvas() {
     e.preventDefault()
   }, [])
 
+  const addShape = useDiagramStore(s => s.addShape)
+
+  const onDragOver = useCallback((e: React.DragEvent<SVGSVGElement>) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }, [])
+
+  const onDrop = useCallback((e: React.DragEvent<SVGSVGElement>) => {
+    e.preventDefault()
+    const pos = screenToCanvas(e.clientX, e.clientY)
+    const snapped = { x: snapToGrid(pos.x), y: snapToGrid(pos.y) }
+
+    const shapeType = e.dataTransfer.getData('shapeType')
+    if (shapeType) {
+      addShape(shapeType as ShapeType, snapped, { width: 120, height: 80 })
+      return
+    }
+
+    const iconName = e.dataTransfer.getData('templateIcon')
+    if (iconName) {
+      addShape('icon', snapped, { width: 80, height: 80 }, iconName)
+      return
+    }
+  }, [screenToCanvas, addShape])
+
   const transform = `translate(${viewBox.x}, ${viewBox.y}) scale(${viewBox.scale})`
 
   return (
     <svg
       ref={svgRef}
+      data-canvas-svg="true"
       width="100%"
       height="100%"
       style={{
@@ -241,6 +299,8 @@ export function Canvas() {
       onMouseLeave={onMouseUp}
       onWheel={onWheel}
       onContextMenu={onContextMenu}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
     >
       <defs>
         <pattern
@@ -273,15 +333,6 @@ export function Canvas() {
         <XYChartRenderer />
         {diagramType !== 'sequence' && diagramType !== 'state' && diagramType !== 'architecture' && diagramType !== 'c4' && diagramType !== 'er' && <ConnectionLines />}
 
-        {diagramType !== 'sequence' && diagramType !== 'state' && diagramType !== 'er' && diagramType !== 'architecture' && diagramType !== 'c4' && shapes.map((shape) => (
-          <g key={shape.id} data-shape-id={shape.id}>
-            <ShapeRenderer
-              shape={shape}
-              isSelected={selectedSet.has(shape.id)}
-            />
-          </g>
-        ))}
-
         <C4Renderer />
         <StateRenderer />
         <ArchitectureRenderer />
@@ -295,7 +346,31 @@ export function Canvas() {
         <TreemapRenderer />
         <IshikawaRenderer />
         <ErDiagramRenderer />
-        <TemplateRenderer />
+
+        {diagramType !== 'sequence' && diagramType !== 'state' && diagramType !== 'er' && diagramType !== 'architecture' && diagramType !== 'c4' && (() => {
+          const clampedIndex = Math.max(0, Math.min(shapes.length, templateZIndex))
+          const shapeElements = shapes.map((shape) => (
+            <g key={shape.id} data-shape-id={shape.id}>
+              <ShapeRenderer
+                shape={shape}
+                isSelected={selectedSet.has(shape.id)}
+              />
+            </g>
+          ))
+
+          const result = []
+          for (let i = 0; i <= shapes.length; i++) {
+            if (i === clampedIndex) {
+              result.push(<TemplateRenderer key="template-layer" />)
+            }
+            if (i < shapes.length) {
+              result.push(shapeElements[i])
+            }
+          }
+          return result
+        })()}
+
+        <GroupSelectionRenderer />
 
         {marquee && (
           <rect

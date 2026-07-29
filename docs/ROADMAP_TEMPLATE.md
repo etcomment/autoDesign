@@ -12,9 +12,14 @@ Le template Roadmap existe sous deux variantes : **Roadmap simple** (timeline ho
 interface TemplateMilestone {
   title: string
   subtitle?: string
-  quarter?: string      // utilisé uniquement en Product Roadmap
-  lane?: string         // utilisé uniquement en Product Roadmap
+  quarter?: string      // utilisé en Product Roadmap (colonne)
+  lane?: string         // utilisé en Product Roadmap (ligne)
+  date?: string         // date/année/mois libre — utilisé par Roadmap 1-16
   style?: TemplateElementStyle
+  color?: string
+  icon?: string
+  value?: string        // DSL: val:
+  percent?: string      // DSL: pct:
 }
 ```
 
@@ -76,7 +81,7 @@ interface ProductRoadmapData {
 
 ## Architecture des composants
 
-### `RoadmapTemplate.tsx` (290 lignes)
+### `RoadmapTemplate.tsx` (Roadmap 1)
 
 Le composant `RoadmapTemplate` affiche une **timeline horizontale** avec des milestones positionnés alternativement au-dessus et en-dessous.
 
@@ -107,7 +112,7 @@ Le composant `RoadmapTemplate` affiche une **timeline horizontale** avec des mil
   - Une ligne verticale reliant le cercle à la timeline
   - Entre deux milestones consécutifs : un chevron (`ChevronArrow`)
 
-### `ProductRoadmapTemplate.tsx` (119 lignes)
+### `ProductRoadmapTemplate.tsx` (Product Roadmap)
 
 Le composant `ProductRoadmapTemplate` affiche une **grille** quarters × lanes avec des badges colorés dans les cellules.
 
@@ -264,13 +269,17 @@ Chaque élément SVG reçoit un ID unique qui détermine son comportement dans l
 | Pattern d'ID | Élément | Template |
 |---|---|---|
 | `milestone-N` | Bloc de milestone (rect + texte) | Les deux |
-| `circle-N` | Cercle numéroté sur la timeline | Roadmap uniquement |
-| `chevron-N` | Flèche entre milestones consécutifs | Roadmap uniquement |
-| `timeline-line` | Ligne horizontale de la timeline | Roadmap uniquement |
-| `start-label` | Label "START" | Roadmap uniquement |
-| `finish-label` | Label "FINISH" | Roadmap uniquement |
-| `start-circle` | Cercle de début | Roadmap uniquement |
-| `finish-circle` | Cercle de fin | Roadmap uniquement |
+| `circle-N` | Cercle numéroté sur la timeline | Roadmap 1 uniquement |
+| `chevron-N` | Flèche entre milestones consécutifs | Roadmap 1 uniquement |
+| `timeline-line` | Ligne horizontale de la timeline | Roadmap 1 uniquement |
+| `start-label` | Label "START" | Roadmap 1/4/5/7/15/16 |
+| `finish-label` | Label "FINISH" | Roadmap 1/4/5/7/15/16 |
+| `start-circle` | Cercle de début | Roadmap 1 uniquement |
+| `finish-circle` | Cercle de fin | Roadmap 1 uniquement |
+| `dot-N` | Point de l'année sur la timeline | Roadmap 2/3 |
+| `year-N` | Label d'année | Roadmap 2/3/5 |
+| `card-N` | Carte de jalon | Roadmap 3/5 |
+| `block-N` | Bloc coloré | Roadmap 6/8-16 |
 
 L'index `N` correspond à la position du milestone dans le tableau `milestones`.
 
@@ -306,3 +315,36 @@ const baseStyleH = milestone.style?.boxHeight ?? baselineRectH
 Priorité : **couleur utilisateur > style DSL > palette par défaut**.
 
 Dans `ProductRoadmapTemplate`, les `TemplateElementStyle` ne sont pas directement utilisés pour le rendu (pas de `style` lu depuis les milestones). Les couleurs viennent uniquement du store (`tplColors`) ou de la palette.
+
+---
+
+## Champ `date:` dans les templates Roadmap
+
+Tous les templates Roadmap (1 à 16) supportent un champ `date?: string` sur chaque `TemplateMilestone`. Il est renseigné dans le DSL avec la syntaxe `date:<valeur>` et est conservé lors des cycles parse ↔ generate.
+
+### Impact visuel par template
+
+| Template | Usage de `date:` | Fallback sans `date:` |
+|---|---|---|
+| **Roadmap 1** | Label secondaire du jalon | *(aucun)* |
+| **Roadmap 2** | Année de chaque point de la timeline | `2019`, `2020`… |
+| **Roadmap 3** | Positionne la carte sur la bonne année | Indices 2 et 7 de la liste |
+| **Roadmap 5** | Année sous chaque tige | `2019`–`2022` |
+| **Roadmap 7** | Label gauche de la timeline verticale | *(aucun)* |
+| **Roadmap 8 & 9** | Année au-dessus de chaque colonne | `2019 + i` |
+| **Roadmap 10** | Label sous le titre dans le bloc | *(aucun)* |
+| **Roadmap 11** | Grand label latéral (remplace numéro) | `1`, `2`… |
+| **Roadmap 12** | Remplace le label `Step 01` | `Step 01`, `Step 02`… |
+| **Roadmap 13** | Remplace le label `WEEK 1` | `WEEK 1`, `WEEK 2`… |
+| **Roadmap 14** | Année au-dessus de la flèche | `2019 + i` |
+| **Roadmap 15** | Grand chiffre fond + label bas | `01`, `02`… |
+| **Roadmap 16** | Label sous le subtitle du cercle | *(aucun)* |
+
+### Interaction avec `quarters`
+
+Pour **Roadmap 2**, la liste des années de la timeline peut être définie par :
+1. Le champ `date:` de chaque milestone (`milestone "…" "…" date:2025`)
+2. La directive `quarters` (`quarters 2022 2023 2024 2025`)
+3. Fallback automatique : `['2019'…'2028']`
+
+Pour **Roadmap 3**, `quarters` définit la **liste des points de la timeline**, et `date:` de chaque milestone détermine sur quel point chaque carte doit s'accrocher.

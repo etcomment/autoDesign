@@ -155,34 +155,7 @@ interface DiagramElementColorPanelProps {
   updateDiagramStrokeColor: (elementId: string, color: string) => void
 }
 
-function diagramElementLabel(elementId: string): string {
-  const prefix = elementId.includes('-') ? elementId.split('-')[0]! : 'element'
-  const name = elementId.includes('-') ? elementId.slice(elementId.indexOf('-') + 1) : elementId
-  const typeLabel: Record<string, string> = {
-    slice: 'Slice',
-    point: 'Point',
-    event: 'Event',
-    task: 'Task',
-    node: 'Node',
-    branch: 'Branch',
-    series: 'Series',
-    col: 'Column',
-    group: 'Group',
-    service: 'Service',
-    actor: 'Actor',
-    message: 'Message',
-    note: 'Note',
-    activation: 'Activation',
-    box: 'Box',
-    commit: 'Commit',
-    merge: 'Merge',
-    'c4-Person': 'Person',
-    'c4-System': 'System',
-    'c4-Container': 'Container',
-    'c4-Component': 'Component',
-  }
-  return `${typeLabel[prefix] ?? prefix}: ${name}`
-}
+
 
 function DiagramElementColorPanel({ selectedIds, diagramColors, diagramStrokeColors, updateDiagramColor, updateDiagramStrokeColor }: DiagramElementColorPanelProps) {
   const elements = [...selectedIds]
@@ -198,9 +171,10 @@ function DiagramElementColorPanel({ selectedIds, diagramColors, diagramStrokeCol
       </h3>
 
       <div style={styles.section}>
-        <label style={styles.label}>{isMulti ? 'Fill (all selected)' : `Fill — ${diagramElementLabel(primaryId)}`}</label>
+        <label style={styles.label}>Fill</label>
         <ColorGrid currentColor={primaryFill} onPick={(c) => elements.forEach(id => updateDiagramColor(id, c))} prefix="de-f-" />
         <div style={styles.row}>
+          <label style={styles.label}>Custom</label>
           <input
             type="color"
             value={primaryFill || '#ffffff'}
@@ -211,9 +185,10 @@ function DiagramElementColorPanel({ selectedIds, diagramColors, diagramStrokeCol
       </div>
 
       <div style={styles.section}>
-        <label style={styles.label}>{isMulti ? 'Stroke (all selected)' : `Stroke — ${diagramElementLabel(primaryId)}`}</label>
+        <label style={styles.label}>Stroke</label>
         <ColorGrid currentColor={primaryStroke} onPick={(c) => elements.forEach(id => updateDiagramStrokeColor(id, c))} prefix="de-s-" />
         <div style={styles.row}>
+          <label style={styles.label}>Custom</label>
           <input
             type="color"
             value={primaryStroke || '#000000'}

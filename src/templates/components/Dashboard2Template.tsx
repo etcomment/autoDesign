@@ -2,7 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { DashboardData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50', '#ff9800', '#9c27b0', '#00bcd4']
 
@@ -18,7 +18,6 @@ export function Dashboard2Template({ data }: { data: DashboardData }): ReactElem
 
   const { title, metrics } = data
   const W = 900
-  const H = 600
   const displayed = metrics.slice(0, 4)
   const bigW = 340
   const bigH = 200
@@ -32,9 +31,8 @@ export function Dashboard2Template({ data }: { data: DashboardData }): ReactElem
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="#f7fafc" rx={8} />
       {title && (
-        <text x={cx} y={44} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
+        <text x={cx} y={44} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
           {title}
         </text>
       )}

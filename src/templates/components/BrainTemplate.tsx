@@ -1,6 +1,6 @@
 import { useRef, type ReactElement } from 'react'
 import type { BrainData } from '../types'
-import { CurvedPath } from '../shared/primitives'
+import { CurvedPath, wrapTextByWidth } from '../shared/primitives'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
@@ -12,6 +12,9 @@ export function BrainTemplate({ data }: { data: BrainData }): ReactElement {
   const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const { title, centerLabel, branches } = data
   const W = 900
@@ -19,21 +22,20 @@ export function BrainTemplate({ data }: { data: BrainData }): ReactElement {
   const cx = W / 2
   const cy = H / 2
   const centerR = 55
-  const branchW = 200
-  const branchH = 66
+  const branchW2 = 200
+  const branchH2 = 66
 
-  const positions: { angle: number; bx: number; by: number }[] = [
-    { angle: -90, bx: cx - branchW / 2, by: 130 },
-    { angle: 90, bx: cx - branchW / 2, by: H - 130 - branchH },
-    { angle: 0, bx: cx + centerR + 50, by: cy - branchH / 2 },
-    { angle: 180, bx: cx - centerR - 50 - branchW, by: cy - branchH / 2 },
+  const branchPositions: { angle: number; bx: number; by: number }[] = [
+    { angle: -90, bx: cx - branchW2 / 2, by: 130 },
+    { angle: 90, bx: cx - branchW2 / 2, by: H - 130 - branchH2 },
+    { angle: 0, bx: cx + centerR + 50, by: cy - branchH2 / 2 },
+    { angle: 180, bx: cx - centerR - 50 - branchW2, by: cy - branchH2 / 2 },
   ]
 
   const usedBranches = branches.slice(0, 4)
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
         <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
           {title}
@@ -47,13 +49,20 @@ export function BrainTemplate({ data }: { data: BrainData }): ReactElement {
 
       {usedBranches.map((branch, i) => {
         const elementId = `branch-${i}`
-        const pos = positions[i]!
+        const pos = branchPositions[i % branchPositions.length]!
         const color = tplColors[elementId] ?? branch.color ?? PALETTE[i % PALETTE.length]!
         const isSelected = selectedIds.has(elementId)
-        const branchMidX = pos.bx + branchW / 2
-        const branchMidY = pos.by + branchH / 2
-        const visualRect = { x: pos.bx, y: pos.by, width: branchW, height: branchH }
-
+        const customPos = templateElementPositions[elementId]
+        const visualRect = { 
+          x: customPos?.x ?? pos.bx, 
+          y: customPos?.y ?? pos.by, 
+          width: customPos?.width ?? branchW2, 
+          height: customPos?.height ?? branchH2 
+        }
+        
+        const branchMidX = visualRect.x + visualRect.width / 2
+        const branchMidY = visualRect.y + visualRect.height / 2
+        
         const edgeX = cx + centerR * Math.cos(pos.angle * Math.PI / 180)
         const edgeY = cy + centerR * Math.sin(pos.angle * Math.PI / 180)
 
@@ -62,13 +71,13 @@ export function BrainTemplate({ data }: { data: BrainData }): ReactElement {
             <CurvedPath points={[{ x: edgeX, y: edgeY }, { x: branchMidX, y: branchMidY }]} color={color} strokeWidth={2.5} />
 
             <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={pos.bx} y={pos.by} width={branchW} height={branchH} rx={10} fill={color} opacity={isSelected ? 0.25 : 0.15} stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} />
-              <text x={branchMidX} y={pos.by + branchH / 2 - 7} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill={color}>
-                {branch.title.length > 26 ? branch.title.slice(0, 24) + '...' : branch.title}
+              <rect x={visualRect.x} y={visualRect.y} width={visualRect.width} height={visualRect.height} rx={10} fill={color} opacity={isSelected ? 0.25 : 0.15} stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} />
+              <text x={branchMidX} y={visualRect.y + visualRect.height / 2 - 7} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill={color}>
+                {branch.title}
               </text>
               {branch.subtitle && (
-                <text x={branchMidX} y={pos.by + branchH / 2 + 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#555">
-                  {branch.subtitle.length > 30 ? branch.subtitle.slice(0, 28) + '...' : branch.subtitle}
+                <text x={branchMidX} y={visualRect.y + visualRect.height / 2 + 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#555">
+                  {wrapTextByWidth(branch.subtitle, Math.max(15, Math.floor(visualRect.width / 6.5))).join(' ')}
                 </text>
               )}
               {isSelected && renderHandles(visualRect, elementId)}

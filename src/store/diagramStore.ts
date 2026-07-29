@@ -30,6 +30,7 @@ interface DiagramStore {
   readonly selectedDiagramElementIds: ReadonlySet<string>
   readonly viewBox: ViewBox
   readonly isConnectMode: boolean
+  readonly templateZIndex: number
 
   readonly canUndo: boolean
   readonly canRedo: boolean
@@ -37,7 +38,7 @@ interface DiagramStore {
   undo: () => void
   redo: () => void
 
-  addShape: (type: ShapeType, position: Position, dimensions: Dimensions) => Shape
+  addShape: (type: ShapeType, position: Position, dimensions: Dimensions, iconName?: string) => Shape
   removeShape: (id: string) => void
   moveShape: (id: string, position: Position) => void
   resizeShape: (id: string, dimensions: Dimensions) => void
@@ -45,6 +46,13 @@ interface DiagramStore {
   updateShapeText: (id: string, text: Partial<ShapeText>) => void
   moveAndResizeShape: (id: string, position: Position, dimensions: Dimensions) => void
   batchUpdateShapeStyle: (ids: string[], style: Partial<ShapeStyle>) => void
+  toggleShapeHidden: (id: string) => void
+  toggleShapeLocked: (id: string) => void
+  reorderShapes: (orderedIds: readonly string[]) => void
+  bringToFront: (id: string) => void
+  sendToBack: (id: string) => void
+  bringForward: (id: string) => void
+  sendBackward: (id: string) => void
 
   addConnection: (sourceId: string, targetId: string, options?: ConnectionOptions) => void
   removeConnection: (connectionId: string) => void
@@ -72,7 +80,14 @@ interface DiagramStore {
   mergeModel: (model: DiagramModel) => void
   mergeMermaid: (dsl: string) => void
   getModel: () => DiagramModel
+  moveTemplateToFront: () => void
+  moveTemplateToBack: () => void
+  moveTemplateUp: () => void
+  moveTemplateDown: () => void
+  setTemplateZIndex: (index: number) => void
   updateSubgraphStyle: (style: Partial<SubgraphStyle>) => void
+  groupSelectedShapes: () => void
+  ungroupSelectedShapes: () => void
 }
 
 export const useDiagramStore = create<DiagramStore>((set, get) => {
@@ -116,8 +131,8 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
       set({ ...syncState(), selectedShapeIds: new Set() })
     },
 
-    addShape: (type, position, dimensions) => {
-      const shape = history.addShape(type, position, dimensions)
+    addShape: (type, position, dimensions, iconName) => {
+      const shape = history.addShape(type, position, dimensions, iconName)
       set({
         ...syncState(),
         selectedShapeIds: new Set([shape.id]),
@@ -162,6 +177,45 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
       set(syncState())
     },
 
+    toggleShapeHidden: (id) => {
+      const shape = model.getShape(id)
+      if (!shape) return
+      history.setShapeHidden(id, !shape.isHidden)
+      set(syncState())
+    },
+
+    toggleShapeLocked: (id) => {
+      const shape = model.getShape(id)
+      if (!shape) return
+      history.setShapeLocked(id, !shape.isLocked)
+      set(syncState())
+    },
+
+    reorderShapes: (orderedIds) => {
+      history.reorderShapes(orderedIds)
+      set(syncState())
+    },
+
+    bringToFront: (id) => {
+      history.bringToFront(id)
+      set(syncState())
+    },
+
+    sendToBack: (id) => {
+      history.sendToBack(id)
+      set(syncState())
+    },
+
+    bringForward: (id) => {
+      history.bringForward(id)
+      set(syncState())
+    },
+
+    sendBackward: (id) => {
+      history.sendBackward(id)
+      set(syncState())
+    },
+
     addConnection: (sourceId, targetId, options) => {
       history.addConnection(sourceId, targetId, options)
       set(syncState())
@@ -174,27 +228,53 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
 
     selectShape: (id) => {
       const { selectedShapeIds } = get()
-      if (selectedShapeIds.has(id)) return
+      const shape = model.getShape(id)
+      const groupShapeIds = shape?.groupId ? model.getGroupShapeIds(shape.groupId) : [id]
+
+      let changed = false
       const next = new Set(selectedShapeIds)
-      next.add(id)
-      set({ selectedShapeIds: next })
+      for (const gid of groupShapeIds) {
+        if (!next.has(gid)) {
+          next.add(gid)
+          changed = true
+        }
+      }
+      if (changed) {
+        set({ selectedShapeIds: next })
+      }
     },
 
     deselectShape: (id) => {
       const { selectedShapeIds } = get()
-      if (!selectedShapeIds.has(id)) return
+      const shape = model.getShape(id)
+      const groupShapeIds = shape?.groupId ? model.getGroupShapeIds(shape.groupId) : [id]
+
+      let changed = false
       const next = new Set(selectedShapeIds)
-      next.delete(id)
-      set({ selectedShapeIds: next })
+      for (const gid of groupShapeIds) {
+        if (next.has(gid)) {
+          next.delete(gid)
+          changed = true
+        }
+      }
+      if (changed) {
+        set({ selectedShapeIds: next })
+      }
     },
 
     toggleSelection: (id) => {
       const { selectedShapeIds } = get()
+      const shape = model.getShape(id)
+      const groupShapeIds = shape?.groupId ? model.getGroupShapeIds(shape.groupId) : [id]
+
       const next = new Set(selectedShapeIds)
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
+      const isSelected = groupShapeIds.every(gid => next.has(gid))
+      for (const gid of groupShapeIds) {
+        if (isSelected) {
+          next.delete(gid)
+        } else {
+          next.add(gid)
+        }
       }
       set({ selectedShapeIds: next })
     },
@@ -332,13 +412,66 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
         }
       }
 
-      set({ ...syncState(), selectedShapeIds: new Set(), selectedDiagramElementIds: new Set(), subgraphGroups: resolvedGroups, sequenceData: sequenceData ?? null, diagramType, diagramData: diagramData ?? null, diagramColors: diagramColors ?? {}, diagramElementPositions: {}, diagramStrokeColors: {} })
+      set({ ...syncState(), selectedShapeIds: new Set(), selectedDiagramElementIds: new Set(), subgraphGroups: resolvedGroups, sequenceData: sequenceData ?? null, diagramType, diagramData: diagramData ?? null, diagramColors: diagramColors ?? {}, diagramElementPositions: {}, diagramStrokeColors: {}, templateZIndex: 0 })
+    },
+
+    templateZIndex: 0,
+
+    moveTemplateToFront: () => {
+      set(s => ({ templateZIndex: s.shapes.length }))
+    },
+
+    moveTemplateToBack: () => {
+      set({ templateZIndex: 0 })
+    },
+
+    moveTemplateUp: () => {
+      set(s => ({ templateZIndex: Math.min(s.shapes.length, s.templateZIndex + 1) }))
+    },
+
+    moveTemplateDown: () => {
+      set(s => ({ templateZIndex: Math.max(0, s.templateZIndex - 1) }))
+    },
+
+    setTemplateZIndex: (index: number) => {
+      set(s => ({ templateZIndex: Math.max(0, Math.min(s.shapes.length, index)) }))
     },
 
     getModel: () => model,
 
     updateSubgraphStyle: (style) => {
       set(s => ({ subgraphStyle: { ...s.subgraphStyle, ...style } }))
+    },
+
+    groupSelectedShapes: () => {
+      const { selectedShapeIds } = get()
+      const shapeIds = Array.from(selectedShapeIds)
+      if (shapeIds.length < 2) return
+      const groupId = history.groupShapes(shapeIds)
+      if (groupId) {
+        set({ ...syncState(), selectedShapeIds: new Set(shapeIds) })
+      }
+    },
+
+    ungroupSelectedShapes: () => {
+      const { selectedShapeIds } = get()
+      const shapeIds = Array.from(selectedShapeIds)
+      const groupIdsToUngroup = new Set<string>()
+
+      for (const id of shapeIds) {
+        const shape = model.getShape(id)
+        if (shape?.groupId) {
+          groupIdsToUngroup.add(shape.groupId)
+        }
+      }
+
+      if (groupIdsToUngroup.size === 0) return
+
+      for (const groupId of groupIdsToUngroup) {
+        history.ungroupShapes(groupId)
+      }
+
+      set({ ...syncState() })
     },
   }
 })

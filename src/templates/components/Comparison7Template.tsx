@@ -1,3 +1,4 @@
+import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { Comparison7Data } from '../types'
 
@@ -11,7 +12,6 @@ export function Comparison7Template({ data }: { data: Comparison7Data }): ReactE
 
   const { title, pros, cons } = data
   const W = 800
-  const H = 580
   const colW = 300
   const colGap = 40
   const leftX = (W - colW * 2 - colGap) / 2
@@ -23,9 +23,8 @@ export function Comparison7Template({ data }: { data: Comparison7Data }): ReactE
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
+        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
           {title}
         </text>
       )}

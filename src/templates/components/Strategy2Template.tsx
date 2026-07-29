@@ -15,7 +15,6 @@ export function Strategy2Template({ data }: { data: Strategy2Data }): ReactEleme
 
   const { title, blocks } = data
   const W = 940
-  const H = 520
   const minW = 260
   const maxW = 620
   const blockH = 48
@@ -24,7 +23,6 @@ export function Strategy2Template({ data }: { data: Strategy2Data }): ReactEleme
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
 
       {title && (
         <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">

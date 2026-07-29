@@ -3,7 +3,7 @@ import type { ValueChainData } from '../types'
 import { Arrow } from '../shared/primitives'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c']
 const SUPPORT_PALETTE = ['#8eacbb', '#9db5c4', '#acbdcb', '#bbc6d2', '#cad0d9']
@@ -16,7 +16,6 @@ export function ValueChain2Template({ data }: { data: ValueChainData }): ReactEl
 
   const { title, primary, support } = data
   const W = 800
-  const H = 640
   const leftX = 100
   const rightX = 560
   const colW = 180
@@ -26,9 +25,8 @@ export function ValueChain2Template({ data }: { data: ValueChainData }): ReactEl
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
-        <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
+        <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
           {title}
         </text>
       )}

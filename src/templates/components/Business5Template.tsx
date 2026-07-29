@@ -1,91 +1,165 @@
+import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { BusinessData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { parseNodePercent } from '../shared/primitives'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6']
+const TRIANGLE_COLORS = ['#1d2151', '#2b62d9', '#ff4d2d', '#ffc107', '#4ecdc4']
+
+const DEFAULT_ITEMS = [
+  { title: 'Your title', value: '£0.8M', ratio: 0.20 },
+  { title: 'Your title', value: '£2.0M', ratio: 0.50 },
+  { title: 'Your title', value: '£3.1M', ratio: 0.77 },
+  { title: 'Your title', value: '£2.6M', ratio: 0.65 },
+  { title: 'Your title', value: '£3.9M', ratio: 0.95 },
+]
 
 export function Business5Template({ data }: { data: BusinessData }): ReactElement {
+  const W = 900
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, nodes } = data
-  const W = 900
-  const H = 600
-  const cx = W / 2
-  const nodeW = 160
-  const nodeH = 50
-  const levelGap = 100
+  const { title, nodes = [] } = data
 
-  interface Pos { x: number; y: number; label: string }
-  const levels: Pos[][] = [
-    [{ x: cx, y: 100, label: 'Leadership' }],
-    [
-      { x: cx - 180, y: 100 + levelGap, label: 'Team A' },
-      { x: cx + 180, y: 100 + levelGap, label: 'Team B' },
-    ],
-    [{ x: cx, y: 100 + levelGap * 2, label: 'Outcome' }],
+  const itemsConfig = [
+    { xLeft: 125, xPeak: 165, xRight: 195, defaultRatio: 0.20 },
+    { xLeft: 185, xPeak: 265, xRight: 335, defaultRatio: 0.50 },
+    { xLeft: 315, xPeak: 415, xRight: 515, defaultRatio: 0.77 },
+    { xLeft: 495, xPeak: 575, xRight: 655, defaultRatio: 0.65 },
+    { xLeft: 635, xPeak: 750, xRight: 865, defaultRatio: 0.95 },
   ]
+
+  const yBase = 420
+  const displayNodes = nodes.length > 0 ? nodes : DEFAULT_ITEMS
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={H} fill="white" rx={8} />
       {title && (
-        <text x={cx} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
+        <text
+          x={W / 2}
+          y={48}
+          textAnchor="middle"
+          fontFamily="Arial, sans-serif"
+          fontSize={22}
+          fontWeight={700}
+          fill={TITLE_COLOR}
+        >
           {title}
         </text>
       )}
 
-      {levels.map((row, li) =>
-        row.map((pos, pi) => {
-          const globalIdx = levels.slice(0, li).reduce((s, r) => s + r.length, 0) + pi
-          const node = nodes[globalIdx % nodes.length]!
-          const elementId = `node-${globalIdx}`
-          const color = tplColors[elementId] ?? PALETTE[li % PALETTE.length]!
-          const isSelected = selectedIds.has(elementId)
-          const bx = pos.x - nodeW / 2
-          const by = pos.y - nodeH / 2
-          const visualRect = { x: bx, y: by, width: nodeW, height: nodeH }
+      {displayNodes.map((item, idx) => {
+        const cfg = itemsConfig[idx % itemsConfig.length]!
+        const elementId = `mountain-${idx}`
+        
+        const nodeData = typeof item === 'object' && item !== null ? (item as any) : {}
+        const defaultItem = DEFAULT_ITEMS[idx % DEFAULT_ITEMS.length]!
+        const parsed = parseNodePercent(item, cfg.defaultRatio)
 
-          if (li > 0) {
-            const parents = levels[li - 1]!
-            const parent = parents[Math.min(pi, parents.length - 1)]!
-            return (
-              <g key={`${li}-${pi}`}>
-                <line x1={parent.x} y1={parent.y + nodeH / 2} x2={pos.x} y2={by} stroke={color} strokeWidth={1.5} opacity={0.5} />
-                <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
-                  <rect x={bx} y={by} width={nodeW} height={nodeH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} />
-                  <text x={pos.x} y={pos.y + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#333">
-                    {node.title.length > 18 ? node.title.slice(0, 16) + '..' : node.title}
-                  </text>
-                  <text x={pos.x} y={pos.y + nodeH / 2 - 18} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill={color} fontWeight={600}>
-                    {pos.label}
-                  </text>
-                  {isSelected && renderHandles(visualRect, elementId)}
-                </g>
-              </g>
-            )
-          }
+        const displayTitle = nodeData.title || defaultItem.title
+        const displayValue = nodeData.value ?? nodeData.percent ?? nodeData.amount ?? nodeData.subtitle ?? defaultItem.value
+        const color = tplColors[elementId] ?? nodeData.color ?? TRIANGLE_COLORS[idx % TRIANGLE_COLORS.length]
+        
+        const isSelected = selectedIds.has(elementId)
+        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#007acc' : 'none')
+        const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2 : 0)
 
-          return (
-            <g key={`${li}-${pi}`}>
-              <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
-                <rect x={bx} y={by} width={nodeW} height={nodeH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} />
-                <text x={pos.x} y={pos.y + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#333">
-                  {node.title.length > 18 ? node.title.slice(0, 16) + '..' : node.title}
+        // Calculate dynamic yPeak based on DSL numeric percentage / ratio
+        const peakHeight = Math.max(70, Math.min(270, parsed.ratio * 280))
+        const yPeak = yBase - peakHeight
+        const pinY = yPeak - 25
+        const titleY = pinY - 25
+
+        const width = cfg.xRight - cfg.xLeft
+        const height = yBase - (titleY - 20)
+        
+        const defaultRect = {
+          x: cfg.xLeft,
+          y: titleY - 20,
+          width,
+          height,
+        }
+        
+        const customPos = templateElementPositions[elementId]
+        const visualRect = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+        
+        const scaleX = visualRect.width / defaultRect.width
+        const scaleY = visualRect.height / defaultRect.height
+
+        const titleLines = String(displayTitle).split('\n').filter(Boolean)
+        const valLines = String(displayValue).split('\n').filter(Boolean)
+
+        return (
+          <g key={elementId}>
+            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+              <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}>
+                <text
+                  x={cfg.xPeak}
+                  y={titleY}
+                  textAnchor="middle"
+                  fontFamily="sans-serif"
+                  fontSize={14}
+                  fontWeight={700}
+                  fill="#1d2151"
+                >
+                  {titleLines.map((line: string, lIdx: number) => (
+                    <tspan key={lIdx} x={cfg.xPeak} dy={lIdx === 0 ? 0 : 16}>{line}</tspan>
+                  ))}
                 </text>
-                <text x={pos.x} y={pos.y + nodeH / 2 - 18} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill={color} fontWeight={600}>
-                  {pos.label}
+
+                <line
+                  x1={cfg.xPeak}
+                  y1={pinY}
+                  x2={cfg.xPeak}
+                  y2={yPeak}
+                  stroke={color}
+                  strokeWidth={3}
+                />
+                <circle cx={cfg.xPeak} cy={pinY} r={5} fill={color} />
+
+                <polygon
+                  points={`${cfg.xLeft},${yBase} ${cfg.xPeak},${yPeak} ${cfg.xRight},${yBase}`}
+                  fill={color}
+                  stroke={strokeColor}
+                  strokeWidth={strokeWidth}
+                  strokeDasharray={isSelected ? '4 2' : undefined}
+                />
+
+                <text
+                  x={cfg.xPeak}
+                  y={yBase - 22}
+                  textAnchor="middle"
+                  fontFamily="sans-serif"
+                  fontSize={15}
+                  fontWeight={700}
+                  fill="#ffffff"
+                >
+                  {valLines.map((line: string, lIdx: number) => (
+                    <tspan key={lIdx} x={cfg.xPeak} dy={lIdx === 0 ? 0 : 18}>{line}</tspan>
+                  ))}
                 </text>
-                {isSelected && renderHandles(visualRect, elementId)}
               </g>
+
+              {isSelected && renderHandles(visualRect, elementId)}
             </g>
-          )
-        })
-      )}
+          </g>
+        )
+      })}
+
+      <text x={450} y={460} textAnchor="middle" fontFamily="sans-serif" fontSize={12} fill="#555555">
+        Content and description to be added here as required
+      </text>
     </g>
   )
 }

@@ -53,7 +53,7 @@ export class DiagramModel {
     return this.shapeMap.get(id)
   }
 
-  addShape(type: ShapeType, position: Position, dimensions: Dimensions): Shape {
+  addShape(type: ShapeType, position: Position, dimensions: Dimensions, iconName?: string): Shape {
     const shape: Shape = {
       id: generateId(),
       type,
@@ -61,6 +61,7 @@ export class DiagramModel {
       dimensions: { width: clampDimension(dimensions.width), height: clampDimension(dimensions.height) },
       style: createDefaultStyle(),
       text: createDefaultText(),
+      ...(iconName ? { iconName } : {}),
     }
     this.shapeMap.set(shape.id, shape)
     return shape
@@ -197,15 +198,149 @@ export class DiagramModel {
     })
   }
 
+  setShapeHidden(id: string, isHidden: boolean): void {
+    const shape = this.shapeMap.get(id)
+    if (!shape) return
+    this.shapeMap.set(id, {
+      ...shape,
+      isHidden,
+    })
+  }
+
+  setShapeLocked(id: string, isLocked: boolean): void {
+    const shape = this.shapeMap.get(id)
+    if (!shape) return
+    this.shapeMap.set(id, {
+      ...shape,
+      isLocked,
+    })
+  }
+
+  reorderShapes(orderedIds: readonly string[]): void {
+    const newMap = new Map<string, Shape>()
+    for (const id of orderedIds) {
+      const shape = this.shapeMap.get(id)
+      if (shape) {
+        newMap.set(id, shape)
+      }
+    }
+    // Include any shapes that might not be in orderedIds (preserving original relative order)
+    for (const [id, shape] of this.shapeMap) {
+      if (!newMap.has(id)) {
+        newMap.set(id, shape)
+      }
+    }
+    this.shapeMap.clear()
+    for (const [id, shape] of newMap) {
+      this.shapeMap.set(id, shape)
+    }
+  }
+
+  bringToFront(id: string): void {
+    const shape = this.shapeMap.get(id)
+    if (!shape) return
+    const entries = Array.from(this.shapeMap.entries())
+    const index = entries.findIndex(([k]) => k === id)
+    if (index === -1 || index === entries.length - 1) return
+    entries.splice(index, 1)
+    entries.push([id, shape])
+    this.shapeMap.clear()
+    for (const [k, v] of entries) {
+      this.shapeMap.set(k, v)
+    }
+  }
+
+  sendToBack(id: string): void {
+    const shape = this.shapeMap.get(id)
+    if (!shape) return
+    const entries = Array.from(this.shapeMap.entries())
+    const index = entries.findIndex(([k]) => k === id)
+    if (index <= 0) return
+    entries.splice(index, 1)
+    entries.unshift([id, shape])
+    this.shapeMap.clear()
+    for (const [k, v] of entries) {
+      this.shapeMap.set(k, v)
+    }
+  }
+
+  bringForward(id: string): void {
+    const shape = this.shapeMap.get(id)
+    if (!shape) return
+    const entries = Array.from(this.shapeMap.entries())
+    const index = entries.findIndex(([k]) => k === id)
+    if (index === -1 || index === entries.length - 1) return
+    const nextEntry = entries[index + 1]!
+    entries[index + 1] = [id, shape]
+    entries[index] = nextEntry
+    this.shapeMap.clear()
+    for (const [k, v] of entries) {
+      this.shapeMap.set(k, v)
+    }
+  }
+
+  sendBackward(id: string): void {
+    const shape = this.shapeMap.get(id)
+    if (!shape) return
+    const entries = Array.from(this.shapeMap.entries())
+    const index = entries.findIndex(([k]) => k === id)
+    if (index <= 0) return
+    const prevEntry = entries[index - 1]!
+    entries[index - 1] = [id, shape]
+    entries[index] = prevEntry
+    this.shapeMap.clear()
+    for (const [k, v] of entries) {
+      this.shapeMap.set(k, v)
+    }
+  }
+
+  groupShapes(shapeIds: string[], groupId?: string): string {
+    const id = groupId ?? `group-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
+    for (const shapeId of shapeIds) {
+      const shape = this.shapeMap.get(shapeId)
+      if (shape) {
+        this.shapeMap.set(shapeId, { ...shape, groupId: id })
+      }
+    }
+    return id
+  }
+
+  ungroupShapes(groupId: string): string[] {
+    const ungroupedIds: string[] = []
+    for (const [id, shape] of this.shapeMap) {
+      if (shape.groupId === groupId) {
+        ungroupedIds.push(id)
+        const updated = { ...shape }
+        delete updated.groupId
+        this.shapeMap.set(id, updated)
+      }
+    }
+    return ungroupedIds
+  }
+
+  getGroupShapeIds(groupId: string): string[] {
+    const ids: string[] = []
+    for (const [id, shape] of this.shapeMap) {
+      if (shape.groupId === groupId) {
+        ids.push(id)
+      }
+    }
+    return ids
+  }
+
   serialize(): string {
     const data = {
-      shapes: this.shapes.map(({ id, type, position, dimensions, style, text }) => ({
+      shapes: this.shapes.map(({ id, type, position, dimensions, style, text, iconName, groupId, isHidden, isLocked }) => ({
         id,
         type,
         position,
         dimensions,
         style,
         text,
+        ...(iconName ? { iconName } : {}),
+        ...(groupId ? { groupId } : {}),
+        ...(isHidden ? { isHidden } : {}),
+        ...(isLocked ? { isLocked } : {}),
       })),
       connections: this.connections,
     }

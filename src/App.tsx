@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Canvas } from './editor/Canvas'
 import { ShapeLibrary } from './panels/ShapeLibrary'
+import { IconPanel } from './panels/IconPanel'
 import { PropertiesPanel } from './panels/PropertiesPanel'
 import { TemplatePanel } from './templates/panels/TemplatePanel'
 import { TemplatePropertiesPanel } from './templates/panels/TemplatePropertiesPanel'
@@ -8,6 +9,7 @@ import { TemplateDslEditor } from './templates/panels/TemplateDslEditor'
 import { Toolbar } from './panels/Toolbar'
 import { MermaidEditor } from './panels/MermaidEditor'
 import { SubgraphStylePanel } from './panels/SubgraphStylePanel'
+import { LayersPanel } from './panels/LayersPanel'
 import { useDiagramStore } from './store/diagramStore'
 import type { Shape, ShapeStyle, ShapeText, ShapeType, Position, Dimensions } from './core/model/Shape'
 
@@ -81,6 +83,43 @@ export function App() {
         e.preventDefault()
         redo()
         return
+      }
+
+      if (isMod && (e.key === 'g' || e.key === 'G')) {
+        const target = e.target as HTMLElement
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
+        e.preventDefault()
+        const state = useDiagramStore.getState()
+        if (e.shiftKey) {
+          state.ungroupSelectedShapes()
+        } else {
+          state.groupSelectedShapes()
+        }
+        return
+      }
+
+      if (isMod && (e.key === ']' || e.key === '[')) {
+        const target = e.target as HTMLElement
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
+
+        if (selectedShapeIds.size > 0) {
+          e.preventDefault()
+          const state = useDiagramStore.getState()
+          if (e.key === ']') {
+            if (e.shiftKey) {
+              for (const id of selectedShapeIds) state.bringToFront(id)
+            } else {
+              for (const id of selectedShapeIds) state.bringForward(id)
+            }
+          } else if (e.key === '[') {
+            if (e.shiftKey) {
+              for (const id of selectedShapeIds) state.sendToBack(id)
+            } else {
+              for (const id of selectedShapeIds) state.sendBackward(id)
+            }
+          }
+          return
+        }
       }
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -188,6 +227,7 @@ export function App() {
       <div style={styles.workspace}>
         <div style={{ ...styles.sidebar, width: sidebarWidth, maxWidth: 'none' }}>
           <ShapeLibrary />
+          <IconPanel />
           <MermaidEditor />
           <SubgraphStylePanel />
           <TemplatePanel />
@@ -219,6 +259,7 @@ export function App() {
             onMouseEnter={() => setHoveredHandle('rightPanel')}
             onMouseLeave={() => setHoveredHandle(null)}
           />
+          <LayersPanel />
           <PropertiesPanel />
           <TemplatePropertiesPanel />
         </div>
