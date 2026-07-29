@@ -5,7 +5,7 @@ import { useTemplateStore } from '../store'
 
 export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 

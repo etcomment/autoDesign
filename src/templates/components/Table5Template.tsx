@@ -6,7 +6,7 @@ import { useTemplateStore } from '../store'
 
 export function Table5Template({ data }: { data: TableData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
 
   const { title, columns, rows } = data

@@ -9,7 +9,7 @@ const DEFAULT_ARROW_COLORS = ['#1D1D4B', '#2A60D3', '#FF4D2D']
 
 export function Business4Template({ data }: { data: BusinessData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)

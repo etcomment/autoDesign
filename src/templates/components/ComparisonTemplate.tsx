@@ -12,7 +12,7 @@ const RIGHT_BG = '#fef2f2'
 
 export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
 
   const { title, leftTitle, rightTitle, items } = data

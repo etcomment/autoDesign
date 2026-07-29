@@ -5,7 +5,7 @@ import { useTemplateStore } from '../store'
 
 export function Decision2Template({ data }: { data: DecisionTreeData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
 
   const { title, rootQuestion, branches } = data

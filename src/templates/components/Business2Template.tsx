@@ -99,7 +99,7 @@ function renderIcon(type: string, strokeColor: string) {
 export function Business2Template({ data }: { data: BusinessData }): ReactElement {
   const W = 900
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
 

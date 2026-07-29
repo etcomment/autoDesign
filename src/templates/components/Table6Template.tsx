@@ -10,7 +10,7 @@ const BLUE_LINE = '#bfdbfe'
 
 export function Table6Template({ data }: { data: TableData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
 
   const { title, columns, rows } = data

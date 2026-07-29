@@ -29,7 +29,7 @@ const ICONS = [Newspaper, Printer, Award, Home, Crown, Wrench, FileText]
 export function Business8Template({ data }: { data: BusinessData }): ReactElement {
   const W = 1000
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)

@@ -9,7 +9,7 @@ const QUADRANT_COLORS = ['#e3f2fd', '#fff3e0', '#e8f5e9', '#fce4ec']
 
 export function Strategy6Template({ data }: { data: Strategy6Data }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
 

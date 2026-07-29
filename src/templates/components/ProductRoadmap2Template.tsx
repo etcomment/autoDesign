@@ -10,7 +10,7 @@ const LANE_BG = ['#e8f4fd', '#eaf7e9', '#fef3e2', '#f5eefa', '#fde8ec', '#e0f7fa
 
 export function ProductRoadmap2Template({ data }: { data: ProductRoadmap2Data }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const pos = useTemplateStore(s => s.templateElementPositions)
