@@ -52,16 +52,16 @@
 - [ ] **Alignement** : toolbar pour aligner (gauche, centre, droite, haut, milieu, bas)
 - [ ] **Distribute** : espacement égal horizontal/vertical
 - [ ] **Copier/Coller** : Ctrl+C, Ctrl+V avec undo
-- [ ] **Group/Ungroup** : Ctrl+G, Ctrl+Shift+G
-- [ ] **Verrouillage** : lock une forme (position + dimensions fixes)
-- [ ] **Z-order** : bring to front, send to back (Ctrl+[, Ctrl+])
+- [x] **Group/Ungroup** : Ctrl+G, Ctrl+Shift+G
+- [x] **Verrouillage** : lock une forme (position + dimensions fixes)
+- [x] **Z-order** : bring to front, send to back (Ctrl+[, Ctrl+])
 - [ ] **Snap to grid** : option activable/désactivable
 - [ ] **Smart guides** : lignes d'alignement pendant le drag
 
 ### Features — Formes
 - [ ] **Plus de types de formes** : triangle, pentagon, hexagone, arrow, star
 - [ ] **Formes flowchart** : process, decision, document, data, terminator
-- [ ] **Formes Lucide** : bibliothèque d'icônes (server, cloud, database, etc.)
+- [x] **Formes Lucide** : bibliothèque d'icônes (server, cloud, database, etc.)
 - [ ] **Shape Library extensible** : stockage JSON + lazy loading par catégorie
 - [ ] **Styles personnalisés** : ombre portée, dégradés, coins arrondis variables
 
@@ -94,7 +94,7 @@
 - [ ] **Auto-save** : IndexedDB avec debounce 2s
 - [ ] **Crash recovery** : restore dernier état valide à l'ouverture
 - [ ] **Recent files** : liste des derniers projets ouverts
-- [ ] **Templates** : bibliothèque de diagrammes pré-faits
+- [x] **Templates** : bibliothèque de diagrammes pré-faits
 - [ ] **Thème global** : palettes de couleurs, polices par défaut
 
 ### Features — UX/UI
