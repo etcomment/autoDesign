@@ -94,6 +94,23 @@ export function GroupResizeHandles({ groupBox }: GroupResizeHandlesProps) {
             break
         }
 
+        if (moveEvent.shiftKey && pos.width > 0 && pos.height > 0) {
+          const ratio = pos.width / pos.height
+          if (Math.abs(dx) > Math.abs(dy)) {
+            newH = newW / ratio
+          } else {
+            newW = newH * ratio
+          }
+          if (hPos === 'top-left') {
+            newX = pos.minX + (pos.width - newW)
+            newY = pos.minY + (pos.height - newH)
+          } else if (hPos === 'top-right') {
+            newY = pos.minY + (pos.height - newH)
+          } else if (hPos === 'bottom-left') {
+            newX = pos.minX + (pos.width - newW)
+          }
+        }
+
         if (!moveEvent.altKey) {
           const diagramStore = useDiagramStore.getState()
           const templateStore = useTemplateStore.getState()

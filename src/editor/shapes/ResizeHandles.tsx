@@ -83,6 +83,23 @@ export function ResizeHandles({ shape }: ResizeHandlesProps) {
             break
         }
 
+        if (moveEvent.shiftKey && dim.width > 0 && dim.height > 0) {
+          const ratio = dim.width / dim.height
+          if (Math.abs(dx) > Math.abs(dy)) {
+            newH = newW / ratio
+          } else {
+            newW = newH * ratio
+          }
+          if (hPos === 'top-left') {
+            newX = pos.x + (dim.width - newW)
+            newY = pos.y + (dim.height - newH)
+          } else if (hPos === 'top-right') {
+            newY = pos.y + (dim.height - newH)
+          } else if (hPos === 'bottom-left') {
+            newX = pos.x + (dim.width - newW)
+          }
+        }
+
         if (!moveEvent.altKey) {
           const diagramStore = useDiagramStore.getState()
           const templateStore = useTemplateStore.getState()
