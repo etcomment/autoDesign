@@ -126,12 +126,53 @@ export function downloadCanvasSvg(filename: string = 'diagram.svg'): void {
   URL.revokeObjectURL(url)
 }
 
-export function getContentSvg(): string {
+async function inlineFonts(svgStr: string): Promise<string> {
+  const fonts = new Set<string>()
+  const match = svgStr.matchAll(/font-family="([^"]+)"/g)
+  for (const m of match) {
+    fonts.add(m[1]!.split(',')[0]!.trim().replace(/['"]/g, ''))
+  }
+  
+  let styleContent = ''
+  for (const font of fonts) {
+    if (['Arial', 'sans-serif', 'serif', 'Times New Roman', 'Courier New', 'system-ui'].includes(font)) continue
+    try {
+      const url = `https://fonts.googleapis.com/css2?family=${font.replace(/ /g, '+')}:wght@400;500;600;700&display=swap`
+      const response = await fetch(url)
+      if (!response.ok) continue
+      let css = await response.text()
+      const urls = css.match(/url\(([^)]+)\)/g) || []
+      for (const u of urls) {
+        const fontUrl = u.match(/url\((['"]?)([^'"]+)\1\)/)?.[2]
+        if (fontUrl) {
+          const fontRes = await fetch(fontUrl)
+          if (fontRes.ok) {
+            const blob = await fontRes.blob()
+            const base64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(reader.result as string)
+              reader.readAsDataURL(blob)
+            })
+            css = css.replace(u, `url(${base64})`)
+          }
+        }
+      }
+      styleContent += css + '\n'
+    } catch (e) {}
+  }
+
+  if (styleContent) {
+    return svgStr.replace(/(<svg[^>]*>)/, `$1<style>${styleContent}</style>`)
+  }
+  return svgStr
+}
+
+export async function getContentSvg(): Promise<string> {
   const svgElement = (document.querySelector('svg[data-canvas-svg="true"]') || document.querySelector('svg')) as SVGSVGElement | null
   if (!svgElement) throw new Error('No SVG element found on canvas')
 
   const mainGroup = svgElement.querySelector('g[transform]')
-  if (!mainGroup) return exportCanvasToSvg()
+  if (!mainGroup) return inlineFonts(exportCanvasToSvg())
 
   const clonedGroup = mainGroup.cloneNode(true) as SVGGElement
 
@@ -184,11 +225,15 @@ export function getContentSvg(): string {
 
   const inner = clonedGroup.innerHTML
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">\n  <rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="white"/>\n  ${inner}\n</svg>`
+  const defs = svgElement.querySelector('defs')
+  const defsString = defs ? defs.outerHTML : ''
+
+  const rawSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">\n  ${defsString}\n  <rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="white"/>\n  ${inner}\n</svg>`
+  return inlineFonts(rawSvg)
 }
 
-export function downloadContentSvg(filename: string = 'diagram.svg'): void {
-  const svg = getContentSvg()
+export async function downloadContentSvg(filename: string = 'diagram.svg'): Promise<void> {
+  const svg = await getContentSvg()
   const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')

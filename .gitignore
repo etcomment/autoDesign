@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 bugs/
+*.patch
+*.orig
+*.rej
