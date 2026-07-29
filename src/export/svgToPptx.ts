@@ -325,7 +325,9 @@ function addPolygonToSlide(
 }
 
 async function rasterizePathToPng(el: SVGGraphicsElement, bbox: DOMRect | SVGRect): Promise<string> {
-  const pad = 4
+  const sw = parseFloat(el.getAttribute('stroke-width') || window.getComputedStyle(el).strokeWidth || '0')
+  const strokePad = isNaN(sw) ? 0 : sw / 2
+  const pad = 4 + strokePad
   const vbX = bbox.x - pad
   const vbY = bbox.y - pad
   const vbW = bbox.width + pad * 2
@@ -370,7 +372,9 @@ async function addPathAsImageToSlide(
       if (ctm) ctmScale = Math.hypot(ctm.a, ctm.b)
     } catch {}
 
-    const padAbs = 4 * ctmScale
+    const sw = parseFloat(el.getAttribute('stroke-width') || window.getComputedStyle(el).strokeWidth || '0')
+    const strokePad = isNaN(sw) ? 0 : sw / 2
+    const padAbs = (4 + strokePad) * ctmScale
     const padW = padAbs * layout.scaleX
     const padH = padAbs * layout.scaleY
 
