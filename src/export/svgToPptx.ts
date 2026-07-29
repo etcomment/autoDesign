@@ -357,18 +357,29 @@ async function addPathAsImageToSlide(
   el: SVGGraphicsElement,
   bounds: AbsBounds,
   vb: ViewBox,
-  layout: SlideLayout,
+  layout: SlideLayout
 ): Promise<void> {
   try {
     const bbox = el.getBBox()
     if (bbox.width <= 0 || bbox.height <= 0) return
     const pngData = await rasterizePathToPng(el, bbox)
+    
+    let ctmScale = 1
+    try {
+      const ctm = el.getCTM()
+      if (ctm) ctmScale = Math.hypot(ctm.a, ctm.b)
+    } catch {}
+
+    const padAbs = 4 * ctmScale
+    const padW = padAbs * layout.scaleX
+    const padH = padAbs * layout.scaleY
+
     slide.addImage({
       data: pngData,
-      x: toSlideX(bounds.x, vb, layout),
-      y: toSlideY(bounds.y, vb, layout),
-      w: Math.max(0.01, toSlideW(bounds.w, layout)),
-      h: Math.max(0.01, toSlideH(bounds.h, layout)),
+      x: toSlideX(bounds.x, vb, layout) - padW,
+      y: toSlideY(bounds.y, vb, layout) - padH,
+      w: Math.max(0.01, toSlideW(bounds.w, layout)) + padW * 2,
+      h: Math.max(0.01, toSlideH(bounds.h, layout)) + padH * 2,
     })
   } catch { /* skip unrenderable paths */ }
 }
@@ -445,7 +456,7 @@ function addTextToSlide(
     align,
     valign: 'middle',
     margin: 0,
-    wrap: true,
+    wrap: false,
     isTextBox: true,
   })
 }
