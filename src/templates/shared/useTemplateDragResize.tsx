@@ -21,8 +21,6 @@ interface Interaction {
   startRect: Rect
   hasMoved: boolean
   allStartRects?: Record<string, Rect>
-  screenCX?: number
-  screenCY?: number
 }
 
 const DRAG_THRESHOLD = 3
@@ -50,15 +48,13 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
   const stableOnMouseUp = useCallback((e: MouseEvent) => onMouseUpRef.current(e), [])
 
   const toSvgPoint = useCallback((e: MouseEvent): { x: number; y: number } => {
+    const viewBox = useDiagramStore.getState().viewBox
     const svg = svgRef.current?.ownerSVGElement || svgRef.current
     if (!svg) return { x: 0, y: 0 }
-    const ctm = svg.getScreenCTM()
-    if (!ctm) return { x: 0, y: 0 }
-    const pt = (svg as SVGSVGElement).createSVGPoint()
-    pt.x = e.clientX
-    pt.y = e.clientY
-    const p = pt.matrixTransform(ctm.inverse())
-    return { x: p.x, y: p.y }
+    const rect = svg.getBoundingClientRect()
+    const x = (e.clientX - rect.left - viewBox.x) / viewBox.scale
+    const y = (e.clientY - rect.top - viewBox.y) / viewBox.scale
+    return { x, y }
   }, [svgRef])
 
   onMouseUpRef.current = (e: MouseEvent) => {
@@ -87,10 +83,12 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
     const dx = x - interaction.startMouse.x
     const dy = y - interaction.startMouse.y
 
-    if (interaction.kind === 'rotate' && interaction.screenCX !== undefined && interaction.screenCY !== undefined) {
+    if (interaction.kind === 'rotate') {
       interaction.hasMoved = true
-      const rdx = e.clientX - interaction.screenCX
-      const rdy = e.clientY - interaction.screenCY
+      const centerX = interaction.startRect.x + interaction.startRect.width / 2
+      const centerY = interaction.startRect.y + interaction.startRect.height / 2
+      const rdx = x - centerX
+      const rdy = y - centerY
       let angle = Math.atan2(rdy, rdx) * (180 / Math.PI) + 90
       if (angle < 0) angle += 360
       if (angle >= 360) angle -= 360
@@ -131,11 +129,6 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
         for (const [sid, pos] of Object.entries(templateElementPositions)) {
           if (!selectedIds.has(sid)) {
             targetBoxes.push({ x: pos.x, y: pos.y, width: pos.width, height: pos.height })
-          }
-        }
-        for (const [sid, rRect] of renderedRectsRef.current.entries()) {
-          if (!selectedIds.has(sid) && !templateElementPositions[sid]) {
-            targetBoxes.push(rRect)
           }
         }
 
@@ -296,26 +289,6 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
       groupStartRect = rect
     }
 
-    let screenCX: number | undefined
-    let screenCY: number | undefined
-
-    if (kind === 'rotate') {
-      screenCX = e.clientX
-      screenCY = e.clientY + 24
-      const svg = svgRef.current?.ownerSVGElement || svgRef.current
-      if (svg) {
-        const pt = (svg as SVGSVGElement).createSVGPoint()
-        pt.x = groupStartRect.x + groupStartRect.width / 2
-        const parentEl = (e.currentTarget as SVGElement).parentNode as SVGGraphicsElement | null
-        const ctm = parentEl?.getScreenCTM() || (svg as SVGSVGElement).getScreenCTM()
-        if (ctm) {
-          const screenCenter = pt.matrixTransform(ctm)
-          screenCX = screenCenter.x
-          screenCY = screenCenter.y
-        }
-      }
-    }
-
     interactionRef.current = {
       id,
       kind,
@@ -324,12 +297,10 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
       startRect: groupStartRect,
       hasMoved: kind === 'resize' || kind === 'rotate',
       allStartRects,
-      screenCX,
-      screenCY,
     }
     window.addEventListener('mousemove', stableOnMouseMove)
     window.addEventListener('mouseup', stableOnMouseUp)
-  }, [toSvgPoint, stableOnMouseMove, stableOnMouseUp, selectedIds, templateElementPositions, svgRef])
+  }, [toSvgPoint, stableOnMouseMove, stableOnMouseUp, selectedIds, templateElementPositions])
 
   const startDrag = useCallback((e: React.MouseEvent, id: string, rect: Rect) => {
     startInteraction(e, id, rect, 'drag')
@@ -342,6 +313,14 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
   const startRotate = useCallback((e: React.MouseEvent, id: string, rect: Rect) => {
     startInteraction(e, id, rect, 'rotate')
   }, [startInteraction])
+
+  const getTransform = useCallback((id: string, rect: Rect) => {
+    const rot = templateElementRotations[id]
+    if (!rot) return undefined
+    const cx = rect.x + rect.width / 2
+    const cy = rect.y + rect.height / 2
+    return `rotate(${rot}, ${cx}, ${cy})`
+  }, [templateElementRotations])
 
   const renderHandles = useCallback((visualRect: Rect, id: string) => {
     renderedRectsRef.current.set(id, visualRect)
@@ -434,7 +413,7 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
         />
 
         {/* Live Degree Badge Pill */}
-        {currentRotation !== null && (
+        {(currentRotation !== null || activeRot > 0) && (
           <g transform={`translate(${centerX}, ${renderRect.y - 45})`}>
             <rect
               x={-20}
@@ -463,5 +442,5 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
     )
   }, [selectedIds, startResize, startRotate, templateElementPositions, templateElementRotations, currentRotation])
 
-  return { startDrag, startResize, startRotate, renderHandles, toSvgPoint }
+  return { startDrag, startResize, startRotate, getTransform, renderHandles, toSvgPoint }
 }

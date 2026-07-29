@@ -43,20 +43,15 @@ export function useDiagramDragResize(svgRef: React.RefObject<SVGGElement | null>
   const stableOnMouseUp = useCallback(() => onMouseUpRef.current(), [])
 
   const toSvgPoint = useCallback((e: React.MouseEvent | MouseEvent): { x: number; y: number } => {
-    const svg = svgRef.current?.ownerSVGElement
+    const viewBox = useDiagramStore.getState().viewBox
+    const svg = svgRef.current?.ownerSVGElement || svgRef.current
     if (!svg) return { x: 0, y: 0 }
-    const ctm = svg.getScreenCTM()
-    if (!ctm) return { x: 0, y: 0 }
-    const pt = svg.createSVGPoint()
-    if ('nativeEvent' in e) {
-      pt.x = e.nativeEvent.clientX
-      pt.y = e.nativeEvent.clientY
-    } else {
-      pt.x = e.clientX
-      pt.y = e.clientY
-    }
-    const p = pt.matrixTransform(ctm.inverse())
-    return { x: p.x, y: p.y }
+    const rect = svg.getBoundingClientRect()
+    const clientX = 'nativeEvent' in e ? e.nativeEvent.clientX : e.clientX
+    const clientY = 'nativeEvent' in e ? e.nativeEvent.clientY : e.clientY
+    const x = (clientX - rect.left - viewBox.x) / viewBox.scale
+    const y = (clientY - rect.top - viewBox.y) / viewBox.scale
+    return { x, y }
   }, [svgRef])
 
   onMouseUpRef.current = () => {
