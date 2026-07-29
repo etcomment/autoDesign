@@ -70,13 +70,31 @@ export function ProductRoadmap12Template({ data }: { data: ProductRoadmapData })
               {isHeaderSel && renderHandles(headerRect, headerId)}
             </g>
 
-            {q.year && (
-              <text x={centerX} y={topY + circleR * 2 + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#888">
-                {q.year}
-              </text>
-            )}
+            {q.year && (() => {
+              const yearId = `year-${qi}`
+              const defaultYear = { x: centerX - 20, y: topY + circleR * 2 + 16 - 10, width: 40, height: 14 }
+              const yr = pos[yearId] ?? defaultYear
+              return (
+                <g onMouseDown={e => startDrag(e, yearId, yr)} style={{ cursor: 'pointer' }}>
+                  <text x={yr.x + yr.width/2} y={yr.y + 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill={tplColors[yearId] ?? "#888"}>
+                    {q.year}
+                  </text>
+                  {selectedIds.has(yearId) && renderHandles(yr, yearId)}
+                </g>
+              )
+            })()}
 
-            <line x1={centerX} y1={topY + circleR * 2 + 24} x2={centerX} y2={topY + circleR * 2 + 36} stroke={tplStrokeColors[`line-${qi}`] ?? '#cbd5e0'} strokeWidth={tplStrokeWidths[`line-${qi}`] ?? 1} />
+            {(() => {
+              const lineId = `line-${qi}`
+              const defaultLine = { x: centerX - 1, y: topY + circleR * 2 + 24, width: 2, height: 12 }
+              const lr = pos[lineId] ?? defaultLine
+              return (
+                <g onMouseDown={e => startDrag(e, lineId, lr)} transform={`translate(${lr.x - defaultLine.x}, ${lr.y - defaultLine.y})`} style={{ cursor: 'pointer' }}>
+                  <line x1={defaultLine.x + 1} y1={defaultLine.y} x2={defaultLine.x + 1} y2={defaultLine.y + defaultLine.height} stroke={tplStrokeColors[lineId] ?? '#cbd5e0'} strokeWidth={tplStrokeWidths[lineId] ?? 1} />
+                  {selectedIds.has(lineId) && renderHandles(lr, lineId)}
+                </g>
+              )
+            })()}
 
             {quarterMilestones.map((m, mi) => {
               const elementId = `q-${qi}-m-${mi}`
@@ -98,7 +116,17 @@ export function ProductRoadmap12Template({ data }: { data: ProductRoadmapData })
 
               return (
                 <g key={`qm-${qi}-${mi}`}>
-                  <line x1={centerX} y1={visualRect.y - 8} x2={centerX} y2={visualRect.y} stroke={tplStrokeColors[`line-${qi}-${mi}`] ?? '#cbd5e0'} strokeWidth={1} />
+                  {(() => {
+                    const mLineId = `mline-${qi}-${mi}`
+                    const defaultMLine = { x: centerX - 1, y: visualRect.y - 8, width: 2, height: 8 }
+                    const lr = pos[mLineId] ?? defaultMLine
+                    return (
+                      <g onMouseDown={e => startDrag(e, mLineId, lr)} transform={`translate(${lr.x - defaultMLine.x}, ${lr.y - defaultMLine.y})`} style={{ cursor: 'pointer' }}>
+                        <line x1={defaultMLine.x + 1} y1={defaultMLine.y} x2={defaultMLine.x + 1} y2={defaultMLine.y + defaultMLine.height} stroke={tplStrokeColors[mLineId] ?? '#cbd5e0'} strokeWidth={tplStrokeWidths[mLineId] ?? 1} />
+                        {selectedIds.has(mLineId) && renderHandles(lr, mLineId)}
+                      </g>
+                    )
+                  })()}
                   <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
                     <rect x={visualRect.x} y={visualRect.y} width={visualRect.width} height={visualRect.height} rx={visualRect.height / 2} fill={mColor} opacity={isSelected ? 1 : 0.85} stroke={customStroke || (isSelected ? '#333' : styleStroke)} strokeWidth={isSelected ? 2.5 : customStrokeWidth} />
                     <text x={visualRect.x + visualRect.width / 2} y={visualRect.y + visualRect.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>

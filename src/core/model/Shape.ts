@@ -68,6 +68,7 @@ export interface Shape {
   readonly groupId?: string
   readonly isHidden?: boolean
   readonly isLocked?: boolean
+  readonly rotation?: number
 }
 
 export function createDefaultStyle(): ShapeStyle {

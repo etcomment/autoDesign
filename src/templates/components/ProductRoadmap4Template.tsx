@@ -91,24 +91,32 @@ export function ProductRoadmap4Template({ data }: { data: ProductRoadmap4Data })
 
         return (
           <g key={`m-${mi}`}>
-            {mi < sorted.length - 1 && (
-              <g>
-                <line
-                  x1={x + curW + CHEVRON_OFFSET}
-                  y1={y + curH / 2}
-                  x2={leftOffset + (mi + 1) * (stepW + gap)}
-                  y2={y + curH / 2}
-                  stroke={tplStrokeColors[`arrow-${mi}`] ?? color}
-                  strokeWidth={tplStrokeWidths[`arrow-${mi}`] ?? 2}
-                  markerEnd={`url(#arrow-${mi % PALETTE.length})`}
-                />
-              </g>
-            )}
-            <defs>
-              <marker id={`arrow-${mi % PALETTE.length}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill={color} />
-              </marker>
-            </defs>
+            {mi < sorted.length - 1 && (() => {
+              const arrId = `arrow-${mi}`
+              const arrRect = pos[arrId] ?? { x: x + curW + CHEVRON_OFFSET, y: y + curH / 2 - 10, width: leftOffset + (mi + 1) * (stepW + gap) - (x + curW + CHEVRON_OFFSET), height: 20 }
+              const arrStroke = tplStrokeColors[arrId] ?? color
+              const arrStrokeW = tplStrokeWidths[arrId] ?? 2
+              return (
+                <g onMouseDown={e => startDrag(e, arrId, arrRect)} style={{ cursor: 'pointer' }}>
+                  <rect x={arrRect.x} y={arrRect.y} width={arrRect.width} height={arrRect.height} fill="transparent" />
+                  <line
+                    x1={arrRect.x}
+                    y1={arrRect.y + arrRect.height / 2}
+                    x2={arrRect.x + arrRect.width}
+                    y2={arrRect.y + arrRect.height / 2}
+                    stroke={arrStroke}
+                    strokeWidth={arrStrokeW}
+                    markerEnd={`url(#marker-${arrId})`}
+                  />
+                  <defs>
+                    <marker id={`marker-${arrId}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill={arrStroke} />
+                    </marker>
+                  </defs>
+                  {selectedIds.has(arrId) && renderHandles(arrRect, arrId)}
+                </g>
+              )
+            })()}
 
             <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <polygon

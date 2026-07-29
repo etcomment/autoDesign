@@ -42,7 +42,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
     map.set('main-title', { x: 45, y: 40, width: 350, height: 60 })
-    map.set('road-path', { x: 280, y: 150, width: 440, height: 350 })
+    map.set('road-path', { x: 300, y: 220, width: 400, height: 440 })
     
     // Milestone 01 (Dark Blue box top right)
     map.set('card-0', { x: 680, y: 150, width: 215, height: 220 })
@@ -96,30 +96,34 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   const banner1R = getR('banner-1')
   const circ0R = getR('circle-0')
   const circ1R = getR('circle-1')
+  const roadPathR = getR('road-path')
 
   return (
     <g ref={svgRef}>
       {/* S-shaped Road Vector */}
-      <g>
-        {/* Grey outer road */}
-        <path
-          d={roadD}
-          fill="none"
-          stroke="#e0e0e0"
-          strokeWidth={90}
-          strokeLinecap="square"
-          strokeLinejoin="round"
-        />
-        {/* White center dashed line */}
-        <path
-          d={roadD}
-          fill="none"
-          stroke="#ffffff"
-          strokeWidth={8}
-          strokeDasharray="24 16"
-          strokeLinecap="butt"
-          strokeLinejoin="round"
-        />
+      <g onMouseDown={e => startDrag(e, 'road-path', roadPathR)} style={{ cursor: 'pointer' }}>
+        <g transform={`translate(${roadPathR.x - 300}, ${roadPathR.y - 220}) scale(${roadPathR.width / 400}, ${roadPathR.height / 440})`}>
+          {/* Grey outer road */}
+          <path
+            d={roadD}
+            fill="none"
+            stroke="#e0e0e0"
+            strokeWidth={90}
+            strokeLinecap="square"
+            strokeLinejoin="round"
+          />
+          {/* White center dashed line */}
+          <path
+            d={roadD}
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth={8}
+            strokeDasharray="24 16"
+            strokeLinecap="butt"
+            strokeLinejoin="round"
+          />
+        </g>
+        {selectedIds.has('road-path') && renderHandles(roadPathR, 'road-path')}
       </g>
 
       {/* Main Title */}
@@ -142,65 +146,73 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
 
       {/* Green Banner 1 (Top Road) */}
       <g onMouseDown={e => startDrag(e, 'banner-0', banner0R)} style={{ cursor: 'pointer' }}>
-        {/* Vertical line connecting to road */}
-        <line x1={banner0R.x + 63} y1={banner0R.y + 35} x2={banner0R.x + 63} y2={banner0R.y + 75} stroke={tplColors['banner-0'] || '#4cbfa0'} strokeWidth={6} />
-        {/* Arrow shape */}
-        <path
-          d={`M ${banner0R.x + 25} ${banner0R.y} L ${banner0R.x + banner0R.width} ${banner0R.y} L ${banner0R.x + banner0R.width} ${banner0R.y + 70} L ${banner0R.x + 25} ${banner0R.y + 70} L ${banner0R.x} ${banner0R.y + 35} Z`}
-          fill={tplColors['banner-0'] || '#4cbfa0'}
-        />
-        <text
-          x={banner0R.x + 65}
-          y={banner0R.y + 42}
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={15}
-          fontWeight="bold"
-          fill="#ffffff"
-        >
-          Your title
-        </text>
+        <g transform={`translate(${banner0R.x - 560}, ${banner0R.y - 195}) scale(${banner0R.width / 115}, ${banner0R.height / 70})`}>
+          {/* Vertical line connecting to road */}
+          <line x1={560 + 63} y1={195 + 35} x2={560 + 63} y2={195 + 75} stroke={tplColors['banner-0'] || '#4cbfa0'} strokeWidth={6} />
+          {/* Arrow shape */}
+          <path
+            d={`M ${560 + 25} ${195} L ${560 + 115} ${195} L ${560 + 115} ${195 + 70} L ${560 + 25} ${195 + 70} L ${560} ${195 + 35} Z`}
+            fill={tplColors['banner-0'] || '#4cbfa0'}
+          />
+          <text
+            x={560 + 65}
+            y={195 + 42}
+            textAnchor="middle"
+            fontFamily="Arial, sans-serif"
+            fontSize={15}
+            fontWeight="bold"
+            fill="#ffffff"
+          >
+            Your title
+          </text>
+        </g>
         {selectedIds.has('banner-0') && renderHandles(banner0R, 'banner-0')}
       </g>
 
       {/* Green Banner 2 (Bottom Road) */}
       <g onMouseDown={e => startDrag(e, 'banner-1', banner1R)} style={{ cursor: 'pointer' }}>
-        {/* Vertical line connecting to road */}
-        <line x1={banner1R.x + 56} y1={banner1R.y + 35} x2={banner1R.x + 56} y2={banner1R.y + 105} stroke={tplColors['banner-1'] || '#4cbfa0'} strokeWidth={6} />
-        {/* Arrow shape */}
-        <path
-          d={`M ${banner1R.x + 25} ${banner1R.y} L ${banner1R.x + banner1R.width} ${banner1R.y} L ${banner1R.x + banner1R.width} ${banner1R.y + 70} L ${banner1R.x + 25} ${banner1R.y + 70} L ${banner1R.x} ${banner1R.y + 35} Z`}
-          fill={tplColors['banner-1'] || '#4cbfa0'}
-        />
-        <text
-          x={banner1R.x + 65}
-          y={banner1R.y + 42}
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={15}
-          fontWeight="bold"
-          fill="#ffffff"
-        >
-          Your title
-        </text>
+        <g transform={`translate(${banner1R.x - 560}, ${banner1R.y - 705}) scale(${banner1R.width / 115}, ${banner1R.height / 70})`}>
+          {/* Vertical line connecting to road */}
+          <line x1={560 + 56} y1={705 + 35} x2={560 + 56} y2={705 + 105} stroke={tplColors['banner-1'] || '#4cbfa0'} strokeWidth={6} />
+          {/* Arrow shape */}
+          <path
+            d={`M ${560 + 25} ${705} L ${560 + 115} ${705} L ${560 + 115} ${705 + 70} L ${560 + 25} ${705 + 70} L ${560} ${705 + 35} Z`}
+            fill={tplColors['banner-1'] || '#4cbfa0'}
+          />
+          <text
+            x={560 + 65}
+            y={705 + 42}
+            textAnchor="middle"
+            fontFamily="Arial, sans-serif"
+            fontSize={15}
+            fontWeight="bold"
+            fill="#ffffff"
+          >
+            Your title
+          </text>
+        </g>
         {selectedIds.has('banner-1') && renderHandles(banner1R, 'banner-1')}
       </g>
 
       {/* Yellow Circle 1 (YOUR TITLE) */}
       <g onMouseDown={e => startDrag(e, 'circle-0', circ0R)} style={{ cursor: 'pointer' }}>
-        <line x1={circ0R.x + 33} y1={circ0R.y + 33} x2={circ0R.x + 33} y2={circ0R.y + 115} stroke={tplColors['circle-0'] || '#ffbe00'} strokeWidth={6} />
-        <circle cx={circ0R.x + 33} cy={circ0R.y + 33} r={33} fill={tplColors['circle-0'] || '#ffbe00'} />
-        <text x={circ0R.x + 33} y={circ0R.y + 26} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">YOUR</text>
-        <text x={circ0R.x + 33} y={circ0R.y + 42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">TITLE</text>
+        <g transform={`translate(${circ0R.x - 370}, ${circ0R.y - 335}) scale(${circ0R.width / 66}, ${circ0R.height / 66})`}>
+          <line x1={370 + 33} y1={335 + 33} x2={370 + 33} y2={335 + 115} stroke={tplColors['circle-0'] || '#ffbe00'} strokeWidth={6} />
+          <circle cx={370 + 33} cy={335 + 33} r={33} fill={tplColors['circle-0'] || '#ffbe00'} />
+          <text x={370 + 33} y={335 + 26} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">YOUR</text>
+          <text x={370 + 33} y={335 + 42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">TITLE</text>
+        </g>
         {selectedIds.has('circle-0') && renderHandles(circ0R, 'circle-0')}
       </g>
 
       {/* Yellow Circle 2 (YOUR TITLE) */}
       <g onMouseDown={e => startDrag(e, 'circle-1', circ1R)} style={{ cursor: 'pointer' }}>
-        <line x1={circ1R.x + 33} y1={circ1R.y + 33} x2={circ1R.x + 33} y2={circ1R.y + 115} stroke={tplColors['circle-1'] || '#ffbe00'} strokeWidth={6} />
-        <circle cx={circ1R.x + 33} cy={circ1R.y + 33} r={33} fill={tplColors['circle-1'] || '#ffbe00'} />
-        <text x={circ1R.x + 33} y={circ1R.y + 26} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">YOUR</text>
-        <text x={circ1R.x + 33} y={circ1R.y + 42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">TITLE</text>
+        <g transform={`translate(${circ1R.x - 475}, ${circ1R.y - 505}) scale(${circ1R.width / 66}, ${circ1R.height / 66})`}>
+          <line x1={475 + 33} y1={505 + 33} x2={475 + 33} y2={505 + 115} stroke={tplColors['circle-1'] || '#ffbe00'} strokeWidth={6} />
+          <circle cx={475 + 33} cy={505 + 33} r={33} fill={tplColors['circle-1'] || '#ffbe00'} />
+          <text x={475 + 33} y={505 + 26} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">YOUR</text>
+          <text x={475 + 33} y={505 + 42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">TITLE</text>
+        </g>
         {selectedIds.has('circle-1') && renderHandles(circ1R, 'circle-1')}
       </g>
 

@@ -17,6 +17,17 @@ interface Rect { x: number; y: number; width: number; height: number }
 
 function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, { cx: number }>, grey: Map<string, Rect>): Rect {
   const s = pos[id]
+  if (id.startsWith('arc-')) {
+    const parts = id.split('-')
+    const idx = parts.length >= 2 ? parseInt(parts[1] || '0') : 0
+    const l = layout.get(`item-${idx}`)
+    const nl = layout.get(`item-${idx + 1}`)
+    if (!l || !nl) return s || { x: 0, y: 0, width: 0, height: 0 }
+    if (s) return s
+    const startX = l.cx + 30
+    const endX = nl.cx - 30
+    return { x: startX, y: TOP_Y - 50, width: endX - startX, height: 30 }
+  }
   if (id.startsWith('item-')) {
     const l = layout.get(id)
     if (!l) return s || { x: 0, y: 0, width: 0, height: 0 }
@@ -53,9 +64,10 @@ export function Roadmap14Template({ data }: { data: RoadmapData }): ReactElement
     milestones.forEach((_, i) => {
       const cx = MARGIN_X + (N === 1 ? availableW / 2 : (i / (N - 1)) * availableW)
       m.set(`item-${i}`, { cx })
+      if (i < N - 1) m.set(`arc-${i}`, { cx })
     })
     return m
-  }, [milestones, availableW])
+  }, [milestones, availableW, N])
 
   const greyMap = useMemo(() => {
     const m = new Map<string, Rect>()
@@ -116,12 +128,20 @@ export function Roadmap14Template({ data }: { data: RoadmapData }): ReactElement
 
         return (
           <g key={i}>
-            {nextLayout && (
-              <path 
-                d={`M ${cx + 30} ${r.y - 20} Q ${cx + (nextLayout.cx - cx) / 2} ${r.y - 50} ${nextLayout.cx - 30} ${r.y - 20}`} 
-                fill="none" stroke="#e0e0e0" strokeWidth={3} markerEnd="url(#arrowhead)" 
-              />
-            )}
+            {(() => {
+              if (i >= N - 1) return null;
+              const aid = `arc-${i}`
+              const ar = rects.get(aid)!
+              return (
+                <g onMouseDown={e => startDrag(e, aid, ar)} style={{ cursor: 'pointer' }}>
+                  <path 
+                    d={`M ${ar.x} ${ar.y + ar.height} Q ${ar.x + ar.width/2} ${ar.y} ${ar.x + ar.width} ${ar.y + ar.height}`} 
+                    fill="none" stroke={tplColors[aid] || tplStrokeColors[aid] || "#e0e0e0"} strokeWidth={tplStrokeWidths[aid] || 3} markerEnd="url(#arrowhead)" 
+                  />
+                  {selectedIds.has(aid) && renderHandles(ar, aid)}
+                </g>
+              )
+            })()}
             
             <g onMouseDown={e => startDrag(e, iid, r)} style={{ cursor: 'pointer' }}>
               <text x={cx} y={r.y - 40} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={18} fontWeight={700} fill="#282c61">

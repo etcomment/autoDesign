@@ -92,7 +92,17 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
         )
       })}
 
-      <line x1={startX} y1={timelineY + 30} x2={startX + (totalCards - 1) * cardSpacing + cardW} y2={timelineY + 30} stroke={tplStrokeColors['timeline'] ?? '#c0c8d0'} strokeWidth={tplStrokeWidths['timeline'] ?? 2} />
+      {(() => {
+        const tId = 'timeline'
+        const tr = pos[tId] ?? { x: startX, y: timelineY + 28, width: (totalCards - 1) * cardSpacing + cardW, height: 4 }
+        return (
+          <g onMouseDown={e => startDrag(e, tId, tr)} style={{ cursor: 'pointer' }}>
+            <rect x={tr.x} y={tr.y - 4} width={tr.width} height={tr.height + 8} fill="transparent" />
+            <line x1={tr.x} y1={tr.y + tr.height / 2} x2={tr.x + tr.width} y2={tr.y + tr.height / 2} stroke={tplStrokeColors[tId] ?? '#c0c8d0'} strokeWidth={tplStrokeWidths[tId] ?? 2} />
+            {selectedIds.has(tId) && renderHandles(tr, tId)}
+          </g>
+        )
+      })()}
 
       {sortedMilestones.map((milestone, mi) => {
         const elementId = `milestone-${mi}`
@@ -137,11 +147,16 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
       })}
 
       {totalCards > 0 && [...Array(totalCards)].map((_, i) => {
-        const cx = startX + i * cardSpacing + cardW / 2
+        const dId = `dot-${i}`
+        const defaultCx = startX + i * cardSpacing + cardW / 2
+        const defaultCy = timelineY + 30
+        const r = pos[dId] ?? { x: defaultCx - 5, y: defaultCy - 5, width: 10, height: 10 }
+        const dotColor = tplColors[dId] ?? PALETTE[sortedMilestones[i] ? quarters.findIndex(q => q.label === sortedMilestones[i]!.quarter) % PALETTE.length : i % PALETTE.length]
         return (
-          <g key={`dot-${i}`}>
-            <circle cx={cx} cy={timelineY + 30} r={5} fill={PALETTE[sortedMilestones[i] ? quarters.findIndex(q => q.label === sortedMilestones[i]!.quarter) % PALETTE.length : i % PALETTE.length]} />
-            <circle cx={cx} cy={timelineY + 30} r={2.5} fill="#fff" />
+          <g key={dId} onMouseDown={e => startDrag(e, dId, r)} style={{ cursor: 'pointer' }}>
+            <circle cx={r.x + r.width / 2} cy={r.y + r.height / 2} r={Math.min(r.width, r.height) / 2} fill={dotColor} />
+            <circle cx={r.x + r.width / 2} cy={r.y + r.height / 2} r={Math.min(r.width, r.height) / 4} fill="#fff" />
+            {selectedIds.has(dId) && renderHandles(r, dId)}
           </g>
         )
       })}

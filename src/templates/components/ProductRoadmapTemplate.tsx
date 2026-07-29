@@ -100,17 +100,22 @@ export function ProductRoadmapTemplate({ data }: { data: ProductRoadmapData }): 
 
             {quarters.map((quarter, qi) => {
               const colX = gridLeft + qi * colWidth
+              const id = `bg-rect-${li}-${qi}`
+              const defaultR = { x: colX, y: rowY, width: colWidth, height: rowHeight }
+              const r = pos[id] ?? defaultR
               return (
-                <rect
-                  key={`${lane.label}-${quarter.label}`}
-                  x={colX}
-                  y={rowY}
-                  width={colWidth}
-                  height={rowHeight}
-                  fill="none"
-                  stroke="#e8ecf0"
-                  strokeWidth={1}
-                />
+                <g key={`${lane.label}-${quarter.label}`} onMouseDown={e => startDrag(e, id, r)} style={{ cursor: 'pointer' }}>
+                  <rect
+                    x={r.x}
+                    y={r.y}
+                    width={r.width}
+                    height={r.height}
+                    fill={tplColors[id] ?? "none"}
+                    stroke={tplStrokeColors[id] ?? "#e8ecf0"}
+                    strokeWidth={tplStrokeWidths[id] ?? 1}
+                  />
+                  {selectedIds.has(id) && renderHandles(r, id)}
+                </g>
               )
             })}
           </g>

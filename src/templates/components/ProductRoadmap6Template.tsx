@@ -43,7 +43,17 @@ export function ProductRoadmap6Template({ data }: { data: ProductRoadmapData }):
         ) : null
       })()}
 
-      <line x1={marginX - 10} y1={marginTop} x2={marginX - 10} y2={marginTop + milestones.length * (barH + gap)} stroke={tplStrokeColors['timeline'] ?? '#ddd'} strokeWidth={tplStrokeWidths['timeline'] ?? 2} />
+      {(() => {
+        const tId = 'timeline'
+        const tr = pos[tId] ?? { x: marginX - 12, y: marginTop, width: 4, height: milestones.length * (barH + gap) }
+        return (
+          <g onMouseDown={e => startDrag(e, tId, tr)} style={{ cursor: 'pointer' }}>
+            <rect x={tr.x - 4} y={tr.y} width={tr.width + 8} height={tr.height} fill="transparent" />
+            <line x1={tr.x + tr.width / 2} y1={tr.y} x2={tr.x + tr.width / 2} y2={tr.y + tr.height} stroke={tplStrokeColors[tId] ?? '#ddd'} strokeWidth={tplStrokeWidths[tId] ?? 2} />
+            {selectedIds.has(tId) && renderHandles(tr, tId)}
+          </g>
+        )
+      })()}
 
       {milestones.map((milestone, index) => {
         const elementId = `milestone-${index}`
@@ -62,20 +72,32 @@ export function ProductRoadmap6Template({ data }: { data: ProductRoadmapData }):
         const styleFontColor = milestone.style?.fontColor ?? '#333'
 
         return (
-          <g key={index} onMouseDown={e => startDrag(e, elementId, rect)} style={{ cursor: 'pointer' }}>
-            <rect x={marginX + 10} y={rectY} width={28} height={rectH} rx={4} fill={qColor} />
-            <text x={marginX + 24} y={rectY + rectH / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill="white">
-              {milestone.quarter ?? '?'}
-            </text>
+          <g key={index}>
+            {(() => {
+              const qId = `quarter-${index}`
+              const qr = pos[qId] ?? { x: marginX + 10, y: defaultY, width: 28, height: barH }
+              const qc = tplColors[qId] ?? PALETTE[index % PALETTE.length]!
+              return (
+                <g onMouseDown={e => startDrag(e, qId, qr)} style={{ cursor: 'pointer' }}>
+                  <rect x={qr.x} y={qr.y} width={qr.width} height={qr.height} rx={4} fill={qc} />
+                  <text x={qr.x + qr.width / 2} y={qr.y + qr.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill="white">
+                    {milestone.quarter ?? '?'}
+                  </text>
+                  {selectedIds.has(qId) && renderHandles(qr, qId)}
+                </g>
+              )
+            })()}
 
-            <rect x={rectX} y={rectY} width={rectW} height={rectH} rx={6} fill={cardColor} stroke={customStroke || (isSelected ? '#4a90d9' : (milestone.style?.stroke || '#e0e0e0'))} strokeWidth={isSelected ? 2.5 : customStrokeWidth} />
-            {milestone.title.split('\n').map((line, li) => (<text x={rectX + 12} key={li} y={rectY + rectH / 2 + 4 + li * 12 - ((milestone.title.split('\\n').length - 1) * 6)} fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>{line}</text>))}
-            {milestone.subtitle && (
-              <text x={rectX + 12} y={rectY + rectH / 2 + 18} fontFamily="Arial, sans-serif" fontSize={9} fill="#888">
-                {milestone.subtitle.length > 60 ? milestone.subtitle.slice(0, 57) + '...' : milestone.subtitle}
-              </text>
-            )}
-            {isSelected && renderHandles(rect, elementId)}
+            <g onMouseDown={e => startDrag(e, elementId, rect)} style={{ cursor: 'pointer' }}>
+              <rect x={rectX} y={rectY} width={rectW} height={rectH} rx={6} fill={cardColor} stroke={customStroke || (isSelected ? '#4a90d9' : (milestone.style?.stroke || '#e0e0e0'))} strokeWidth={isSelected ? 2.5 : customStrokeWidth} />
+              {milestone.title.split('\n').map((line, li) => (<text x={rectX + 12} key={li} y={rectY + rectH / 2 + 4 + li * 12 - ((milestone.title.split('\\n').length - 1) * 6)} fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>{line}</text>))}
+              {milestone.subtitle && (
+                <text x={rectX + 12} y={rectY + rectH / 2 + 18} fontFamily="Arial, sans-serif" fontSize={9} fill="#888">
+                  {milestone.subtitle.length > 60 ? milestone.subtitle.slice(0, 57) + '...' : milestone.subtitle}
+                </text>
+              )}
+              {isSelected && renderHandles(rect, elementId)}
+            </g>
           </g>
         )
       })}

@@ -1,5 +1,6 @@
 import type { Shape } from '../../core/model/Shape'
 import { ResizeHandles } from './ResizeHandles'
+import { useDiagramStore } from '../../store/diagramStore'
 import { TEMPLATE_ICONS } from '../../templates/shared/icons'
 
 const diamondPoints = (x: number, y: number, w: number, h: number): string => {
@@ -47,6 +48,13 @@ export function ShapeRenderer({ shape, isSelected }: ShapeRendererProps) {
   if (shape.isHidden) {
     return null
   }
+  const isGroupFullySelected = useDiagramStore(s => {
+    if (!shape.groupId) return false
+    const groupShapes = s.shapes.filter(sh => sh.groupId === shape.groupId)
+    return groupShapes.length > 1 && groupShapes.every(sh => s.selectedShapeIds.has(sh.id))
+  })
+  
+  const showHandles = isSelected && !isGroupFullySelected
   const { dimensions, position, style, text, type } = shape
   const { width: w, height: h } = dimensions
   const { x, y } = position
@@ -71,14 +79,14 @@ export function ShapeRenderer({ shape, isSelected }: ShapeRendererProps) {
     if (Icon) {
       const iconSize = Math.min(w, h) * 0.7
       return (
-        <g>
+        <g transform={`rotate(${shape.rotation || 0}, ${x + w / 2}, ${y + h / 2})`}>
           <rect x={x} y={y} width={w} height={h} fill={style.fill} stroke="none" opacity={0} cursor="pointer" />
           <g transform={`translate(${x + w / 2 - iconSize / 2}, ${y + h / 2 - iconSize / 2})`}>
             <g stroke={style.stroke} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round">
               <Icon size={iconSize} color={style.stroke} />
             </g>
           </g>
-          {isSelected && (
+          {showHandles && (
             <>
               <rect {...bounds} fill="none" stroke="#4a90d9" strokeWidth={1} strokeDasharray="4 2" />
               <ResizeHandles shape={shape} />
@@ -90,9 +98,9 @@ export function ShapeRenderer({ shape, isSelected }: ShapeRendererProps) {
   }
 
   return (
-    <g>
+    <g transform={`rotate(${shape.rotation || 0}, ${x + w / 2}, ${y + h / 2})`}>
       {renderShape(type, x, y, w, h, commonProps)}
-      {isSelected && (
+      {showHandles && (
         <>
           <rect
             {...bounds}

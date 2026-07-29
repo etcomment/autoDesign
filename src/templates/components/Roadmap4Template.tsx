@@ -59,6 +59,20 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
     map.set('step-4', { x: 550, y: 173, width: 120, height: 35 })
     map.set('step-5', { x: 670, y: 83, width: 120, height: 35 })
 
+    // Ribbon bodies
+    map.set('step-1-body', { x: 160, y: 452.5, width: 315, height: 45 })
+    map.set('step-2-body', { x: 480, y: 380, width: 207.5, height: 95 })
+    map.set('step-3-body', { x: 342.5, y: 285, width: 202.5, height: 95 })
+    map.set('step-4-body', { x: 475, y: 190, width: 232.5, height: 95 })
+    map.set('step-5-body', { x: 345, y: 100, width: 425, height: 90 })
+
+    // Arrow heads
+    map.set('step-1-arrow', { x: 470, y: 440, width: 40, height: 70 })
+    map.set('step-2-arrow', { x: 515, y: 345, width: 40, height: 70 })
+    map.set('step-3-arrow', { x: 465, y: 250, width: 40, height: 70 })
+    map.set('step-4-arrow', { x: 515, y: 155, width: 40, height: 70 })
+    map.set('step-5-arrow', { x: 765, y: 65, width: 40, height: 70 })
+
     // Milestone descriptions cleanly positioned away from turns
     map.set('milestone-1', { x: 695, y: 355, width: 240, height: 90 })
     map.set('milestone-2', { x: 80, y: 260, width: 240, height: 90 })
@@ -103,6 +117,18 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
   const step4R = getR('step-4')
   const step5R = getR('step-5')
 
+  const s1bR = getR('step-1-body')
+  const s2bR = getR('step-2-body')
+  const s3bR = getR('step-3-body')
+  const s4bR = getR('step-4-body')
+  const s5bR = getR('step-5-body')
+
+  const s1aR = getR('step-1-arrow')
+  const s2aR = getR('step-2-arrow')
+  const s3aR = getR('step-3-arrow')
+  const s4aR = getR('step-4-arrow')
+  const s5aR = getR('step-5-arrow')
+
   const c1 = tplColors['step-1'] || '#4cbfa0' // Teal
   const c2 = tplColors['step-2'] || '#ffbe00' // Yellow
   const c3 = tplColors['step-3'] || '#ff4a2b' // Coral Red
@@ -131,63 +157,93 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
       {/* LAYER 1: RIBBON BODIES (Underneath layer) */}
       {/* Step 1 Body: Teal horizontal bar */}
-      <rect x={160} y={452.5} width={315} height={45} fill={c1} />
+      <g onMouseDown={e => startDrag(e, 'step-1-body', s1bR)} style={{ cursor: 'pointer' }}>
+        <rect x={s1bR.x} y={s1bR.y} width={s1bR.width} height={s1bR.height} fill={c1} />
+        {selectedIds.has('step-1-body') && renderHandles(s1bR, 'step-1-body')}
+      </g>
 
       {/* Step 2 Body: Yellow start bar starting UNDER Teal arrow head (x=480), U-turn right to y=380 going left to x=550 */}
-      <path
-        d="M 480 475 L 640 475 A 47.5 47.5 0 0 0 640 380 L 550 380"
-        fill="none"
-        stroke={c2}
-        strokeWidth={45}
-        strokeLinecap="butt"
-        strokeLinejoin="round"
-      />
+      <g onMouseDown={e => startDrag(e, 'step-2-body', s2bR)} style={{ cursor: 'pointer' }}>
+        <path
+          d={`M ${s2bR.x} ${s2bR.y + s2bR.height} L ${s2bR.x + s2bR.width - s2bR.height / 2} ${s2bR.y + s2bR.height} A ${s2bR.height / 2} ${s2bR.height / 2} 0 0 0 ${s2bR.x + s2bR.width - s2bR.height / 2} ${s2bR.y} L ${s2bR.x + 70} ${s2bR.y}`}
+          fill="none"
+          stroke={c2}
+          strokeWidth={45}
+          strokeLinecap="butt"
+          strokeLinejoin="round"
+        />
+        {selectedIds.has('step-2-body') && renderHandles(s2bR, 'step-2-body')}
+      </g>
 
       {/* Step 3 Body: Red start bar starting UNDER Yellow arrow head (x=545), U-turn left to y=285 going right to x=470 */}
-      <path
-        d="M 545 380 L 390 380 A 47.5 47.5 0 0 1 390 285 L 470 285"
-        fill="none"
-        stroke={c3}
-        strokeWidth={45}
-        strokeLinecap="butt"
-        strokeLinejoin="round"
-      />
+      <g onMouseDown={e => startDrag(e, 'step-3-body', s3bR)} style={{ cursor: 'pointer' }}>
+        <path
+          d={`M ${s3bR.x + s3bR.width} ${s3bR.y + s3bR.height} L ${s3bR.x + s3bR.height / 2} ${s3bR.y + s3bR.height} A ${s3bR.height / 2} ${s3bR.height / 2} 0 0 1 ${s3bR.x + s3bR.height / 2} ${s3bR.y} L ${s3bR.x + s3bR.width - 75} ${s3bR.y}`}
+          fill="none"
+          stroke={c3}
+          strokeWidth={45}
+          strokeLinecap="butt"
+          strokeLinejoin="round"
+        />
+        {selectedIds.has('step-3-body') && renderHandles(s3bR, 'step-3-body')}
+      </g>
 
       {/* Step 4 Body: Blue start bar starting UNDER Red arrow head (x=475), U-turn right to y=190 going left to x=550 */}
-      <path
-        d="M 475 285 L 660 285 A 47.5 47.5 0 0 0 660 190 L 550 190"
-        fill="none"
-        stroke={c4}
-        strokeWidth={45}
-        strokeLinecap="butt"
-        strokeLinejoin="round"
-      />
+      <g onMouseDown={e => startDrag(e, 'step-4-body', s4bR)} style={{ cursor: 'pointer' }}>
+        <path
+          d={`M ${s4bR.x} ${s4bR.y + s4bR.height} L ${s4bR.x + s4bR.width - s4bR.height / 2} ${s4bR.y + s4bR.height} A ${s4bR.height / 2} ${s4bR.height / 2} 0 0 0 ${s4bR.x + s4bR.width - s4bR.height / 2} ${s4bR.y} L ${s4bR.x + 75} ${s4bR.y}`}
+          fill="none"
+          stroke={c4}
+          strokeWidth={45}
+          strokeLinecap="butt"
+          strokeLinejoin="round"
+        />
+        {selectedIds.has('step-4-body') && renderHandles(s4bR, 'step-4-body')}
+      </g>
 
       {/* Step 5 Body: Navy start bar starting UNDER Blue arrow head (x=545), U-turn left to y=100 going right to x=770 */}
-      <path
-        d="M 545 190 L 390 190 A 45 45 0 0 1 390 100 L 770 100"
-        fill="none"
-        stroke={c5}
-        strokeWidth={45}
-        strokeLinecap="butt"
-        strokeLinejoin="round"
-      />
+      <g onMouseDown={e => startDrag(e, 'step-5-body', s5bR)} style={{ cursor: 'pointer' }}>
+        <path
+          d={`M ${s5bR.x + 200} ${s5bR.y + s5bR.height} L ${s5bR.x + s5bR.height / 2} ${s5bR.y + s5bR.height} A ${s5bR.height / 2} ${s5bR.height / 2} 0 0 1 ${s5bR.x + s5bR.height / 2} ${s5bR.y} L ${s5bR.x + s5bR.width} ${s5bR.y}`}
+          fill="none"
+          stroke={c5}
+          strokeWidth={45}
+          strokeLinecap="butt"
+          strokeLinejoin="round"
+        />
+        {selectedIds.has('step-5-body') && renderHandles(s5bR, 'step-5-body')}
+      </g>
 
       {/* LAYER 2: ARROW HEADS (Triangles sitting ON TOP of the next step's body) */}
       {/* Step 1 Arrow Head (Teal pointing right) -> base x=470, tip x=510 completely covers Yellow start at x=480 */}
-      <path d="M 470 440 L 470 510 L 510 475 Z" fill={c1} />
+      <g onMouseDown={e => startDrag(e, 'step-1-arrow', s1aR)} style={{ cursor: 'pointer' }}>
+        <path d={`M ${s1aR.x} ${s1aR.y} L ${s1aR.x} ${s1aR.y + s1aR.height} L ${s1aR.x + s1aR.width} ${s1aR.y + s1aR.height / 2} Z`} fill={c1} />
+        {selectedIds.has('step-1-arrow') && renderHandles(s1aR, 'step-1-arrow')}
+      </g>
 
       {/* Step 2 Arrow Head (Yellow pointing left) -> base x=555, tip x=515 completely covers Red start at x=545 */}
-      <path d="M 555 345 L 555 415 L 515 380 Z" fill={c2} />
+      <g onMouseDown={e => startDrag(e, 'step-2-arrow', s2aR)} style={{ cursor: 'pointer' }}>
+        <path d={`M ${s2aR.x + s2aR.width} ${s2aR.y} L ${s2aR.x + s2aR.width} ${s2aR.y + s2aR.height} L ${s2aR.x} ${s2aR.y + s2aR.height / 2} Z`} fill={c2} />
+        {selectedIds.has('step-2-arrow') && renderHandles(s2aR, 'step-2-arrow')}
+      </g>
 
       {/* Step 3 Arrow Head (Red pointing right) -> base x=465, tip x=505 completely covers Blue start at x=475 */}
-      <path d="M 465 250 L 465 320 L 505 285 Z" fill={c3} />
+      <g onMouseDown={e => startDrag(e, 'step-3-arrow', s3aR)} style={{ cursor: 'pointer' }}>
+        <path d={`M ${s3aR.x} ${s3aR.y} L ${s3aR.x} ${s3aR.y + s3aR.height} L ${s3aR.x + s3aR.width} ${s3aR.y + s3aR.height / 2} Z`} fill={c3} />
+        {selectedIds.has('step-3-arrow') && renderHandles(s3aR, 'step-3-arrow')}
+      </g>
 
       {/* Step 4 Arrow Head (Blue pointing left) -> base x=555, tip x=515 completely covers Navy start at x=545 */}
-      <path d="M 555 155 L 555 225 L 515 190 Z" fill={c4} />
+      <g onMouseDown={e => startDrag(e, 'step-4-arrow', s4aR)} style={{ cursor: 'pointer' }}>
+        <path d={`M ${s4aR.x + s4aR.width} ${s4aR.y} L ${s4aR.x + s4aR.width} ${s4aR.y + s4aR.height} L ${s4aR.x} ${s4aR.y + s4aR.height / 2} Z`} fill={c4} />
+        {selectedIds.has('step-4-arrow') && renderHandles(s4aR, 'step-4-arrow')}
+      </g>
 
       {/* Step 5 Arrow Head (Navy pointing right) */}
-      <path d="M 765 65 L 765 135 L 805 100 Z" fill={c5} />
+      <g onMouseDown={e => startDrag(e, 'step-5-arrow', s5aR)} style={{ cursor: 'pointer' }}>
+        <path d={`M ${s5aR.x} ${s5aR.y} L ${s5aR.x} ${s5aR.y + s5aR.height} L ${s5aR.x + s5aR.width} ${s5aR.y + s5aR.height / 2} Z`} fill={c5} />
+        {selectedIds.has('step-5-arrow') && renderHandles(s5aR, 'step-5-arrow')}
+      </g>
 
       {/* LAYER 3: INTERACTIVE STEP TEXT LABELS */}
       <g onMouseDown={e => startDrag(e, 'step-1', step1R)} style={{ cursor: 'pointer' }}>

@@ -92,8 +92,28 @@ export function ProductRoadmap2Template({ data }: { data: ProductRoadmap2Data })
 
         return (
           <g key={lane.label}>
-            <rect x={gridLeft} y={rowY} width={gridWidth} height={rowHeight} fill={LANE_BG[li % LANE_BG.length]} rx={2} />
-            <rect x={0} y={rowY} width={4} height={rowHeight} fill={laneColor} rx={2} />
+            {(() => {
+              const laneBgId = `lanebg-${li}`
+              const defaultBg = { x: gridLeft, y: rowY, width: gridWidth, height: rowHeight }
+              const r = pos[laneBgId] ?? defaultBg
+              return (
+                <g onMouseDown={e => startDrag(e, laneBgId, r)} style={{ cursor: 'pointer' }}>
+                  <rect x={r.x} y={r.y} width={r.width} height={r.height} fill={tplColors[laneBgId] ?? LANE_BG[li % LANE_BG.length]} rx={2} />
+                  {selectedIds.has(laneBgId) && renderHandles(r, laneBgId)}
+                </g>
+              )
+            })()}
+            {(() => {
+              const laneMarkerId = `lanemarker-${li}`
+              const defaultMarker = { x: 0, y: rowY, width: 4, height: rowHeight }
+              const mr = pos[laneMarkerId] ?? defaultMarker
+              return (
+                <g onMouseDown={e => startDrag(e, laneMarkerId, mr)} style={{ cursor: 'pointer' }}>
+                  <rect x={mr.x} y={mr.y} width={mr.width} height={mr.height} fill={tplColors[laneMarkerId] ?? laneColor} rx={2} />
+                  {selectedIds.has(laneMarkerId) && renderHandles(mr, laneMarkerId)}
+                </g>
+              )
+            })()}
             <g onMouseDown={e => startDrag(e, lId, lRect)} style={{ cursor: 'pointer' }}>
               <rect x={lRect.x} y={lRect.y} width={lRect.width} height={lRect.height} rx={6} fill={laneColor} opacity={0.9} stroke={lStroke} strokeWidth={lStrokeWidth} />
               <text
@@ -110,18 +130,35 @@ export function ProductRoadmap2Template({ data }: { data: ProductRoadmap2Data })
               {isSelected && renderHandles(lRect, lId)}
             </g>
 
-            {quarters.map((_q, qi) => (
-              <line
-                key={`grid-${li}-${qi}`}
-                x1={gridLeft + qi * colWidth}
-                y1={rowY}
-                x2={gridLeft + qi * colWidth}
-                y2={rowY + rowHeight}
-                stroke="#d0d7de"
-                strokeWidth={0.5}
-              />
-            ))}
-            <line x1={gridLeft} y1={rowY} x2={gridLeft + gridWidth} y2={rowY} stroke="#c0c8d0" strokeWidth={1} />
+            {quarters.map((_q, qi) => (() => {
+              const lineId = `gridline-${li}-${qi}`
+              const defaultLine = { x: gridLeft + qi * colWidth - 0.5, y: rowY, width: 1, height: rowHeight }
+              const lr = pos[lineId] ?? defaultLine
+              return (
+                <g key={`grid-${li}-${qi}`} onMouseDown={e => startDrag(e, lineId, lr)} transform={`translate(${lr.x - defaultLine.x}, ${lr.y - defaultLine.y})`} style={{ cursor: 'pointer' }}>
+                  <line
+                    x1={defaultLine.x + 0.5}
+                    y1={defaultLine.y}
+                    x2={defaultLine.x + 0.5}
+                    y2={defaultLine.y + defaultLine.height}
+                    stroke={tplStrokeColors[lineId] ?? "#d0d7de"}
+                    strokeWidth={tplStrokeWidths[lineId] ?? 0.5}
+                  />
+                  {selectedIds.has(lineId) && renderHandles(lr, lineId)}
+                </g>
+              )
+            })())}
+            {(() => {
+              const hLineId = `hline-${li}`
+              const defaultHLine = { x: gridLeft, y: rowY - 0.5, width: gridWidth, height: 1 }
+              const hr = pos[hLineId] ?? defaultHLine
+              return (
+                <g onMouseDown={e => startDrag(e, hLineId, hr)} transform={`translate(${hr.x - defaultHLine.x}, ${hr.y - defaultHLine.y})`} style={{ cursor: 'pointer' }}>
+                  <line x1={defaultHLine.x} y1={defaultHLine.y + 0.5} x2={defaultHLine.x + defaultHLine.width} y2={defaultHLine.y + 0.5} stroke={tplStrokeColors[hLineId] ?? "#c0c8d0"} strokeWidth={tplStrokeWidths[hLineId] ?? 1} />
+                  {selectedIds.has(hLineId) && renderHandles(hr, hLineId)}
+                </g>
+              )
+            })()}
           </g>
         )
       })}

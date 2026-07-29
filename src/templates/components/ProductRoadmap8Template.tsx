@@ -45,11 +45,19 @@ export function ProductRoadmap8Template({ data }: { data: ProductRoadmapData }):
         ) : null
       })()}
 
-      {MONTHS.map((m, mi) => (
-        <text key={`mh-${mi}`} x={marginX + mi * monthW + monthW / 2} y={topY + 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill="#888">
-          {m}
-        </text>
-      ))}
+      {MONTHS.map((m, mi) => {
+        const id = `month-${mi}`
+        const defaultR = { x: marginX + mi * monthW, y: topY - 5, width: monthW, height: 20 }
+        const r = pos[id] ?? defaultR
+        return (
+          <g key={id} onMouseDown={e => startDrag(e, id, r)} style={{ cursor: 'pointer' }}>
+            <text x={r.x + r.width / 2} y={r.y + 13} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill={tplColors[id] ?? "#888"}>
+              {m}
+            </text>
+            {selectedIds.has(id) && renderHandles(r, id)}
+          </g>
+        )
+      })}
 
       {lanes.map((lane, li) => {
         const laneY = topY + 20 + li * rowH
@@ -70,7 +78,19 @@ export function ProductRoadmap8Template({ data }: { data: ProductRoadmapData }):
               </text>
               {isSelected && renderHandles(lRect, lId)}
             </g>
-            <line x1={marginX} y1={laneY + rowH / 2} x2={W - marginX / 2} y2={laneY + rowH / 2} stroke={tplStrokeColors[`line-lane-${li}`] ?? '#e2e8f0'} strokeWidth={tplStrokeWidths[`line-lane-${li}`] ?? 1} />
+            {(() => {
+              const lineId = `line-lane-${li}`
+              const defaultLineR = { x: marginX, y: laneY + rowH / 2 - 2, width: W - marginX / 2 - marginX, height: 4 }
+              const lRectLine = pos[lineId] ?? defaultLineR
+              const stroke = tplStrokeColors[lineId] ?? '#e2e8f0'
+              const sW = tplStrokeWidths[lineId] ?? 1
+              return (
+                <g onMouseDown={e => startDrag(e, lineId, lRectLine)} style={{ cursor: 'pointer' }}>
+                  <line x1={lRectLine.x} y1={lRectLine.y + lRectLine.height / 2} x2={lRectLine.x + lRectLine.width} y2={lRectLine.y + lRectLine.height / 2} stroke={stroke} strokeWidth={sW} />
+                  {selectedIds.has(lineId) && renderHandles(lRectLine, lineId)}
+                </g>
+              )
+            })()}
           </g>
         )
       })}
@@ -110,9 +130,19 @@ export function ProductRoadmap8Template({ data }: { data: ProductRoadmapData }):
         )
       })}
 
-      {Array.from({ length: 12 }, (_, mi) => (
-        <line key={`vg-${mi}`} x1={marginX + mi * monthW} y1={topY + 20} x2={marginX + mi * monthW} y2={topY + 20 + lanes.length * rowH} stroke="#e2e8f0" strokeWidth={0.5} />
-      ))}
+      {Array.from({ length: 12 }, (_, mi) => {
+        const id = `vg-${mi}`
+        const defaultR = { x: marginX + mi * monthW - 2, y: topY + 20, width: 4, height: lanes.length * rowH }
+        const r = pos[id] ?? defaultR
+        const stroke = tplStrokeColors[id] ?? '#e2e8f0'
+        const sW = tplStrokeWidths[id] ?? 0.5
+        return (
+          <g key={id} onMouseDown={e => startDrag(e, id, r)} style={{ cursor: 'pointer' }}>
+            <line x1={r.x + r.width / 2} y1={r.y} x2={r.x + r.width / 2} y2={r.y + r.height} stroke={stroke} strokeWidth={sW} />
+            {selectedIds.has(id) && renderHandles(r, id)}
+          </g>
+        )
+      })}
     </g>
   )
 }

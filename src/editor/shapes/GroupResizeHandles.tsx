@@ -1,20 +1,26 @@
 import { useCallback, useRef } from 'react'
 import { useDiagramStore } from '../../store/diagramStore'
 import { snapToGrid } from '../../core/grid'
-import type { Shape } from '../../core/model/Shape'
 
-interface ResizeHandlesProps {
-  readonly shape: Shape
+interface GroupBox {
+  id: string
+  minX: number
+  minY: number
+  width: number
+  height: number
+  shapeIds: string[]
+}
+
+interface GroupResizeHandlesProps {
+  readonly groupBox: GroupBox
 }
 
 type HandlePosition = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 
 const HANDLE_SIZE = 8
 
-function getHandleCoordinates(shape: Shape, position: HandlePosition) {
-  const { x, y } = shape.position
-  const { width: w, height: h } = shape.dimensions
-
+function getHandleCoordinates(box: GroupBox, position: HandlePosition) {
+  const { minX: x, minY: y, width: w, height: h } = box
   switch (position) {
     case 'top-left': return { x: x - HANDLE_SIZE / 2, y: y - HANDLE_SIZE / 2, cursor: 'nwse-resize' }
     case 'top-right': return { x: x + w - HANDLE_SIZE / 2, y: y - HANDLE_SIZE / 2, cursor: 'nesw-resize' }
@@ -23,15 +29,18 @@ function getHandleCoordinates(shape: Shape, position: HandlePosition) {
   }
 }
 
-export function ResizeHandles({ shape }: ResizeHandlesProps) {
-  const resizeShape = useDiagramStore(s => s.moveAndResizeShape)
+export function GroupResizeHandles({ groupBox }: GroupResizeHandlesProps) {
+  const moveAndResizeShape = useDiagramStore(s => s.moveAndResizeShape)
   const updateShapeRotation = useDiagramStore(s => s.updateShapeRotation)
+  const shapes = useDiagramStore(s => s.shapes)
+  
   const isDragging = useRef(false)
   const isRotating = useRef(false)
   const handleRef = useRef<HandlePosition | null>(null)
+  
   const startMouse = useRef({ x: 0, y: 0 })
-  const startDimensions = useRef({ width: 0, height: 0 })
-  const startPosition = useRef({ x: 0, y: 0 })
+  const startBox = useRef({ ...groupBox })
+  const startShapes = useRef<Array<{ id: string, x: number, y: number, w: number, h: number, rot: number }>>([])
 
   const onMouseDown = useCallback(
     (e: React.MouseEvent, position: HandlePosition) => {
@@ -40,63 +49,67 @@ export function ResizeHandles({ shape }: ResizeHandlesProps) {
       isDragging.current = true
       handleRef.current = position
       startMouse.current = { x: e.clientX, y: e.clientY }
-      startDimensions.current = { ...shape.dimensions }
-      startPosition.current = { ...shape.position }
+      startBox.current = { ...groupBox }
+      startShapes.current = groupBox.shapeIds
+        .map(id => shapes.find(s => s.id === id))
+        .filter((s): s is NonNullable<typeof s> => !!s)
+        .map(s => ({ id: s.id, x: s.position.x, y: s.position.y, w: s.dimensions.width, h: s.dimensions.height, rot: s.rotation ?? 0 }))
 
       const handleMouseMove = (moveEvent: MouseEvent) => {
         if (!isDragging.current || !handleRef.current) return
         const dx = moveEvent.clientX - startMouse.current.x
         const dy = moveEvent.clientY - startMouse.current.y
-        const pos = startPosition.current
-        const dim = startDimensions.current
+        const pos = startBox.current
         const hPos = handleRef.current
 
-        let newX = pos.x
-        let newY = pos.y
-        let newW = dim.width
-        let newH = dim.height
+        let newX = pos.minX
+        let newY = pos.minY
+        let newW = pos.width
+        let newH = pos.height
 
         switch (hPos) {
           case 'top-left':
-            newX = pos.x + dx
-            newY = pos.y + dy
-            newW = dim.width - dx
-            newH = dim.height - dy
+            newX = pos.minX + dx
+            newY = pos.minY + dy
+            newW = pos.width - dx
+            newH = pos.height - dy
             break
           case 'top-right':
-            newY = pos.y + dy
-            newW = dim.width + dx
-            newH = dim.height - dy
+            newY = pos.minY + dy
+            newW = pos.width + dx
+            newH = pos.height - dy
             break
           case 'bottom-left':
-            newX = pos.x + dx
-            newW = dim.width - dx
-            newH = dim.height + dy
+            newX = pos.minX + dx
+            newW = pos.width - dx
+            newH = pos.height + dy
             break
           case 'bottom-right':
-            newW = dim.width + dx
-            newH = dim.height + dy
+            newW = pos.width + dx
+            newH = pos.height + dy
             break
         }
 
-        const minSize = 10
+        const minSize = 20
         if (newW < minSize) {
-          if (hPos === 'top-left' || hPos === 'bottom-left') {
-            newX = pos.x + dim.width - minSize
-          }
+          if (hPos === 'top-left' || hPos === 'bottom-left') newX = pos.minX + pos.width - minSize
           newW = minSize
         }
         if (newH < minSize) {
-          if (hPos === 'top-left' || hPos === 'top-right') {
-            newY = pos.y + dim.height - minSize
-          }
+          if (hPos === 'top-left' || hPos === 'top-right') newY = pos.minY + pos.height - minSize
           newH = minSize
         }
 
-        resizeShape(shape.id,
-          { x: snapToGrid(newX), y: snapToGrid(newY) },
-          { width: snapToGrid(newW), height: snapToGrid(newH) },
-        )
+        const scaleX = newW / pos.width
+        const scaleY = newH / pos.height
+
+        for (const s of startShapes.current) {
+          const sx = newX + (s.x - pos.minX) * scaleX
+          const sy = newY + (s.y - pos.minY) * scaleY
+          const sw = s.w * scaleX
+          const sh = s.h * scaleY
+          moveAndResizeShape(s.id, { x: snapToGrid(sx), y: snapToGrid(sy) }, { width: snapToGrid(sw), height: snapToGrid(sh) })
+        }
       }
 
       const handleMouseUp = () => {
@@ -109,7 +122,7 @@ export function ResizeHandles({ shape }: ResizeHandlesProps) {
       window.addEventListener('mousemove', handleMouseMove)
       window.addEventListener('mouseup', handleMouseUp)
     },
-    [shape, resizeShape],
+    [groupBox, shapes, moveAndResizeShape],
   )
 
   const onRotateMouseDown = useCallback((e: React.MouseEvent) => {
@@ -122,8 +135,8 @@ export function ResizeHandles({ shape }: ResizeHandlesProps) {
 
     if (svg) {
       const pt = svg.createSVGPoint()
-      pt.x = shape.position.x + shape.dimensions.width / 2
-      pt.y = shape.position.y + shape.dimensions.height / 2
+      pt.x = groupBox.minX + groupBox.width / 2
+      pt.y = groupBox.minY + groupBox.height / 2
       const parent = (e.currentTarget as SVGElement).parentNode as unknown as SVGGraphicsElement | null
       const ctm = parent?.getScreenCTM()
       if (ctm) {
@@ -134,19 +147,41 @@ export function ResizeHandles({ shape }: ResizeHandlesProps) {
     }
 
     isRotating.current = true
+    const center = { x: groupBox.minX + groupBox.width / 2, y: groupBox.minY + groupBox.height / 2 }
+    
+    startShapes.current = groupBox.shapeIds
+      .map(id => shapes.find(s => s.id === id))
+      .filter((s): s is NonNullable<typeof s> => !!s)
+      .map(s => ({ id: s.id, x: s.position.x, y: s.position.y, w: s.dimensions.width, h: s.dimensions.height, rot: s.rotation ?? 0 }))
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (!isRotating.current) return
       const dx = moveEvent.clientX - screenCX
       const dy = moveEvent.clientY - screenCY
       let angle = Math.atan2(dy, dx) * (180 / Math.PI)
-      // The natural angle of the rotation handle relative to the center is -90 degrees (straight up).
-      // So we adjust the angle to make the handle's initial position 0 degrees.
       angle += 90
       if (angle < 0) angle += 360
       if (angle >= 360) angle -= 360
-      // Snap to 15 degrees if shift is pressed, optional. Let's just round it.
-      updateShapeRotation(shape.id, Math.round(angle))
+      
+      const deltaAngle = angle
+      const rad = (deltaAngle * Math.PI) / 180
+      const cos = Math.cos(rad)
+      const sin = Math.sin(rad)
+
+      for (const s of startShapes.current) {
+        const sCenterX = s.x + s.w / 2
+        const sCenterY = s.y + s.h / 2
+        const relX = sCenterX - center.x
+        const relY = sCenterY - center.y
+        const newCenterX = center.x + (relX * cos - relY * sin)
+        const newCenterY = center.y + (relX * sin + relY * cos)
+        
+        moveAndResizeShape(s.id, { x: newCenterX - s.w / 2, y: newCenterY - s.h / 2 }, { width: s.w, height: s.h })
+        let newRot = s.rot + deltaAngle
+        if (newRot < 0) newRot += 360
+        if (newRot >= 360) newRot -= 360
+        updateShapeRotation(s.id, Math.round(newRot))
+      }
     }
 
     const handleMouseUp = () => {
@@ -157,14 +192,14 @@ export function ResizeHandles({ shape }: ResizeHandlesProps) {
 
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('mouseup', handleMouseUp)
-  }, [shape, updateShapeRotation])
+  }, [groupBox, shapes, moveAndResizeShape, updateShapeRotation])
 
   const handles: HandlePosition[] = ['top-left', 'top-right', 'bottom-left', 'bottom-right']
 
   return (
     <>
       {handles.map((position) => {
-        const { x, y, cursor } = getHandleCoordinates(shape, position)
+        const { x, y, cursor } = getHandleCoordinates(groupBox, position)
         return (
           <rect
             key={position}
@@ -175,7 +210,7 @@ export function ResizeHandles({ shape }: ResizeHandlesProps) {
             fill="white"
             stroke="#4a90d9"
             strokeWidth={1.5}
-            style={{ cursor }}
+            style={{ cursor, pointerEvents: 'auto' }}
             onMouseDown={(e) => onMouseDown(e, position)}
           />
         )
@@ -183,21 +218,22 @@ export function ResizeHandles({ shape }: ResizeHandlesProps) {
       
       {/* Rotation Handle */}
       <line
-        x1={shape.position.x + shape.dimensions.width / 2}
-        y1={shape.position.y - 4}
-        x2={shape.position.x + shape.dimensions.width / 2}
-        y2={shape.position.y - 24}
+        x1={groupBox.minX + groupBox.width / 2}
+        y1={groupBox.minY - 4}
+        x2={groupBox.minX + groupBox.width / 2}
+        y2={groupBox.minY - 24}
         stroke="#4a90d9"
         strokeWidth={1.5}
+        pointerEvents="none"
       />
       <circle
-        cx={shape.position.x + shape.dimensions.width / 2}
-        cy={shape.position.y - 24}
+        cx={groupBox.minX + groupBox.width / 2}
+        cy={groupBox.minY - 24}
         r={5}
         fill="white"
         stroke="#4a90d9"
         strokeWidth={1.5}
-        style={{ cursor: 'grab' }}
+        style={{ cursor: 'grab', pointerEvents: 'auto' }}
         onMouseDown={onRotateMouseDown}
       />
     </>

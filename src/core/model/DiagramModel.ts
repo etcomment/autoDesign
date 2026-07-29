@@ -179,6 +179,15 @@ export class DiagramModel {
     })
   }
 
+  updateShapeRotation(id: string, rotation: number): void {
+    const shape = this.shapeMap.get(id)
+    if (!shape) return
+    this.shapeMap.set(id, {
+      ...shape,
+      rotation,
+    })
+  }
+
   updateShapeText(id: string, partialText: Partial<ShapeText>): void {
     const shape = this.shapeMap.get(id)
     if (!shape) return
@@ -330,7 +339,7 @@ export class DiagramModel {
 
   serialize(): string {
     const data = {
-      shapes: this.shapes.map(({ id, type, position, dimensions, style, text, iconName, groupId, isHidden, isLocked }) => ({
+      shapes: this.shapes.map(({ id, type, position, dimensions, style, text, iconName, groupId, isHidden, isLocked, rotation }) => ({
         id,
         type,
         position,
@@ -341,6 +350,7 @@ export class DiagramModel {
         ...(groupId ? { groupId } : {}),
         ...(isHidden ? { isHidden } : {}),
         ...(isLocked ? { isLocked } : {}),
+        ...(rotation ? { rotation } : {}),
       })),
       connections: this.connections,
     }

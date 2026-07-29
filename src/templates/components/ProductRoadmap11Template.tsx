@@ -30,7 +30,17 @@ export function ProductRoadmap11Template({ data }: { data: ProductRoadmapData })
 
   return (
     <g ref={svgRef}>
-      <rect width={Math.max(W, 960)} height={Math.max(H, 350)} fill="white" rx={8} />
+      {(() => {
+        const bgId = 'bg-rect'
+        const defaultBg = { x: 0, y: 0, width: Math.max(W, 960), height: Math.max(H, 350) }
+        const r = pos[bgId] ?? defaultBg
+        return (
+          <g onMouseDown={e => startDrag(e, bgId, r)} style={{ cursor: 'pointer' }}>
+            <rect x={r.x} y={r.y} width={r.width} height={r.height} fill={tplColors[bgId] ?? "white"} rx={8} stroke={tplStrokeColors[bgId]} strokeWidth={tplStrokeWidths[bgId]} />
+            {selectedIds.has(bgId) && renderHandles(r, bgId)}
+          </g>
+        )
+      })()}
       {(() => {
         const r = pos['main-title'] ?? { x: W / 2 - 250, y: 15, width: 500, height: 35 }
         const fill = tplColors['main-title'] ?? TITLE_COLOR
@@ -79,13 +89,22 @@ export function ProductRoadmap11Template({ data }: { data: ProductRoadmapData })
               {isSelected && renderHandles(visualRect, elementId)}
             </g>
 
-            {mi < Math.min(milestones.length, 5) - 1 && (
-              <Arrow
-                from={{ x: visualRect.x + visualRect.width + 4, y: visualRect.y + visualRect.height / 2 }}
-                to={{ x: startX + (mi + 1) * (CARD_W + 40) - 4, y: cardY + CARD_H / 2 }}
-                color={tplColors[`arrow-${mi}`] ?? color}
-              />
-            )}
+            {mi < Math.min(milestones.length, 5) - 1 && (() => {
+              const arrowId = `arrow-${mi}`
+              const nextCardId = `card-${mi+1}`
+              const nextCardRect = pos[nextCardId] ?? { x: startX + (mi + 1) * (CARD_W + 40), y: cardY, width: CARD_W, height: CARD_H }
+              const arrowR = pos[arrowId] ?? { x: 0, y: 0, width: 0, height: 0 }
+              return (
+                <g onMouseDown={e => startDrag(e, arrowId, arrowR)} transform={`translate(${arrowR.x}, ${arrowR.y})`} style={{ cursor: 'pointer' }}>
+                  <Arrow
+                    from={{ x: visualRect.x + visualRect.width + 4, y: visualRect.y + visualRect.height / 2 }}
+                    to={{ x: nextCardRect.x - 4, y: nextCardRect.y + nextCardRect.height / 2 }}
+                    color={tplColors[arrowId] ?? color}
+                  />
+                  {selectedIds.has(arrowId) && renderHandles(arrowR, arrowId)}
+                </g>
+              )
+            })()}
           </g>
         )
       })}

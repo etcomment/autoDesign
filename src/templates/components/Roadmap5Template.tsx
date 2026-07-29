@@ -221,7 +221,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         return (
           <g key={`card-${i}`} onMouseDown={e => startDrag(e, `card-${i}`, cardR)} style={{ cursor: 'pointer' }}>
             <text x={cardR.x} y={cardR.y + 25} fontFamily="Arial, sans-serif" fontSize={22} fontWeight="bold" fill="#23255a">{title_}</text>
-            {subtitle_.split('\n').map((line, li) => (
+            {subtitle_.split('\n').map((line: string, li: number) => (
               <text key={li} x={cardR.x} y={cardR.y + 55 + li * 24} fontFamily="Arial, sans-serif" fontSize={14} fill="#555555">{line}</text>
             ))}
             {selectedIds.has(`card-${i}`) && renderHandles(cardR, `card-${i}`)}

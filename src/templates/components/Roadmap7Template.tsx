@@ -71,6 +71,7 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
       const cy = startY + i * spacing
       m.set(`date-${i}`, { x: DATE_X - 90, y: cy - 18, width: 90, height: 36 })
       m.set(`dot-${i}`, { x: DOT_X - 6, y: cy - 6, width: 12, height: 12 })
+      m.set(`conn-${i}`, { x: DOT_X, y: cy - 14, width: BUBBLE_CX - BUBBLE_R - DOT_X, height: 28 })
       m.set(`bubble-${i}`, { x: BUBBLE_CX - BUBBLE_R, y: cy - BUBBLE_R, width: BUBBLE_R * 2, height: BUBBLE_R * 2 })
       m.set(`desc-${i}`, { x: TEXT_X, y: cy - 22, width: W - TEXT_X - 30, height: 60 })
     })
@@ -166,10 +167,20 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
             </g>
 
             {/* Triangle connector from dot to bubble */}
-            <polygon
-              points={`${dotr.x + dotr.width / 2},${bCy} ${br.x - 2},${bCy - 14} ${br.x - 2},${bCy + 14}`}
-              fill={color}
-            />
+            {(() => {
+              const connId = `conn-${i}`
+              const connr = rects.get(connId)!
+              const isSelConn = selectedIds.has(connId)
+              return (
+                <g onMouseDown={e => startDrag(e, connId, connr)} style={{ cursor: 'pointer' }}>
+                  <polygon
+                    points={`${connr.x},${connr.y + connr.height / 2} ${connr.x + connr.width},${connr.y} ${connr.x + connr.width},${connr.y + connr.height}`}
+                    fill={tplColors[connId] ?? color}
+                  />
+                  {isSelConn && renderHandles(connr, connId)}
+                </g>
+              )
+            })()}
 
             {/* Large colored circle with value */}
             <g onMouseDown={e => startDrag(e, bubId, br)} style={{ cursor: 'pointer' }}>

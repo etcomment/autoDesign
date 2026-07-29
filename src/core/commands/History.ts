@@ -119,6 +119,22 @@ export class History {
     })
   }
 
+  updateShapeRotation(id: string, rotation: number): void {
+    const shape = this.model.getShape(id)
+    if (!shape) return
+    const previousRotation = shape.rotation ?? 0
+    this.model.updateShapeRotation(id, rotation)
+    this.push({
+      label: 'Pivoter forme',
+      execute: (model) => {
+        model.updateShapeRotation(id, rotation)
+      },
+      undo: (model) => {
+        model.updateShapeRotation(id, previousRotation)
+      },
+    })
+  }
+
   updateShapeText(id: string, text: Partial<ShapeText>): void {
     const shape = this.model.getShape(id)
     if (!shape) return
