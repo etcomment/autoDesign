@@ -78,6 +78,7 @@ function toSlideH(h: number, layout: SlideLayout): number {
 
 function resolveColor(color: string): string {
   if (!color || color === 'none' || color === 'transparent' || color === 'rgba(0, 0, 0, 0)') return ''
+  if (color.startsWith('context-') || color.startsWith('url(')) return ''
   if (color.startsWith('#')) {
     let hex = color.slice(1)
     if (hex.length === 3) hex = hex.split('').map(c => c + c).join('')
@@ -323,21 +324,47 @@ function addPolygonToSlide(
   } as PptxGenJS.ShapeProps)
 }
 
-function addPathAsImageToSlide(
+async function rasterizePathToPng(el: SVGGraphicsElement, bbox: DOMRect | SVGRect): Promise<string> {
+  const pad = 4
+  const vbX = bbox.x - pad
+  const vbY = bbox.y - pad
+  const vbW = bbox.width + pad * 2
+  const vbH = bbox.height + pad * 2
+  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" width="${vbW}" height="${vbH}">${el.outerHTML}</svg>`
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([svgStr], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(blob)
+    const img = new Image()
+    img.onload = () => {
+      const scale = 2
+      const canvas = document.createElement('canvas')
+      canvas.width = (img.naturalWidth || img.width) * scale
+      canvas.height = (img.naturalHeight || img.height) * scale
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { URL.revokeObjectURL(url); reject(new Error('no ctx')); return }
+      ctx.scale(scale, scale)
+      ctx.drawImage(img, 0, 0)
+      URL.revokeObjectURL(url)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('raster fail')) }
+    img.src = url
+  })
+}
+
+async function addPathAsImageToSlide(
   slide: PptxGenJS.Slide,
   el: SVGGraphicsElement,
   bounds: AbsBounds,
   vb: ViewBox,
   layout: SlideLayout,
-): void {
+): Promise<void> {
   try {
     const bbox = el.getBBox()
     if (bbox.width <= 0 || bbox.height <= 0) return
-    const pad = 4
-    const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${bbox.x - pad} ${bbox.y - pad} ${bbox.width + pad * 2} ${bbox.height + pad * 2}">${el.outerHTML}</svg>`
-    const b64 = window.btoa(unescape(encodeURIComponent(svgStr)))
+    const pngData = await rasterizePathToPng(el, bbox)
     slide.addImage({
-      data: 'data:image/svg+xml;base64,' + b64,
+      data: pngData,
       x: toSlideX(bounds.x, vb, layout),
       y: toSlideY(bounds.y, vb, layout),
       w: Math.max(0.01, toSlideW(bounds.w, layout)),
@@ -430,6 +457,15 @@ function isInteractiveElement(el: Element): boolean {
   )
 }
 
+function isInsideDefs(el: Element): boolean {
+  let node: Element | null = el.parentElement
+  while (node && node.tagName.toLowerCase() !== 'svg') {
+    if (node.tagName.toLowerCase() === 'defs') return true
+    node = node.parentElement
+  }
+  return false
+}
+
 function isWhiteBackground(el: Element, vb: ViewBox): boolean {
   const x = parseFloat(el.getAttribute('x') || '-1')
   const y = parseFloat(el.getAttribute('y') || '-1')
@@ -471,7 +507,7 @@ export async function generateCanvasPptx(): Promise<Blob> {
 
   const shapes = Array.from(svgRoot.querySelectorAll<SVGGraphicsElement>('rect, circle, ellipse, polygon, path, line'))
   for (const el of shapes) {
-    if (isInteractiveElement(el)) continue
+    if (isInteractiveElement(el) || isInsideDefs(el)) continue
     const tag = el.tagName.toLowerCase()
 
     if (tag === 'rect' && isWhiteBackground(el, vb)) continue
@@ -491,11 +527,12 @@ export async function generateCanvasPptx(): Promise<Blob> {
 
     if (tag === 'rect') addRectToSlide(slide, el, bounds, vb, layout)
     else if (tag === 'circle' || tag === 'ellipse') addEllipseToSlide(slide, el, bounds, vb, layout)
-    else if (tag === 'path') addPathAsImageToSlide(slide, el, bounds, vb, layout)
+    else if (tag === 'path') await addPathAsImageToSlide(slide, el, bounds, vb, layout)
   }
 
   const texts = Array.from(svgRoot.querySelectorAll<SVGTextElement>('text'))
   for (const el of texts) {
+    if (isInsideDefs(el)) continue
     addTextToSlide(slide, el, svgRoot, vb, layout)
   }
 
