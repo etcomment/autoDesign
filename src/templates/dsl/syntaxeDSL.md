@@ -227,7 +227,7 @@ Ce document constitue la **source officielle et unique de la syntaxe DSL** pour 
 ```dsl
 @productRoadmap
   quarters Q1:2026 Q2:2026 Q3:2026 Q4:2026
-  lanes Produit Tech Marketing
+  lanes Produit:#2c2b64 Tech:#3366cc Marketing:#ff5338
   milestone:Q1:Produit "Refonte UX" "Nouvelle interface"
   milestone:Q2:Tech "Migration API" "Backend GraphQL"
   milestone:Q3:Marketing "Campagne Mkt" "Lancement international"

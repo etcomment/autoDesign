@@ -1,3 +1,4 @@
+import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 import type { RoadmapData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
@@ -10,12 +11,6 @@ interface Rect {
   height: number
 }
 
-// Design from PDF Page 138:
-// Horizontal timeline with dots per year. 2 milestone cards:
-//   ms[0] floats ABOVE the timeline, connected via vertical pin to ms[0].date (or 2021 by default)
-//   ms[1] floats BELOW the timeline, connected via vertical pin to ms[1].date (or 2026 by default)
-// Years list comes from `quarters` DSL or from ms.date fields (auto-filled) or fallback 2019-2028.
-
 export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
@@ -25,15 +20,22 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
   const moveEl = useTemplateStore(s => s.moveTemplateElement)
   const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
-  const { title, milestones, quarters } = data
+  const { title, milestones, quarters, lanes } = data
   const W = 1000
 
-  const ms1 = milestones[0] || { title: 'Milestone 01', subtitle: 'Content and description to be\nadded here as required' }
-  const ms2 = milestones[1] || { title: 'Milestone 02', subtitle: 'Content and description to be\nadded here as required' }
+  const phases = useMemo(() => {
+    if (lanes && lanes.length > 0) {
+      return lanes.map((l, i) => ({
+        label: l.label,
+        color: l.color || MIGSO_PALETTE[i % MIGSO_PALETTE.length],
+      }))
+    }
+    return milestones.map((m, i) => ({
+      label: m.title,
+      color: m.color || MIGSO_PALETTE[i % MIGSO_PALETTE.length],
+    }))
+  }, [lanes, milestones])
 
-  // Build the list of year labels:
-  // Priority 1: quarters DSL
-  // Priority 2: fallback 2019-2028
   const years = useMemo(() => {
     if (quarters && quarters.length > 0) {
       return quarters.map(q => q.label)
@@ -46,30 +48,52 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
   const spacing = Math.min(88, (W - startX * 2) / Math.max(N - 1, 1))
   const timelineY = 500
 
-  // Find the index of a given date label in the years array (for pin positioning)
   const findYearIdx = (dateStr: string | undefined, fallbackIdx: number): number => {
     if (!dateStr) return fallbackIdx
     const idx = years.indexOf(dateStr)
     return idx >= 0 ? idx : fallbackIdx
   }
 
-  // ms[0] pins to ms1.date, default to year[2] (2021)
-  // ms[1] pins to ms2.date, default to year[7] (2026)
-  const pin0Idx = findYearIdx(ms1.date, Math.min(2, N - 1))
-  const pin1Idx = findYearIdx(ms2.date, Math.min(7, N - 1))
-  const pin0X = startX + pin0Idx * spacing
-  const pin1X = startX + pin1Idx * spacing
+  const pinIndices = useMemo(() => {
+    return milestones.map((ms, i) => findYearIdx(ms.date, Math.min(Math.floor(i * N / Math.max(milestones.length, 1)), N - 1)))
+  }, [milestones, years, N])
 
-  // Color pivot: year at pin1 index is the transition point
-  const pivotIdx = pin1Idx
+  const sortedByDate = useMemo(() => {
+    return [...milestones.keys()].sort((a, b) => pinIndices[a]! - pinIndices[b]!)
+  }, [milestones, pinIndices])
+
+  const getDotColor = (yearIdx: number): string => {
+    let color: string = MIGSO_PALETTE[0]!
+    for (const mi of sortedByDate) {
+      const ms = milestones[mi]
+      if (!ms) continue
+      if (ms.date && years.indexOf(ms.date) <= yearIdx) {
+        const laneColor = ms.lane ? (phases.find(p => p.label === ms.lane) || phases.find(p => p.label.startsWith(ms.lane!)))?.color : undefined
+        color = laneColor || ms.color || phases[mi]?.color || color
+      }
+    }
+    return color
+  }
+
+  const getMsColor = (msIdx: number): string => {
+    const ms = milestones[msIdx]
+    if (!ms) return MIGSO_PALETTE[msIdx % MIGSO_PALETTE.length]!
+    const laneColor = ms.lane ? (phases.find(p => p.label === ms.lane) || phases.find(p => p.label.startsWith(ms.lane!)))?.color : undefined
+    return laneColor || ms.color || phases[msIdx]?.color || MIGSO_PALETTE[msIdx % MIGSO_PALETTE.length]!
+  }
 
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
     map.set('main-title', { x: 45, y: 40, width: 350, height: 60 })
 
-    // Milestone cards
-    map.set('card-0', { x: pin0X - 125, y: 180, width: 250, height: 270 })
-    map.set('card-1', { x: pin1X - 125, y: 620, width: 250, height: 260 })
+    milestones.forEach((_, i) => {
+      const pinX = startX + pinIndices[i]! * spacing
+      const above = i % 2 === 0
+      const cardW = 250
+      const cardH = 200
+      const cardY = above ? 180 : timelineY + 60
+      map.set(`card-${i}`, { x: pinX - cardW / 2, y: cardY, width: cardW, height: cardH })
+    })
 
     years.forEach((_, i) => {
       const cx = startX + i * spacing
@@ -78,7 +102,7 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
     })
 
     return map
-  }, [years, spacing, pin0X, pin1X])
+  }, [years, spacing, milestones, pinIndices])
 
   useEffect(() => {
     for (const [id, rect] of defaultPositions.entries()) {
@@ -101,12 +125,27 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
   }
 
   const titleR = getR('main-title')
-  const card0R = getR('card-0')
-  const card1R = getR('card-1')
+
+  const cardPath = (r: Rect, above: boolean, leftArrow: boolean): string => {
+    const { x, y, width: w, height: h } = r
+    const aY1 = y + 120
+    const aY2 = y + 150
+    const aYM = y + 135
+    const aW = 16
+    if (above && leftArrow) {
+      return `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${y + h} L ${x} ${y + h} L ${x} ${aY2} L ${x - aW} ${aYM} L ${x} ${aY1} Z`
+    }
+    if (!above && !leftArrow) {
+      return `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${aY1} L ${x + w + aW} ${aYM} L ${x + w} ${aY2} L ${x + w} ${y + h} L ${x} ${y + h} Z`
+    }
+    if (above && !leftArrow) {
+      return `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${aY2} L ${x + w + aW} ${aYM} L ${x + w} ${aY1} L ${x + w} ${y + h} L ${x} ${y + h} Z`
+    }
+    return `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${y + h} L ${x} ${y + h} L ${x} ${aY1} L ${x - aW} ${aYM} L ${x} ${aY2} Z`
+  }
 
   return (
     <g ref={svgRef}>
-      {/* Title */}
       {title && (
         <g onMouseDown={e => startDrag(e, 'main-title', titleR)} style={{ cursor: 'pointer' }}>
           <text
@@ -116,7 +155,7 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
             fontFamily="Arial, sans-serif"
             fontSize={22}
             fontWeight={700}
-            fill={tplColors['main-title'] || '#1e3a5f'}
+            fill={tplColors['main-title'] || TITLE_COLOR}
           >
             {title}
           </text>
@@ -124,39 +163,93 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
         </g>
       )}
 
-      {/* Horizontal Axis Lines */}
-      <line x1={0} y1={timelineY} x2={pin1X} y2={timelineY} stroke="#23255a" strokeWidth={4} />
-      <line x1={pin1X} y1={timelineY} x2={1000} y2={timelineY} stroke="#e0e0e0" strokeWidth={4} />
+      {sortedByDate.map((mi, si) => {
+        const pinX = startX + pinIndices[mi]! * spacing
+        const prevMi = si > 0 ? sortedByDate[si - 1] : undefined
+        const prevX = prevMi !== undefined ? startX + pinIndices[prevMi]! * spacing : 0
+        const color = getMsColor(mi)
+        const prevColor = prevMi !== undefined ? getMsColor(prevMi) : color
+        return (
+          <g key={`line-${mi}`}>
+            {si === 0 && <line x1={0} y1={timelineY} x2={pinX} y2={timelineY} stroke={color} strokeWidth={4} />}
+            {si > 0 && <line x1={prevX} y1={timelineY} x2={pinX} y2={timelineY} stroke={prevColor} strokeWidth={4} />}
+            {si === sortedByDate.length - 1 && <line x1={pinX} y1={timelineY} x2={1000} y2={timelineY} stroke="#e0e0e0" strokeWidth={4} />}
+          </g>
+        )
+      })}
 
-      {/* Vertical Pin Line for ms[0] (above timeline) */}
-      <line x1={pin0X} y1={card0R.y + card0R.height} x2={pin0X} y2={timelineY} stroke="#23255a" strokeWidth={4} />
-      {/* Vertical Pin Line for ms[1] (below timeline) */}
-      <line x1={pin1X} y1={timelineY} x2={pin1X} y2={card1R.y} stroke="#2d62ed" strokeWidth={4} />
+      {milestones.map((ms, i) => {
+        const r = getR(`card-${i}`)
+        const above = i % 2 === 0
+        const leftArrow = i % 2 === 0
+        const color = getMsColor(i)
+        const pinX = startX + pinIndices[i]! * spacing
+        const textAnchor = leftArrow ? 'start' : 'end'
+        const textX = leftArrow ? r.x + 30 : r.x + r.width - 30
 
-      {/* Year Points (Dots & Year Labels) */}
+        return (
+          <g key={`card-${i}`}>
+            <line
+              x1={pinX}
+              y1={above ? r.y + r.height : timelineY}
+              x2={pinX}
+              y2={above ? timelineY : r.y}
+              stroke={color}
+              strokeWidth={4}
+            />
+            <g onMouseDown={e => startDrag(e, `card-${i}`, r)} style={{ cursor: 'pointer' }}>
+              <path d={cardPath(r, above, leftArrow)} fill={tplColors[`card-${i}`] || color} />
+              <text
+                x={textX}
+                y={r.y + 55}
+                textAnchor={textAnchor}
+                fontFamily="Arial, sans-serif"
+                fontSize={22}
+                fontWeight="bold"
+                fill="#ffffff"
+              >
+                {ms.title}
+              </text>
+              {ms.date && (
+                <text x={textX} y={r.y + 82} textAnchor={textAnchor} fontFamily="Arial, sans-serif" fontSize={13} fill="#ffffff" opacity={0.7}>
+                  {ms.date}
+                </text>
+              )}
+              {ms.subtitle && ms.subtitle.split('\n').map((line, li) => (
+                <text
+                  key={li}
+                  x={textX}
+                  y={r.y + 105 + li * 26}
+                  textAnchor={textAnchor}
+                  fontFamily="Arial, sans-serif"
+                  fontSize={15}
+                  fill="#ffffff"
+                  opacity={0.9}
+                >
+                  {line}
+                </text>
+              ))}
+              {selectedIds.has(`card-${i}`) && renderHandles(r, `card-${i}`)}
+            </g>
+          </g>
+        )
+      })}
+
       {years.map((yr, i) => {
         const dotR = getR(`dot-${i}`)
         const yrR = getR(`year-${i}`)
-
-        const isNavy = i <= pivotIdx
-        const dotColor = isNavy ? '#23255a' : '#2d62ed'
-
+        const dotColor = getDotColor(i)
         const cx = dotR.x + dotR.width / 2
         const cy = dotR.y + dotR.height / 2
-
-        // Pin1 year label goes above the line
-        const isPin1Year = i === pin1Idx
-        const yrY = isPin1Year ? timelineY - 35 : yrR.y + 20
+        const pinIdx = pinIndices.findIndex(p => p === i)
+        const yrY = pinIdx >= 0 && pinIdx % 2 !== 0 ? timelineY - 35 : yrR.y + 20
 
         return (
           <g key={i}>
-            {/* Dot */}
             <g onMouseDown={e => startDrag(e, `dot-${i}`, dotR)} style={{ cursor: 'pointer' }}>
               <circle cx={cx} cy={cy} r={10} fill={tplColors[`dot-${i}`] || dotColor} />
               {selectedIds.has(`dot-${i}`) && renderHandles(dotR, `dot-${i}`)}
             </g>
-
-            {/* Year Label */}
             <g onMouseDown={e => startDrag(e, `year-${i}`, yrR)} style={{ cursor: 'pointer' }}>
               <text
                 x={yrR.x + yrR.width / 2}
@@ -174,82 +267,6 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
           </g>
         )
       })}
-
-      {/* Milestone 01 Box (Dark Navy, Left Arrow Pointer, floats ABOVE) */}
-      <g onMouseDown={e => startDrag(e, 'card-0', card0R)} style={{ cursor: 'pointer' }}>
-        <path
-          d={`M ${card0R.x} ${card0R.y} L ${card0R.x + card0R.width} ${card0R.y} L ${card0R.x + card0R.width} ${card0R.y + card0R.height} L ${card0R.x} ${card0R.y + card0R.height} L ${card0R.x} ${card0R.y + 150} L ${card0R.x - 16} ${card0R.y + 135} L ${card0R.x} ${card0R.y + 120} Z`}
-          fill={tplColors['card-0'] || '#23255a'}
-        />
-        <text
-          x={card0R.x + 30}
-          y={card0R.y + 55}
-          fontFamily="Arial, sans-serif"
-          fontSize={22}
-          fontWeight="bold"
-          fill="#ffffff"
-        >
-          {ms1.title}
-        </text>
-        {ms1.date && (
-          <text x={card0R.x + 30} y={card0R.y + 82} fontFamily="Arial, sans-serif" fontSize={13} fill="#ffffff" opacity={0.7}>
-            {ms1.date}
-          </text>
-        )}
-        {ms1.subtitle && ms1.subtitle.split('\n').map((line, idx) => (
-          <text
-            key={idx}
-            x={card0R.x + 30}
-            y={card0R.y + 105 + idx * 26}
-            fontFamily="Arial, sans-serif"
-            fontSize={15}
-            fill="#ffffff"
-            opacity={0.9}
-          >
-            {line}
-          </text>
-        ))}
-        {selectedIds.has('card-0') && renderHandles(card0R, 'card-0')}
-      </g>
-
-      {/* Milestone 02 Box (Medium Blue, Right Arrow Pointer, floats BELOW) */}
-      <g onMouseDown={e => startDrag(e, 'card-1', card1R)} style={{ cursor: 'pointer' }}>
-        <path
-          d={`M ${card1R.x} ${card1R.y} L ${card1R.x + card1R.width} ${card1R.y} L ${card1R.x + card1R.width} ${card1R.y + 120} L ${card1R.x + card1R.width + 16} ${card1R.y + 135} L ${card1R.x + card1R.width} ${card1R.y + 150} L ${card1R.x + card1R.width} ${card1R.y + card1R.height} L ${card1R.x} ${card1R.y + card1R.height} Z`}
-          fill={tplColors['card-1'] || '#2d62ed'}
-        />
-        <text
-          x={card1R.x + card1R.width - 30}
-          y={card1R.y + 55}
-          textAnchor="end"
-          fontFamily="Arial, sans-serif"
-          fontSize={22}
-          fontWeight="bold"
-          fill="#ffffff"
-        >
-          {ms2.title}
-        </text>
-        {ms2.date && (
-          <text x={card1R.x + card1R.width - 30} y={card1R.y + 82} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={13} fill="#ffffff" opacity={0.7}>
-            {ms2.date}
-          </text>
-        )}
-        {ms2.subtitle && ms2.subtitle.split('\n').map((line, idx) => (
-          <text
-            key={idx}
-            x={card1R.x + card1R.width - 30}
-            y={card1R.y + 105 + idx * 26}
-            textAnchor="end"
-            fontFamily="Arial, sans-serif"
-            fontSize={15}
-            fill="#ffffff"
-            opacity={0.9}
-          >
-            {line}
-          </text>
-        ))}
-        {selectedIds.has('card-1') && renderHandles(card1R, 'card-1')}
-      </g>
     </g>
   )
 }

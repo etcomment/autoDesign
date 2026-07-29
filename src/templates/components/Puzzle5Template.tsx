@@ -2,7 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { PuzzleData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50', '#ff9800']
 const CX = 450
@@ -55,7 +55,7 @@ export function Puzzle5Template({ data }: { data: PuzzleData }): ReactElement {
   return (
     <g ref={svgRef}>
       <circle cx={CX} cy={CY} r={INNER_R} fill="#eef2f6" stroke="#cbd5e0" strokeWidth={2} />
-      <text x={CX} y={CY - 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="#1e3a5f">
+      <text x={CX} y={CY - 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill={TITLE_COLOR}>
         {title || 'Puzzle'}
       </text>
       <text x={CX} y={CY + 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fill="#718096">

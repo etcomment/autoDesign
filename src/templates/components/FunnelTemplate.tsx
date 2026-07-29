@@ -1,3 +1,4 @@
+import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { FunnelData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
@@ -60,7 +61,7 @@ export function FunnelTemplate({ data }: { data: FunnelData }): ReactElement {
   return (
     <g ref={svgRef}>
       {title && (
-        <text x={cx} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
+        <text x={cx} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
           {title}
         </text>
       )}

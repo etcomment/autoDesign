@@ -1,3 +1,4 @@
+import { TITLE_COLOR } from '../../lib/theme'
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 import type { RoadmapData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
@@ -120,7 +121,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
             fontFamily="Arial, sans-serif"
             fontSize={22}
             fontWeight={700}
-            fill={tplColors['main-title'] || '#1e3a5f'}
+            fill={tplColors['main-title'] || TITLE_COLOR}
           >
             {title}
           </text>

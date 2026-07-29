@@ -1,3 +1,4 @@
+import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { Comparison2Data } from '../types'
 
@@ -24,7 +25,7 @@ export function Comparison2Template({ data }: { data: Comparison2Data }): ReactE
   return (
     <g ref={svgRef}>
       {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
+        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
           {title}
         </text>
       )}

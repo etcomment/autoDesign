@@ -2,7 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { FunnelData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#7b68ee', '#e91e63', '#4caf50']
 
@@ -46,7 +46,7 @@ export function Funnel3Template({ data }: { data: FunnelData }): ReactElement {
   return (
     <g ref={svgRef}>
       {title && (
-        <text x={cx} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#1e3a5f">
+        <text x={cx} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
           {title}
         </text>
       )}

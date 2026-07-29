@@ -1,3 +1,4 @@
+import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { BusinessData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
@@ -140,7 +141,7 @@ export function Business8Template({ data }: { data: BusinessData }): ReactElemen
           fontFamily="Arial, sans-serif"
           fontSize={22}
           fontWeight={700}
-          fill="#1e3a5f"
+          fill={TITLE_COLOR}
         >
           {title}
         </text>

@@ -1,3 +1,4 @@
+import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import { wrapTextByWidth } from '../shared/primitives'
 import type { BusinessData } from '../types'
@@ -153,7 +154,7 @@ export function Business2Template({ data }: { data: BusinessData }): ReactElemen
           fontFamily="Arial, sans-serif"
           fontSize={22}
           fontWeight={700}
-          fill="#1e3a5f"
+          fill={TITLE_COLOR}
         >
           {titleText}
         </text>

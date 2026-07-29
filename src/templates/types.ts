@@ -35,6 +35,7 @@ export interface TemplateQuarter {
 
 export interface TemplateLane {
   label: string
+  color?: string
 }
 
 export interface RoadmapData {
@@ -46,6 +47,7 @@ export interface RoadmapData {
   lanes?: TemplateLane[]
   startLabel?: string
   finishLabel?: string
+  progress?: string
   defaultStyle?: TemplateElementStyle
 }
 

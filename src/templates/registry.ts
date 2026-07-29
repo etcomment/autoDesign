@@ -39,12 +39,18 @@ export const TEMPLATES: TemplateDefinition[] = [
     category: 'Roadmaps',
     defaultData: {
       type: 'roadmap',
+      progress: '2024',
+      lanes: [
+        { label: 'Phase One', color: '#23255a' },
+        { label: 'Phase Two', color: '#2d62ed' },
+        { label: 'Phase Three', color: '#ff4a2b' },
+      ],
       milestones: [
-        { title: 'Initiate', subtitle: 'Project kickoff', date: '2022' },
-        { title: 'Plan', subtitle: 'Detailed design', date: '2023' },
-        { title: 'Develop', subtitle: 'Core features', date: '2024' },
-        { title: 'Test', subtitle: 'QA & validation', date: '2025' },
-        { title: 'Deliver', subtitle: 'Production release', date: '2026' },
+        { title: 'Initiate', subtitle: 'Project kickoff', date: '2022', lane: 'Phase One' },
+        { title: 'Plan', subtitle: 'Detailed design', date: '2023', lane: 'Phase One' },
+        { title: 'Develop', subtitle: 'Core features', date: '2024', lane: 'Phase Two' },
+        { title: 'Test', subtitle: 'QA & validation', date: '2025', lane: 'Phase Two' },
+        { title: 'Deliver', subtitle: 'Production release', date: '2026', lane: 'Phase Three' },
       ],
       startLabel: 'START',
       finishLabel: 'FINISH',
@@ -56,14 +62,18 @@ export const TEMPLATES: TemplateDefinition[] = [
     category: 'Roadmaps',
     defaultData: {
       type: 'roadmap',
+      lanes: [
+        { label: 'Research', color: '#23255a' },
+        { label: 'Launch', color: '#2d62ed' },
+      ],
       quarters: [
         { label: '2019' }, { label: '2020' }, { label: '2021' }, { label: '2022' },
         { label: '2023' }, { label: '2024' }, { label: '2025' }, { label: '2026' },
         { label: '2027' }, { label: '2028' },
       ],
       milestones: [
-        { title: 'Research', subtitle: 'Market analysis', date: '2021' },
-        { title: 'Launch', subtitle: 'Go to market', date: '2026' },
+        { title: 'Research', subtitle: 'Market analysis', date: '2021', lane: 'Research' },
+        { title: 'Launch', subtitle: 'Go to market', date: '2026', lane: 'Launch' },
       ],
       startLabel: 'START',
       finishLabel: 'FINISH',

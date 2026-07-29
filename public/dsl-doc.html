@@ -398,8 +398,13 @@
     </tr>
     <tr>
       <td><code>lanes</code></td>
-      <td><code>lanes Dev Product UX QA</code></td>
-      <td>Voies/colonnes (swimlanes). Mots separes par espaces.</td>
+      <td><code>lanes "Phase One":#23255a "Phase Two":#2d62ed</code></td>
+      <td>Voies/colonnes (swimlanes). Format: <code>nom:#couleur</code> (couleur optionnelle). Espaces separes.</td>
+    </tr>
+    <tr>
+      <td><code>progress</code></td>
+      <td><code>progress 2024</code></td>
+      <td>Position de la barre de progression rouge (annee ou index). Defaut: milieu.</td>
     </tr>
     <tr>
       <td><code>milestone</code></td>
@@ -438,6 +443,17 @@
   <span class="hl-keyword">milestone</span> <span class="hl-param">Q2:Product</span> <span class="hl-string">"Beta"</span> <span class="hl-string">"Preview privee"</span>
   <span class="hl-keyword">milestone</span> <span class="hl-param">Q3:QA</span> <span class="hl-string">"RC1"</span> <span class="hl-string">"Stabilisation"</span>
   <span class="hl-keyword">milestone</span> <span class="hl-param">Q4:Dev</span> <span class="hl-string">"GA"</span> <span class="hl-string">"Disponibilite generale"</span></code></pre>
+
+  <h3>Exemple — Roadmap 2 avec phases colorees (variante 2)</h3>
+  <pre><code><span class="hl-header">@roadmap 2 "Timeline Project"</span>
+  <span class="hl-keyword">progress</span> <span class="hl-param">2024</span>
+  <span class="hl-keyword">lanes</span> <span class="hl-param">"Phase One":#23255a "Phase Two":#2d62ed "Phase Three":#ff4a2b</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-string">"Initiate"</span> <span class="hl-string">"Project kickoff"</span> <span class="hl-param">date:2022 lane:"Phase One"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-string">"Plan"</span> <span class="hl-string">"Detailed design"</span> <span class="hl-param">date:2023 lane:"Phase One"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-string">"Develop"</span> <span class="hl-string">"Core features"</span> <span class="hl-param">date:2024 lane:"Phase Two"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-string">"Test"</span> <span class="hl-string">"QA &amp; validation"</span> <span class="hl-param">date:2025 lane:"Phase Two"</span>
+  <span class="hl-keyword">milestone</span> <span class="hl-string">"Deliver"</span> <span class="hl-string">"Production release"</span> <span class="hl-param">date:2026 lane:"Phase Three"</span></code></pre>
+  <p>La barre rouge s'etend du debut jusqu'a l'annee specifiee par <code>progress</code>. Les phases sont affichees en bas comme des bandes colorees en chevron. Les milestones assignees a un lane sont colorees selon la couleur du lane.</p>
 </section>
 
 <!-- ================================================================ -->
@@ -1234,7 +1250,7 @@
     <tr>
       <td><code>lanes</code></td>
       <td><code>lanes Dev Product UX QA</code></td>
-      <td>Les voies (swimlanes) du tableau.</td>
+      <td>Les voies (swimlanes) du tableau. Supporte les couleurs: <code>lanes "Frontend":#3366cc "Backend":#2c2b64</code></td>
     </tr>
     <tr>
       <td><code>milestone</code></td>

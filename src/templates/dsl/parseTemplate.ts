@@ -36,6 +36,7 @@ import type {
   GoalsMetric,
   CircleData,
   CircleSegment,
+  TemplateLane,
 } from '../types'
 
 function stripQuotes(s: string): string {
@@ -89,21 +90,34 @@ function tokenizeLine(line: string): QuotedTokens {
 
 
 export function extractTrailingArgs(args: string[], startIndex: number) {
+  const merged: string[] = []
+  for (let i = startIndex; i < args.length; i++) {
+    const arg = args[i]!
+    const kvMatch = /^(val|pct|icon|date|lane):(.*)/.exec(arg)
+    if (kvMatch && kvMatch[2]!.startsWith('"') && !kvMatch[2]!.endsWith('"') && i + 1 < args.length) {
+      merged.push(arg + ' ' + args[i + 1]!)
+      i++
+    } else {
+      merged.push(arg)
+    }
+  }
+
   let subtitle: string | undefined
   let color: string | undefined
   let icon: string | undefined
   let value: string | undefined
   let percent: string | undefined
   let date: string | undefined
+  let lane: string | undefined
 
-  let idx = startIndex
-  if (idx < args.length && !args[idx]!.startsWith('#') && !args[idx]!.startsWith('val:') && !args[idx]!.startsWith('pct:') && !args[idx]!.startsWith('icon:') && !args[idx]!.startsWith('date:')) {
-    subtitle = stripQuotes(args[idx]!)
+  let idx = 0
+  if (idx < merged.length && !merged[idx]!.startsWith('#') && !merged[idx]!.startsWith('val:') && !merged[idx]!.startsWith('pct:') && !merged[idx]!.startsWith('icon:') && !merged[idx]!.startsWith('date:') && !merged[idx]!.startsWith('lane:')) {
+    subtitle = stripQuotes(merged[idx]!)
     idx++
   }
 
-  while (idx < args.length) {
-    const arg = args[idx]!
+  while (idx < merged.length) {
+    const arg = merged[idx]!
     if (arg.startsWith('val:')) {
       value = stripQuotes(arg.slice(4))
     } else if (arg.startsWith('pct:')) {
@@ -112,18 +126,21 @@ export function extractTrailingArgs(args: string[], startIndex: number) {
       icon = stripQuotes(arg.slice(5))
     } else if (arg.startsWith('date:')) {
       date = stripQuotes(arg.slice(5))
+    } else if (arg.startsWith('lane:')) {
+      lane = stripQuotes(arg.slice(5))
     } else if (arg.startsWith('#')) {
       color = arg
     }
     idx++
   }
 
-  return { subtitle, color, icon, value, percent, date }
+  return { subtitle, color, icon, value, percent, date, lane }
 }
 
 function emitTrailingArgs(n: Record<string, any>): string {
   let out = ''
   if (n.date) out += ' date:' + escapeField(n.date)
+  if (n.lane) out += ' lane:' + (/\s/.test(n.lane) ? '"' + escapeField(n.lane) + '"' : escapeField(n.lane))
   if (n.value) out += ' val:"' + escapeField(n.value) + '"'
   if (n.percent) out += ' pct:"' + escapeField(n.percent) + '"'
   if (n.icon) out += ' icon:' + escapeField(n.icon)
@@ -224,10 +241,11 @@ function parseRoadmap(dsl: string, headerTitle?: string): RoadmapData | ProductR
   let title: string | undefined = headerTitle
   let startLabel: string | undefined
   let finishLabel: string | undefined
+  let progress: string | undefined
   const milestones: TemplateMilestone[] = []
   const steps: ProcessStep[] = []
   const quarters: string[] = []
-  const lanes: string[] = []
+  const lanes: TemplateLane[] = []
   const globalStyles: Record<string, string | number> = {}
   let pendingStyle: Record<string, string | number> = {}
   let hasPendingStyle = false
@@ -259,11 +277,27 @@ function parseRoadmap(dsl: string, headerTitle?: string): RoadmapData | ProductR
     const finishMatch = /^finish\s+"([^"]*)"\s*$/.exec(line)
     if (finishMatch) { finishLabel = finishMatch[1]!; continue }
 
+    const progressMatch = /^progress\s+(\S+)\s*$/.exec(line)
+    if (progressMatch) { progress = progressMatch[1]!; continue }
+
     const quartersMatch = /^quarters\s+(.+)$/.exec(line)
     if (quartersMatch) { quarters.push(...quartersMatch[1]!.split(/\s+/).filter(Boolean)); continue }
 
     const lanesMatch = /^lanes\s+(.+)$/.exec(line)
-    if (lanesMatch) { lanes.push(...lanesMatch[1]!.split(/\s+/).filter(Boolean)); continue }
+    if (lanesMatch) {
+      for (const m of lanesMatch[1]!.matchAll(/"([^"]*)":(#[0-9a-fA-F]+)|"([^"]*)"|(\S+):(#[0-9a-fA-F]+)|(\S+)/g)) {
+        if (m[1] != null) {
+          lanes.push({ label: m[1], color: m[2] })
+        } else if (m[3] != null) {
+          lanes.push({ label: m[3] })
+        } else if (m[5] != null) {
+          lanes.push({ label: m[4]!, color: m[5] })
+        } else if (m[6] != null) {
+          lanes.push({ label: m[6] })
+        }
+      }
+      continue
+    }
 
     const styleMatch = /^style\s+(\S+)\s+(.+)$/.exec(line)
     if (styleMatch) {
@@ -321,9 +355,9 @@ function parseRoadmap(dsl: string, headerTitle?: string): RoadmapData | ProductR
         const trailing = extractTrailingArgs(args, 1)
         pendingMilestone = {
           quarter,
-          lane,
           title: msTitle,
-          ...trailing
+          ...trailing,
+          lane: trailing.lane || lane,
         }
         pendingStyle = {}
         hasPendingStyle = false
@@ -344,13 +378,14 @@ function parseRoadmap(dsl: string, headerTitle?: string): RoadmapData | ProductR
     const [label, year] = q.split(':')
     return { label: label!, year }
   }) : undefined
-  const resolvedLanes = lanes.length > 0 ? lanes.map(l => ({ label: l })) : undefined
+  const resolvedLanes = lanes.length > 0 ? lanes : undefined
 
   return {
     type: 'roadmap' as const,
     title,
     startLabel,
     finishLabel,
+    progress,
     quarters: resolvedQuarters,
     lanes: resolvedLanes,
     steps: steps.length > 0 ? steps : undefined,
@@ -961,13 +996,14 @@ export function generateDslText(type: string, data: TemplateData): string {
 
   if (d.startLabel) out += `  start "${esc(d.startLabel)}"\n`
   if (d.finishLabel) out += `  finish "${esc(d.finishLabel)}"\n`
+  if (d.progress) out += `  progress ${d.progress}\n`
 
   const list = (key: string) => (d[key] as Array<Record<string, unknown>> | undefined)
 
   const quarters = list('quarters')
   if (quarters?.length) out += `  quarters ${quarters.map((q: Record<string,unknown>) => q.label + (q.year ? ':' + q.year : '')).join(' ')}\n`
   const lanes = list('lanes')
-  if (lanes?.length) out += `  lanes ${lanes.map((l: Record<string,unknown>) => l.label).join(' ')}\n`
+  if (lanes?.length) out += `  lanes ${lanes.map((l: Record<string,unknown>) => { const label = String(l.label); const needsQuote = /\s/.test(label); return (needsQuote ? `"${esc(label)}"` : label) + (l.color ? ':' + l.color : '') }).join(' ')}\n`
 
   const milestones = list('milestones')
   if (milestones) {

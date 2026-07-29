@@ -6,3 +6,5 @@ export const MIGSO_PALETTE = [
   '#5cc29d',
   '#f27798',
 ] as const
+
+export const TITLE_COLOR = '#2c2b64'

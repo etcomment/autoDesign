@@ -3,7 +3,7 @@ import type { ProductRoadmapData } from '../types'
 import { Arrow } from '../shared/primitives'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c']
 const CARD_W = 240
@@ -33,7 +33,7 @@ export function ProductRoadmap11Template({ data }: { data: ProductRoadmapData })
       <rect width={Math.max(W, 960)} height={Math.max(H, 350)} fill="white" rx={8} />
       {(() => {
         const r = pos['main-title'] ?? { x: W / 2 - 250, y: 15, width: 500, height: 35 }
-        const fill = tplColors['main-title'] ?? '#1e3a5f'
+        const fill = tplColors['main-title'] ?? TITLE_COLOR
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (

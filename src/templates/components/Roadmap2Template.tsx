@@ -1,5 +1,6 @@
+import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
-import type { RoadmapData } from '../types'
+import type { RoadmapData, TemplateLane } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 
@@ -10,11 +11,11 @@ interface Rect {
   height: number
 }
 
-// Design from PDF Page 137:
-// Horizontal timeline with dots per year, slanted leader lines to text blocks above.
-// Bottom phase chevron banners (Phase One/Two/Three).
-// Years come from `quarters` DSL or from each milestone's `date:` field.
-// Default fallback: 2019–2028 (10 years).
+const FALLBACK_PHASES: TemplateLane[] = [
+  { label: 'Phase One', color: '#23255a' },
+  { label: 'Phase Two', color: '#2d62ed' },
+  { label: 'Phase Three', color: '#ff4a2b' },
+]
 
 export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -25,13 +26,19 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
   const moveEl = useTemplateStore(s => s.moveTemplateElement)
   const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
-  const { title, milestones, quarters } = data
+  const { title, milestones, quarters, lanes, progress } = data
   const W = 1000
 
-  // Build the list of year labels:
-  // Priority 1: each milestone's ms.date field
-  // Priority 2: quarters DSL list
-  // Priority 3: fallback 2019–2028
+  const phases = useMemo(() => {
+    if (lanes && lanes.length > 0) {
+      return lanes.map((l, i) => ({
+        label: l.label,
+        color: l.color || MIGSO_PALETTE[i % MIGSO_PALETTE.length],
+      }))
+    }
+    return FALLBACK_PHASES
+  }, [lanes])
+
   const years = useMemo(() => {
     if (milestones.length > 0 && milestones.some(ms => ms.date)) {
       return milestones.map((ms, i) => ms.date ?? String(2019 + i))
@@ -47,26 +54,41 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
   const spacing = Math.min(95, (W - startX * 2) / Math.max(N - 1, 1))
   const timelineY = 600
 
-  // Index considered the "pivot" year (where color changes). Default: index 4 (2023 in default mode).
-  // If custom years: pivot at the middle.
-  const pivotIdx = Math.floor(N / 2)
+  const progressIdx = useMemo(() => {
+    if (progress) {
+      const asNum = Number(progress)
+      if (!isNaN(asNum)) return Math.min(asNum, N - 1)
+      const found = years.findIndex(y => y === progress)
+      if (found >= 0) return found
+    }
+    return Math.floor(N / 2)
+  }, [progress, years, N])
 
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
     map.set('main-title', { x: 45, y: 40, width: 350, height: 60 })
-    map.set('phase-1', { x: 65, y: 740, width: 280, height: 100 })
-    map.set('phase-2', { x: 350, y: 740, width: 300, height: 100 })
-    map.set('phase-3', { x: 635, y: 740, width: 300, height: 100 })
+
+    const phaseCount = phases.length
+    const phaseGap = 5
+    const phaseTotalW = W - 80
+    const phaseW = Math.floor((phaseTotalW - phaseGap * (phaseCount - 1)) / phaseCount)
+    const phaseY = 740
+    const phaseH = 100
+
+    phases.forEach((_, i) => {
+      const phaseX = 40 + i * (phaseW + phaseGap)
+      map.set(`phase-${i}`, { x: phaseX, y: phaseY, width: phaseW, height: phaseH })
+    })
 
     years.forEach((_, i) => {
       const cx = startX + i * spacing
       map.set(`dot-${i}`, { x: cx - 10, y: timelineY - 10, width: 20, height: 20 })
       map.set(`year-${i}`, { x: cx - 35, y: timelineY + 30, width: 70, height: 30 })
-      map.set(`text-${i}`, { x: cx - 80, y: 250 + (i % 2 === 0 ? 0 : 160), width: 150, height: 80 })
+      map.set(`text-${i}`, { x: cx - 30, y: 250 + (i % 2 === 0 ? 0 : 160), width: 150, height: 80 })
     })
 
     return map
-  }, [years, spacing])
+  }, [years, spacing, phases])
 
   useEffect(() => {
     for (const [id, rect] of defaultPositions.entries()) {
@@ -89,15 +111,25 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
   }
 
   const titleR = getR('main-title')
-  const p1R = getR('phase-1')
-  const p2R = getR('phase-2')
-  const p3R = getR('phase-3')
+  const progressX = startX + progressIdx * spacing
 
-  const pivotX = startX + pivotIdx * spacing
+  const chevronPath = (r: Rect, idx: number, total: number): string => {
+    const { x, y, width: w, height: h } = r
+    const n = 25
+    if (total === 1) {
+      return `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${y + h} L ${x} ${y + h} Z`
+    }
+    if (idx === 0) {
+      return `M ${x} ${y} L ${x + w - n} ${y} L ${x + w} ${y + h / 2} L ${x + w - n} ${y + h} L ${x} ${y + h} Z`
+    }
+    if (idx === total - 1) {
+      return `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${y + h} L ${x} ${y + h} L ${x + n} ${y + h / 2} Z`
+    }
+    return `M ${x} ${y} L ${x + w - n} ${y} L ${x + w} ${y + h / 2} L ${x + w - n} ${y + h} L ${x} ${y + h} L ${x + n} ${y + h / 2} Z`
+  }
 
   return (
     <g ref={svgRef}>
-      {/* Title */}
       {title && (
         <g onMouseDown={e => startDrag(e, 'main-title', titleR)} style={{ cursor: 'pointer' }}>
           <text
@@ -107,7 +139,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
             fontFamily="Arial, sans-serif"
             fontSize={22}
             fontWeight={700}
-            fill={tplColors['main-title'] || '#1e3a5f'}
+            fill={tplColors['main-title'] || TITLE_COLOR}
           >
             {title}
           </text>
@@ -115,39 +147,25 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
         </g>
       )}
 
-      {/* Horizontal Axis Lines */}
-      <line x1={0} y1={timelineY} x2={pivotX} y2={timelineY} stroke="#ff4a2b" strokeWidth={5} />
-      <line x1={pivotX} y1={timelineY} x2={1000} y2={timelineY} stroke="#e0e0e0" strokeWidth={5} />
+      <line x1={0} y1={timelineY} x2={progressX} y2={timelineY} stroke="#ff4a2b" strokeWidth={5} />
+      <line x1={progressX} y1={timelineY} x2={1000} y2={timelineY} stroke="#e0e0e0" strokeWidth={5} />
 
-      {/* Year Points (Dots, Slanted Leader Lines & Text Blocks) */}
       {years.map((yr, i) => {
         const dotR = getR(`dot-${i}`)
         const yrR = getR(`year-${i}`)
         const txtR = getR(`text-${i}`)
-
-        const isDark = i <= pivotIdx
-        const dotColor = isDark ? '#1e204c' : '#2d62ed'
         const ms = milestones[i]
-
+        const laneColor = ms?.lane ? (phases.find(p => p.label === ms.lane) || phases.find(p => p.label.startsWith(ms.lane!)))?.color : undefined
+        const dotColor = laneColor || (i <= progressIdx ? '#1e204c' : '#2d62ed')
         const cx = dotR.x + dotR.width / 2
         const cy = dotR.y + dotR.height / 2
-
-        const lineTopX = txtR.x + txtR.width - 20
-        const lineTopY = txtR.y + txtR.height + 20
+        const lineTopX = txtR.x + txtR.width / 2
+        const lineTopY = txtR.y + txtR.height
 
         return (
           <g key={i}>
-            {/* Slanted Leader Line */}
-            <line
-              x1={cx}
-              y1={cy - 12}
-              x2={lineTopX}
-              y2={lineTopY}
-              stroke="#cccccc"
-              strokeWidth={3}
-            />
+            <line x1={cx} y1={cy - 12} x2={lineTopX} y2={lineTopY} stroke="#cccccc" strokeWidth={3} />
 
-            {/* Text Box (milestone title+subtitle if available, else placeholder) */}
             <g onMouseDown={e => startDrag(e, `text-${i}`, txtR)} style={{ cursor: 'pointer' }}>
               {ms ? (
                 <>
@@ -166,13 +184,11 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
               {selectedIds.has(`text-${i}`) && renderHandles(txtR, `text-${i}`)}
             </g>
 
-            {/* Dot */}
             <g onMouseDown={e => startDrag(e, `dot-${i}`, dotR)} style={{ cursor: 'pointer' }}>
               <circle cx={cx} cy={cy} r={12} fill={tplColors[`dot-${i}`] || dotColor} />
               {selectedIds.has(`dot-${i}`) && renderHandles(dotR, `dot-${i}`)}
             </g>
 
-            {/* Year Label */}
             <g onMouseDown={e => startDrag(e, `year-${i}`, yrR)} style={{ cursor: 'pointer' }}>
               <text
                 x={yrR.x + yrR.width / 2}
@@ -191,66 +207,27 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })}
 
-      {/* Bottom Phase Banners (Chevrons) */}
-      {/* Phase One */}
-      <g onMouseDown={e => startDrag(e, 'phase-1', p1R)} style={{ cursor: 'pointer' }}>
-        <path
-          d={`M ${p1R.x} ${p1R.y} L ${p1R.x + p1R.width - 25} ${p1R.y} L ${p1R.x + p1R.width} ${p1R.y + p1R.height / 2} L ${p1R.x + p1R.width - 25} ${p1R.y + p1R.height} L ${p1R.x} ${p1R.y + p1R.height} Z`}
-          fill={tplColors['phase-1'] || '#23255a'}
-        />
-        <text
-          x={p1R.x + p1R.width / 2 - 10}
-          y={p1R.y + p1R.height / 2 + 8}
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={22}
-          fontWeight="bold"
-          fill="#ffffff"
-        >
-          Phase One
-        </text>
-        {selectedIds.has('phase-1') && renderHandles(p1R, 'phase-1')}
-      </g>
-
-      {/* Phase Two */}
-      <g onMouseDown={e => startDrag(e, 'phase-2', p2R)} style={{ cursor: 'pointer' }}>
-        <path
-          d={`M ${p2R.x} ${p2R.y} L ${p2R.x + p2R.width - 25} ${p2R.y} L ${p2R.x + p2R.width} ${p2R.y + p2R.height / 2} L ${p2R.x + p2R.width - 25} ${p2R.y + p2R.height} L ${p2R.x} ${p2R.y + p2R.height} L ${p2R.x + 25} ${p2R.y + p2R.height / 2} Z`}
-          fill={tplColors['phase-2'] || '#2d62ed'}
-        />
-        <text
-          x={p2R.x + p2R.width / 2}
-          y={p2R.y + p2R.height / 2 + 8}
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={22}
-          fontWeight="bold"
-          fill="#ffffff"
-        >
-          Phase Two
-        </text>
-        {selectedIds.has('phase-2') && renderHandles(p2R, 'phase-2')}
-      </g>
-
-      {/* Phase Three */}
-      <g onMouseDown={e => startDrag(e, 'phase-3', p3R)} style={{ cursor: 'pointer' }}>
-        <path
-          d={`M ${p3R.x} ${p3R.y} L ${p3R.x + p3R.width} ${p3R.y} L ${p3R.x + p3R.width} ${p3R.y + p3R.height} L ${p3R.x} ${p3R.y + p3R.height} L ${p3R.x + 25} ${p3R.y + p3R.height / 2} Z`}
-          fill={tplColors['phase-3'] || '#ff4a2b'}
-        />
-        <text
-          x={p3R.x + p3R.width / 2 + 10}
-          y={p3R.y + p3R.height / 2 + 8}
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={22}
-          fontWeight="bold"
-          fill="#ffffff"
-        >
-          Phase Three
-        </text>
-        {selectedIds.has('phase-3') && renderHandles(p3R, 'phase-3')}
-      </g>
+      {phases.map((phase, i) => {
+        const r = getR(`phase-${i}`)
+        const fill = tplColors[`phase-${i}`] || phase.color
+        return (
+          <g key={`phase-${i}`} onMouseDown={e => startDrag(e, `phase-${i}`, r)} style={{ cursor: 'pointer' }}>
+            <path d={chevronPath(r, i, phases.length)} fill={fill} />
+            <text
+              x={r.x + r.width / 2}
+              y={r.y + r.height / 2 + 8}
+              textAnchor="middle"
+              fontFamily="Arial, sans-serif"
+              fontSize={22}
+              fontWeight="bold"
+              fill="#ffffff"
+            >
+              {phase.label}
+            </text>
+            {selectedIds.has(`phase-${i}`) && renderHandles(r, `phase-${i}`)}
+          </g>
+        )
+      })}
     </g>
   )
 }
