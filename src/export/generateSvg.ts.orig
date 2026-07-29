@@ -130,7 +130,7 @@ async function inlineFonts(svgStr: string): Promise<string> {
   const fonts = new Set<string>()
   const match = svgStr.matchAll(/font-family="([^"]+)"/g)
   for (const m of match) {
-    fonts.add(m[1]!.split(',')[0]!.trim().replace(/['"]/g, ''))
+    fonts.add(m[1].split(',')[0].trim().replace(/['"]/g, ''))
   }
   
   let styleContent = ''
@@ -162,7 +162,7 @@ async function inlineFonts(svgStr: string): Promise<string> {
   }
 
   if (styleContent) {
-    return svgStr.replace(/(<svg[^>]*>)/, `$1<style>${styleContent}</style>`)
+    return svgStr.replace('<svg ', `<svg ><style>${styleContent}</style>`)
   }
   return svgStr
 }
@@ -228,7 +228,7 @@ export async function getContentSvg(): Promise<string> {
   const defs = svgElement.querySelector('defs')
   const defsString = defs ? defs.outerHTML : ''
 
-  const rawSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">\n  ${defsString}\n  <rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="white"/>\n  ${inner}\n</svg>`
+  const rawSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">\n  ${defsString}\n  ${inner}\n</svg>`
   return inlineFonts(rawSvg)
 }
 
