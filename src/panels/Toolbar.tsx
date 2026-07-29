@@ -1,12 +1,24 @@
 import { useState } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
 import { useTemplateStore } from '../templates/store'
-import { Undo2, Redo2, Trash2, MousePointer2, Download, Link2, ChevronsUp, ChevronUp, ChevronDown, ChevronsDown, Group, Ungroup } from 'lucide-react'
+import { Undo2, Redo2, Trash2, MousePointer2, Download, Link2, ChevronsUp, ChevronUp, ChevronDown, ChevronsDown, Group, Ungroup, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { downloadContentSvg } from '../export/generateSvg'
 import { downloadCanvasPptx } from '../export/generatePptx'
 import { generateCanvasPng, generateCanvasJpg, downloadBlob, copyCanvasToClipboard } from '../export/generateImage'
 
-export function Toolbar() {
+interface ToolbarProps {
+  leftSidebarCollapsed?: boolean
+  onToggleLeftSidebar?: () => void
+  rightPanelCollapsed?: boolean
+  onToggleRightSidebar?: () => void
+}
+
+export function Toolbar({
+  leftSidebarCollapsed = false,
+  onToggleLeftSidebar,
+  rightPanelCollapsed = false,
+  onToggleRightSidebar,
+}: ToolbarProps) {
   const canUndo = useDiagramStore(s => s.canUndo)
   const canRedo = useDiagramStore(s => s.canRedo)
   const undo = useDiagramStore(s => s.undo)
@@ -96,6 +108,17 @@ export function Toolbar() {
 
   return (
     <div style={styles.bar}>
+      <button
+        style={{
+          ...styles.button,
+          background: leftSidebarCollapsed ? '#4a90d9' : 'transparent',
+          marginRight: 6,
+        }}
+        onClick={onToggleLeftSidebar}
+        title={leftSidebarCollapsed ? 'Afficher le panneau gauche' : 'Masquer le panneau gauche'}
+      >
+        {leftSidebarCollapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
+      </button>
       <span style={styles.brand}>autoDesign</span>
       <div style={styles.spacer} />
       <button
@@ -233,6 +256,18 @@ export function Toolbar() {
           </div>
         )}
       </div>
+      <div style={styles.separator} />
+      <button
+        style={{
+          ...styles.button,
+          background: rightPanelCollapsed ? '#4a90d9' : 'transparent',
+          marginLeft: 2,
+        }}
+        onClick={onToggleRightSidebar}
+        title={rightPanelCollapsed ? 'Afficher le panneau droit' : 'Masquer le panneau droit'}
+      >
+        {rightPanelCollapsed ? <ChevronsLeft size={18} /> : <ChevronsRight size={18} />}
+      </button>
     </div>
   )
 }

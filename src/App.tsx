@@ -33,6 +33,8 @@ export function App() {
 
   const [sidebarWidth, setSidebarWidth] = useState(280)
   const [rightPanelWidth, setRightPanelWidth] = useState(280)
+  const [leftSidebarCollapsed, setLeftSidebarCollapsed] = useState(false)
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false)
   const [hoveredHandle, setHoveredHandle] = useState<string | null>(null)
 
   const isResizing = useRef<'sidebar' | 'rightPanel' | null>(null)
@@ -235,46 +237,55 @@ export function App() {
 
   return (
     <div style={styles.container}>
-      <Toolbar />
+      <Toolbar
+        leftSidebarCollapsed={leftSidebarCollapsed}
+        onToggleLeftSidebar={() => setLeftSidebarCollapsed(!leftSidebarCollapsed)}
+        rightPanelCollapsed={rightPanelCollapsed}
+        onToggleRightSidebar={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+      />
       <div style={styles.workspace}>
-        <div style={{ ...styles.sidebar, width: sidebarWidth, maxWidth: 'none' }}>
-          <ShapeLibrary />
-          <IconPanel />
-          <MermaidEditor />
-          <SubgraphStylePanel />
-          <TemplatePanel />
-          <TemplateDslEditor />
-          <div
-            style={{
-              ...styles.resizeHandle,
-              borderRightColor: hoveredHandle === 'sidebar' || resizing === 'sidebar' ? '#bbb' : 'transparent',
-            }}
-            onMouseDown={() => handleMouseDown('sidebar')}
-            onMouseEnter={() => setHoveredHandle('sidebar')}
-            onMouseLeave={() => setHoveredHandle(null)}
-          />
-        </div>
+        {!leftSidebarCollapsed && (
+          <div style={{ ...styles.sidebar, width: sidebarWidth, maxWidth: 'none' }}>
+            <ShapeLibrary />
+            <IconPanel />
+            <MermaidEditor />
+            <SubgraphStylePanel />
+            <TemplatePanel />
+            <TemplateDslEditor />
+            <div
+              style={{
+                ...styles.resizeHandle,
+                borderRightColor: hoveredHandle === 'sidebar' || resizing === 'sidebar' ? '#bbb' : 'transparent',
+              }}
+              onMouseDown={() => handleMouseDown('sidebar')}
+              onMouseEnter={() => setHoveredHandle('sidebar')}
+              onMouseLeave={() => setHoveredHandle(null)}
+            />
+          </div>
+        )}
         <div style={styles.canvas}>
           <Canvas />
         </div>
-        <div style={{ ...styles.rightPanels, width: rightPanelWidth, maxWidth: 'none' }}>
-          <div
-            style={{
-              ...styles.resizeHandle,
-              left: 0,
-              right: 'auto',
-              borderRight: 'none',
-              borderLeft: '3px solid transparent',
-              borderLeftColor: hoveredHandle === 'rightPanel' || resizing === 'rightPanel' ? '#bbb' : 'transparent',
-            }}
-            onMouseDown={() => handleMouseDown('rightPanel')}
-            onMouseEnter={() => setHoveredHandle('rightPanel')}
-            onMouseLeave={() => setHoveredHandle(null)}
-          />
-          <LayersPanel />
-          <PropertiesPanel />
-          <TemplatePropertiesPanel />
-        </div>
+        {!rightPanelCollapsed && (
+          <div style={{ ...styles.rightPanels, width: rightPanelWidth, maxWidth: 'none' }}>
+            <div
+              style={{
+                ...styles.resizeHandle,
+                left: 0,
+                right: 'auto',
+                borderRight: 'none',
+                borderLeft: '3px solid transparent',
+                borderLeftColor: hoveredHandle === 'rightPanel' || resizing === 'rightPanel' ? '#bbb' : 'transparent',
+              }}
+              onMouseDown={() => handleMouseDown('rightPanel')}
+              onMouseEnter={() => setHoveredHandle('rightPanel')}
+              onMouseLeave={() => setHoveredHandle(null)}
+            />
+            <LayersPanel />
+            <PropertiesPanel />
+            <TemplatePropertiesPanel />
+          </div>
+        )}
       </div>
     </div>
   )

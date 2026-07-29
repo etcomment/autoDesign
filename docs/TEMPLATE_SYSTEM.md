@@ -84,6 +84,9 @@ src/templates/
 | `templateElementColors` | `Record<string, string>` | Couleurs de remplissage par ID d'élément |
 | `templateStrokeColors` | `Record<string, string>` | Couleurs de bordure par ID d'élément |
 | `templateElementPositions` | `Record<string, {x, y, width, height}>` | Positions et tailles par ID d'élément |
+| `templateElementRotations` | `Record<string, number>` | Angles de rotation (en degrés) par ID d melement |
+| `templateGroups` | `Record<string, string[]>` | Groupes d'éléments (`groupId` -> liste des `elementId`) |
+| `templateElementGroupIds` | `Record<string, string>` | Association d'un élément à son groupe (`elementId` -> `groupId`) |
 
 ### Actions
 
@@ -93,11 +96,14 @@ src/templates/
 | `selectTemplateWithData(type, data)` | Active un template avec des données personnalisées (utilisé par le DSL) |
 | `clearTemplate()` | Désactive le template courant |
 | `updateTemplateData(data)` | Met à jour les données du template (ex: depuis le panneau de propriétés) |
-| `toggleTemplateElement(id)` | Ajoute/retire un élément de la sélection |
+| `toggleTemplateElement(id)` | Ajoute/retire un élément de la sélection (sélectionne tout le groupe si l'élément fait partie d'un groupe) |
 | `updateTemplateColor(id, color)` | Change la couleur de remplissage d'un élément |
 | `updateTemplateStrokeColor(id, color)` | Change la couleur de bordure d'un élément |
 | `moveTemplateElement(id, pos)` | Déplace un élément |
-| `resizeTemplateElement(id, size)` | Redimensionne un élément |
+| `resizeTemplateElement(id, size)` | Redimensionne un élément (avec support du maintien de ratio via Shift) |
+| `rotateTemplateElement(id, angle)` | Applique un angle de rotation (en degrés) à un élément ou groupe |
+| `groupTemplateElements(ids?)` | Permet de grouper plusieurs éléments sélectionnés (`Ctrl+G`) |
+| `ungroupTemplateElements(groupId?)` | Permet de dégrouper un ensemble d'éléments (`Ctrl+Shift+G`) |
 
 ### Cycle de vie
 

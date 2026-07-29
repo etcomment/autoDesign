@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Eye, EyeOff, Lock, Unlock, Layers, ChevronUp, ChevronDown, LayoutTemplate } from 'lucide-react'
+import { Eye, EyeOff, Lock, Unlock, Layers, ChevronUp, ChevronDown, ChevronRight, LayoutTemplate, Square } from 'lucide-react'
 import { useDiagramStore } from '../store/diagramStore'
 import { useTemplateStore } from '../templates/store'
 import type { Shape } from '../core/model/Shape'
@@ -8,6 +8,59 @@ interface LayerItem {
   id: string
   type: 'shape' | 'template'
   shape?: Shape
+}
+
+interface TemplateSubElement {
+  id: string
+  label: string
+  children?: TemplateSubElement[]
+}
+
+function getTemplateSubElements(templateData: any, templateElementPositions: Record<string, any>): TemplateSubElement[] {
+  if (!templateData) return []
+  const subElements: TemplateSubElement[] = []
+  const seenIds = new Set<string>()
+
+  const add = (id: string, label: string, children?: TemplateSubElement[]) => {
+    if (seenIds.has(id)) return
+    seenIds.add(id)
+    subElements.push({ id, label, children })
+  }
+
+  if (templateData.title) {
+    add('title', `Titre: "${typeof templateData.title === 'string' ? templateData.title : 'Titre'}"`)
+  }
+
+  const collections = ['milestones', 'items', 'pieces', 'steps', 'phases', 'branches', 'nodes', 'cards', 'blocks']
+  for (const colKey of collections) {
+    if (Array.isArray(templateData[colKey])) {
+      const arr = templateData[colKey]
+      const singular = colKey.endsWith('s') ? colKey.slice(0, -1) : colKey
+      arr.forEach((item: any, i: number) => {
+        const id = `${singular}-${i}`
+        const rawTitle = typeof item === 'string' ? item : (item?.title || item?.name || item?.text || item?.label)
+        const titleStr = rawTitle ? `"${rawTitle}"` : `${i + 1}`
+        
+        const children: TemplateSubElement[] = []
+        for (const posId of Object.keys(templateElementPositions)) {
+          if (posId.endsWith(`-${i}`) && posId !== id) {
+            children.push({ id: posId, label: `Élément: ${posId.split('-')[0]}` })
+            seenIds.add(posId)
+          }
+        }
+        
+        add(id, `${singular.charAt(0).toUpperCase() + singular.slice(1)} ${i + 1}: ${titleStr}`, children.length > 0 ? children : undefined)
+      })
+    }
+  }
+
+  for (const id of Object.keys(templateElementPositions)) {
+    if (!seenIds.has(id)) {
+      add(id, `Élément: ${id}`)
+    }
+  }
+
+  return subElements
 }
 
 export function LayersPanel() {
@@ -23,11 +76,19 @@ export function LayersPanel() {
   const reorderShapes = useDiagramStore(s => s.reorderShapes)
 
   const activeTemplate = useTemplateStore(s => s.activeTemplate)
+  const templateData = useTemplateStore(s => s.templateData)
   const isTemplateHidden = useTemplateStore(s => s.isTemplateHidden)
   const toggleTemplateHidden = useTemplateStore(s => s.toggleTemplateHidden)
+  const hiddenTemplateElementIds = useTemplateStore(s => s.hiddenTemplateElementIds)
+  const toggleTemplateElementHidden = useTemplateStore(s => s.toggleTemplateElementHidden)
+  const selectedTemplateElementIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const selectTemplateElement = useTemplateStore(s => s.selectTemplateElement)
+  const toggleTemplateElement = useTemplateStore(s => s.toggleTemplateElement)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
+  const [isTemplateTreeExpanded, setIsTemplateTreeExpanded] = useState(true)
 
   // Construct bottom-to-top SVG render order list of items
   const clampedTemplateIndex = Math.max(0, Math.min(shapes.length, templateZIndex))
@@ -46,7 +107,8 @@ export function LayersPanel() {
 
   // UI display order is top-to-bottom (reversed SVG render order)
   const reversedLayerItems = [...svgOrderItems].reverse()
-  const totalCount = (activeTemplate ? 1 : 0) + shapes.length
+  const templateSubElements = getTemplateSubElements(templateData, templateElementPositions)
+  const totalCount = (activeTemplate ? 1 + templateSubElements.length : 0) + shapes.length
 
   const handleSelect = (item: LayerItem, e: React.MouseEvent) => {
     if (item.type === 'template') return
@@ -61,6 +123,15 @@ export function LayersPanel() {
     } else {
       clearSelection()
       selectShape(item.shape.id)
+    }
+  }
+
+  const handleSelectSubElement = (subId: string, e: React.MouseEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      toggleTemplateElement(subId)
+    } else {
+      clearSelection()
+      selectTemplateElement(subId)
     }
   }
 
@@ -83,14 +154,10 @@ export function LayersPanel() {
   }
 
   const applyNewReversedOrder = (updatedReversed: LayerItem[]) => {
-    // Convert back to bottom-to-top SVG render order
     const newSvgOrder = [...updatedReversed].reverse()
-    
-    // Find new position for template in bottom-to-top order
     let newTemplateIndex = newSvgOrder.findIndex(item => item.type === 'template')
     if (newTemplateIndex === -1) newTemplateIndex = 0
 
-    // Extract shape IDs in new bottom-to-top order
     const newShapeIds = newSvgOrder
       .filter(item => item.type === 'shape' && item.shape)
       .map(item => item.shape!.id)
@@ -126,7 +193,6 @@ export function LayersPanel() {
 
   const handleMoveUp = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    // Move up in UI list (towards top layer)
     const currentReversed = reversedLayerItems.map(item => item.id)
     const index = currentReversed.indexOf(id)
     if (index <= 0) return
@@ -141,7 +207,6 @@ export function LayersPanel() {
 
   const handleMoveDown = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    // Move down in UI list (towards bottom layer)
     const currentReversed = reversedLayerItems.map(item => item.id)
     const index = currentReversed.indexOf(id)
     if (index === -1 || index >= currentReversed.length - 1) return
@@ -188,102 +253,173 @@ export function LayersPanel() {
             const isLocked = isTemplate ? false : !!item.shape?.isLocked
 
             return (
-              <div
-                key={item.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, item.id)}
-                onDragOver={(e) => handleDragOver(e, item.id)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, item.id)}
-                onClick={(e) => handleSelect(item, e)}
-                style={{
-                  ...styles.item,
-                  ...(isSelected ? styles.selectedItem : {}),
-                  ...(isTemplate ? styles.templateItem : {}),
-                  ...(isDraggingThis ? styles.draggingItem : {}),
-                  ...(isDragOverThis ? styles.dragOverItem : {}),
-                }}
-              >
-                <div style={styles.itemContent}>
-                  <span style={styles.dragHandle} title="Glisser pour réordonner">
-                    ⋮⋮
-                  </span>
-                  {isTemplate && <LayoutTemplate size={14} color="#4a90d9" style={{ flexShrink: 0 }} />}
-                  <span
-                    style={{
-                      ...styles.itemLabel,
-                      opacity: isHidden ? 0.5 : 1,
-                      textDecoration: isHidden ? 'line-through' : 'none',
-                      fontWeight: isTemplate ? 600 : 400,
-                    }}
-                    title={getItemLabel(item)}
-                  >
-                    {getItemLabel(item)}
-                  </span>
-                </div>
+              <React.Fragment key={item.id}>
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, item.id)}
+                  onDragOver={(e) => handleDragOver(e, item.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, item.id)}
+                  onClick={(e) => handleSelect(item, e)}
+                  style={{
+                    ...styles.item,
+                    ...(isSelected ? styles.selectedItem : {}),
+                    ...(isTemplate ? styles.templateItem : {}),
+                    ...(isDraggingThis ? styles.draggingItem : {}),
+                    ...(isDragOverThis ? styles.dragOverItem : {}),
+                  }}
+                >
+                  <div style={styles.itemContent}>
+                    <span style={styles.dragHandle} title="Glisser pour réordonner">
+                      ⋮⋮
+                    </span>
+                    {isTemplate && (
+                      <button
+                        type="button"
+                        style={{ ...styles.actionBtn, padding: 0, marginRight: 2 }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setIsTemplateTreeExpanded(!isTemplateTreeExpanded)
+                        }}
+                      >
+                        {isTemplateTreeExpanded ? <ChevronDown size={14} color="#4a90d9" /> : <ChevronRight size={14} color="#4a90d9" />}
+                      </button>
+                    )}
+                    {isTemplate && <LayoutTemplate size={14} color="#4a90d9" style={{ flexShrink: 0 }} />}
+                    <span
+                      style={{
+                        ...styles.itemLabel,
+                        opacity: isHidden ? 0.5 : 1,
+                        textDecoration: isHidden ? 'line-through' : 'none',
+                        fontWeight: isTemplate ? 600 : 400,
+                      }}
+                      title={getItemLabel(item)}
+                    >
+                      {getItemLabel(item)}
+                    </span>
+                  </div>
 
-                <div style={styles.actions}>
-                  <button
-                    type="button"
-                    style={styles.actionBtn}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (isTemplate) {
-                        toggleTemplateHidden()
-                      } else if (item.shape) {
-                        toggleShapeHidden(item.shape.id)
-                      }
-                    }}
-                    title={isHidden ? 'Afficher' : 'Masquer'}
-                  >
-                    {isHidden ? <EyeOff size={14} color="#888" /> : <Eye size={14} color="#555" />}
-                  </button>
-
-                  {!isTemplate && (
+                  <div style={styles.actions}>
                     <button
                       type="button"
                       style={styles.actionBtn}
                       onClick={(e) => {
                         e.stopPropagation()
-                        if (item.shape) {
-                          toggleShapeLocked(item.shape.id)
+                        if (isTemplate) {
+                          toggleTemplateHidden()
+                        } else if (item.shape) {
+                          toggleShapeHidden(item.shape.id)
                         }
                       }}
-                      title={isLocked ? 'Déverrouiller' : 'Verrouiller'}
+                      title={isHidden ? 'Afficher' : 'Masquer'}
                     >
-                      {isLocked ? <Lock size={14} color="#d9534f" /> : <Unlock size={14} color="#888" />}
+                      {isHidden ? <EyeOff size={14} color="#888" /> : <Eye size={14} color="#555" />}
                     </button>
-                  )}
 
-                  <button
-                    type="button"
-                    style={{
-                      ...styles.actionBtn,
-                      opacity: index === 0 ? 0.3 : 1,
-                      cursor: index === 0 ? 'default' : 'pointer',
-                    }}
-                    disabled={index === 0}
-                    onClick={(e) => handleMoveUp(item.id, e)}
-                    title="Monter l'élément"
-                  >
-                    <ChevronUp size={14} color="#555" />
-                  </button>
+                    {!isTemplate && (
+                      <button
+                        type="button"
+                        style={styles.actionBtn}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (item.shape) {
+                            toggleShapeLocked(item.shape.id)
+                          }
+                        }}
+                        title={isLocked ? 'Déverrouiller' : 'Verrouiller'}
+                      >
+                        {isLocked ? <Lock size={14} color="#d9534f" /> : <Unlock size={14} color="#888" />}
+                      </button>
+                    )}
 
-                  <button
-                    type="button"
-                    style={{
-                      ...styles.actionBtn,
-                      opacity: index === reversedLayerItems.length - 1 ? 0.3 : 1,
-                      cursor: index === reversedLayerItems.length - 1 ? 'default' : 'pointer',
-                    }}
-                    disabled={index === reversedLayerItems.length - 1}
-                    onClick={(e) => handleMoveDown(item.id, e)}
-                    title="Descendre l'élément"
-                  >
-                    <ChevronDown size={14} color="#555" />
-                  </button>
+                    <button
+                      type="button"
+                      style={{
+                        ...styles.actionBtn,
+                        opacity: index === 0 ? 0.3 : 1,
+                        cursor: index === 0 ? 'default' : 'pointer',
+                      }}
+                      disabled={index === 0}
+                      onClick={(e) => handleMoveUp(item.id, e)}
+                      title="Monter l'élément"
+                    >
+                      <ChevronUp size={14} color="#555" />
+                    </button>
+
+                    <button
+                      type="button"
+                      style={{
+                        ...styles.actionBtn,
+                        opacity: index === reversedLayerItems.length - 1 ? 0.3 : 1,
+                        cursor: index === reversedLayerItems.length - 1 ? 'default' : 'pointer',
+                      }}
+                      disabled={index === reversedLayerItems.length - 1}
+                      onClick={(e) => handleMoveDown(item.id, e)}
+                      title="Descendre l'élément"
+                    >
+                      <ChevronDown size={14} color="#555" />
+                    </button>
+                  </div>
                 </div>
-              </div>
+
+                {/* Render Template Child Sub-Elements */}
+                {isTemplate && isTemplateTreeExpanded && templateSubElements.map((subItem) => {
+                  const isSubSelected = selectedTemplateElementIds.has(subItem.id)
+                  const isSubHidden = hiddenTemplateElementIds.has(subItem.id)
+
+                  const renderSubItemRow = (item: TemplateSubElement, isChild = false) => {
+                    const isSelected = selectedTemplateElementIds.has(item.id)
+                    const isHidden = hiddenTemplateElementIds.has(item.id) || (!isChild && isSubHidden) || isTemplateHidden
+
+                    return (
+                      <div
+                        key={`sub-${item.id}`}
+                        onClick={(e) => handleSelectSubElement(item.id, e)}
+                        style={{
+                          ...styles.item,
+                          paddingLeft: isChild ? 42 : 28,
+                          backgroundColor: isSelected ? '#e3f2fd' : '#fafafa',
+                        }}
+                      >
+                        <div style={styles.itemContent}>
+                          <Square size={10} color={isChild ? "#a0a0a0" : "#757575"} style={{ flexShrink: 0 }} />
+                          <span
+                            style={{
+                              ...styles.itemLabel,
+                              fontSize: 11,
+                              opacity: isHidden ? 0.4 : 1,
+                              textDecoration: isHidden ? 'line-through' : 'none',
+                            }}
+                            title={item.label}
+                          >
+                            {item.label}
+                          </span>
+                        </div>
+                        <div style={styles.actions}>
+                          <button
+                            type="button"
+                            style={styles.actionBtn}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleTemplateElementHidden(item.id)
+                            }}
+                            title={isHidden ? 'Afficher la sous-composante' : 'Masquer la sous-composante'}
+                          >
+                            {isHidden ? <EyeOff size={13} color="#888" /> : <Eye size={13} color="#555" />}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <React.Fragment key={`frag-${subItem.id}`}>
+                      {renderSubItemRow(subItem, false)}
+                      {subItem.children?.map(child => renderSubItemRow(child, true))}
+                    </React.Fragment>
+                  )
+                })}
+              </React.Fragment>
             )
           })}
         </div>

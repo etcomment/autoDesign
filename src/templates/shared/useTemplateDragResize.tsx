@@ -324,6 +324,8 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
 
   const renderHandles = useCallback((visualRect: Rect, id: string) => {
     renderedRectsRef.current.set(id, visualRect)
+    const hiddenIds = useTemplateStore.getState().hiddenTemplateElementIds
+    if (hiddenIds.has(id)) return null
     if (!selectedIds.has(id)) return null
 
     let renderRect = visualRect

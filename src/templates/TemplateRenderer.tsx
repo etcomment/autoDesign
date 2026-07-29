@@ -282,14 +282,20 @@ export function TemplateRenderer(): ReactElement | null {
   const activeTemplate = useTemplateStore(s => s.activeTemplate)
   const templateData = useTemplateStore(s => s.templateData)
   const isTemplateHidden = useTemplateStore(s => s.isTemplateHidden)
+  const hiddenTemplateElementIds = useTemplateStore(s => s.hiddenTemplateElementIds)
 
   if (!activeTemplate || !templateData || isTemplateHidden) return null
 
   const Component = TEMPLATE_MAP[activeTemplate]
   if (!Component) return null
 
+  const hideRules = Array.from(hiddenTemplateElementIds)
+    .map(id => `[data-element-id="${id}"], [id="${id}"] { display: none !important; }`)
+    .join('\n')
+
   return (
     <g pointerEvents="all">
+      {hideRules ? <style>{hideRules}</style> : null}
       <Component data={templateData} />
     </g>
   )

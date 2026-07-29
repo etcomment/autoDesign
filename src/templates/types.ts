@@ -602,5 +602,6 @@ export interface TemplateDefinition {
   type: TemplateType
   label: string
   category: string
+  description?: string
   defaultData: TemplateData
 }

@@ -161,14 +161,21 @@ C'est un hook React générique, partagé par tous les templates, qui gère le *
    - `Ctrl`/`Cmd` maintenu → déplacement horizontal uniquement
    - Sans modifieur → déplacement libre
 
-6. **Resize** : 4 coins (nw, ne, sw, se) avec des poignées carrées de 8×8px. Chaque coin ajuste le rectangle différemment :
-   - `se` : ancre en haut-gauche, étire vers la droite et le bas
-   - `sw` : ancre en haut-droite, étire vers la gauche et le bas
-   - `ne` : ancre en bas-gauche, étire vers la droite et le haut
-   - `nw` : ancre en bas-droite, étire vers la gauche et le haut
+6. **Resize** : 4 coins (nw, ne, sw, se) avec des poignées carrées de 8×8px. Chaque coin ajuste le rectangle différemment.
+   - `Shift` maintenu lors du resize → conserve le ratio d'aspect (width/height) de l'élément initial.
    - Taille minimale : `MIN_SIZE = 40px`
 
-7. **Rendu des poignées** : `renderHandles` affiche 4 poignées uniquement sur les éléments sélectionnés. Chaque poignée a un curseur adapté (`nwse-resize` ou `nesw-resize`).
+7. **Rotation** : Poignée circulaire reliée par une tige au-dessus du centre haut de la boîte de sélection.
+   - Calcul dynamique de l'angle de rotation via `Math.atan2` par rapport au centre de l'élément/groupe.
+   - Affichage d'un badge visuel des degrés (ex: `45°`) en cours de rotation.
+   - Mémorisation de l'angle dans `templateElementRotations`.
+
+8. **Groupement (`Ctrl+G` / `Ctrl+Shift+G`)** :
+   - Regroupement dynamique de plusieurs éléments de template.
+   - Bounding box commune calculée automatiquement englobant l'ensemble des membres du groupe.
+   - Poignées de déplacement, redimensionnement et rotation appliquées simultanément au groupe avec synchronisation parfaite des trajectoires.
+
+9. **Rendu des poignées** : `renderHandles` affiche les 4 poignées de coin ainsi que la tige et la poignée de rotation supérieure uniquement sur les éléments ou groupes sélectionnés.
 
 ---
 

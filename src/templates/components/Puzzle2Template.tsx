@@ -95,23 +95,25 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
         return (
           <g key={i}>
             <g
-              transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}
               onMouseDown={e => startDrag(e, elementId, visualRect)}
+              transform={getTransform(elementId, visualRect)}
               style={{ cursor: 'pointer' }}
             >
-              <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3.5 : 3} strokeLinejoin="round" />
-              <circle cx={cx} cy={cy - 18} r={16} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
-              <text x={cx} y={cy - 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
-                {piece.number}
-              </text>
-              <text x={cx} y={cy + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={700} fill="white">
-                {piece.title}
-              </text>
-              {piece.subtitle && (
-                <text x={cx} y={cy + 36} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fill="rgba(255,255,255,0.85)">
-                  {piece.subtitle}
+              <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}>
+                <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3.5 : 3} strokeLinejoin="round" />
+                <circle cx={cx} cy={cy - 18} r={16} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
+                <text x={cx} y={cy - 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
+                  {piece.number}
                 </text>
-              )}
+                <text x={cx} y={cy + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={700} fill="white">
+                  {piece.title}
+                </text>
+                {piece.subtitle && (
+                  <text x={cx} y={cy + 36} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fill="rgba(255,255,255,0.85)">
+                    {piece.subtitle}
+                  </text>
+                )}
+              </g>
               {isSelected && renderHandles(visualRect, elementId)}
             </g>
           </g>

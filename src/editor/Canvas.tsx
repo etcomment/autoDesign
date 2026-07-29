@@ -294,9 +294,9 @@ export function Canvas() {
   const onWheel = useCallback(
     (e: React.WheelEvent<SVGSVGElement>) => {
       e.preventDefault()
-      const delta = e.deltaY > 0 ? -0.1 : 0.1
-      const newScale = Math.max(0.1, Math.min(5, viewBox.scale + delta))
-      setViewBox({ ...viewBox, scale: newScale })
+      const step = e.deltaY > 0 ? -0.01 : 0.01
+      const newScale = Math.max(0.1, Math.min(5, viewBox.scale + step))
+      setViewBox({ ...viewBox, scale: Number(newScale.toFixed(3)) })
     },
     [viewBox, setViewBox],
   )
