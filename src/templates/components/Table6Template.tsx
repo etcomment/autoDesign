@@ -12,6 +12,10 @@ export function Table6Template({ data }: { data: TableData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const pos = useTemplateStore(s => s.templateElementPositions) // Retrieve positions
+
+  // Helper function to get current element position, falling back to initial position if not dragged yet
+  const getRect = (id: string, fallback: {x: number, y: number, width: number, height: number}) => pos[id] || fallback;
 
   const { title, columns, rows } = data
   const W = 900
@@ -22,6 +26,24 @@ export function Table6Template({ data }: { data: TableData }): ReactElement {
   const rowH = 40
   const colW = (tableW - labelW) / Math.max(columns.length, 1)
   const tableY = title ? 100 : 70
+
+  // Calculate initial positions for rows to use as fallbacks for getRect
+  const initialRowRects = rows.map((_, ri) => {
+    const rowY = tableY + headerH + ri * rowH;
+    return { x: tableX, y: rowY, width: tableW, height: rowH };
+  });
+
+  // Get current positions for the first and last rows to determine the overall Y extent for vertical lines
+  const firstRowRect = rows.length > 0
+    ? getRect(`row-0`, initialRowRects[0]!)
+    : { x: tableX, y: tableY + headerH, width: tableW, height: 0 }; // Fallback for empty table
+  const lastRowRect = rows.length > 0
+    ? getRect(`row-${rows.length - 1}`, initialRowRects[rows.length - 1]!)
+    : { x: tableX, y: tableY + headerH, width: tableW, height: 0 }; // Fallback for empty table
+
+  // Determine the overall Y extent for the data rows for vertical lines
+  const dataRowsMinY = firstRowRect.y;
+  const dataRowsMaxY = lastRowRect.y + lastRowRect.height;
 
   return (
     <g ref={svgRef}>
@@ -47,7 +69,7 @@ export function Table6Template({ data }: { data: TableData }): ReactElement {
         const elementId = `row-${ri}`
         const isSelected = selectedIds.has(elementId)
         const isEven = ri % 2 === 0
-        const rowY = tableY + headerH + ri * rowH
+        const rowY = tableY + headerH + ri * rowH // Initial Y for this row
         const visualRect = { x: tableX, y: rowY, width: tableW, height: rowH }
 
         return (
@@ -72,12 +94,35 @@ export function Table6Template({ data }: { data: TableData }): ReactElement {
         )
       })}
 
+      {/* Vertical lines: span from the top of the first data row to the bottom of the last data row */}
       {columns.map((_, ci) => (
-        <line key={`vl-${ci}`} x1={tableX + labelW + ci * colW} y1={tableY} x2={tableX + labelW + ci * colW} y2={tableY + headerH + rows.length * rowH} stroke="rgba(255,255,255,0.3)" strokeWidth={1} />
+        <line
+          key={`vl-${ci}`}
+          x1={tableX + labelW + ci * colW}
+          y1={dataRowsMinY}
+          x2={tableX + labelW + ci * colW}
+          y2={dataRowsMaxY}
+          stroke="rgba(255,255,255,0.3)"
+          strokeWidth={1}
+        />
       ))}
-      {rows.map((_, ri) => (
-        <line key={`hl-${ri}`} x1={tableX} y1={tableY + headerH + (ri + 1) * rowH} x2={tableX + tableW} y2={tableY + headerH + (ri + 1) * rowH} stroke={BLUE_LINE} strokeWidth={1} />
-      ))}
+      {/* Horizontal lines: drawn below each row, dynamically positioned */}
+      {rows.map((_, ri) => {
+        const elementId = `row-${ri}`;
+        const currentRect = getRect(elementId, initialRowRects[ri]!);
+        const lineY = currentRect.y + currentRect.height; // Position the line at the bottom of the current row
+        return (
+          <line
+            key={`hl-${ri}`}
+            x1={tableX}
+            y1={lineY}
+            x2={tableX + tableW}
+            y2={lineY}
+            stroke={BLUE_LINE}
+            strokeWidth={1}
+          />
+        );
+      })}
     </g>
   )
 }

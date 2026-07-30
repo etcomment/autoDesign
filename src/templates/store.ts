@@ -33,6 +33,7 @@ interface TemplateStore {
   moveTemplateElement: (id: string, pos: { x: number; y: number }) => void
   resizeTemplateElement: (id: string, size: { width: number; height: number }) => void
   rotateTemplateElement: (id: string, angle: number) => void
+  initTemplateElement: (id: string, rect: { x: number; y: number; width: number; height: number }) => void
   groupTemplateElements: (ids?: string[]) => void
   ungroupTemplateElements: (groupId?: string) => void
 }
@@ -176,6 +177,17 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
       templateElementPositions: {
         ...templateElementPositions,
         [id]: { ...templateElementPositions[id], x: pos.x, y: pos.y, width: templateElementPositions[id]?.width ?? 0, height: templateElementPositions[id]?.height ?? 0 },
+      },
+    })
+  },
+
+  initTemplateElement: (id, rect) => {
+    const { templateElementPositions } = get()
+    if (templateElementPositions[id]) return
+    set({
+      templateElementPositions: {
+        ...templateElementPositions,
+        [id]: { ...rect },
       },
     })
   },

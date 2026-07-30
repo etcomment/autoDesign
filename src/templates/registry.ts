@@ -957,6 +957,7 @@ export const TEMPLATES: TemplateDefinition[] = [
     label: 'Mindmap Carte Centrée',
     description: 'Sujet central avec branches diffusant vers les idées secondaires.',
     category: 'Brains',
+    supportsStroke: false,
     defaultData: {
       type: 'brain',
       centerLabel: 'Main Idea',
@@ -973,6 +974,7 @@ export const TEMPLATES: TemplateDefinition[] = [
     label: 'Mindmap Arbre Bi-Directionnel',
     description: 'Sujet central avec branches réparties à gauche et à droite.',
     category: 'Brains',
+    supportsStroke: false,
     defaultData: {
       type: 'brain',
       centerLabel: 'Core Idea',
@@ -990,6 +992,7 @@ export const TEMPLATES: TemplateDefinition[] = [
     label: "Mindmap Toile de Réseau",
     description: 'Réseau d\'idées interconnectées autour d\'un noyau.',
     category: 'Brains',
+    supportsStroke: false,
     defaultData: {
       type: 'brain',
       centerLabel: 'Central Topic',
@@ -1008,6 +1011,7 @@ export const TEMPLATES: TemplateDefinition[] = [
     label: 'Mindmap Arborescence Hiérarchique',
     description: 'Structure en arbre hiérarchique descendant.',
     category: 'Brains',
+    supportsStroke: false,
     defaultData: {
       type: 'brain',
       centerLabel: 'Root Idea',

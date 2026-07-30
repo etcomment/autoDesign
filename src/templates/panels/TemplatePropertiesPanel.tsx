@@ -1,6 +1,7 @@
 import { useTemplateStore } from '../store'
 import { useDiagramStore } from '../../store/diagramStore'
 import { MIGSO_PALETTE } from '../../lib/theme'
+import { getTemplateByType } from '../registry'
 
 const PRESET_COLORS = [
   '#ffffff', '#f44336', '#e91e63', '#9c27b0', '#673ab7',
@@ -133,6 +134,9 @@ export function TemplatePropertiesPanel() {
   const rotateTemplateElement = useTemplateStore(s => s.rotateTemplateElement)
 
   if (!activeTemplate || selectedIds.size === 0 || selectedShapeIds.size > 0) return null
+
+  const tplDef = getTemplateByType(activeTemplate)
+  const supportsStroke = tplDef?.supportsStroke ?? true
 
   const elements = [...selectedIds]
   const primaryId = elements[0]!
@@ -277,6 +281,7 @@ export function TemplatePropertiesPanel() {
         </div>
       </div>
 
+      {supportsStroke && (
       <div style={styles.section}>
         <label style={styles.sectionLabel}>Contour (Stroke)</label>
         <ColorGrid currentColor={primaryStroke} onPick={(c) => elements.forEach(id => updateTemplateStrokeColor(id, c))} prefix="tpl-s-" />
@@ -302,6 +307,7 @@ export function TemplatePropertiesPanel() {
           <span style={styles.value}>{primaryStrokeWidth}px</span>
         </div>
       </div>
+      )}
     </div>
   )
 }

@@ -13,6 +13,10 @@ export function ValueChainTemplate({ data }: { data: ValueChainData }): ReactEle
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const pos = useTemplateStore(s => s.templateElementPositions) // Retrieve positions
+
+  // Helper function to get current element position or fallback to initial position
+  const getRect = (id: string, fallback: {x: number, y: number, width: number, height: number}) => pos[id] || fallback;
 
   const { title, primary, support } = data
   const W = 1000
@@ -45,6 +49,7 @@ export function ValueChainTemplate({ data }: { data: ValueChainData }): ReactEle
         const bx = startX + i * primaryW
         const aw = primaryW - 4
         const ah = primaryH
+        // This visualRect is the initial position and size for the draggable element
         const visualRect = { x: bx, y: primaryY, width: primaryW, height: primaryH }
 
         return (
@@ -81,6 +86,7 @@ export function ValueChainTemplate({ data }: { data: ValueChainData }): ReactEle
         const isSelected = selectedIds.has(elementId)
         const bx = startX + i * supportW
         const aw = supportW - 4
+        // This visualRect is the initial position and size for the draggable element
         const visualRect = { x: bx + 2, y: supportY, width: aw, height: supportH }
 
         return (
@@ -101,13 +107,23 @@ export function ValueChainTemplate({ data }: { data: ValueChainData }): ReactEle
         )
       })}
 
+      {/* Arrows aligned with primary activities, connecting the bottom of the support lane to the top of the primary activity */}
       {primary.map((_, i) => {
-        const px = startX + i * primaryW + primaryW / 2
+        const primaryElementId = `primary-${i}`
+        // Initial visual rect for primary activity (used as fallback)
+        const primaryInitialRect = { x: startX + i * primaryW, y: primaryY, width: primaryW, height: primaryH }
+        const currentPrimaryRect = getRect(primaryElementId, primaryInitialRect)
+
+        const fromX = currentPrimaryRect.x + currentPrimaryRect.width / 2
+        const fromY = supportY + supportH // Bottom of the fixed support lane
+        const toX = currentPrimaryRect.x + currentPrimaryRect.width / 2
+        const toY = currentPrimaryRect.y // Top of the primary activity element
+
         return (
           <g key={`v-${i}`}>
             <Arrow
-              from={{ x: px, y: supportY + supportH }}
-              to={{ x: px, y: primaryY }}
+              from={{ x: fromX, y: fromY }}
+              to={{ x: toX, y: toY }}
               color="#888"
               dashed
             />
@@ -115,14 +131,24 @@ export function ValueChainTemplate({ data }: { data: ValueChainData }): ReactEle
         )
       })}
 
+      {/* Arrows aligned with support activities, connecting the bottom of the support activity to the top of the primary lane */}
       {support.map((_, i) => {
-        const sx = startX + i * supportW + supportW / 2
+        const supportElementId = `support-${i}`
+        // Initial visual rect for support activity (used as fallback)
+        // Note: x is bx + 2, width is aw (supportW - 4) as per the rect definition
+        const supportInitialRect = { x: startX + i * supportW + 2, y: supportY, width: supportW - 4, height: supportH }
+        const currentSupportRect = getRect(supportElementId, supportInitialRect)
+
+        const fromX = currentSupportRect.x + currentSupportRect.width / 2
+        const fromY = currentSupportRect.y + currentSupportRect.height // Bottom of the support activity element
+        const toX = currentSupportRect.x + currentSupportRect.width / 2
+        const toY = primaryY // Top of the fixed primary lane
 
         return (
           <g key={`v2-${i}`}>
             <Arrow
-              from={{ x: sx, y: supportY + supportH }}
-              to={{ x: sx, y: primaryY }}
+              from={{ x: fromX, y: fromY }}
+              to={{ x: toX, y: toY }}
               color="#888"
               dashed
             />

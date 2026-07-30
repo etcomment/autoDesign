@@ -1072,7 +1072,7 @@ export function generateDslText(type: string, data: TemplateData): string {
       }
       emitDecisionNodes(branches)
     } else {
-      for (const b of branches) out += '  branch "' + esc(b.title) + '"' + (b.subtitle ? ' "' + esc(b.subtitle) + '"' : '' + emitTrailingArgs(b)) + '\n'
+      for (const b of branches) out += '  branch "' + esc(b.title) + '"' + (b.subtitle ? ' "' + esc(b.subtitle) + '"' : '') + emitTrailingArgs(b) + '\n'
     }
   }
 

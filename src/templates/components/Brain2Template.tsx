@@ -51,18 +51,8 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
   ]
   const count = Math.min(branches.length, 6)
 
-  const titleId = 'title'
-  const titleDefault = { x: 30, y: 18, width: 420, height: 50 }
-  const titlePos = positions[titleId]
-  const titleBbox = {
-    x: titlePos?.x ?? titleDefault.x, y: titlePos?.y ?? titleDefault.y,
-    width: titlePos?.width ?? titleDefault.width, height: titlePos?.height ?? titleDefault.height
-  }
-
   return (
     <g ref={svgRef}>
-      <rect x={0} y={0} width={W} height={H} fill="#f8f9fc" />
-
       {/* Arc ring BEHIND the head */}
       {ARC_CFG.slice(0, count).map((cfg, i) => {
         const id = `arc-${i}`
@@ -106,16 +96,6 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
         <polygon points="48,24 42,19 42,29" fill="#555" />
         <line x1={18} y1={38} x2={38} y2={38} stroke="#555" strokeWidth={2} />
         <line x1={20} y1={44} x2={36} y2={44} stroke="#555" strokeWidth={2} />
-      </g>
-
-      {/* Title */}
-      <g onMouseDown={e => startDrag(e, titleId, titleBbox)}
-        transform={getTransform(titleId, titleBbox)} style={{ cursor: 'pointer' }}>
-        <text x={titleBbox.x} y={titleBbox.y + 36}
-          fontFamily="Arial, sans-serif" fontSize={32} fontWeight={800} fill="#1a1a2e">
-          {data.title || 'Brain 2 Template'}
-        </text>
-        {selectedIds.has(titleId) && renderHandles(titleBbox, titleId)}
       </g>
 
       {/* Branch list on the left */}

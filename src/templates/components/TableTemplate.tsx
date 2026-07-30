@@ -12,6 +12,12 @@ export function TableTemplate({ data }: { data: TableData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
 
+  // 3. Retrieve positions from Zustand store
+  const pos = useTemplateStore(s => s.templateElementPositions)
+
+  // 4. Add a helper to get element positions
+  const getRect = (id: string, fallback: {x: number, y: number, width: number, height: number}) => pos[id] || fallback;
+
   const { title, columns, rows } = data
   const W = 900
 
@@ -21,8 +27,25 @@ export function TableTemplate({ data }: { data: TableData }): ReactElement {
   const headerH = 44
   const rowH = 40
   const colW = (tableW - labelW) / Math.max(columns.length, 1)
-  const tableH = headerH + rows.length * rowH
+  const tableH = headerH + rows.length * rowH // Initial total height of the table
   const tableY = title ? 100 : 70
+
+  // Calculate initial positions for rows to use as fallbacks in getRect
+  const initialRowRects: Record<string, {x: number, y: number, width: number, height: number}> = {};
+  rows.forEach((_, ri) => {
+    const elementId = `row-${ri}`;
+    const rowY = tableY + headerH + ri * rowH;
+    initialRowRects[elementId] = { x: tableX, y: rowY, width: tableW, height: rowH };
+  });
+
+  // Determine the dynamic y2 for vertical lines to connect to the bottom of the last row
+  let dynamicVLineY2 = tableY + tableH; // Default to original table bottom
+  if (rows.length > 0) {
+    const lastRowId = `row-${rows.length - 1}`;
+    const fallbackLastRowRect = initialRowRects[lastRowId];
+    const lastRowRect = getRect(lastRowId, fallbackLastRowRect!);
+    dynamicVLineY2 = lastRowRect.y + lastRowRect.height;
+  }
 
   return (
     <g ref={svgRef}>
@@ -62,11 +85,12 @@ export function TableTemplate({ data }: { data: TableData }): ReactElement {
         
         const isSelected = selectedIds.has(elementId)
         const isEven = ri % 2 === 0
-        const rowY = tableY + headerH + ri * rowH
+        const rowY = tableY + headerH + ri * rowH // Initial Y for this row
         const visualRect = { x: tableX, y: rowY, width: tableW, height: rowH }
 
         return (
           <g key={'r-' + ri}>
+            {/* Draggable group for each row */}
             <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={tableX} y={rowY} width={tableW} height={rowH} fill={isEven ? 'white' : '#f1f5f9'} />
               <rect x={tableX} y={rowY} width={labelW} height={rowH} fill={color} />
@@ -97,6 +121,7 @@ export function TableTemplate({ data }: { data: TableData }): ReactElement {
                 </text>
               ))}
 
+              {/* This line is a border for the row, it moves with the row's transform */}
               <line x1={tableX} y1={rowY + rowH} x2={tableX + tableW} y2={rowY + rowH} stroke="#e2e8f0" strokeWidth={1} />
 
               {isSelected && renderHandles(visualRect, elementId)}
@@ -105,15 +130,16 @@ export function TableTemplate({ data }: { data: TableData }): ReactElement {
         )
       })}
 
+      {/* Vertical lines for column separators, now dynamically connected to the last row */}
       {columns.map((_, ci) => {
         const x = tableX + labelW + ci * colW
         return (
           <line
             key={'vline-' + ci}
             x1={x}
-            y1={tableY}
+            y1={tableY} // Top of the table (static)
             x2={x}
-            y2={tableY + tableH}
+            y2={dynamicVLineY2} // Dynamically connect to the bottom of the last row
             stroke="#e2e8f0"
             strokeWidth={1}
           />

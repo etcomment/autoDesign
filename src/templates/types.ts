@@ -404,7 +404,7 @@ export interface BrainData {
   type: 'brain'
   title?: string
   centerLabel: string
-  branches: { title: string; subtitle?: string; color?: string }[]
+  branches: { title: string; subtitle?: string; color?: string; icon?: string }[]
 }
 
 export interface BudgetItem {
@@ -604,4 +604,5 @@ export interface TemplateDefinition {
   category: string
   description?: string
   defaultData: TemplateData
+  supportsStroke?: boolean
 }

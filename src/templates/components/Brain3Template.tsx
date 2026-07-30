@@ -63,8 +63,6 @@ export function Brain3Template({ data }: { data: BrainData }): ReactElement {
         </clipPath>
       </defs>
 
-      <rect x={0} y={0} width={W} height={H} fill="#f5f7fb" />
-
       {/* === 4 colored zones clipped to head shape — THEY ARE the silhouette === */}
       {zones.slice(0, count).map((z, i) => {
         const color = tplColors[z.id] ?? ZONE_COLORS[i]
@@ -86,16 +84,6 @@ export function Brain3Template({ data }: { data: BrainData }): ReactElement {
         stroke="white" strokeWidth={2.5} clipPath={`url(#${clipId})`} />
       <line x1={HX} y1={HY + zH} x2={HX + HW} y2={HY + zH}
         stroke="white" strokeWidth={2.5} clipPath={`url(#${clipId})`} />
-
-      {/* Title */}
-      <g onMouseDown={e => startDrag(e, titleId, titleBbox)}
-        transform={getTransform(titleId, titleBbox)} style={{ cursor: 'pointer' }}>
-        <text x={titleBbox.x} y={titleBbox.y + 30}
-          fontFamily="Arial, sans-serif" fontSize={26} fontWeight={800} fill="#1a1a2e">
-          {data.title || 'Brain 3 Template'}
-        </text>
-        {selectedIds.has(titleId) && renderHandles(titleBbox, titleId)}
-      </g>
 
       {/* Callouts with connectors to zone centers */}
       {calloutCfg.slice(0, count).map((cfg, i) => {

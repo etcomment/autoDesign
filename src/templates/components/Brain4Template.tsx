@@ -87,14 +87,6 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
     { align: 'right', dx: HX + HW + 38, dy: my  + pH * 0.05 },
   ]
 
-  const titleId = 'title'
-  const titleDefault = { x: 28, y: 14, width: 280, height: 42 }
-  const titlePos = positions[titleId]
-  const titleBbox = {
-    x: titlePos?.x ?? titleDefault.x, y: titlePos?.y ?? titleDefault.y,
-    width: titlePos?.width ?? titleDefault.width, height: titlePos?.height ?? titleDefault.height
-  }
-
   return (
     <g ref={svgRef}>
       <defs>
@@ -105,8 +97,6 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
           />
         </clipPath>
       </defs>
-
-      <rect x={0} y={0} width={W} height={H} fill="#f8f9fc" />
 
       {/* Lower head (jaw/neck) — neutral fill clipped to head */}
       <rect x={HX} y={pY + pH} width={HW} height={HY + HH - (pY + pH)}
@@ -147,16 +137,6 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
         transform={`translate(${HX},${HY}) scale(${HW / 300},${HH / 420})`}
         fill="none" stroke="#1a1a2e" strokeWidth={1.5}
       />
-
-      {/* Title */}
-      <g onMouseDown={e => startDrag(e, titleId, titleBbox)}
-        transform={getTransform(titleId, titleBbox)} style={{ cursor: 'pointer' }}>
-        <text x={titleBbox.x} y={titleBbox.y + 30}
-          fontFamily="Arial, sans-serif" fontSize={26} fontWeight={800} fill="#1a1a2e">
-          {data.title || 'Brain 4 Template'}
-        </text>
-        {selectedIds.has(titleId) && renderHandles(titleBbox, titleId)}
-      </g>
 
       {/* Callouts */}
       {calloutCfg.slice(0, count).map((cfg, i) => {
