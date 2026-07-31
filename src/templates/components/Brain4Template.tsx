@@ -31,12 +31,12 @@ const PIECE_3_PATH =
 const PIECES_CONFIG = [
   {
     path: PIECE_0_PATH,
-    cx: 466,
-    cy: 186,
+    cx: 460,
+    cy: 193,
     defaultColor: '#2b2a63',
-    // Wrench & Gear Icon
+    // Wrench & Gear Icon (Centered at 460, 193)
     icon: (
-      <g transform="translate(450, 168) scale(1.1)" stroke="white" strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <g transform="translate(445, 178) scale(1.1)" stroke="white" strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round">
         <circle cx={14} cy={12} r={9} />
         <path d="M 14 3 L 14 0 M 14 24 L 14 21 M 3 12 L 0 12 M 25 12 L 28 12" />
         <path d="M 6 4 L 4 2 M 22 20 L 24 22 M 6 20 L 4 22 M 22 4 L 24 2" />
@@ -47,12 +47,12 @@ const PIECES_CONFIG = [
   },
   {
     path: PIECE_1_PATH,
-    cx: 636,
-    cy: 186,
+    cx: 612,
+    cy: 193,
     defaultColor: '#3365cc',
-    // Blueprint / Grid Icon
+    // Blueprint / Grid Icon (Centered at 612, 193)
     icon: (
-      <g transform="translate(620, 170) scale(1.1)" stroke="white" strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <g transform="translate(597, 179) scale(1.1)" stroke="white" strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round">
         <rect x={0} y={0} width={30} height={28} rx={2} />
         <line x1={0} y1={14} x2={30} y2={14} />
         <line x1={15} y1={0} x2={15} y2={28} />
@@ -62,12 +62,12 @@ const PIECES_CONFIG = [
   },
   {
     path: PIECE_2_PATH,
-    cx: 466,
-    cy: 310,
+    cx: 477,
+    cy: 305,
     defaultColor: '#fdbe03',
-    // Atom / Idea Lightbulb Icon
+    // Atom / Idea Lightbulb Icon (Centered at 477, 305)
     icon: (
-      <g transform="translate(452, 296) scale(1.1)" stroke="white" strokeWidth={1.8} fill="none" strokeLinecap="round">
+      <g transform="translate(463, 291) scale(1.1)" stroke="white" strokeWidth={1.8} fill="none" strokeLinecap="round">
         <ellipse cx={14} cy={14} rx={14} ry={6} transform="rotate(-30 14 14)" />
         <ellipse cx={14} cy={14} rx={14} ry={6} transform="rotate(30 14 14)" />
         <circle cx={14} cy={14} r={3.5} fill="white" />
@@ -76,12 +76,12 @@ const PIECES_CONFIG = [
   },
   {
     path: PIECE_3_PATH,
-    cx: 636,
+    cx: 623,
     cy: 310,
     defaultColor: '#fd5237',
-    // Sliders / Picture Controls Icon
+    // Sliders / Picture Controls Icon (Centered at 623, 310)
     icon: (
-      <g transform="translate(620, 296) scale(1.1)" stroke="white" strokeWidth={1.8} fill="none" strokeLinecap="round">
+      <g transform="translate(609, 300) scale(1.1)" stroke="white" strokeWidth={1.8} fill="none" strokeLinecap="round">
         <rect x={0} y={0} width={28} height={20} rx={2} />
         <line x1={4} y1={5} x2={24} y2={5} />
         <circle cx={10} cy={5} r={2.5} fill="white" />
@@ -135,14 +135,6 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
             style={{ cursor: 'pointer' }}
             onMouseDown={e => startDrag(e, headId, headBbox)}
           />
-
-          {/* White padding outline around brain puzzle pieces */}
-          <g>
-            <path d={PIECE_0_PATH} fill="#ffffff" stroke="none" />
-            <path d={PIECE_1_PATH} fill="#ffffff" stroke="none" />
-            <path d={PIECE_2_PATH} fill="#ffffff" stroke="none" />
-            <path d={PIECE_3_PATH} fill="#ffffff" stroke="none" />
-          </g>
         </g>
         {isHeadSelected && renderHandles(headBbox, headId)}
       </g>
@@ -175,7 +167,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
                 d={piece.path}
                 fill={color}
                 stroke="#ffffff"
-                strokeWidth={1.2}
+                strokeWidth={0.8}
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 opacity={isSel ? 0.88 : 1}
