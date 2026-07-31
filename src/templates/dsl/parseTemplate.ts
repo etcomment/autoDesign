@@ -722,6 +722,7 @@ function parseBrain(dsl: string, headerTitle?: string): BrainData {
 function parseBudget(dsl: string, headerTitle?: string): BudgetData {
   const lines = getLines(dsl)
   let title: string | undefined = headerTitle
+  let totalLabel = 'Total Budget'
   let totalAmount = ''
   const items: BudgetItem[] = []
 
@@ -731,24 +732,93 @@ function parseBudget(dsl: string, headerTitle?: string): BudgetData {
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
-    const totalMatch = /^total\s+"([^"]*)"\s*$/.exec(line)
-    if (totalMatch) { totalAmount = totalMatch[1]!; continue }
+
+    const totalMatch = /^total\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
+    if (totalMatch) {
+      if (totalMatch[2]) {
+        totalLabel = stripQuotes(totalMatch[1]!)
+        totalAmount = stripQuotes(totalMatch[2]!)
+      } else {
+        totalAmount = stripQuotes(totalMatch[1]!)
+      }
+      continue
+    }
 
     var tokens = tokenizeLine(line)
-    if (tokens.tokens[0] === 'line' && tokens.tokens.length >= 4) {
+    const firstKeyword = (tokens.tokens[0] || '').toLowerCase()
+    if (['line', 'item', 'row', 'metric', 'block', 'node', 'station', 'level'].includes(firstKeyword) && tokens.tokens.length >= 2) {
       const args = tokens.tokens.slice(1)
-      const trailing = extractTrailingArgs(args, 3)
+      const trailing = extractTrailingArgs(args, 1)
+
+      const label = stripQuotes(args[0]!)
+
+      const nonKvArgs: string[] = []
+      for (let i = 1; i < args.length; i++) {
+        const arg = args[i]!
+        if (arg.startsWith('#') || arg.startsWith('val:') || arg.startsWith('pct:') || arg.startsWith('icon:') || arg.startsWith('date:') || arg.startsWith('lane:')) {
+          break
+        }
+        nonKvArgs.push(stripQuotes(arg))
+      }
+
+      let rawAmount = trailing.value ?? (nonKvArgs[0] ?? '')
+      let rawPct = trailing.percent ?? (nonKvArgs[1] ?? '')
+
+      if (!rawPct && rawAmount && (rawAmount.endsWith('%') || (!isNaN(Number(rawAmount)) && nonKvArgs.length === 1))) {
+        rawPct = rawAmount
+        rawAmount = ''
+      }
+
+      let percentage = parseFloat(rawPct.replace('%', ''))
+      if (isNaN(percentage)) {
+        percentage = 0
+      }
+
       items.push({
-        label: stripQuotes(args[0]!),
-        amount: stripQuotes(args[1]!),
-        percentage: Number(args[2]!),
-        ...trailing
+        label,
+        amount: rawAmount,
+        percentage,
+        color: trailing.color,
+        icon: trailing.icon,
+        value: trailing.value || rawAmount,
+        percent: trailing.percent || rawPct,
       })
       continue
     }
   }
 
-  return { type: 'budget', title, totalLabel: 'Total', totalAmount, items }
+  const zeroPctCount = items.filter(it => !it.percentage).length
+  if (zeroPctCount > 0 && items.length > 0) {
+    const defaultPct = Math.round(100 / items.length)
+    items.forEach(it => {
+      if (!it.percentage) {
+        it.percentage = defaultPct
+      }
+    })
+  }
+
+  if (!totalAmount && items.length > 0) {
+    let sum = 0
+    let symbol = ''
+    let valid = false
+    for (const it of items) {
+      if (it.amount) {
+        const cleaned = it.amount.replace(/[^0-9.-]/g, '')
+        const num = parseFloat(cleaned)
+        if (!isNaN(num)) {
+          sum += num
+          valid = true
+          const sym = /[$€£¥]/.exec(it.amount)
+          if (sym) symbol = sym[0]!
+        }
+      }
+    }
+    if (valid && sum > 0) {
+      totalAmount = `${symbol}${sum.toLocaleString()}`
+    }
+  }
+
+  return { type: 'budget', title, totalLabel, totalAmount, items }
 }
 
 function parseDecision(dsl: string, headerTitle?: string): DecisionTreeData {
@@ -1029,7 +1099,10 @@ export function generateDslText(type: string, data: TemplateData): string {
   if (metrics) for (const m of metrics) out += `  metric "${esc(m.label)}" "${esc(m.value)}"${m.change ? ' "' + esc(m.change) + '"' : ''}${emitTrailingArgs(m)}\n`
 
   const items = list('items')
-  if (items) for (const it of items) out += `  item "${esc(it.number)}" "${esc(it.title)}"${it.subtitle ? ' "' + esc(it.subtitle) + '"' : ''}${emitTrailingArgs(it)}\n`
+  if (items) {
+    if (d.totalLabel || d.totalAmount) out += `  total "${esc(d.totalLabel || '')}" "${esc(d.totalAmount || '')}"\n`
+    for (const it of items) out += `  item "${esc(it.label)}" "${esc(it.amount)}" "${it.percentage}%"${emitTrailingArgs(it)}\n`
+  }
 
   const segments = list('segments')
   if (segments) for (const s of segments) out += `  segment "${esc(s.number)}" "${esc(s.title)}" "${esc(s.description ?? '')}"${emitTrailingArgs(s)}\n`

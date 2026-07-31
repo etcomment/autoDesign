@@ -4,22 +4,21 @@ import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = ['#4363d8', '#f58231', '#3cb44b', '#ffe119', '#e6194B']
 const W = 1000
 const H = 600
-const TRACK_W = 120
 const R = 60
+const MARGIN_X = 100
 
 interface Rect { x: number; y: number; width: number; height: number }
 interface Point { x: number; y: number }
 
-function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, Point>, grey: Map<string, Rect>): Rect {
+function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, any>, grey: Map<string, Rect>): Rect {
   const s = pos[id]
-  if (id.startsWith('node-')) {
+  if (id.startsWith('card-')) {
     const p = layout.get(id)
     if (!p) return s || { x: 0, y: 0, width: 0, height: 0 }
-    if (s) return { ...s, width: s.width || 60, height: s.height || 60 }
-    return { x: p.x - 30, y: p.y - 30, width: 60, height: 60 }
+    if (s) return { ...s, width: s.width || 150, height: s.height || 200 }
+    return { x: p.cx - 75, y: 200, width: 150, height: 200 }
   }
   const g = grey.get(id)
   if (g) return s ? { x: s.x, y: s.y, width: s.width || g.width, height: s.height || g.height } : g
@@ -37,48 +36,25 @@ export function Roadmap16Template({ data }: { data: RoadmapData }): ReactElement
   const moveEl = useTemplateStore(s => s.moveTemplateElement)
   const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
-  const { title, milestones } = data
+  const { milestones } = data
   const N = milestones.length
+  const availableW = W - MARGIN_X * 2
 
   const pathSegments = useMemo(() => {
-    const startX = 200, startY = 150
-    const endX1 = 800
-    const endX2 = 200
-    const pathD = `M ${startX} ${startY} L ${endX1 - R} ${startY} A ${R} ${R} 0 0 1 ${endX1} ${startY + R} A ${R} ${R} 0 0 1 ${endX1 - R} ${startY + 2*R} L ${endX2 + R} ${startY + 2*R} A ${R} ${R} 0 0 0 ${endX2} ${startY + 3*R} A ${R} ${R} 0 0 0 ${endX2 + R} ${startY + 4*R} L ${endX1} ${startY + 4*R}`
-    return pathD
+    const startY = 300
+    return `M ${MARGIN_X} ${startY} L ${W - MARGIN_X} ${startY}`
   }, [])
 
   const layoutMap = useMemo(() => {
-    const m = new Map<string, Point>()
-    const points = [
-      { x: 400, y: 150 },
-      { x: 650, y: 150 },
-      { x: 350, y: 270 },
-      { x: 600, y: 270 },
-      { x: 450, y: 390 }
-    ]
+    const m = new Map<string, { cx: number }>()
     milestones.forEach((_, i) => {
-      m.set(`node-${i}`, points[i % points.length]!)
+      const cx = MARGIN_X + (N === 1 ? availableW / 2 : (i / (N - 1)) * availableW)
+      m.set(`card-${i}`, { cx })
     })
     return m
-  }, [milestones])
+  }, [milestones, availableW, N])
 
-  const greyMap = useMemo(() => {
-    const m = new Map<string, Rect>()
-    m.set('main-title', { x: 45, y: 45, width: 300, height: 40 })
-    m.set('start', { x: 100, y: 120, width: 80, height: 80 })
-    m.set('finish', { x: 800, y: 350, width: 80, height: 80 })
-    m.set('path', { x: 140, y: 140, width: 680, height: 260 })
-    milestones.forEach((_, i) => {
-      const p = layoutMap.get(`node-${i}`)
-      if (p) {
-        const cy = p.y
-        const labelY = (i === 0 || i === 1) ? cy + 60 : (i === 2 || i === 3) ? cy - 60 : cy + 60
-        m.set(`text-${i}`, { x: p.x - 75, y: labelY - 20, width: 150, height: 60 })
-      }
-    })
-    return m
-  }, [milestones, layoutMap])
+  const greyMap = useMemo(() => new Map<string, Rect>(), [])
 
   useEffect(() => {
     for (const id of [...layoutMap.keys(), ...greyMap.keys()]) {
@@ -97,23 +73,7 @@ export function Roadmap16Template({ data }: { data: RoadmapData }): ReactElement
   return (
     <g ref={svgRef}>
       {(() => {
-        const r = rects.get('main-title')!
-        const fill = tplColors['main-title'] ?? '#282c61'
-        const stroke = tplStrokeColors['main-title']
-        const sW = tplStrokeWidths['main-title'] ?? 1
-        return title ? (
-          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
-            <text x={r.x} y={r.y + 30} fontFamily="Arial, sans-serif" fontSize={36} fontWeight={800} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
-              {title}
-            </text>
-            <line x1={r.x} y1={r.y + 45} x2={r.x + 60} y2={r.y + 45} stroke={fill} strokeWidth={6} />
-            {selectedIds.has('main-title') && renderHandles(r, 'main-title')}
-          </g>
-        ) : null
-      })()}
-
-      {(() => {
-        const r = rects.get('path')!
+        const r = { x: MARGIN_X, y: 291, width: W - 2 * MARGIN_X, height: 18 }
         const color = tplColors['path'] ?? '#a9a9a9'
         const sW = tplStrokeWidths['path'] ?? 18
         return (
@@ -147,7 +107,7 @@ export function Roadmap16Template({ data }: { data: RoadmapData }): ReactElement
       {milestones.map((ms, i) => {
         const iid = `node-${i}`
         const r = rects.get(iid)!
-        const color = tplColors[iid] ?? ms.style?.fill ?? PALETTE[i % PALETTE.length]!
+        const color = tplColors[iid] ?? ms.style?.fill ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         const isSel = selectedIds.has(iid)
         const cx = r.x + r.width / 2
         const cy = r.y + r.height / 2

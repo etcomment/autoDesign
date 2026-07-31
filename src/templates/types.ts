@@ -403,8 +403,19 @@ export interface ComparisonData {
 export interface BrainData {
   type: 'brain'
   title?: string
-  centerLabel: string
-  branches: { title: string; subtitle?: string; color?: string; icon?: string }[]
+  centerLabel?: string
+  branches: {
+    title: string
+    subtitle?: string
+    color?: string
+    icon?: string
+    val?: string
+    value?: string
+    pct?: string
+    percent?: string
+    date?: string
+    number?: number
+  }[]
 }
 
 export interface BudgetItem {

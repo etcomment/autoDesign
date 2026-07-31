@@ -2,9 +2,8 @@ import { useRef, type ReactElement } from 'react'
 import type { DashboardData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50', '#ff9800']
 const GAUGE_R = 70
 const GAUGE_GAP = 40
 
@@ -28,14 +27,22 @@ export function Dashboard4Template({ data }: { data: DashboardData }): ReactElem
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const positions = useTemplateStore(s => s.templateElementPositions)
   const tplColors = useTemplateStore(s => s.templateElementColors)
 
-  const { title, metrics } = data
+  const { metrics } = data
+  const displayed = metrics && metrics.length > 0 ? metrics : [
+    { label: 'CPU Usage', value: '64%', change: '+2%' },
+    { label: 'Memory', value: '82%', change: '+5%' },
+    { label: 'Disk IO', value: '45%', change: '-1%' },
+    { label: 'Bandwidth', value: '30%', change: '+0%' },
+  ]
+
   const W = 900
-  const displayed = metrics.slice(0, 4)
-  const totalW = displayed.length * (GAUGE_R * 2 + GAUGE_GAP) - GAUGE_GAP
+  const count = Math.min(displayed.length, 4)
+  const totalW = count * (GAUGE_R * 2 + GAUGE_GAP) - GAUGE_GAP
   const startX = (W - totalW) / 2
-  const cy = 220
+  const cy = 180
 
   const values = displayed.map(m => {
     const v = parseValue(m.value)
@@ -44,62 +51,66 @@ export function Dashboard4Template({ data }: { data: DashboardData }): ReactElem
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={44} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
-          {title}
-        </text>
-      )}
-
-      {displayed.map((metric, i) => {
+      {displayed.slice(0, count).map((metric, i) => {
+        const elementId = `metric-${i}`
         const cx = startX + i * (GAUGE_R * 2 + GAUGE_GAP) + GAUGE_R
-        const color = tplColors[`metric-${i}`] ?? metric.color ?? PALETTE[i % PALETTE.length]!
+        const color = tplColors[elementId] ?? metric.color ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         const pct = values[i]!
         const needleAngle = 180 - pct * 180
 
         const bgArc = gaugeArc(GAUGE_R, 0, 180)
         const valArc = gaugeArc(GAUGE_R, 180 - pct * 180, 180)
 
-        const nx = cx + GAUGE_R * 0.75 * Math.cos((needleAngle * Math.PI) / 180)
-        const ny = cy + GAUGE_R * 0.75 * Math.sin((needleAngle * Math.PI) / 180)
-
-        const elementId = `metric-${i}`
+        const defaultBbox = { x: cx - GAUGE_R, y: cy - GAUGE_R - 10, width: GAUGE_R * 2, height: GAUGE_R + 100 }
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos?.x ?? defaultBbox.x,
+          y: customPos?.y ?? defaultBbox.y,
+          width: customPos?.width ?? defaultBbox.width,
+          height: customPos?.height ?? defaultBbox.height,
+        }
         const isSelected = selectedIds.has(elementId)
-        const visualRect = { x: cx - GAUGE_R, y: cy - GAUGE_R - 10, width: GAUGE_R * 2, height: GAUGE_R + 60 }
+        const centerCx = bbox.x + bbox.width / 2
+        const centerCy = bbox.y + GAUGE_R + 10
+
+        const nx = centerCx + GAUGE_R * 0.75 * Math.cos((needleAngle * Math.PI) / 180)
+        const ny = centerCy + GAUGE_R * 0.75 * Math.sin((needleAngle * Math.PI) / 180)
 
         return (
-          <g key={i}>
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <g transform={`translate(${cx}, ${cy})`}>
-                {isSelected && (
-                  <rect x={-GAUGE_R - 5} y={-GAUGE_R - 15} width={GAUGE_R * 2 + 10} height={GAUGE_R + 75} rx={8} fill="none" stroke="#4a90d9" strokeWidth={2} strokeDasharray="6 3" />
-                )}
-                <path d={bgArc} fill="none" stroke="#edf2f7" strokeWidth={14} strokeLinecap="round" />
-                <path d={valArc} fill="none" stroke={color} strokeWidth={14} strokeLinecap="round" />
+          <g
+            key={elementId}
+            onMouseDown={e => startDrag(e, elementId, bbox)}
+            transform={getTransform(elementId, bbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <g transform={`translate(${centerCx}, ${centerCy})`}>
+              <path d={bgArc} fill="none" stroke="#edf2f7" strokeWidth={14} strokeLinecap="round" />
+              <path d={valArc} fill="none" stroke={color} strokeWidth={14} strokeLinecap="round" />
 
-                <line x1={0} y1={0} x2={nx - cx} y2={ny - cy} stroke="#1a202c" strokeWidth={2.5} />
-                <circle cx={0} cy={0} r={6} fill="#1a202c" />
-                <circle cx={0} cy={0} r={3} fill="white" />
-              </g>
-
-              <text x={cx} y={cy + GAUGE_R + 44} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={18} fontWeight={800} fill={color}>
-                {metric.value}
-              </text>
-
-              <text x={cx} y={cy + GAUGE_R + 66} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#718096">
-                {metric.label.toUpperCase()}
-              </text>
-
-              {metric.change && (
-                <text x={cx} y={cy + GAUGE_R + 82} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill={metric.change.startsWith('+') ? '#48bb78' : '#f56565'}>
-                  {metric.change}
-                </text>
-              )}
-
-              {isSelected && renderHandles(visualRect, elementId)}
+              <line x1={0} y1={0} x2={nx - centerCx} y2={ny - centerCy} stroke="#1a202c" strokeWidth={2.5} />
+              <circle cx={0} cy={0} r={6} fill="#1a202c" />
+              <circle cx={0} cy={0} r={3} fill="white" />
             </g>
+
+            <text x={centerCx} y={centerCy + GAUGE_R + 32} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={18} fontWeight={800} fill={color}>
+              {metric.value}
+            </text>
+
+            <text x={centerCx} y={centerCy + GAUGE_R + 52} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#718096">
+              {metric.label.toUpperCase()}
+            </text>
+
+            {metric.change && (
+              <text x={centerCx} y={centerCy + GAUGE_R + 68} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill={metric.change.startsWith('+') ? '#48bb78' : '#f56565'}>
+                {metric.change}
+              </text>
+            )}
+
+            {isSelected && renderHandles(bbox, elementId)}
           </g>
         )
       })}
     </g>
   )
 }
+

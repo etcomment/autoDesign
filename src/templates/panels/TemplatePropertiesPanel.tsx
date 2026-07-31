@@ -94,6 +94,8 @@ const collectionKeys: Record<string, string> = {
   quadrant: 'quadrants',
 }
 
+const numericFields = new Set(['percentage', 'width', 'height', 'x', 'y'])
+
 function updateElementField(
   elementId: string,
   field: string,
@@ -107,9 +109,10 @@ function updateElementField(
   if (!collectionKey) return templateData
   const items = templateData[collectionKey] as Record<string, unknown>[] | undefined
   if (!items || !items[index]) return templateData
+  const coerced = numericFields.has(field) ? (value === '' ? '' : Number(value)) : value
   const newItems = items.map((item, i) => {
     if (i !== index) return item
-    return { ...item, [field]: value }
+    return { ...item, [field]: coerced }
   })
   return { ...templateData, [collectionKey]: newItems }
 }
@@ -152,6 +155,8 @@ export function TemplatePropertiesPanel() {
   const collKey = collectionKeys[prefix]
   let currentTitle = ''
   let currentSubtitle = ''
+  let currentAmount = ''
+  let currentPercentage = ''
 
   if (templateData) {
     if (primaryId === 'title' && typeof templateData.title === 'string') {
@@ -159,8 +164,10 @@ export function TemplatePropertiesPanel() {
     } else if (collKey && !isNaN(paramIndex)) {
       const items = (templateData as unknown as Record<string, unknown>)[collKey] as Record<string, string>[] | undefined
       if (items && items[paramIndex]) {
-        currentTitle = items[paramIndex].title ?? items[paramIndex].name ?? items[paramIndex].text ?? ''
+        currentTitle = items[paramIndex].label ?? items[paramIndex].title ?? items[paramIndex].name ?? items[paramIndex].text ?? ''
         currentSubtitle = items[paramIndex].subtitle ?? items[paramIndex].description ?? ''
+        currentAmount = items[paramIndex].amount ?? ''
+        currentPercentage = items[paramIndex].percentage != null ? String(items[paramIndex].percentage) : ''
       }
     }
   }
@@ -207,6 +214,34 @@ export function TemplatePropertiesPanel() {
             placeholder="Description..."
             style={styles.textarea}
             rows={3}
+          />
+        </div>
+      )}
+
+      {!isMulti && prefix === 'item' && currentAmount !== '' && (
+        <div style={styles.section}>
+          <label style={styles.sectionLabel}>Montant / Tarif</label>
+          <input
+            type="text"
+            value={currentAmount}
+            onChange={(e) => handleFieldChange('amount', e.target.value)}
+            placeholder="Ex: €40,000"
+            style={styles.textInput}
+          />
+        </div>
+      )}
+
+      {!isMulti && prefix === 'item' && currentPercentage !== '' && (
+        <div style={styles.section}>
+          <label style={styles.sectionLabel}>Pourcentage</label>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={currentPercentage}
+            onChange={(e) => handleFieldChange('percentage', e.target.value)}
+            placeholder="Ex: 40"
+            style={styles.textInput}
           />
         </div>
       )}

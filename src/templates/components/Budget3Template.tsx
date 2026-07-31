@@ -3,39 +3,41 @@ import type { BudgetData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
-
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db']
+import { TEMPLATE_ICONS } from '../shared/icons'
 
 export function Budget3Template({ data }: { data: BudgetData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const positions = useTemplateStore(s => s.templateElementPositions)
   const tplColors = useTemplateStore(s => s.templateElementColors)
 
-  const { title, totalLabel, totalAmount, items } = data
+  const items = data.items && data.items.length > 0 ? data.items : [
+    { label: 'Category A', percentage: 35, amount: '€35,000' },
+    { label: 'Category B', percentage: 25, amount: '€25,000' },
+    { label: 'Category C', percentage: 20, amount: '€20,000' },
+    { label: 'Category D', percentage: 20, amount: '€20,000' },
+  ]
+  const totalLabel = data.totalLabel || 'Total'
+  const totalAmount = data.totalAmount || '€100,000'
+
   const W = 900
-  const H = 600
+  const H = 480
   const cx = W / 2
-  const cy = H / 2 + 20
-  const outerR = 160
-  const innerR = 90
+  const cy = H / 2
+  const outerR = 150
+  const innerR = 85
   const labelR = outerR + 40
-  const total = items.reduce((s, it) => s + it.percentage, 0)
+  const total = Math.max(1, items.reduce((s, it) => s + it.percentage, 0))
 
   let cumulative = -90
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
-          {title}
-        </text>
-      )}
-
       {items.map((item, i) => {
         const elementId = `item-${i}`
-        const color = tplColors[elementId] ?? item.color ?? PALETTE[i % PALETTE.length]!
-        const isSelected = selectedIds.has(elementId)
+        const color = tplColors[elementId] ?? item.color ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
+
         const sliceAngle = (item.percentage / total) * 360
         const startAngle = cumulative
         const endAngle = startAngle + sliceAngle
@@ -63,29 +65,127 @@ export function Budget3Template({ data }: { data: BudgetData }): ReactElement {
 
         const midAngle = (startAngle + endAngle) / 2
         const midRad = (midAngle * Math.PI) / 180
-        const lx = cx + labelR * Math.cos(midRad)
-        const ly = cy + labelR * Math.sin(midRad)
+        const defaultLx = cx + labelR * Math.cos(midRad) - 40
+        const defaultLy = cy + labelR * Math.sin(midRad) - 16
+
+        const defaultBbox = { x: defaultLx, y: defaultLy, width: 80, height: 32 }
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos?.x ?? defaultBbox.x,
+          y: customPos?.y ?? defaultBbox.y,
+          width: customPos?.width ?? defaultBbox.width,
+          height: customPos?.height ?? defaultBbox.height,
+        }
+        const isSelected = selectedIds.has(elementId)
 
         return (
-          <g key={i}>
-            <path d={d} fill={color} opacity={isSelected ? 1 : 0.8} stroke={isSelected ? '#4a90d9' : 'white'} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} style={{ cursor: 'pointer' }} data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, { x: lx - 40, y: ly - 12, width: 80, height: 24 })} transform={getTransform(elementId, { x: lx - 40, y: ly - 12, width: 80, height: 24 })} />
-            <text x={lx} y={ly - 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill="#333">
-              {item.label}
-            </text>
-            <text x={lx} y={ly + 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#888">
-              {Math.round(item.percentage)}%
-            </text>
+          <g key={elementId}>
+            <g
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <path
+                d={d}
+                fill={color}
+                opacity={isSelected ? 1 : 0.88}
+                stroke={isSelected ? '#4a90d9' : 'white'}
+                strokeWidth={isSelected ? 2.5 : 2}
+              />
+
+              <rect
+                x={bbox.x}
+                y={bbox.y}
+                width={bbox.width}
+                height={bbox.height}
+                rx={4}
+                fill="white"
+                stroke={color}
+                strokeWidth={1}
+                filter="drop-shadow(0 1px 3px rgba(0,0,0,0.1))"
+              />
+              <text
+                x={bbox.x + bbox.width / 2}
+                y={bbox.y + 14}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={10}
+                fontWeight={700}
+                fill="#333"
+              >
+                {item.label}
+              </text>
+              <text
+                x={bbox.x + bbox.width / 2}
+                y={bbox.y + 26}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={9}
+                fill={color}
+              >
+                {Math.round(item.percentage)}%
+              </text>
+              {item.icon && (() => {
+                const IconFn = TEMPLATE_ICONS[item.icon]
+                return IconFn ? (
+                  <g transform={`translate(${bbox.x + bbox.width / 2 - 8}, ${bbox.y + bbox.height - 14})`}>
+                    <IconFn size={16} color={color} />
+                  </g>
+                ) : null
+              })()}
+              {isSelected && renderHandles(bbox, elementId)}
+            </g>
           </g>
         )
       })}
 
-      <circle cx={cx} cy={cy} r={innerR} fill="white" stroke="#e0e0e0" strokeWidth={1} />
-      <text x={cx} y={cy - 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="#333">
-        {totalLabel}
-      </text>
-      <text x={cx} y={cy + 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={16} fontWeight={700} fill="#1a1a2e">
-        {totalAmount}
-      </text>
+      {/* Center Donut Hole summary */}
+      {(() => {
+        const centerId = 'donut-center'
+        const defaultBbox = { x: cx - innerR, y: cy - innerR, width: innerR * 2, height: innerR * 2 }
+        const customPos = positions[centerId]
+        const bbox = {
+          x: customPos?.x ?? defaultBbox.x,
+          y: customPos?.y ?? defaultBbox.y,
+          width: customPos?.width ?? defaultBbox.width,
+          height: customPos?.height ?? defaultBbox.height,
+        }
+        const isSelected = selectedIds.has(centerId)
+
+        return (
+          <g
+            key={centerId}
+            onMouseDown={e => startDrag(e, centerId, bbox)}
+            transform={getTransform(centerId, bbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <circle cx={bbox.x + bbox.width / 2} cy={bbox.y + bbox.height / 2} r={innerR} fill="transparent" stroke="#e0e0e0" strokeWidth={1} />
+            <text
+              x={bbox.x + bbox.width / 2}
+              y={bbox.y + bbox.height / 2 - 8}
+              textAnchor="middle"
+              fontFamily="Arial, sans-serif"
+              fontSize={12}
+              fontWeight={700}
+              fill="#333"
+            >
+              {totalLabel}
+            </text>
+            <text
+              x={bbox.x + bbox.width / 2}
+              y={bbox.y + bbox.height / 2 + 14}
+              textAnchor="middle"
+              fontFamily="Arial, sans-serif"
+              fontSize={16}
+              fontWeight={700}
+              fill="#1a1a2e"
+            >
+              {totalAmount}
+            </text>
+            {isSelected && renderHandles(bbox, centerId)}
+          </g>
+        )
+      })()}
     </g>
   )
 }

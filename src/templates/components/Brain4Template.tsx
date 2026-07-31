@@ -1,59 +1,98 @@
-import { useRef, type ReactElement } from 'react'
+import { useRef, useId, type ReactElement } from 'react'
 import type { BrainData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { HEAD_PATH } from '../shared/headPath'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PIECE_COLORS = ['#23255a', '#2d62ed', '#ffbe00', '#ff4a2b']
+/** Interlocking puzzle pieces in rectangle (ox,oy,pw,ph) for count items */
+function makePuzzlePieces(ox: number, oy: number, pw: number, ph: number, count: number): { path: string; cx: number; cy: number }[] {
+  if (count === 4) {
+    const mx = ox + pw / 2
+    const my = oy + ph / 2
+    const t = Math.min(pw, ph) * 0.10
 
-/** 4 interlocking puzzle pieces in rectangle (ox,oy,pw,ph) with semicircular tabs */
-function makePuzzlePieces(ox: number, oy: number, pw: number, ph: number): string[] {
-  const mx = ox + pw / 2
-  const my = oy + ph / 2
-  const t = Math.min(pw, ph) * 0.10
+    const tl = `M ${ox} ${oy}
+      L ${mx - t} ${oy} A ${t} ${t} 0 0 0 ${mx + t} ${oy} L ${ox + pw} ${oy}
+      L ${ox + pw} ${my - t} A ${t} ${t} 0 0 1 ${ox + pw} ${my + t} L ${ox + pw} ${oy + ph}
+      L ${mx + t} ${oy + ph} A ${t} ${t} 0 0 1 ${mx - t} ${oy + ph} L ${ox} ${oy + ph}
+      L ${ox} ${my + t} A ${t} ${t} 0 0 0 ${ox} ${my - t} Z`
 
-  // TL: right tab OUT, bottom tab OUT, left tab IN, top tab IN
-  const tl = `M ${ox} ${oy}
-    L ${mx - t} ${oy} A ${t} ${t} 0 0 0 ${mx + t} ${oy} L ${ox + pw} ${oy}
-    L ${ox + pw} ${my - t} A ${t} ${t} 0 0 1 ${ox + pw} ${my + t} L ${ox + pw} ${oy + ph}
-    L ${mx + t} ${oy + ph} A ${t} ${t} 0 0 1 ${mx - t} ${oy + ph} L ${ox} ${oy + ph}
-    L ${ox} ${my + t} A ${t} ${t} 0 0 0 ${ox} ${my - t} Z`
+    const tr = `M ${mx - t} ${oy} A ${t} ${t} 0 0 0 ${mx + t} ${oy}
+      L ${ox + pw} ${oy} L ${ox + pw} ${my - t} A ${t} ${t} 0 0 1 ${ox + pw} ${my + t}
+      L ${ox + pw} ${oy + ph}
+      L ${mx + t} ${oy + ph} A ${t} ${t} 0 0 1 ${mx - t} ${oy + ph}
+      L ${mx - t} ${my + t} A ${t} ${t} 0 0 1 ${mx + t} ${my - t} L ${mx + t} ${oy} Z`
 
-  // TR: left tab IN (concave), bottom tab OUT, right straight, top straight
-  const tr = `M ${mx - t} ${oy} A ${t} ${t} 0 0 0 ${mx + t} ${oy}
-    L ${ox + pw} ${oy} L ${ox + pw} ${my - t} A ${t} ${t} 0 0 1 ${ox + pw} ${my + t}
-    L ${ox + pw} ${oy + ph}
-    L ${mx + t} ${oy + ph} A ${t} ${t} 0 0 1 ${mx - t} ${oy + ph}
-    L ${mx - t} ${my + t} A ${t} ${t} 0 0 1 ${mx + t} ${my - t} L ${mx + t} ${oy} Z`
+    const bl = `M ${ox} ${oy}
+      L ${mx - t} ${oy} A ${t} ${t} 0 0 0 ${mx + t} ${oy}
+      L ${mx + t} ${my - t} A ${t} ${t} 0 0 1 ${mx - t} ${my + t}
+      L ${mx - t} ${oy + ph} A ${t} ${t} 0 0 0 ${mx + t} ${oy + ph}
+      L ${ox + pw} ${oy + ph} L ${ox + pw} ${oy}
+      L ${ox} ${oy} Z`
 
-  // BL: right tab OUT, top tab IN (concave), left straight, bottom straight
-  const bl = `M ${ox} ${oy}
-    L ${mx - t} ${oy} A ${t} ${t} 0 0 0 ${mx + t} ${oy}
-    L ${mx + t} ${my - t} A ${t} ${t} 0 0 1 ${mx - t} ${my + t}
-    L ${mx - t} ${oy + ph} A ${t} ${t} 0 0 0 ${mx + t} ${oy + ph}
-    L ${ox + pw} ${oy + ph} L ${ox + pw} ${oy}
-    L ${ox} ${oy} Z`
+    const br = `M ${mx - t} ${oy} A ${t} ${t} 0 0 0 ${mx + t} ${oy}
+      L ${ox + pw} ${oy} L ${ox + pw} ${oy + ph}
+      L ${mx + t} ${oy + ph} A ${t} ${t} 0 0 0 ${mx - t} ${oy + ph}
+      L ${mx - t} ${my + t} A ${t} ${t} 0 0 1 ${mx + t} ${my - t}
+      L ${mx + t} ${oy} Z`
 
-  // BR: left tab IN, top tab IN, right straight, bottom straight
-  const br = `M ${mx - t} ${oy} A ${t} ${t} 0 0 0 ${mx + t} ${oy}
-    L ${ox + pw} ${oy} L ${ox + pw} ${oy + ph}
-    L ${mx + t} ${oy + ph} A ${t} ${t} 0 0 0 ${mx - t} ${oy + ph}
-    L ${mx - t} ${my + t} A ${t} ${t} 0 0 1 ${mx + t} ${my - t}
-    L ${mx + t} ${oy} Z`
+    return [
+      { path: tl, cx: ox + pw * 0.25, cy: oy + ph * 0.25 },
+      { path: tr, cx: mx + pw * 0.25, cy: oy + ph * 0.25 },
+      { path: bl, cx: ox + pw * 0.25, cy: my + ph * 0.25 },
+      { path: br, cx: mx + pw * 0.25, cy: my + ph * 0.25 },
+    ]
+  }
 
-  return [tl, tr, bl, br]
+  const sliceH = ph / count
+  const result: { path: string; cx: number; cy: number }[] = []
+  const tabR = Math.min(pw, sliceH) * 0.15
+
+  for (let i = 0; i < count; i++) {
+    const sY = oy + i * sliceH
+    const eY = oy + (i + 1) * sliceH
+    const midX = ox + pw * 0.5
+
+    let path = `M ${ox} ${sY}`
+    if (i === 0) {
+      path += ` L ${ox + pw} ${sY}`
+    } else {
+      path += ` L ${midX - tabR} ${sY} A ${tabR} ${tabR} 0 0 ${i % 2 === 0 ? '1' : '0'} ${midX + tabR} ${sY} L ${ox + pw} ${sY}`
+    }
+    path += ` L ${ox + pw} ${eY}`
+    if (i === count - 1) {
+      path += ` L ${ox} ${eY}`
+    } else {
+      path += ` L ${midX + tabR} ${eY} A ${tabR} ${tabR} 0 0 ${i % 2 === 0 ? '0' : '1'} ${midX - tabR} ${eY} L ${ox} ${eY}`
+    }
+    path += ` Z`
+
+    result.push({ path, cx: ox + pw / 2, cy: sY + sliceH / 2 })
+  }
+  return result
 }
 
 export function Brain4Template({ data }: { data: BrainData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
+  const uid = useId().replace(/:/g, '')
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const W = 1000, H = 600
-  const HX = 330, HY = 48, HW = 285, HH = 465
-  const clipId = 'brain4-head-clip'
+  const headId = 'head'
+  const headDef = { x: 330, y: 48, width: 285, height: 465 }
+  const headPos = positions[headId]
+  const headBbox = {
+    x: headPos?.x ?? headDef.x,
+    y: headPos?.y ?? headDef.y,
+    width: headPos?.width ?? headDef.width,
+    height: headPos?.height ?? headDef.height,
+  }
+  const isHeadSelected = selectedIds.has(headId)
+
+  const clipId = `clip-${uid}-head`
 
   const branches = data.branches.length > 0 ? data.branches : [
     { title: 'Planning', subtitle: 'Strategic goals and analysis' },
@@ -61,31 +100,15 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
     { title: 'Design', subtitle: 'Architecture and blueprints' },
     { title: 'Marketing', subtitle: 'Go-to-market strategy' },
   ]
-  const count = Math.min(branches.length, 4)
+  const count = Math.max(1, branches.length)
 
   // Brain/cranium area (top portion of the head)
-  const pX = HX + HW * 0.08
-  const pY = HY + HH * 0.03
-  const pW = HW * 0.82
-  const pH = HH * 0.53
-  const mx = pX + pW / 2
-  const my = pY + pH / 2
+  const pX = headBbox.x + headBbox.width * 0.08
+  const pY = headBbox.y + headBbox.height * 0.03
+  const pW = headBbox.width * 0.82
+  const pH = headBbox.height * 0.53
 
-  const pieceIds = ['piece-tl', 'piece-tr', 'piece-bl', 'piece-br']
-  const pieces = makePuzzlePieces(pX, pY, pW, pH)
-  const pieceCenters = [
-    { cx: pX + pW * 0.25, cy: pY + pH * 0.25 },
-    { cx: mx  + pW * 0.25, cy: pY + pH * 0.25 },
-    { cx: pX + pW * 0.25, cy: my  + pH * 0.25 },
-    { cx: mx  + pW * 0.25, cy: my  + pH * 0.25 },
-  ]
-
-  const calloutCfg = [
-    { align: 'left',  dx: 22,           dy: pY + pH * 0.08 },
-    { align: 'right', dx: HX + HW + 38, dy: pY + pH * 0.08 },
-    { align: 'left',  dx: 22,           dy: my  + pH * 0.05 },
-    { align: 'right', dx: HX + HW + 38, dy: my  + pH * 0.05 },
-  ]
+  const puzzlePieces = makePuzzlePieces(pX, pY, pW, pH, count)
 
   return (
     <g ref={svgRef}>
@@ -93,86 +116,103 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
         <clipPath id={clipId}>
           <path
             d={HEAD_PATH}
-            transform={`translate(${HX},${HY}) scale(${HW / 300},${HH / 420})`}
+            transform={`translate(${headBbox.x},${headBbox.y}) scale(${headBbox.width / 300},${headBbox.height / 420})`}
           />
         </clipPath>
       </defs>
 
-      {/* Lower head (jaw/neck) — neutral fill clipped to head */}
-      <rect x={HX} y={pY + pH} width={HW} height={HY + HH - (pY + pH)}
-        fill="#d2d5de" clipPath={`url(#${clipId})`} />
+      {/* Head silhouette container — Interactive */}
+      <g transform={getTransform(headId, headBbox)}>
+        {/* Lower head (jaw/neck) — neutral fill clipped to head */}
+        <rect x={headBbox.x} y={pY + pH} width={headBbox.width} height={headBbox.y + headBbox.height - (pY + pH)}
+          fill="#d2d5de" clipPath={`url(#${clipId})`} />
 
-      {/* 4 puzzle pieces = the cranium */}
-      {pieces.slice(0, count).map((piecePath, i) => {
-        const pid = pieceIds[i] ?? `piece-${i}`
-        const color = tplColors[pid] ?? PIECE_COLORS[i % PIECE_COLORS.length]
-        const pc = pieceCenters[i] ?? { cx: mx, cy: my }
-        const pDef = { x: pc.cx - pW / 4, y: pc.cy - pH / 4, width: pW / 2, height: pH / 2 }
-        const pos = positions[pid]
-        const bbox = {
-          x: pos?.x ?? pDef.x, y: pos?.y ?? pDef.y,
-          width: pos?.width ?? pDef.width, height: pos?.height ?? pDef.height
-        }
-        const isSel = selectedIds.has(pid)
-        return (
-          <g key={pid}
-            onMouseDown={e => startDrag(e, pid, bbox)}
-            transform={getTransform(pid, bbox)}
-            style={{ cursor: 'pointer' }}>
-            <path d={piecePath} fill={color} stroke="white" strokeWidth={2.5}
-              strokeLinejoin="round" opacity={isSel ? 0.8 : 1} />
-            <text x={pc.cx} y={pc.cy + 8} textAnchor="middle"
-              fontFamily="Arial, sans-serif" fontSize={18} fontWeight={900}
-              fill="rgba(255,255,255,0.28)">
-              0{i + 1}
-            </text>
-            {isSel && renderHandles(bbox, pid)}
-          </g>
-        )
-      })}
+        {/* Puzzle pieces = the cranium */}
+        {puzzlePieces.map((piece, i) => {
+          const pid = `piece-${i}`
+          const color = tplColors[pid] ?? branches[i]?.color ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
+          const pDef = { x: piece.cx - pW / 4, y: piece.cy - pH / 4, width: pW / 2, height: pH / 2 }
+          const pos = positions[pid]
+          const bbox = {
+            x: pos?.x ?? pDef.x, y: pos?.y ?? pDef.y,
+            width: pos?.width ?? pDef.width, height: pos?.height ?? pDef.height
+          }
+          const isSel = selectedIds.has(pid)
+          return (
+            <g key={pid}
+              onMouseDown={e => startDrag(e, pid, bbox)}
+              transform={getTransform(pid, bbox)}
+              style={{ cursor: 'pointer' }}>
+              <path d={piece.path} fill={color} stroke="white" strokeWidth={2.5}
+                strokeLinejoin="round" opacity={isSel ? 0.8 : 1} clipPath={`url(#${clipId})`} />
+              <text x={piece.cx} y={piece.cy + 6} textAnchor="middle"
+                fontFamily="Arial, sans-serif" fontSize={16} fontWeight={900}
+                fill="rgba(255,255,255,0.85)">
+                0{i + 1}
+              </text>
+              {isSel && renderHandles(bbox, pid)}
+            </g>
+          )
+        })}
 
-      {/* Head outline */}
-      <path
-        d={HEAD_PATH}
-        transform={`translate(${HX},${HY}) scale(${HW / 300},${HH / 420})`}
-        fill="none" stroke="#1a1a2e" strokeWidth={1.5}
-      />
+        {/* Head outline */}
+        <path
+          d={HEAD_PATH}
+          transform={`translate(${headBbox.x},${headBbox.y}) scale(${headBbox.width / 300},${headBbox.height / 420})`}
+          fill="none" stroke={isHeadSelected ? '#4a90d9' : '#1a1a2e'} strokeWidth={isHeadSelected ? 3 : 1.5}
+          style={{ cursor: 'pointer' }}
+          onMouseDown={e => startDrag(e, headId, headBbox)}
+        />
+        {isHeadSelected && renderHandles(headBbox, headId)}
+      </g>
 
-      {/* Callouts */}
-      {calloutCfg.slice(0, count).map((cfg, i) => {
+      {/* Callouts with Dynamic Connectors */}
+      {branches.map((branch, i) => {
         const id = `callout-${i}`
-        const color = tplColors[pieceIds[i] ?? ''] ?? PIECE_COLORS[i % PIECE_COLORS.length]
-        const isLeft = cfg.align === 'left'
+        const pieceId = `piece-${i}`
+        const color = tplColors[id] ?? branch.color ?? tplColors[pieceId] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
+        const isLeft = i % 2 === 0
         const cW = 230, cH = 74
+
+        const piece = puzzlePieces[i] ?? puzzlePieces[0]!
+        const piecePos = positions[pieceId]
+        const pcX = piecePos ? piecePos.x + piecePos.width / 2 : piece.cx
+        const pcY = piecePos ? piecePos.y + piecePos.height / 2 : piece.cy
+
+        const defaultDx = isLeft ? 22 : headBbox.x + headBbox.width + 38
+        const defaultDy = pcY - cH / 2
+
         const pos = positions[id]
         const bbox = {
-          x: pos?.x ?? cfg.dx, y: pos?.y ?? cfg.dy,
+          x: pos?.x ?? defaultDx, y: pos?.y ?? defaultDy,
           width: pos?.width ?? cW, height: pos?.height ?? cH
         }
         const isSel = selectedIds.has(id)
-        const pc = pieceCenters[i] ?? { cx: mx, cy: my }
-        const connX = isLeft ? bbox.x + bbox.width : bbox.x
+        const connStartX = isLeft ? bbox.x + bbox.width : bbox.x
+        const connStartY = bbox.y + bbox.height / 2
 
         return (
           <g key={id}>
-            <line x1={connX} y1={bbox.y + bbox.height / 2}
-              x2={pc.cx} y2={pc.cy}
-              stroke={color} strokeWidth={1.5} strokeDasharray="5 3" />
-            <circle cx={pc.cx} cy={pc.cy} r={5} fill={color} />
+            {/* Dynamic connector line */}
+            <line x1={connStartX} y1={connStartY}
+              x2={pcX} y2={pcY}
+              stroke={color} strokeWidth={1.5} strokeDasharray="5 3" opacity={0.85} />
+            <circle cx={pcX} cy={pcY} r={5} fill={color} />
+
             <g onMouseDown={e => startDrag(e, id, bbox)}
               transform={getTransform(id, bbox)} style={{ cursor: 'pointer' }}>
               <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8}
-                fill="white" stroke={color} strokeWidth={2}
+                fill="#ffffff" stroke={isSel ? '#4a90d9' : color} strokeWidth={isSel ? 2.5 : 2}
                 filter="drop-shadow(0 2px 8px rgba(0,0,0,0.09))" />
               <rect x={isLeft ? bbox.x : bbox.x + bbox.width - 6} y={bbox.y}
                 width={6} height={bbox.height} rx={3} fill={color} />
               <text x={isLeft ? bbox.x + 16 : bbox.x + 12} y={bbox.y + 25}
                 fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#1a1a2e">
-                {branches[i]?.title ?? `Step ${i + 1}`}
+                {branch.title}
               </text>
               <text x={isLeft ? bbox.x + 16 : bbox.x + 12} y={bbox.y + 48}
                 fontFamily="Arial, sans-serif" fontSize={11} fill="#666">
-                {branches[i]?.subtitle ?? `Description ${i + 1}`}
+                {branch.subtitle ?? `Description ${i + 1}`}
               </text>
               {isSel && renderHandles(bbox, id)}
             </g>

@@ -53,7 +53,7 @@ export function BrainTemplate({ data }: { data: BrainData }): ReactElement {
     { title: 'Marketing', subtitle: 'Go to market' },
   ]
   
-  // Subdivision dynamique des bandes horizontales en fonction du nombre de branches
+  // Dynamic subdivision of horizontal bands based on number of branches
   const count = Math.max(1, branches.length)
   const visibleH = CROP_NECK_Y - HY
   const bandH = visibleH / count
@@ -84,7 +84,7 @@ export function BrainTemplate({ data }: { data: BrainData }): ReactElement {
         })}
       </defs>
 
-      {/* Chaque bande devient un élément totalement indépendant (drag, resize, rotate) */}
+      {/* Each band is interactive (drag, resize, select) */}
       {branches.map((branch, i) => {
         const id = `band-${i}`
         const defaultY = HY + i * bandH
@@ -96,14 +96,7 @@ export function BrainTemplate({ data }: { data: BrainData }): ReactElement {
           height: pos?.height ?? bandH,
         }
         
-        // La hauteur totale virtuelle de la tête, ajustée proportionnellement à la largeur
-        // (pour que le clipPath garde les bonnes proportions du visage)
-        const currentTotalH = (bbox.width / 300) * 480
         const currentBandH = bbox.height
-        
-        // Origine Y de la tête pour que la bande 'i' tape exactement au bon endroit du visage
-        const headOriginY = bbox.y - (i * (visibleH / count) * (bbox.width / 300))
-
         const isSel = selectedIds.has(id)
         const shades = BAND_SHADES[i % BAND_SHADES.length] ?? BAND_SHADES[0]!
         const customBase = tplColors[id] ?? branch.color
@@ -118,8 +111,6 @@ export function BrainTemplate({ data }: { data: BrainData }): ReactElement {
 
         return (
           <g key={id}>
-            {/* Le groupe principal qui reçoit la rotation. 
-                Comme le clipPath est utilisé ici, il tournera AVEC les rectangles. */}
             <g transform={getTransform(id, bbox)} style={{ cursor: 'pointer' }}
                onMouseDown={e => startDrag(e, id, bbox)}>
                
@@ -140,8 +131,8 @@ export function BrainTemplate({ data }: { data: BrainData }): ReactElement {
                 <BandIcon iconName={branch.icon} index={i} />
               </g>
 
-              {/* Overlay invisible pour capter les clics sur toute la zone de la bbox */}
-              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={currentBandH} fill="transparent" stroke="none" />
+              {/* Transparent overlay for selection & dragging */}
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={currentBandH} fill="transparent" stroke={isSel ? '#4a90d9' : 'none'} strokeWidth={isSel ? 2 : 0} />
               
               {isSel && renderHandles(bbox, id)}
             </g>
@@ -149,12 +140,12 @@ export function BrainTemplate({ data }: { data: BrainData }): ReactElement {
         )
       })}
 
-      {/* Callouts */}
+      {/* Callouts with Dynamic Connectors */}
       {branches.map((branch, i) => {
         const id = `callout-${i}`
         const bandId = `band-${i}`
         
-        // Coordonnées de la bande pour y accrocher le connecteur
+        // Coordonnées dynamiques de la bande pour y accrocher le connecteur
         const bandPos = positions[bandId]
         const bX = bandPos?.x ?? HX
         const bY = bandPos?.y ?? (HY + i * bandH)
@@ -165,9 +156,9 @@ export function BrainTemplate({ data }: { data: BrainData }): ReactElement {
         const cW = 260, cH = 64
         
         const bandCy = bY + bH / 2
-        const connX = isLeft ? bX : bX + bW
+        const connTargetX = isLeft ? bX : bX + bW
         
-        const cDefaultX = isLeft ? 24 : connX + 36
+        const cDefaultX = isLeft ? 24 : connTargetX + 36
         const cDefaultY = bandCy - cH / 2
         
         const pos = positions[id]
@@ -179,22 +170,23 @@ export function BrainTemplate({ data }: { data: BrainData }): ReactElement {
         }
         const isSel = selectedIds.has(id)
         
-        const shades = BAND_SHADES[i % BAND_SHADES.length] ?? BAND_SHADES[0]!
-        const color = tplColors[bandId] ?? branch.color ?? shades[1]
+        const color = tplColors[id] ?? branch.color ?? tplColors[bandId] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         
         const connStartX = isLeft ? bbox.x + bbox.width : bbox.x
+        const connStartY = bbox.y + bbox.height / 2
 
         return (
           <g key={id}>
-            <line x1={connStartX} y1={bbox.y + bbox.height / 2}
-              x2={connX} y2={bandCy}
+            {/* Dynamic connector line */}
+            <line x1={connStartX} y1={connStartY}
+              x2={connTargetX} y2={bandCy}
               stroke={color} strokeWidth={1.5} strokeDasharray="4 3" />
-            <circle cx={connX} cy={bandCy} r={4} fill={color} />
+            <circle cx={connTargetX} cy={bandCy} r={4} fill={color} />
             
             <g onMouseDown={e => startDrag(e, id, bbox)}
               transform={getTransform(id, bbox)} style={{ cursor: 'pointer' }}>
               <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6}
-                fill="white" stroke={color} strokeWidth={2}
+                fill="#ffffff" stroke={isSel ? '#4a90d9' : color} strokeWidth={isSel ? 2.5 : 2}
                 filter="drop-shadow(0 2px 6px rgba(0,0,0,0.10))" />
               <rect x={isLeft ? bbox.x : bbox.x + bbox.width - 5} y={bbox.y}
                 width={5} height={bbox.height} rx={3} fill={color} />
