@@ -167,7 +167,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
                 d={piece.path}
                 fill={color}
                 stroke="#ffffff"
-                strokeWidth={0.8}
+                strokeWidth={0.4}
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 opacity={isSel ? 0.88 : 1}
