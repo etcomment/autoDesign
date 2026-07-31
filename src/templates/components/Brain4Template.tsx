@@ -129,9 +129,9 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
       {/* Head Silhouette + Brain vector container from dessin-1.svg */}
       <g transform={getTransform(headId, headBbox)}>
         <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(${SVG_TRANSFORM_OFFSET_X}, ${SVG_TRANSFORM_OFFSET_Y})`}>
-          {/* 1. SINGLE UNIFIED SOLID Head Silhouette (Single SVG Object, clean export) */}
+          {/* 1. SOLID Head Profile Silhouette */}
           <path
-            d={SOLID_HEAD_PATH}
+            d={HEAD_PATH_EXACT}
             fill="#F0F0F0"
             fillRule="nonzero"
             stroke={isHeadSelected ? '#4a90d9' : 'none'}
@@ -139,6 +139,21 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
             style={{ cursor: 'pointer' }}
             onMouseDown={e => startDrag(e, headId, headBbox)}
           />
+
+          {/* Solid Grey Brain Filler (100% solid background underneath pieces) */}
+          <g>
+            {PIECES_CONFIG.map((piece, i) => (
+              <path
+                key={`head-fill-${i}`}
+                d={piece.path}
+                fill="#F0F0F0"
+                stroke="#F0F0F0"
+                strokeWidth={20}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            ))}
+          </g>
 
           {/* 2. The 4 Interlocking Brain Puzzle Pieces */}
           {PIECES_CONFIG.map((piece, i) => {
