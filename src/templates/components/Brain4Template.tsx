@@ -136,12 +136,12 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
             onMouseDown={e => startDrag(e, headId, headBbox)}
           />
 
-          {/* White padding outline around brain puzzle pieces */}
+          {/* White padding outline around brain puzzle pieces (thinner outline) */}
           <g>
-            <path d={PIECE_0_PATH} fill="#ffffff" stroke="#ffffff" strokeWidth={8} strokeLinejoin="round" strokeLinecap="round" />
-            <path d={PIECE_1_PATH} fill="#ffffff" stroke="#ffffff" strokeWidth={8} strokeLinejoin="round" strokeLinecap="round" />
-            <path d={PIECE_2_PATH} fill="#ffffff" stroke="#ffffff" strokeWidth={8} strokeLinejoin="round" strokeLinecap="round" />
-            <path d={PIECE_3_PATH} fill="#ffffff" stroke="#ffffff" strokeWidth={8} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={PIECE_0_PATH} fill="#ffffff" stroke="#ffffff" strokeWidth={3.5} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={PIECE_1_PATH} fill="#ffffff" stroke="#ffffff" strokeWidth={3.5} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={PIECE_2_PATH} fill="#ffffff" stroke="#ffffff" strokeWidth={3.5} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={PIECE_3_PATH} fill="#ffffff" stroke="#ffffff" strokeWidth={3.5} strokeLinejoin="round" strokeLinecap="round" />
           </g>
         </g>
         {isHeadSelected && renderHandles(headBbox, headId)}
@@ -175,7 +175,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
                 d={piece.path}
                 fill={color}
                 stroke="#ffffff"
-                strokeWidth={1.8}
+                strokeWidth={1.2}
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 opacity={isSel ? 0.88 : 1}
