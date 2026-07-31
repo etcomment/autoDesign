@@ -126,10 +126,10 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
       {/* Head Silhouette + Brain vector container from dessin-1.svg */}
       <g transform={getTransform(headId, headBbox)}>
         <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(${SVG_TRANSFORM_OFFSET_X}, ${SVG_TRANSFORM_OFFSET_Y})`}>
-          {/* Head Profile Background (path13) - Darker grey matching reference image */}
+          {/* Head Profile Background (path13) - Exact grey #F0F0F0 */}
           <path
             d={HEAD_PATH_EXACT}
-            fill="#e0e4e8"
+            fill="#F0F0F0"
             stroke={isHeadSelected ? '#4a90d9' : 'none'}
             strokeWidth={isHeadSelected ? 1 : 0}
             style={{ cursor: 'pointer' }}
