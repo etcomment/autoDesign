@@ -11,6 +11,8 @@ export function Strategy7Template({ data }: { data: StrategyData }): ReactElemen
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
   const { blocks } = data
@@ -43,6 +45,8 @@ export function Strategy7Template({ data }: { data: StrategyData }): ReactElemen
         const elementId = `block-${index}`
         const color = tplColors[elementId] ?? block.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
         const isSelected = selectedIds.has(elementId)
+        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2 : 0)
 
         const rad = ((slot.within / ring.count) * 360 - 90) * (Math.PI / 180)
         const itemR = ring.r - ring.w / 2
@@ -73,7 +77,7 @@ export function Strategy7Template({ data }: { data: StrategyData }): ReactElemen
             transform={getTransform(elementId, bbox)}
             style={{ cursor: 'pointer' }}
           >
-            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={color} stroke={isSelected ? '#333' : color} strokeWidth={isSelected ? 2.5 : 0} />
+            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={color} stroke={strokeColor} strokeWidth={strokeWidth} />
             {IconFn && (
               <g transform={`translate(${bbox.x + 8}, ${bbox.y + bbox.height / 2 - 7})`}>
                 <IconFn size={14} color="white" />

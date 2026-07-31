@@ -13,6 +13,8 @@ export function Strategy5Template({ data }: { data: Strategy5Data }): ReactEleme
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
   const { blocks } = data
@@ -65,6 +67,8 @@ export function Strategy5Template({ data }: { data: Strategy5Data }): ReactEleme
               const elementId = `block-${blockIndex}`
               const color = tplColors[elementId] ?? block.color ?? MIGSO_PALETTE[blockIndex % MIGSO_PALETTE.length]!
               const isSelected = selectedIds.has(elementId)
+              const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
+              const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2.5 : 1.5)
               const by = phaseTopY + 40 + cardIdx * (cardH + cardGap)
               const bx = px + (phaseW - cardW) / 2
               const defaultBbox = { x: bx, y: by, width: cardW, height: cardH }
@@ -94,8 +98,8 @@ export function Strategy5Template({ data }: { data: Strategy5Data }): ReactEleme
                       rx={6}
                       fill={color}
                       opacity={isFuture ? 0.5 : 0.85}
-                      stroke={isSelected ? '#4a90d9' : color}
-                      strokeWidth={isSelected ? 2.5 : 1.5}
+                      stroke={strokeColor}
+                      strokeWidth={strokeWidth}
                       strokeDasharray={isFuture ? '6 3' : undefined}
                     />
 

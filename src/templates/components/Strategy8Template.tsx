@@ -17,6 +17,8 @@ export function Strategy8Template({ data }: { data: StrategyData }): ReactElemen
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
   const { blocks } = data
@@ -48,6 +50,8 @@ export function Strategy8Template({ data }: { data: StrategyData }): ReactElemen
       {rects.map(({ elementId, block, bbox }, index) => {
         const color = stepColor(index, block)
         const isSelected = selectedIds.has(elementId)
+        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2 : 0)
         const IconFn = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
         const labelX = IconFn ? bbox.x + 30 : bbox.x + bbox.width / 2
         const labelAnchor = IconFn ? 'start' : 'middle'
@@ -65,7 +69,7 @@ export function Strategy8Template({ data }: { data: StrategyData }): ReactElemen
             transform={getTransform(elementId, bbox)}
             style={{ cursor: 'pointer' }}
           >
-            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={color} opacity={isSelected ? 1 : 0.85} stroke={isSelected ? '#333' : undefined} strokeWidth={isSelected ? 1.5 : undefined} />
+            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={color} opacity={isSelected ? 1 : 0.85} stroke={strokeColor} strokeWidth={strokeWidth} />
             {IconFn && (
               <g transform={`translate(${bbox.x + 8}, ${bbox.y + bbox.height / 2 - 7})`}>
                 <IconFn size={14} color="white" />
@@ -107,8 +111,8 @@ export function Strategy8Template({ data }: { data: StrategyData }): ReactElemen
         return (
           <Arrow
             key={`arrow-${i}`}
-            from={{ x: rect.bbox.x + rect.bbox.width + 4, y: rect.bbox.y + rect.bbox.height / 2 }}
-            to={{ x: next.bbox.x - 4, y: next.bbox.y + next.bbox.height / 2 }}
+            from={{ x: rect.bbox.x + rect.bbox.width / 2, y: rect.bbox.y + rect.bbox.height }}
+            to={{ x: next.bbox.x + next.bbox.width / 2, y: next.bbox.y }}
             color={stepColor(i, rect.block)}
           />
         )

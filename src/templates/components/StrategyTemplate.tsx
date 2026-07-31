@@ -11,6 +11,8 @@ export function StrategyTemplate({ data }: { data: StrategyData }): ReactElement
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
   const { blocks } = data
@@ -39,6 +41,8 @@ export function StrategyTemplate({ data }: { data: StrategyData }): ReactElement
         const elementId = `block-${index}`
         const color = tplColors[elementId] ?? block.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
         const isSelected = selectedIds.has(elementId)
+        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2 : 0)
         const bbox = getBbox(elementId, index)
         const nextBbox = index < blocks.length - 1 ? getBbox(`block-${index + 1}`, index + 1) : null
         const Icon = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
@@ -55,7 +59,7 @@ export function StrategyTemplate({ data }: { data: StrategyData }): ReactElement
               transform={getTransform(elementId, bbox)}
               style={{ cursor: 'pointer' }}
             >
-              <ChevronArrow x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} fill={color} />
+              <ChevronArrow x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} fill={color} stroke={strokeColor} strokeWidth={strokeWidth} />
 
               {hasIcon && (
                 <g transform={`translate(${bbox.x + 26}, ${bbox.y + bbox.height / 2 - 16})`}>

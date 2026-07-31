@@ -12,6 +12,8 @@ export function Strategy6Template({ data }: { data: Strategy6Data }): ReactEleme
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
   const { axisX, axisY, quadrants } = data
@@ -47,6 +49,8 @@ export function Strategy6Template({ data }: { data: Strategy6Data }): ReactEleme
         const bgColor = tplColors[elementId] ?? quadrant?.color ?? QUADRANT_COLORS[i]!
         const accent = tplColors[elementId] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         const isSelected = selectedIds.has(elementId)
+        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : '#cbd5e0')
+        const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2.5 : 1)
         const defaultBbox = { x: qx, y: qy, width: qw, height: qh }
         const customPos = positions[elementId]
         const bbox = {
@@ -59,7 +63,7 @@ export function Strategy6Template({ data }: { data: Strategy6Data }): ReactEleme
         return (
           <g key={`q-${i}`}>
             <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
-              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={bgColor} stroke={isSelected ? '#4a90d9' : '#cbd5e0'} strokeWidth={isSelected ? 2.5 : 1} />
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={bgColor} stroke={strokeColor} strokeWidth={strokeWidth} />
               <circle cx={bbox.x + bbox.width / 2} cy={bbox.y + 32} r={18} fill={accent} />
               <text x={bbox.x + bbox.width / 2} y={bbox.y + 37} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
                 {String(i + 1)}

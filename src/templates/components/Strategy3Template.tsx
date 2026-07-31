@@ -11,6 +11,8 @@ export function Strategy3Template({ data }: { data: Strategy3Data }): ReactEleme
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
   const { blocks } = data
@@ -40,6 +42,8 @@ export function Strategy3Template({ data }: { data: Strategy3Data }): ReactEleme
         const elementId = `block-${index}`
         const color = tplColors[elementId] ?? block.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
         const isSelected = selectedIds.has(elementId)
+        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2 : 0)
         const angle = startAngle + index * angleStep
         const cardCx = cx + spokeLen * Math.cos(angle)
         const cardCy = cy + spokeLen * Math.sin(angle)
@@ -71,7 +75,7 @@ export function Strategy3Template({ data }: { data: Strategy3Data }): ReactEleme
               transform={getTransform(elementId, bbox)}
               style={{ cursor: 'pointer' }}
             >
-              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={color} opacity={0.15} stroke={color} strokeWidth={1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={color} opacity={0.15} stroke={strokeColor} strokeWidth={strokeWidth} strokeDasharray={isSelected ? '4 2' : undefined} />
 
               <circle cx={bbox.x + 16} cy={bbox.y + 16} r={13} fill={color} />
               {IconFn ? (

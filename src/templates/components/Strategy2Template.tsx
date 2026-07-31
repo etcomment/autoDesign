@@ -11,6 +11,8 @@ export function Strategy2Template({ data }: { data: Strategy2Data }): ReactEleme
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
   const { blocks } = data
@@ -45,6 +47,8 @@ export function Strategy2Template({ data }: { data: Strategy2Data }): ReactEleme
         const elementId = `block-${index}`
         const color = tplColors[elementId] ?? block.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
         const isSelected = selectedIds.has(elementId)
+        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2 : 0)
         const bbox = getBbox(elementId, index)
         const Icon = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
         const badge = block.value ?? block.percent
@@ -61,7 +65,7 @@ export function Strategy2Template({ data }: { data: Strategy2Data }): ReactEleme
               transform={getTransform(elementId, bbox)}
               style={{ cursor: 'pointer' }}
             >
-              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill={color} stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 0} />
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill={color} stroke={strokeColor} strokeWidth={strokeWidth} />
               {Icon && (
                 <g transform={`translate(${bbox.x + 14}, ${bbox.y + bbox.height / 2 - 7})`}>
                   <Icon size={14} color="white" />
@@ -69,7 +73,7 @@ export function Strategy2Template({ data }: { data: Strategy2Data }): ReactEleme
               )}
               <text
                 x={titleX}
-                y={bbox.y + bbox.height / 2 + 4}
+                y={bbox.y + 18}
                 textAnchor="middle"
                 fontFamily="Arial, sans-serif"
                 fontSize={12}
@@ -85,7 +89,7 @@ export function Strategy2Template({ data }: { data: Strategy2Data }): ReactEleme
               {block.subtitle && (
                 <text
                   x={bbox.x + bbox.width / 2}
-                  y={bbox.y + bbox.height - 6}
+                  y={bbox.y + 34}
                   textAnchor="middle"
                   fontFamily="Arial, sans-serif"
                   fontSize={10}

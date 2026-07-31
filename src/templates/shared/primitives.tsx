@@ -37,14 +37,16 @@ export interface ArrowProps {
   from: { x: number; y: number }
   to: { x: number; y: number }
   color?: string
+  strokeWidth?: number
   dashed?: boolean
   thick?: boolean
 }
 
-export function Arrow({ from, to, color = '#666', dashed, thick }: ArrowProps): ReactElement {
+export function Arrow({ from, to, color = '#666', strokeWidth, dashed, thick }: ArrowProps): ReactElement {
   const dx = to.x - from.x
   const dy = to.y - from.y
   const angle = Math.atan2(dy, dx) * (180 / Math.PI)
+  const width = strokeWidth ?? (thick ? 3 : 1.5)
 
   return (
     <g>
@@ -54,7 +56,7 @@ export function Arrow({ from, to, color = '#666', dashed, thick }: ArrowProps): 
         x2={to.x}
         y2={to.y}
         stroke={color}
-        strokeWidth={thick ? 3 : 1.5}
+        strokeWidth={width}
         strokeDasharray={dashed ? '6 3' : undefined}
       />
       <polygon
@@ -73,9 +75,11 @@ export interface ChevronArrowProps {
   height: number
   fill?: string
   label?: string
+  stroke?: string
+  strokeWidth?: number
 }
 
-export function ChevronArrow({ x, y, width, height, fill = '#4a90d9', label }: ChevronArrowProps): ReactElement {
+export function ChevronArrow({ x, y, width, height, fill = '#4a90d9', label, stroke = fill, strokeWidth = 0.5 }: ChevronArrowProps): ReactElement {
   const h = height
   const w = width
   const arrowW = 12
@@ -84,8 +88,8 @@ export function ChevronArrow({ x, y, width, height, fill = '#4a90d9', label }: C
       <path
         d={`M ${x} ${y} L ${x + w - arrowW} ${y} L ${x + w} ${y + h / 2} L ${x + w - arrowW} ${y + h} L ${x} ${y + h} L ${x + arrowW} ${y + h / 2} Z`}
         fill={fill}
-        stroke={fill}
-        strokeWidth={0.5}
+        stroke={stroke}
+        strokeWidth={strokeWidth}
       />
       {label && (
         <text
