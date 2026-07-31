@@ -95,6 +95,13 @@ const PIECES_CONFIG = [
   }
 ]
 
+const PIECE_OFFSETS = [
+  { dx: 0.8, dy: 0.8 },   // Top-Left: shift right & down towards center
+  { dx: -0.8, dy: 0.8 },  // Top-Right: shift left & down towards center
+  { dx: 0.8, dy: -0.8 },  // Bottom-Left: shift right & up towards center
+  { dx: -0.8, dy: -0.8 }, // Bottom-Right: shift left & up towards center
+]
+
 export function Brain4Template({ data }: { data: BrainData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
@@ -155,12 +162,13 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
             ))}
           </g>
 
-          {/* 2. The 4 Interlocking Brain Puzzle Pieces */}
+          {/* 2. The 4 Interlocking Brain Puzzle Pieces (shifted closer to center) */}
           {PIECES_CONFIG.map((piece, i) => {
             const pid = `piece-${i}`
             const branch = branches[i]
             const color = tplColors[pid] ?? branch?.color ?? piece.defaultColor
             const isSel = selectedIds.has(pid)
+            const offset = PIECE_OFFSETS[i]!
 
             return (
               <path
@@ -171,6 +179,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
                 strokeWidth={1.8}
                 strokeLinejoin="round"
                 strokeLinecap="round"
+                transform={`translate(${offset.dx}, ${offset.dy})`}
                 opacity={isSel ? 0.88 : 1}
                 style={{ cursor: 'pointer' }}
                 onMouseDown={e => {
