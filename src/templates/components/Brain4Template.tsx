@@ -95,13 +95,6 @@ const PIECES_CONFIG = [
   }
 ]
 
-const PIECE_OFFSETS = [
-  { dx: 0.8, dy: 0.8 },   // Top-Left: shift right & down towards center
-  { dx: -0.8, dy: 0.8 },  // Top-Right: shift left & down towards center
-  { dx: 0.8, dy: -0.8 },  // Bottom-Left: shift right & up towards center
-  { dx: -0.8, dy: -0.8 }, // Bottom-Right: shift left & up towards center
-]
-
 export function Brain4Template({ data }: { data: BrainData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
@@ -136,7 +129,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
       {/* Head Silhouette + Brain vector container from dessin-1.svg */}
       <g transform={getTransform(headId, headBbox)}>
         <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(${SVG_TRANSFORM_OFFSET_X}, ${SVG_TRANSFORM_OFFSET_Y})`}>
-          {/* 1. SOLID Head Profile Silhouette */}
+          {/* 1. SOLID Head Profile Silhouette (filled grey #F0F0F0) */}
           <path
             d={HEAD_PATH_EXACT}
             fill="#F0F0F0"
@@ -147,28 +140,27 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
             onMouseDown={e => startDrag(e, headId, headBbox)}
           />
 
-          {/* Solid Grey Brain Filler (100% solid background underneath pieces) */}
+          {/* Solid White Brain Background & Halo (100% clean white joints and outer halo) */}
           <g>
             {PIECES_CONFIG.map((piece, i) => (
               <path
                 key={`head-fill-${i}`}
                 d={piece.path}
-                fill="#F0F0F0"
-                stroke="#F0F0F0"
-                strokeWidth={20}
+                fill="#ffffff"
+                stroke="#ffffff"
+                strokeWidth={6}
                 strokeLinejoin="round"
                 strokeLinecap="round"
               />
             ))}
           </g>
 
-          {/* 2. The 4 Interlocking Brain Puzzle Pieces (shifted closer to center) */}
+          {/* 2. The 4 Interlocking Brain Puzzle Pieces (Exact zero-offset vector alignment) */}
           {PIECES_CONFIG.map((piece, i) => {
             const pid = `piece-${i}`
             const branch = branches[i]
             const color = tplColors[pid] ?? branch?.color ?? piece.defaultColor
             const isSel = selectedIds.has(pid)
-            const offset = PIECE_OFFSETS[i]!
 
             return (
               <path
@@ -176,10 +168,9 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
                 d={piece.path}
                 fill={color}
                 stroke="#ffffff"
-                strokeWidth={1.8}
+                strokeWidth={1.5}
                 strokeLinejoin="round"
                 strokeLinecap="round"
-                transform={`translate(${offset.dx}, ${offset.dy})`}
                 opacity={isSel ? 0.88 : 1}
                 style={{ cursor: 'pointer' }}
                 onMouseDown={e => {
