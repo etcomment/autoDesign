@@ -126,15 +126,23 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
       {/* Head Silhouette + Brain vector container from dessin-1.svg */}
       <g transform={getTransform(headId, headBbox)}>
         <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(${SVG_TRANSFORM_OFFSET_X}, ${SVG_TRANSFORM_OFFSET_Y})`}>
-          {/* Head Profile Background (path13) */}
+          {/* Head Profile Background (path13) - Darker grey matching reference image */}
           <path
             d={HEAD_PATH_EXACT}
-            fill="#f2f2f2"
+            fill="#e0e4e8"
             stroke={isHeadSelected ? '#4a90d9' : 'none'}
             strokeWidth={isHeadSelected ? 1 : 0}
             style={{ cursor: 'pointer' }}
             onMouseDown={e => startDrag(e, headId, headBbox)}
           />
+
+          {/* White padding outline around brain puzzle pieces */}
+          <g>
+            <path d={PIECE_0_PATH} fill="#ffffff" stroke="#ffffff" strokeWidth={8} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={PIECE_1_PATH} fill="#ffffff" stroke="#ffffff" strokeWidth={8} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={PIECE_2_PATH} fill="#ffffff" stroke="#ffffff" strokeWidth={8} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={PIECE_3_PATH} fill="#ffffff" stroke="#ffffff" strokeWidth={8} strokeLinejoin="round" strokeLinecap="round" />
+          </g>
         </g>
         {isHeadSelected && renderHandles(headBbox, headId)}
       </g>
