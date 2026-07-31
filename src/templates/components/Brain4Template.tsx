@@ -126,7 +126,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
       {/* Head Silhouette + Brain vector container from dessin-1.svg */}
       <g transform={getTransform(headId, headBbox)}>
         <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(${SVG_TRANSFORM_OFFSET_X}, ${SVG_TRANSFORM_OFFSET_Y})`}>
-          {/* Head Profile Background (path13) - Exact grey #F0F0F0 */}
+          {/* 1. Head Profile Background (path13) - Exact grey #F0F0F0 */}
           <path
             d={HEAD_PATH_EXACT}
             fill="#F0F0F0"
@@ -135,52 +135,50 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
             style={{ cursor: 'pointer' }}
             onMouseDown={e => startDrag(e, headId, headBbox)}
           />
+
+          {/* 2. Solid White Brain Background Silhouette (Thick outer halo around brain) */}
+          <g fill="#ffffff" stroke="#ffffff" strokeWidth={3} strokeLinejoin="round" strokeLinecap="round">
+            <path d={PIECE_0_PATH} />
+            <path d={PIECE_1_PATH} />
+            <path d={PIECE_2_PATH} />
+            <path d={PIECE_3_PATH} />
+          </g>
+
+          {/* 3. The 4 Interlocking Brain Puzzle Pieces (0px displacement) */}
+          {PIECES_CONFIG.map((piece, i) => {
+            const pid = `piece-${i}`
+            const branch = branches[i]
+            const color = tplColors[pid] ?? branch?.color ?? piece.defaultColor
+            const isSel = selectedIds.has(pid)
+
+            return (
+              <path
+                key={pid}
+                d={piece.path}
+                fill={color}
+                stroke="#ffffff"
+                strokeWidth={1.2}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                opacity={isSel ? 0.88 : 1}
+                style={{ cursor: 'pointer' }}
+                onMouseDown={e => {
+                  e.stopPropagation()
+                  startDrag(e, pid, headBbox)
+                }}
+              />
+            )
+          })}
         </g>
         {isHeadSelected && renderHandles(headBbox, headId)}
       </g>
 
-      {/* The 4 Brain Puzzle Pieces */}
-      {PIECES_CONFIG.map((piece, i) => {
-        const pid = `piece-${i}`
-        const branch = branches[i]
-        const color = tplColors[pid] ?? branch?.color ?? piece.defaultColor
-        const pDef = { x: piece.cx - 50, y: piece.cy - 50, width: 100, height: 100 }
-        const pos = positions[pid]
-        const bbox = {
-          x: pos?.x ?? pDef.x,
-          y: pos?.y ?? pDef.y,
-          width: pos?.width ?? pDef.width,
-          height: pos?.height ?? pDef.height,
-        }
-        const isSel = selectedIds.has(pid)
-
-        return (
-          <g
-            key={pid}
-            onMouseDown={e => startDrag(e, pid, bbox)}
-            transform={getTransform(pid, bbox)}
-            style={{ cursor: 'pointer' }}
-          >
-            {/* Inkscape exact piece path */}
-            <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(${SVG_TRANSFORM_OFFSET_X}, ${SVG_TRANSFORM_OFFSET_Y})`}>
-              <path
-                d={piece.path}
-                fill={color}
-                stroke="#ffffff"
-                strokeWidth={1.5}
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                opacity={isSel ? 0.88 : 1}
-              />
-            </g>
-
-            {/* Vector Icon */}
-            {piece.icon}
-
-            {isSel && renderHandles(bbox, pid)}
-          </g>
-        )
-      })}
+      {/* Vector Icons Centered in Canvas Space */}
+      {PIECES_CONFIG.map((piece, i) => (
+        <g key={`icon-${i}`}>
+          {piece.icon}
+        </g>
+      ))}
 
       {/* Callout Cards & Dynamic Connectors */}
       {branches.slice(0, 4).map((branch, i) => {
