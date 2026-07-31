@@ -3,8 +3,8 @@ import type { Strategy4Data } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
-
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db']
+import { TEMPLATE_ICONS } from '../shared/icons'
+import { wrapTextByWidth } from '../shared/primitives'
 
 const COLUMN_KEYS = ['Vision', 'Execution', 'Growth'] as const
 
@@ -12,80 +12,111 @@ export function Strategy4Template({ data }: { data: Strategy4Data }): ReactEleme
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const toggleElement = useTemplateStore(s => s.toggleTemplateElement)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, blocks } = data
-  const W = 1000
+  const { blocks } = data
   const colW = 290
   const colStartX = 42
   const colGap = 20
   const cardW = 270
-  const cardH = 58
-  const cardGap = 10
+  const cardH = 66
+  const cardGap = 12
   const headerH = 40
-  const topY = 110
-
-  const columns: { colIndex: number; cardIndex: number; blockIndex: number }[] = []
-  for (let i = 0; i < blocks.length; i++) {
-    columns.push({ colIndex: i % 3, cardIndex: Math.floor(i / 3), blockIndex: i })
-  }
+  const topY = 60
 
   return (
     <g ref={svgRef}>
-
-      {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
-          {title}
-        </text>
-      )}
-
-      {[0, 1, 2].map(colIdx => {
+      {COLUMN_KEYS.map((label, colIdx) => {
         const colX = colStartX + colIdx * (colW + colGap)
-        const colColor = PALETTE[colIdx % PALETTE.length]!
+        const colColor = MIGSO_PALETTE[colIdx % MIGSO_PALETTE.length]!
 
         return (
           <g key={colIdx}>
             <rect x={colX} y={topY} width={colW} height={headerH} rx={6} fill={colColor} />
             <text x={colX + colW / 2} y={topY + headerH / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
-              {COLUMN_KEYS[colIdx]}
+              {label}
             </text>
 
-            {columns
-              .filter(c => c.colIndex === colIdx)
-              .map(entry => {
-                const block = blocks[entry.blockIndex]!
-                const elementId = `block-${entry.blockIndex}`
-                const color = tplColors[elementId] ?? PALETTE[(entry.blockIndex + 2) % PALETTE.length]!
-                const isSelected = selectedIds.has(elementId)
-                const by = topY + headerH + 16 + entry.cardIndex * (cardH + cardGap)
-                const bx = colX + (colW - cardW) / 2
-                const visualRect = { x: bx, y: by, width: cardW, height: cardH }
+            {blocks.map((block, index) => {
+              if (index % 3 !== colIdx) return null
+              const elementId = `block-${index}`
+              const color = tplColors[elementId] ?? block.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
+              const isSelected = selectedIds.has(elementId)
+              const cardIndex = Math.floor(index / 3)
+              const defaultBbox = {
+                x: colX + (colW - cardW) / 2,
+                y: topY + headerH + 16 + cardIndex * (cardH + cardGap),
+                width: cardW,
+                height: cardH,
+              }
+              const customPos = positions[elementId]
+              const bbox = {
+                x: customPos?.x ?? defaultBbox.x,
+                y: customPos?.y ?? defaultBbox.y,
+                width: customPos?.width ?? defaultBbox.width,
+                height: customPos?.height ?? defaultBbox.height,
+              }
+              const IconFn = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
+              const maxChars = Math.max(10, Math.floor(bbox.width / 6.5))
+              const titleLines = wrapTextByWidth(block.title, maxChars)
+              const subtitleLines = block.subtitle ? wrapTextByWidth(block.subtitle, maxChars) : []
 
-                return (
-                  <g key={entry.blockIndex}>
-                    <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
-                      <rect x={bx} y={by} width={cardW} height={cardH} rx={6} fill={color} opacity={0.12} stroke={color} strokeWidth={1.5} />
+              return (
+                <g
+                  key={elementId}
+                  data-element-id={elementId}
+                  onMouseDown={e => startDrag(e, elementId, bbox)}
+                  transform={getTransform(elementId, bbox)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={color} opacity={0.12} stroke={color} strokeWidth={1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
 
-                      {isSelected && (
-                        <rect x={bx - 1} y={by - 1} width={cardW + 2} height={cardH + 2} rx={6} fill="none" stroke="#4a90d9" strokeWidth={2} strokeDasharray="4 2" />
-                      )}
-
-                      <text x={bx + 14} y={by + 24} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#333">
-                        {block.title.length > 24 ? block.title.slice(0, 22) + '...' : block.title}
-                      </text>
-
-                      {block.subtitle && (
-                        <text x={bx + 14} y={by + 42} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={10} fill="#777">
-                          {block.subtitle.length > 30 ? block.subtitle.slice(0, 28) + '...' : block.subtitle}
-                        </text>
-                      )}
-
-                      {isSelected && renderHandles(visualRect, elementId)}
+                  <circle cx={bbox.x + 18} cy={bbox.y + 18} r={14} fill={color} />
+                  {IconFn ? (
+                    <g transform={`translate(${bbox.x + 11}, ${bbox.y + 11})`}>
+                      <IconFn size={14} color="white" />
                     </g>
-                  </g>
-                )
-              })}
+                  ) : (
+                    <text x={bbox.x + 18} y={bbox.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
+                      {block.number}
+                    </text>
+                  )}
+
+                  <text x={bbox.x + 40} y={bbox.y + 22} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#333">
+                    {titleLines.map((line, li) => (
+                      <tspan key={li} x={bbox.x + 40} dy={li === 0 ? 0 : 14}>
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+
+                  {block.subtitle && (
+                    <text x={bbox.x + 40} y={bbox.y + 38} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={10} fill="#777">
+                      {subtitleLines.map((line, li) => (
+                        <tspan key={li} x={bbox.x + 40} dy={li === 0 ? 0 : 12}>
+                          {line}
+                        </tspan>
+                      ))}
+                    </text>
+                  )}
+
+                  {(block.value || block.percent) && (
+                    <text x={bbox.x + 40} y={bbox.y + 53} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill={color}>
+                      {block.value ?? block.percent}
+                    </text>
+                  )}
+
+                  {block.number && IconFn && (
+                    <text x={bbox.x + bbox.width - 10} y={bbox.y + 18} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill={color}>
+                      {block.number}
+                    </text>
+                  )}
+
+                  {isSelected && renderHandles(bbox, elementId)}
+                </g>
+              )
+            })}
           </g>
         )
       })}

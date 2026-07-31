@@ -233,7 +233,34 @@ export function parseTemplateDsl(dsl: string): TemplateData | null {
 }
 
 function getLines(dsl: string): string[] {
-  return dsl.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('//'))
+  const physical = dsl.split('\n')
+  const result: string[] = []
+  let buffer = ''
+  let inQuote = false
+  let quoteChar = ''
+
+  for (const rawLine of physical) {
+    const line = rawLine.trim()
+    if (!buffer && (!line || line.startsWith('//'))) continue
+
+    buffer = buffer ? buffer + '\n' + line.trimStart() : line
+
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i]
+      if (ch === '\\') { i++; continue }
+      if (ch === '"' || ch === "'") {
+        if (!inQuote) { inQuote = true; quoteChar = ch }
+        else if (ch === quoteChar) inQuote = false
+      }
+    }
+
+    if (!inQuote) {
+      result.push(buffer)
+      buffer = ''
+    }
+  }
+  if (buffer) result.push(buffer)
+  return result
 }
 
 function parseRoadmap(dsl: string, headerTitle?: string): RoadmapData | ProductRoadmapData {

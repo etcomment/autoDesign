@@ -99,3 +99,23 @@ explicitement) :
 * `icon` (Utiliser l'intégration avec `TEMPLATE_ICONS` / `Lucide`).
 * `date` (Essentiel pour le positionnement ou le label temporel dans les
   Roadmaps).
+
+### 6.1 Retour à la ligne du texte
+
+Toujours s'assurer que le retour à la ligne est géré dans les **titres de
+blocs** et dans **les textes/descriptions** (`title`, `subtitle`, libellés des
+cartes, jalons, etc.).
+
+* **Wrapping par largeur** : Ne jamais tronquer brutalement avec `.slice()` qui
+  coupe du texte, ni laisser le texte déborder hors de la carte. Utiliser le
+  helper `wrapTextByWidth(text, maxCharsParLigne)` de `shared/primitives.tsx`
+  pour découper le texte en lignes adaptées à la largeur de l'élément.
+* **Rendu multi-lignes** : Rendre les lignes produites en `<tspan>` avec `x`
+  partagé et `dy={ligneIndex === 0 ? 0 : <hauteurLigne>}` afin que le texte
+  passe correctement à la ligne.
+* **`maxCharsParLigne` dynamique** : Calculer la capacité de caractères à
+  partir de la largeur du bloc (ex : `Math.max(10, Math.floor(bbox.width /
+  6.5))`) pour que le wrapping s'adapte au redimensionnement.
+* **Sauts de ligne explicites** : Préserver aussi les `\n` explicites présents
+  dans le contenu (le parser convertit `\n` en vrai saut de ligne via
+  `stripQuotes`).

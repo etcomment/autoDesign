@@ -3,77 +3,118 @@ import type { Strategy3Data } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
-
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db']
+import { TEMPLATE_ICONS } from '../shared/icons'
+import { wrapTextByWidth } from '../shared/primitives'
 
 export function Strategy3Template({ data }: { data: Strategy3Data }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const toggleElement = useTemplateStore(s => s.toggleTemplateElement)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, blocks } = data
+  const { blocks } = data
   const W = 1000
   const cx = W / 2
   const cy = 290
-  const hubR = 52
-  const spokeLen = 160
-  const cardW = 140
-  const cardH = 60
-  const angleStep = blocks.length > 0 ? (2 * Math.PI) / blocks.length : 0
+  const hubR = 50
+  const spokeLen = 175
+  const cardW = 150
+  const cardH = 78
+  const count = Math.max(1, blocks.length)
+  const angleStep = (2 * Math.PI) / count
   const startAngle = -Math.PI / 2
 
   return (
     <g ref={svgRef}>
-
-      {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
-          {title}
-        </text>
-      )}
-
-      <circle cx={cx} cy={cy} r={hubR} fill={PALETTE[0]} />
-      <text x={cx} y={cy - 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
-        {blocks.length > 0 ? blocks[0]!.title.slice(0, 14) : 'Goal'}
-      </text>
-      <text x={cx} y={cy + 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="rgba(255,255,255,0.8)">
+      <circle cx={cx} cy={cy} r={hubR} fill="#ececf2" stroke="#d2d2dc" strokeWidth={1.5} />
+      <circle cx={cx} cy={cy} r={hubR - 14} fill="#e2e2ea" stroke="#c6c6d2" strokeWidth={1} strokeDasharray="3 2" />
+      <text x={cx} y={cy - 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="#666">
         Core Focus
+      </text>
+      <text x={cx} y={cy + 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#999">
+        Strategy Hub
       </text>
 
       {blocks.map((block, index) => {
         const elementId = `block-${index}`
-        const color = tplColors[elementId] ?? PALETTE[(index + 1) % PALETTE.length]!
+        const color = tplColors[elementId] ?? block.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
         const isSelected = selectedIds.has(elementId)
         const angle = startAngle + index * angleStep
         const cardCx = cx + spokeLen * Math.cos(angle)
         const cardCy = cy + spokeLen * Math.sin(angle)
-        const by = cardCy - cardH / 2
-        const bx = cardCx - cardW / 2
-        const visualRect = { x: bx, y: by, width: cardW, height: cardH }
+        const defaultBbox = { x: cardCx - cardW / 2, y: cardCy - cardH / 2, width: cardW, height: cardH }
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos?.x ?? defaultBbox.x,
+          y: customPos?.y ?? defaultBbox.y,
+          width: customPos?.width ?? defaultBbox.width,
+          height: customPos?.height ?? defaultBbox.height,
+        }
+        const cardCenterX = bbox.x + bbox.width / 2
+        const cardCenterY = bbox.y + bbox.height / 2
+        const hubAngle = Math.atan2(cardCenterY - cy, cardCenterX - cx)
+        const spokeX = cx + hubR * Math.cos(hubAngle)
+        const spokeY = cy + hubR * Math.sin(hubAngle)
+        const IconFn = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
+        const maxChars = Math.max(10, Math.floor(bbox.width / 6.5))
+        const titleLines = wrapTextByWidth(block.title, maxChars)
+        const subtitleLines = block.subtitle ? wrapTextByWidth(block.subtitle, maxChars) : []
 
         return (
-          <g key={index}>
-            <line x1={cx + hubR * Math.cos(angle)} y1={cy + hubR * Math.sin(angle)} x2={cardCx} y2={cardCy} stroke={color} strokeWidth={2} />
+          <g key={elementId}>
+            <line x1={spokeX} y1={spokeY} x2={cardCenterX} y2={cardCenterY} stroke={color} strokeWidth={2} strokeOpacity={0.45} />
 
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
-              <rect x={bx} y={by} width={cardW} height={cardH} rx={6} fill={color} opacity={0.15} stroke={color} strokeWidth={1.5} />
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={color} opacity={0.15} stroke={color} strokeWidth={1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
 
-              {isSelected && (
-                <rect x={bx - 1} y={by - 1} width={cardW + 2} height={cardH + 2} rx={6} fill="none" stroke="#4a90d9" strokeWidth={2} strokeDasharray="4 2" />
-              )}
-
-              <text x={cardCx} y={by + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="#333">
-                {block.title.length > 16 ? block.title.slice(0, 14) + '...' : block.title}
-              </text>
-
-              {block.subtitle && (
-                <text x={cardCx} y={by + 42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#777">
-                  {block.subtitle.length > 20 ? block.subtitle.slice(0, 18) + '...' : block.subtitle}
+              <circle cx={bbox.x + 16} cy={bbox.y + 16} r={13} fill={color} />
+              {IconFn ? (
+                <g transform={`translate(${bbox.x + 9}, ${bbox.y + 9})`}>
+                  <IconFn size={14} color="white" />
+                </g>
+              ) : (
+                <text x={bbox.x + 16} y={bbox.y + 20} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
+                  {block.number}
                 </text>
               )}
 
-              {isSelected && renderHandles(visualRect, elementId)}
+              {block.number && IconFn && (
+                <text x={bbox.x + bbox.width - 10} y={bbox.y + 18} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill={color}>
+                  {block.number}
+                </text>
+              )}
+
+              <text x={cardCenterX} y={bbox.y + 36} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="#333">
+                {titleLines.map((line, li) => (
+                  <tspan key={li} x={cardCenterX} dy={li === 0 ? 0 : 13}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+
+              {block.subtitle && (
+                <text x={cardCenterX} y={bbox.y + 54} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#777">
+                  {subtitleLines.map((line, li) => (
+                    <tspan key={li} x={cardCenterX} dy={li === 0 ? 0 : 11}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              )}
+
+              {(block.value || block.percent) && (
+                <text x={cardCenterX} y={bbox.y + 71} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill={color}>
+                  {block.value ?? block.percent}
+                </text>
+              )}
+
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
           </g>
         )
