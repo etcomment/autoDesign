@@ -126,25 +126,25 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
       {/* Head Silhouette + Brain vector container from dessin-1.svg */}
       <g transform={getTransform(headId, headBbox)}>
         <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(${SVG_TRANSFORM_OFFSET_X}, ${SVG_TRANSFORM_OFFSET_Y})`}>
-          {/* 1. Head Profile Background (path13) - Exact grey #F0F0F0 */}
+          {/* 1. Head Profile Background (path13) - Visible neutral grey #E5E7EB */}
           <path
             d={HEAD_PATH_EXACT}
-            fill="#F0F0F0"
+            fill="#E5E7EB"
             stroke={isHeadSelected ? '#4a90d9' : 'none'}
             strokeWidth={isHeadSelected ? 1 : 0}
             style={{ cursor: 'pointer' }}
             onMouseDown={e => startDrag(e, headId, headBbox)}
           />
 
-          {/* 2. Solid White Brain Background Silhouette (Thick outer halo around brain) */}
-          <g fill="#ffffff" stroke="#ffffff" strokeWidth={3} strokeLinejoin="round" strokeLinecap="round">
+          {/* 2. Solid White Brain Background Silhouette (Fine outer halo around brain) */}
+          <g fill="#ffffff" stroke="#ffffff" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round">
             <path d={PIECE_0_PATH} />
             <path d={PIECE_1_PATH} />
             <path d={PIECE_2_PATH} />
             <path d={PIECE_3_PATH} />
           </g>
 
-          {/* 3. The 4 Interlocking Brain Puzzle Pieces (0px displacement) */}
+          {/* 3. The 4 Interlocking Brain Puzzle Pieces */}
           {PIECES_CONFIG.map((piece, i) => {
             const pid = `piece-${i}`
             const branch = branches[i]
@@ -157,7 +157,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
                 d={piece.path}
                 fill={color}
                 stroke="#ffffff"
-                strokeWidth={1.2}
+                strokeWidth={0.5}
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 opacity={isSel ? 0.88 : 1}
