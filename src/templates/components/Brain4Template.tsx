@@ -146,6 +146,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
     { title: 'Research & Innovation', subtitle: 'Ideas, concepts & discovery' },
     { title: 'Media & Operations', subtitle: 'Content management & controls' },
   ]
+  const count = Math.min(8, Math.max(2, branches.length))
 
   const baseScale = (headBbox.width / 400) * 2.75
   const baseTx = headBbox.x
@@ -182,10 +183,12 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
             ))}
           </g>
 
-          {/* 2. The 4 Interlocking Brain Puzzle Pieces (Ultra-thin 0.25px white stroke) */}
+          {/* 2. The 4 Interlocking Brain Puzzle Pieces */}
           {PIECES_CONFIG.map((piece, i) => {
             const pid = `piece-${i}`
-            const branch = branches[i]
+            // Map 4 pieces to N branches colors smoothly
+            const branchIdx = Math.floor((i / 4) * count)
+            const branch = branches[branchIdx]
             const color = tplColors[pid] ?? branch?.color ?? piece.defaultColor
             const isSel = selectedIds.has(pid)
             const offset = PIECE_OFFSETS[i]!
@@ -213,13 +216,15 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
         {isHeadSelected && renderHandles(headBbox, headId)}
       </g>
 
-      {/* Vector / DSL Icons Centered in Canvas Space */}
-      {PIECES_CONFIG.map((piece, i) => {
-        const branch = branches[i]
+      {/* Vector / DSL Icons Centered on Puzzle Pieces */}
+      {branches.map((branch, i) => {
         const iconKey = branch?.icon
         const IconFn = getDynamicIcon(iconKey)
-
         if (!IconFn) return null
+
+        // Map branch i to corresponding piece center
+        const pIdx = Math.floor((i / count) * 4)
+        const piece = PIECES_CONFIG[pIdx]!
 
         return (
           <g key={`icon-${i}`}>
@@ -230,23 +235,46 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
         )
       })}
 
-      {/* Callout Cards & Dynamic Connectors */}
-      {branches.slice(0, 4).map((branch, i) => {
+      {/* Callout Cards & Dynamic Connectors (Supports N = 2 to 8 dynamically) */}
+      {branches.map((branch, i) => {
         const id = `callout-${i}`
-        const pieceId = `piece-${i}`
-        const defaultPiece = PIECES_CONFIG[i]!
-        const color = tplColors[id] ?? branch.color ?? tplColors[pieceId] ?? defaultPiece.defaultColor
-
         const isLeft = i % 2 === 0
         const cW = 240
         const cH = 76
 
+        // Compute vertical layout spacing for left and right columns
+        const leftCount = Math.ceil(count / 2)
+        const rightCount = Math.floor(count / 2)
+        const leftIdx = Math.floor(i / 2)
+        const rightIdx = Math.floor((i - 1) / 2)
+
+        const startY = 80
+        const endY = 460
+        const availableH = endY - startY
+
+        let defaultDy = 250 - cH / 2
+        if (isLeft) {
+          defaultDy = leftCount === 1
+            ? startY + availableH / 2 - cH / 2
+            : startY + (leftIdx / (leftCount - 1)) * availableH - cH / 2
+        } else {
+          defaultDy = rightCount === 1
+            ? startY + availableH / 2 - cH / 2
+            : startY + (rightIdx / (rightCount - 1)) * availableH - cH / 2
+        }
+
+        const defaultDx = isLeft ? 50 : 710
+
+        // Target piece center for line connection
+        const pIdx = Math.min(3, Math.floor((i / count) * 4))
+        const pieceId = `piece-${pIdx}`
+        const defaultPiece = PIECES_CONFIG[pIdx]!
+
+        const color = tplColors[id] ?? branch.color ?? tplColors[pieceId] ?? defaultPiece.defaultColor
+
         const piecePos = positions[pieceId]
         const pcX = piecePos ? piecePos.x + piecePos.width / 2 : defaultPiece.cx
         const pcY = piecePos ? piecePos.y + piecePos.height / 2 : defaultPiece.cy
-
-        const defaultDx = isLeft ? 50 : 710
-        const defaultDy = pcY - cH / 2
 
         const pos = positions[id]
         const bbox = {
