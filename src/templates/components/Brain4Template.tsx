@@ -164,25 +164,78 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
 
   const uid = useId().replace(/:/g, '')
 
-  // Create N dynamic sector clipPaths for N != 4 (N = 2, 3, 5, 6, 7, 8)
-  // Coordinates are in Inkscape dessin-1.svg space: Brain Center = (92, 85), Radius = 75
-  const sectorClips = Array.from({ length: count }, (_, i) => {
-    const angleStep = 360 / count
-    const startDeg = i * angleStep - 90
-    const endDeg = (i + 1) * angleStep - 90
-    return {
-      id: `brain-slice-${uid}-${i}`,
-      path: createSectorPath(92, 85, 75, startDeg, endDeg),
-    }
-  })
-
   const baseScale = (headBbox.width / 400) * 2.75
   const baseTx = headBbox.x
   const baseTy = headBbox.y
 
-  // Brain center in Canvas space for dynamic icons and connectors
-  const headCenterX = headBbox.x + headBbox.width * 0.415
-  const headCenterY = headBbox.y + headBbox.height * 0.35
+  // Define organic piece configurations for N = 2 to 8
+  // Every configuration uses authentic puzzle piece paths (PIECE_0..3_PATH) clipped cleanly at y <= 123 (stem excluded)
+  const getOrganicPieces = () => {
+    if (count === 2) {
+      return [
+        { path: `${PIECE_0_PATH} ${PIECE_2_PATH}`, clipId: null, cx: 68, cy: 75 },
+        { path: `${PIECE_1_PATH} ${PIECE_3_PATH}`, clipId: `clip-no-stem-${uid}`, cx: 118, cy: 75 },
+      ]
+    }
+    if (count === 3) {
+      return [
+        { path: PIECE_0_PATH, clipId: null, cx: 65, cy: 54 },
+        { path: PIECE_1_PATH, clipId: null, cx: 118, cy: 54 },
+        { path: `${PIECE_2_PATH} ${PIECE_3_PATH}`, clipId: `clip-no-stem-${uid}`, cx: 96, cy: 105 },
+      ]
+    }
+    if (count === 4) {
+      return [
+        { path: PIECE_0_PATH, clipId: null, cx: 65, cy: 54 },
+        { path: PIECE_1_PATH, clipId: null, cx: 118, cy: 54 },
+        { path: PIECE_2_PATH, clipId: null, cx: 74, cy: 96 },
+        { path: PIECE_3_PATH, clipId: `clip-no-stem-${uid}`, cx: 118, cy: 102 },
+      ]
+    }
+    if (count === 5) {
+      return [
+        { path: PIECE_0_PATH, clipId: `clip-top-${uid}`, cx: 65, cy: 44 },
+        { path: PIECE_0_PATH, clipId: `clip-bot-${uid}`, cx: 65, cy: 64 },
+        { path: PIECE_1_PATH, clipId: null, cx: 118, cy: 54 },
+        { path: PIECE_2_PATH, clipId: null, cx: 74, cy: 96 },
+        { path: PIECE_3_PATH, clipId: `clip-no-stem-${uid}`, cx: 118, cy: 102 },
+      ]
+    }
+    if (count === 6) {
+      return [
+        { path: PIECE_0_PATH, clipId: `clip-top-${uid}`, cx: 65, cy: 44 },
+        { path: PIECE_0_PATH, clipId: `clip-bot-${uid}`, cx: 65, cy: 64 },
+        { path: PIECE_1_PATH, clipId: `clip-top-${uid}`, cx: 118, cy: 44 },
+        { path: PIECE_1_PATH, clipId: `clip-bot-${uid}`, cx: 118, cy: 64 },
+        { path: PIECE_2_PATH, clipId: null, cx: 74, cy: 96 },
+        { path: PIECE_3_PATH, clipId: `clip-no-stem-${uid}`, cx: 118, cy: 102 },
+      ]
+    }
+    if (count === 7) {
+      return [
+        { path: PIECE_0_PATH, clipId: `clip-top-${uid}`, cx: 65, cy: 44 },
+        { path: PIECE_0_PATH, clipId: `clip-bot-${uid}`, cx: 65, cy: 64 },
+        { path: PIECE_1_PATH, clipId: `clip-top-${uid}`, cx: 118, cy: 44 },
+        { path: PIECE_1_PATH, clipId: `clip-bot-${uid}`, cx: 118, cy: 64 },
+        { path: PIECE_2_PATH, clipId: `clip-b2-top-${uid}`, cx: 74, cy: 84 },
+        { path: PIECE_2_PATH, clipId: `clip-b2-bot-${uid}`, cx: 74, cy: 108 },
+        { path: PIECE_3_PATH, clipId: `clip-no-stem-${uid}`, cx: 118, cy: 102 },
+      ]
+    }
+    // count === 8
+    return [
+      { path: PIECE_0_PATH, clipId: `clip-top-${uid}`, cx: 65, cy: 44 },
+      { path: PIECE_0_PATH, clipId: `clip-bot-${uid}`, cx: 65, cy: 64 },
+      { path: PIECE_1_PATH, clipId: `clip-top-${uid}`, cx: 118, cy: 44 },
+      { path: PIECE_1_PATH, clipId: `clip-bot-${uid}`, cx: 118, cy: 64 },
+      { path: PIECE_2_PATH, clipId: `clip-b2-top-${uid}`, cx: 74, cy: 84 },
+      { path: PIECE_2_PATH, clipId: `clip-b2-bot-${uid}`, cx: 74, cy: 108 },
+      { path: PIECE_3_PATH, clipId: `clip-b3-top-${uid}`, cx: 118, cy: 84 },
+      { path: PIECE_3_PATH, clipId: `clip-b3-bot-${uid}`, cx: 118, cy: 108 },
+    ]
+  }
+
+  const organicPieces = getOrganicPieces()
 
   return (
     <g ref={svgRef}>
@@ -190,11 +243,27 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
       <g transform={getTransform(headId, headBbox)}>
         <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(${SVG_TRANSFORM_OFFSET_X}, ${SVG_TRANSFORM_OFFSET_Y})`}>
           <defs>
-            {count !== 4 && sectorClips.map(clip => (
-              <clipPath key={clip.id} id={clip.id}>
-                <path d={clip.path} />
-              </clipPath>
-            ))}
+            <clipPath id={`clip-no-stem-${uid}`}>
+              <rect x="0" y="0" width="200" height="123" />
+            </clipPath>
+            <clipPath id={`clip-top-${uid}`}>
+              <rect x="0" y="0" width="200" height="54" />
+            </clipPath>
+            <clipPath id={`clip-bot-${uid}`}>
+              <rect x="0" y="54" width="200" height="69" />
+            </clipPath>
+            <clipPath id={`clip-b2-top-${uid}`}>
+              <rect x="0" y="73" width="200" height="22" />
+            </clipPath>
+            <clipPath id={`clip-b2-bot-${uid}`}>
+              <rect x="0" y="95" width="200" height="28" />
+            </clipPath>
+            <clipPath id={`clip-b3-top-${uid}`}>
+              <rect x="0" y="73" width="200" height="22" />
+            </clipPath>
+            <clipPath id={`clip-b3-bot-${uid}`}>
+              <rect x="100" y="95" width="100" height="28" />
+            </clipPath>
           </defs>
 
           {/* 1. SOLID Head Profile Silhouette (filled grey #F0F0F0) */}
@@ -223,85 +292,46 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
             ))}
           </g>
 
-          {/* 2. Brain Pieces: Authentic 4 Puzzle Pieces if count===4, or Dynamic Sector Slices if count!==4 */}
-          {count === 4 ? (
-            PIECES_CONFIG.map((piece, i) => {
-              const pid = `piece-${i}`
-              const branch = branches[i]
-              const color = tplColors[pid] ?? branch?.color ?? piece.defaultColor
-              const isSel = selectedIds.has(pid)
-              const offset = PIECE_OFFSETS[i]!
+          {/* 2. Authentic Interlocking Brain Puzzle Pieces (Organic, N=2 to 8, zero stem bleed) */}
+          {branches.map((branch, i) => {
+            const pid = `piece-${i}`
+            const color = tplColors[pid] ?? branch?.color ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]
+            const pInfo = organicPieces[i]!
+            const isSel = selectedIds.has(pid)
 
-              return (
-                <path
-                  key={pid}
-                  d={piece.path}
-                  fill={color}
-                  stroke="#ffffff"
-                  strokeWidth={0.25}
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                  transform={`translate(${offset.dx}, ${offset.dy})`}
-                  opacity={isSel ? 0.88 : 1}
-                  style={{ cursor: 'pointer' }}
-                  onMouseDown={e => {
-                    e.stopPropagation()
-                    startDrag(e, pid, headBbox)
-                  }}
-                />
-              )
-            })
-          ) : (
-            branches.map((branch, i) => {
-              const pid = `piece-${i}`
-              const color = tplColors[pid] ?? branch?.color ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]
-              const clip = sectorClips[i]!
-              const isSel = selectedIds.has(pid)
-
-              return (
-                <path
-                  key={pid}
-                  d={COMBINED_BRAIN_PATH}
-                  fill={color}
-                  clipPath={`url(#${clip.id})`}
-                  stroke="#ffffff"
-                  strokeWidth={0.8}
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                  opacity={isSel ? 0.88 : 1}
-                  style={{ cursor: 'pointer' }}
-                  onMouseDown={e => {
-                    e.stopPropagation()
-                    startDrag(e, headId, headBbox)
-                  }}
-                />
-              )
-            })
-          )}
+            return (
+              <path
+                key={pid}
+                d={pInfo.path}
+                fill={color}
+                clipPath={pInfo.clipId ? `url(#${pInfo.clipId})` : undefined}
+                stroke="#ffffff"
+                strokeWidth={0.35}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                opacity={isSel ? 0.88 : 1}
+                style={{ cursor: 'pointer' }}
+                onMouseDown={e => {
+                  e.stopPropagation()
+                  startDrag(e, pid, headBbox)
+                }}
+              />
+            )
+          })}
         </g>
         {isHeadSelected && renderHandles(headBbox, headId)}
       </g>
 
-      {/* Vector / DSL Icons Centered on Puzzle Pieces */}
+      {/* Vector / DSL Icons Centered on Organic Pieces */}
       {branches.map((branch, i) => {
         const iconKey = branch?.icon
         const IconFn = getDynamicIcon(iconKey)
         if (!IconFn) return null
 
-        let iconX = 466
-        let iconY = 186
-
-        if (count === 4) {
-          const pIdx = Math.min(3, i)
-          iconX = PIECES_CONFIG[pIdx]!.cx
-          iconY = PIECES_CONFIG[pIdx]!.cy
-        } else {
-          const midDeg = (i + 0.5) * (360 / count) - 90
-          const rad = (midDeg * Math.PI) / 180
-          const rCenter = 35
-          iconX = headCenterX + rCenter * Math.cos(rad)
-          iconY = headCenterY + rCenter * Math.sin(rad)
-        }
+        const pInfo = organicPieces[i]!
+        // Transform Inkscape (cx, cy) to Canvas Space
+        const iconX = baseTx + (pInfo.cx + SVG_TRANSFORM_OFFSET_X) * baseScale
+        const iconY = baseTy + (pInfo.cy + SVG_TRANSFORM_OFFSET_Y) * baseScale
 
         return (
           <g key={`icon-${i}`}>
@@ -349,20 +379,10 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
 
         const color = tplColors[id] ?? branch.color ?? tplColors[pieceId] ?? defaultPiece.defaultColor
 
-        let pcX = defaultPiece.cx
-        let pcY = defaultPiece.cy
-
-        if (count === 4) {
-          const piecePos = positions[pieceId]
-          pcX = piecePos ? piecePos.x + piecePos.width / 2 : defaultPiece.cx
-          pcY = piecePos ? piecePos.y + piecePos.height / 2 : defaultPiece.cy
-        } else {
-          const midDeg = (i + 0.5) * (360 / count) - 90
-          const rad = (midDeg * Math.PI) / 180
-          const rCenter = 52
-          pcX = headCenterX + rCenter * Math.cos(rad)
-          pcY = headCenterY + rCenter * Math.sin(rad)
-        }
+        const pInfo = organicPieces[i]!
+        const piecePos = positions[`piece-${i}`]
+        const pcX = piecePos ? piecePos.x + piecePos.width / 2 : baseTx + (pInfo.cx + SVG_TRANSFORM_OFFSET_X) * baseScale
+        const pcY = piecePos ? piecePos.y + piecePos.height / 2 : baseTy + (pInfo.cy + SVG_TRANSFORM_OFFSET_Y) * baseScale
 
         const pos = positions[id]
         const bbox = {
