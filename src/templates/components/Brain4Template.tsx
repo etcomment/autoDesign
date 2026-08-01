@@ -4,6 +4,25 @@ import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
 import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
+
+function getDynamicIcon(iconName?: string) {
+  if (!iconName) return null
+  const clean = iconName.trim()
+
+  // 1. Check TEMPLATE_ICONS (exact or lowercase)
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn
+
+  // 2. Format to PascalCase and check Lucide icons (ex: "wrench" -> "Wrench")
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const LucideFn = (LucideIcons as Record<string, any>)[pascalName] || (LucideIcons as Record<string, any>)[clean] || (LucideIcons as Record<string, any>)[clean.toUpperCase()]
+  if (LucideFn) {
+    return (props: { size?: number; color?: string }) => <LucideFn size={props.size ?? 32} color={props.color ?? 'white'} />
+  }
+
+  return null
+}
 
 // Exact SVG Paths extracted from dessin-1.svg (Inkscape)
 const SVG_TRANSFORM_OFFSET_X = -9.5806452
@@ -198,7 +217,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
       {PIECES_CONFIG.map((piece, i) => {
         const branch = branches[i]
         const iconKey = branch?.icon
-        const IconFn = iconKey ? TEMPLATE_ICONS[iconKey] : null
+        const IconFn = getDynamicIcon(iconKey)
 
         return (
           <g key={`icon-${i}`}>
