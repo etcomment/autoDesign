@@ -1,34 +1,72 @@
-import { useRef, useId, type ReactElement } from 'react'
+import { useRef, type ReactElement } from 'react'
 import type { BrainData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { HEAD_PATH } from '../shared/headPath'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
 
-function polarToCartesian(cx: number, cy: number, r: number, a: number) {
-  const rad = ((a - 90) * Math.PI) / 180
+function getDynamicIcon(iconName?: string) {
+  if (!iconName) return null
+  const clean = iconName.trim()
+
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const LucideFn = (LucideIcons as Record<string, any>)[pascalName] || (LucideIcons as Record<string, any>)[clean] || (LucideIcons as Record<string, any>)[clean.toUpperCase()]
+  if (LucideFn) {
+    return (props: { size?: number; color?: string }) => <LucideFn size={props.size ?? 28} color={props.color ?? 'white'} />
+  }
+
+  return null
+}
+
+function polarToCartesian(cx: number, cy: number, r: number, angleDeg: number) {
+  const rad = ((angleDeg - 90) * Math.PI) / 180
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
 }
 
-function arcPath(cx: number, cy: number, R: number, r: number, s: number, e: number) {
-  const a = polarToCartesian(cx, cy, R, e), b = polarToCartesian(cx, cy, R, s)
-  const c = polarToCartesian(cx, cy, r, e), d = polarToCartesian(cx, cy, r, s)
-  const lg = e - s > 180 ? '1' : '0'
+function getArcSlicePath(cx: number, cy: number, R: number, r: number, sDeg: number, eDeg: number, isFirst: boolean, isLast: boolean) {
+  const lg = eDeg - sDeg > 180 ? 1 : 0
+
+  if (isFirst) {
+    const tip = polarToCartesian(cx, cy, (R + r) / 2, sDeg - 6)
+    const b = polarToCartesian(cx, cy, R, sDeg + 1)
+    const a = polarToCartesian(cx, cy, R, eDeg)
+    const c = polarToCartesian(cx, cy, r, eDeg)
+    const d = polarToCartesian(cx, cy, r, sDeg + 1)
+    return `M ${a.x} ${a.y} A ${R} ${R} 0 ${lg} 0 ${b.x} ${b.y} L ${tip.x} ${tip.y} L ${d.x} ${d.y} A ${r} ${r} 0 ${lg} 1 ${c.x} ${c.y} Z`
+  }
+
+  if (isLast) {
+    const tip = polarToCartesian(cx, cy, (R + r) / 2, eDeg + 6)
+    const a = polarToCartesian(cx, cy, R, eDeg - 1)
+    const b = polarToCartesian(cx, cy, R, sDeg)
+    const d = polarToCartesian(cx, cy, r, sDeg)
+    const c = polarToCartesian(cx, cy, r, eDeg - 1)
+    return `M ${a.x} ${a.y} L ${tip.x} ${tip.y} L ${c.x} ${c.y} A ${r} ${r} 0 ${lg} 0 ${d.x} ${d.y} L ${b.x} ${b.y} A ${R} ${R} 0 ${lg} 1 ${a.x} ${a.y} Z`
+  }
+
+  const a = polarToCartesian(cx, cy, R, eDeg)
+  const b = polarToCartesian(cx, cy, R, sDeg)
+  const c = polarToCartesian(cx, cy, r, eDeg)
+  const d = polarToCartesian(cx, cy, r, sDeg)
   return `M ${a.x} ${a.y} A ${R} ${R} 0 ${lg} 0 ${b.x} ${b.y} L ${d.x} ${d.y} A ${r} ${r} 0 ${lg} 1 ${c.x} ${c.y} Z`
 }
 
+const DEFAULT_COLORS = ['#282a5d', '#3365cc', '#ff4d38', '#ffb900', '#52c49c', '#ee6d90']
+const DEFAULT_ICONS = ['wrench', 'lightbulb', 'zap', 'git-branch', 'target', 'mouse-pointer']
+
 export function Brain2Template({ data }: { data: BrainData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const uid = useId().replace(/:/g, '')
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const H = 600
-
   const headId = 'head'
-  const headDef = { x: 580, y: 90, width: 220, height: 380 }
+  const headDef = { x: 330, y: 220, width: 240, height: 320 }
   const headPos = positions[headId]
   const headBbox = {
     x: headPos?.x ?? headDef.x,
@@ -38,149 +76,156 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
   }
   const isHeadSelected = selectedIds.has(headId)
 
-  // Arc ring centered on skull center
-  const sCX = headBbox.x + headBbox.width * 0.50
-  const sCY = headBbox.y + headBbox.height * 0.36
-  const R = headBbox.width * 0.85
-  const r = headBbox.width * 0.55
+  // Arch center and radii in Canvas coordinates
+  const sCX = 450
+  const sCY = 430
+  const R = 350
+  const r = 205
 
   const branches = data.branches.length > 0 ? data.branches : [
-    { title: 'Idea', subtitle: 'Define the concept' },
-    { title: 'Planning', subtitle: 'Structure the roadmap' },
-    { title: 'Design', subtitle: 'Visual identity' },
-    { title: 'Marketing', subtitle: 'Launch strategy' },
-    { title: 'Analytics', subtitle: 'Measure results' },
-    { title: 'Growth', subtitle: 'Scale the business' },
+    { title: 'MIGSO-PCUBED', subtitle: 'content', icon: 'wrench', color: '#282a5d' },
+    { title: 'MIGSO-PCUBED', subtitle: 'content', icon: 'lightbulb', color: '#3365cc' },
+    { title: 'MIGSO-PCUBED', subtitle: 'content', icon: 'zap', color: '#ff4d38' },
+    { title: 'MIGSO-PCUBED', subtitle: 'content', icon: 'git-branch', color: '#ffb900' },
+    { title: 'MIGSO-PCUBED', subtitle: 'content', icon: 'target', color: '#52c49c' },
+    { title: 'MIGSO-PCUBED', subtitle: 'content', icon: 'mouse-pointer', color: '#ee6d90' },
   ]
-  const count = Math.max(1, branches.length)
 
-  // Dynamic angle subdivision for N branches
-  const startAngle = 140
-  const totalSpan = 290
+  const count = Math.max(1, branches.length)
+  const startAngle = 196
+  const endAngle = 344
+  const totalSpan = endAngle - startAngle
   const step = totalSpan / count
-  const gap = count > 1 ? Math.min(4, step * 0.1) : 0
+  const gap = count > 1 ? 2.5 : 0
 
   return (
     <g ref={svgRef}>
-      {/* Arc ring BEHIND the head — Dynamic subdivision based on branch count */}
+      {/* 1. Arch Slices (Interactive) */}
       {branches.map((branch, i) => {
         const id = `arc-${i}`
-        const color = tplColors[id] ?? branch.color ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
+        const color = tplColors[id] ?? branch.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length]!
         const isSelected = selectedIds.has(id)
-        
+
         const sDeg = startAngle + i * step + gap / 2
         const eDeg = startAngle + (i + 1) * step - gap / 2
         const midA = (sDeg + eDeg) / 2
-        const midPt = polarToCartesian(sCX, sCY, (R + r) / 2, midA)
-        
-        const aDef = { x: midPt.x - 35, y: midPt.y - 35, width: 70, height: 70 }
+
+        const pathD = getArcSlicePath(sCX, sCY, R, r, sDeg, eDeg, i === 0, i === count - 1)
+
+        // Mid point of slice for text and icon positioning
+        const ptIcon = polarToCartesian(sCX, sCY, r + (R - r) * 0.78, midA)
+        const ptText = polarToCartesian(sCX, sCY, r + (R - r) * 0.48, midA)
+        const ptNum = polarToCartesian(sCX, sCY, r + (R - r) * 0.20, midA)
+
+        const aDef = { x: ptText.x - 50, y: ptText.y - 50, width: 100, height: 100 }
         const aPos = positions[id]
         const aBbox = {
-          x: aPos?.x ?? aDef.x, y: aPos?.y ?? aDef.y,
-          width: aPos?.width ?? aDef.width, height: aPos?.height ?? aDef.height
+          x: aPos?.x ?? aDef.x,
+          y: aPos?.y ?? aDef.y,
+          width: aPos?.width ?? aDef.width,
+          height: aPos?.height ?? aDef.height,
         }
 
+        const iconKey = branch.icon ?? DEFAULT_ICONS[i % DEFAULT_ICONS.length]
+        const IconFn = getDynamicIcon(iconKey)
+
         return (
-          <g key={id} onMouseDown={e => startDrag(e, id, aBbox)}
-            transform={getTransform(id, aBbox)} style={{ cursor: 'pointer' }}>
-            <path d={arcPath(sCX, sCY, R, r, sDeg, eDeg)}
-              fill={color} opacity={isSelected ? 0.85 : 1}
-              stroke={isSelected ? '#4a90d9' : 'none'} strokeWidth={isSelected ? 2 : 0} />
-            <text x={midPt.x} y={midPt.y + 4} textAnchor="middle"
-              fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
-              0{i + 1}
+          <g key={id} onMouseDown={e => startDrag(e, id, aBbox)} transform={getTransform(id, aBbox)} style={{ cursor: 'pointer' }}>
+            <path
+              d={pathD}
+              fill={color}
+              opacity={isSelected ? 0.88 : 1}
+              stroke={isSelected ? '#4a90d9' : 'none'}
+              strokeWidth={isSelected ? 3 : 0}
+            />
+
+            {/* Icon near outer radius */}
+            {IconFn && (
+              <g transform={`translate(${ptIcon.x - 14}, ${ptIcon.y - 14})`}>
+                <IconFn size={28} color="#ffffff" />
+              </g>
+            )}
+
+            {/* Title & Subtitle centered horizontally in middle of slice */}
+            <text
+              x={ptText.x}
+              y={ptText.y - 6}
+              textAnchor="middle"
+              fontFamily="Arial, sans-serif"
+              fontSize={13}
+              fontWeight={700}
+              fill="#ffffff"
+            >
+              {branch.title}
             </text>
+            <text
+              x={ptText.x}
+              y={ptText.y + 12}
+              textAnchor="middle"
+              fontFamily="Arial, sans-serif"
+              fontSize={11}
+              fontWeight={400}
+              fill="#ffffff"
+              opacity={0.9}
+            >
+              {branch.subtitle ?? `content`}
+            </text>
+
+            {/* Big bold number near inner radius */}
+            <text
+              x={ptNum.x}
+              y={ptNum.y + 7}
+              textAnchor="middle"
+              fontFamily="Arial, sans-serif"
+              fontSize={22}
+              fontWeight={900}
+              fill="#ffffff"
+            >
+              {i + 1}
+            </text>
+
             {isSelected && renderHandles(aBbox, id)}
           </g>
         )
       })}
 
-      {/* Head silhouette ON TOP of arcs — Interactive */}
-      <g transform={getTransform(headId, headBbox)} style={{ cursor: 'pointer' }}
-         onMouseDown={e => startDrag(e, headId, headBbox)}>
+      {/* 2. Central Head Silhouette (Interactive) */}
+      <g
+        transform={getTransform(headId, headBbox)}
+        style={{ cursor: 'pointer' }}
+        onMouseDown={e => startDrag(e, headId, headBbox)}
+      >
         <path
           d={HEAD_PATH}
           transform={`translate(${headBbox.x},${headBbox.y}) scale(${headBbox.width / 300},${headBbox.height / 420})`}
-          fill="#1a1a2e"
+          fill="#111319"
           stroke={isHeadSelected ? '#4a90d9' : 'none'}
           strokeWidth={isHeadSelected ? 3 : 0}
         />
 
-        {/* Lightbulb/arrow icon inside the skull */}
-        <g transform={`translate(${headBbox.x + headBbox.width * 0.18}, ${headBbox.y + headBbox.height * 0.18})`}>
-          <circle cx={28} cy={18} r={20} fill="none" stroke="#666" strokeWidth={2} />
-          <line x1={38} y1={18} x2={8} y2={18} stroke="#666" strokeWidth={2} />
-          <polygon points="6,18 12,12 12,24" fill="#666" />
-          <line x1={10} y1={24} x2={46} y2={24} stroke="#666" strokeWidth={1.5} />
-          <polygon points="48,24 42,19 42,29" fill="#666" />
-          <line x1={18} y1={38} x2={38} y2={38} stroke="#666" strokeWidth={2} />
-          <line x1={20} y1={44} x2={36} y2={44} stroke="#666" strokeWidth={2} />
+        {/* Lightbulb with horizontal arrows icon inside head */}
+        <g transform={`translate(${headBbox.x + headBbox.width * 0.31}, ${headBbox.y + headBbox.height * 0.28})`}>
+          {/* Lightbulb contour */}
+          <path
+            d="M 25 5 C 14 5 5 14 5 25 C 5 32 8 38 14 42 L 14 50 L 36 50 L 36 42 C 42 38 45 32 45 25 C 45 14 36 5 25 5 Z"
+            fill="none"
+            stroke="#d1d5db"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {/* Lightbulb base lines */}
+          <line x1={17} y1={55} x2={33} y2={55} stroke="#d1d5db" strokeWidth={2.5} strokeLinecap="round" />
+          <line x1={20} y1={60} x2={30} y2={60} stroke="#d1d5db" strokeWidth={2.5} strokeLinecap="round" />
+
+          {/* Top Arrow pointing left */}
+          <path d="M 34 20 L 14 20 M 20 14 L 14 20 L 20 26" stroke="#d1d5db" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+          {/* Bottom Arrow pointing right */}
+          <path d="M 16 32 L 36 32 M 30 26 L 36 32 L 30 38" stroke="#d1d5db" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
         </g>
+
         {isHeadSelected && renderHandles(headBbox, headId)}
       </g>
-
-      {/* Branch list cards on the left with Dynamic Connectors to arc slices */}
-      {branches.map((branch, i) => {
-        const id = `branch-${i}`
-        const arcId = `arc-${i}`
-        const color = tplColors[id] ?? branch.color ?? tplColors[arcId] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
-
-        const itemH = Math.min(64, (H - 100) / count - 10)
-        const itemDef = { x: 28, y: 50 + i * ((H - 80) / count), width: 420, height: Math.max(48, itemH) }
-        const pos = positions[id]
-        const bbox = {
-          x: pos?.x ?? itemDef.x, y: pos?.y ?? itemDef.y,
-          width: pos?.width ?? itemDef.width, height: pos?.height ?? itemDef.height
-        }
-        const isSel = selectedIds.has(id)
-
-        // Arc mid point for dynamic connector
-        const sDeg = startAngle + i * step + gap / 2
-        const eDeg = startAngle + (i + 1) * step - gap / 2
-        const midA = (sDeg + eDeg) / 2
-        const arcMidPt = polarToCartesian(sCX, sCY, (R + r) / 2, midA)
-
-        // Dynamic arc position if user moved the arc element
-        const arcPos = positions[arcId]
-        const targetX = arcPos ? arcPos.x + arcPos.width / 2 : arcMidPt.x
-        const targetY = arcPos ? arcPos.y + arcPos.height / 2 : arcMidPt.y
-
-        const connStartX = bbox.x + bbox.width
-        const connStartY = bbox.y + bbox.height / 2
-
-        return (
-          <g key={id}>
-            {/* Dynamic connector line */}
-            <line x1={connStartX} y1={connStartY} x2={targetX} y2={targetY}
-              stroke={color} strokeWidth={1.5} strokeDasharray="4 3" opacity={0.75} />
-            <circle cx={targetX} cy={targetY} r={4} fill={color} />
-
-            <g onMouseDown={e => startDrag(e, id, bbox)}
-              transform={getTransform(id, bbox)} style={{ cursor: 'pointer' }}>
-              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8}
-                fill="#ffffff" stroke={isSel ? '#4a90d9' : '#e2e8f0'} strokeWidth={isSel ? 2.5 : 1}
-                filter="drop-shadow(0 2px 8px rgba(0,0,0,0.07))" />
-              <rect x={bbox.x} y={bbox.y} width={6} height={bbox.height} rx={3} fill={color} />
-              <circle cx={bbox.x + 28} cy={bbox.y + bbox.height / 2} r={13} fill={color} />
-              <text x={bbox.x + 28} y={bbox.y + bbox.height / 2 + 4} textAnchor="middle"
-                fontFamily="Arial, sans-serif" fontSize={11} fontWeight={800} fill="white">
-                {String(i + 1).padStart(2, '0')}
-              </text>
-              <text x={bbox.x + 50} y={bbox.y + 22}
-                fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#1a1a2e">
-                {branch.title}
-              </text>
-              {bbox.height >= 52 && (
-                <text x={bbox.x + 50} y={bbox.y + 42}
-                  fontFamily="Arial, sans-serif" fontSize={11} fill="#666">
-                  {branch.subtitle ?? `Description ${i + 1}`}
-                </text>
-              )}
-              {isSel && renderHandles(bbox, id)}
-            </g>
-          </g>
-        )
-      })}
     </g>
   )
 }
