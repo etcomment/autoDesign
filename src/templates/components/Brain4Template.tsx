@@ -219,15 +219,13 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
         const iconKey = branch?.icon
         const IconFn = getDynamicIcon(iconKey)
 
+        if (!IconFn) return null
+
         return (
           <g key={`icon-${i}`}>
-            {IconFn ? (
-              <g transform={`translate(${piece.cx - 16}, ${piece.cy - 16})`}>
-                <IconFn size={32} color="white" />
-              </g>
-            ) : (
-              piece.icon
-            )}
+            <g transform={`translate(${piece.cx - 16}, ${piece.cy - 16})`}>
+              <IconFn size={32} color="white" />
+            </g>
           </g>
         )
       })}
