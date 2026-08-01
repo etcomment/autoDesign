@@ -272,7 +272,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
               strokeDasharray="4 3"
               opacity={0.85}
             />
-            <circle cx={pcX} cy={pcY} r={5} fill={color} stroke="#ffffff" strokeWidth={1.5} />
+            <circle cx={pcX} cy={pcY} r={4} fill={color} />
 
             {/* Callout Card */}
             <g
