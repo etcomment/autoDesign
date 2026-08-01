@@ -169,7 +169,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
   const baseTy = headBbox.y
 
   // Define organic piece configurations for N = 2 to 8
-  // Every configuration uses authentic puzzle piece paths (PIECE_0..3_PATH) clipped cleanly at y <= 123 (stem excluded)
+  // Preserves strict spatial quadrant color order: 0:Top-Left (#2b2a63), 1:Top-Right (#3365cc), 2:Bottom-Left (#fdbe03), 3+:Bottom-Right (#fd5237)
   const getOrganicPieces = () => {
     if (count === 2) {
       return [
@@ -194,32 +194,32 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
     }
     if (count === 5) {
       return [
-        { path: PIECE_0_PATH, clipId: `clip-top-${uid}`, cx: 65, cy: 44 },
-        { path: PIECE_0_PATH, clipId: `clip-bot-${uid}`, cx: 65, cy: 64 },
+        { path: PIECE_0_PATH, clipId: null, cx: 65, cy: 54 },
         { path: PIECE_1_PATH, clipId: null, cx: 118, cy: 54 },
         { path: PIECE_2_PATH, clipId: null, cx: 74, cy: 96 },
-        { path: PIECE_3_PATH, clipId: null, cx: 118, cy: 110 },
+        { path: PIECE_3_PATH, clipId: `clip-b3-top-${uid}`, cx: 118, cy: 84 },
+        { path: PIECE_3_PATH, clipId: `clip-b3-bot-${uid}`, cx: 118, cy: 118 },
       ]
     }
     if (count === 6) {
       return [
-        { path: PIECE_0_PATH, clipId: `clip-top-${uid}`, cx: 65, cy: 44 },
-        { path: PIECE_0_PATH, clipId: `clip-bot-${uid}`, cx: 65, cy: 64 },
-        { path: PIECE_1_PATH, clipId: `clip-top-${uid}`, cx: 118, cy: 44 },
-        { path: PIECE_1_PATH, clipId: `clip-bot-${uid}`, cx: 118, cy: 64 },
+        { path: PIECE_0_PATH, clipId: null, cx: 65, cy: 54 },
+        { path: PIECE_1_PATH, clipId: null, cx: 118, cy: 54 },
         { path: PIECE_2_PATH, clipId: null, cx: 74, cy: 96 },
-        { path: PIECE_3_PATH, clipId: null, cx: 118, cy: 110 },
+        { path: PIECE_3_PATH, clipId: `clip-b3-p1-${uid}`, cx: 118, cy: 80 },
+        { path: PIECE_3_PATH, clipId: `clip-b3-p2-${uid}`, cx: 118, cy: 98 },
+        { path: PIECE_3_PATH, clipId: `clip-b3-p3-${uid}`, cx: 118, cy: 125 },
       ]
     }
     if (count === 7) {
       return [
-        { path: PIECE_0_PATH, clipId: `clip-top-${uid}`, cx: 65, cy: 44 },
-        { path: PIECE_0_PATH, clipId: `clip-bot-${uid}`, cx: 65, cy: 64 },
-        { path: PIECE_1_PATH, clipId: `clip-top-${uid}`, cx: 118, cy: 44 },
-        { path: PIECE_1_PATH, clipId: `clip-bot-${uid}`, cx: 118, cy: 64 },
-        { path: PIECE_2_PATH, clipId: `clip-b2-top-${uid}`, cx: 74, cy: 84 },
-        { path: PIECE_2_PATH, clipId: `clip-b2-bot-${uid}`, cx: 74, cy: 108 },
-        { path: PIECE_3_PATH, clipId: null, cx: 118, cy: 110 },
+        { path: PIECE_0_PATH, clipId: null, cx: 65, cy: 54 },
+        { path: PIECE_1_PATH, clipId: null, cx: 118, cy: 54 },
+        { path: PIECE_2_PATH, clipId: null, cx: 74, cy: 96 },
+        { path: PIECE_3_PATH, clipId: `clip-b3-p1-${uid}`, cx: 118, cy: 80 },
+        { path: PIECE_3_PATH, clipId: `clip-b3-p2-${uid}`, cx: 118, cy: 95 },
+        { path: PIECE_3_PATH, clipId: `clip-b3-p3-${uid}`, cx: 118, cy: 112 },
+        { path: PIECE_3_PATH, clipId: `clip-b3-p4-${uid}`, cx: 118, cy: 135 },
       ]
     }
     // count === 8
@@ -243,9 +243,6 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
       <g transform={getTransform(headId, headBbox)}>
         <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(${SVG_TRANSFORM_OFFSET_X}, ${SVG_TRANSFORM_OFFSET_Y})`}>
           <defs>
-            <clipPath id={`clip-no-stem-${uid}`}>
-              <rect x="0" y="0" width="200" height="123" />
-            </clipPath>
             <clipPath id={`clip-top-${uid}`}>
               <rect x="0" y="0" width="200" height="54" />
             </clipPath>
@@ -262,7 +259,19 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
               <rect x="0" y="73" width="200" height="22" />
             </clipPath>
             <clipPath id={`clip-b3-bot-${uid}`}>
-              <rect x="100" y="95" width="100" height="28" />
+              <rect x="90" y="95" width="110" height="80" />
+            </clipPath>
+            <clipPath id={`clip-b3-p1-${uid}`}>
+              <rect x="90" y="73" width="110" height="17" />
+            </clipPath>
+            <clipPath id={`clip-b3-p2-${uid}`}>
+              <rect x="90" y="90" width="110" height="17" />
+            </clipPath>
+            <clipPath id={`clip-b3-p3-${uid}`}>
+              <rect x="90" y="107" width="110" height="60" />
+            </clipPath>
+            <clipPath id={`clip-b3-p4-${uid}`}>
+              <rect x="90" y="125" width="110" height="50" />
             </clipPath>
           </defs>
 
