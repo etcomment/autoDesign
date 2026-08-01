@@ -3,6 +3,7 @@ import type { BrainData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
+import { TEMPLATE_ICONS } from '../shared/icons'
 
 // Exact SVG Paths extracted from dessin-1.svg (Inkscape)
 const SVG_TRANSFORM_OFFSET_X = -9.5806452
@@ -193,12 +194,24 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
         {isHeadSelected && renderHandles(headBbox, headId)}
       </g>
 
-      {/* Vector Icons Centered in Canvas Space */}
-      {PIECES_CONFIG.map((piece, i) => (
-        <g key={`icon-${i}`}>
-          {piece.icon}
-        </g>
-      ))}
+      {/* Vector / DSL Icons Centered in Canvas Space */}
+      {PIECES_CONFIG.map((piece, i) => {
+        const branch = branches[i]
+        const iconKey = branch?.icon
+        const IconFn = iconKey ? TEMPLATE_ICONS[iconKey] : null
+
+        return (
+          <g key={`icon-${i}`}>
+            {IconFn ? (
+              <g transform={`translate(${piece.cx - 16}, ${piece.cy - 16})`}>
+                <IconFn size={32} color="white" />
+              </g>
+            ) : (
+              piece.icon
+            )}
+          </g>
+        )
+      })}
 
       {/* Callout Cards & Dynamic Connectors */}
       {branches.slice(0, 4).map((branch, i) => {
