@@ -165,13 +165,14 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
   const uid = useId().replace(/:/g, '')
 
   // Create N dynamic sector clipPaths for N != 4 (N = 2, 3, 5, 6, 7, 8)
+  // Coordinates are in Inkscape dessin-1.svg space: Brain Center = (92, 85), Radius = 75
   const sectorClips = Array.from({ length: count }, (_, i) => {
     const angleStep = 360 / count
     const startDeg = i * angleStep - 90
     const endDeg = (i + 1) * angleStep - 90
     return {
       id: `brain-slice-${uid}-${i}`,
-      path: createSectorPath(88.5, 76.5, 120, startDeg, endDeg),
+      path: createSectorPath(92, 85, 75, startDeg, endDeg),
     }
   })
 
@@ -179,19 +180,23 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
   const baseTx = headBbox.x
   const baseTy = headBbox.y
 
+  // Brain center in Canvas space for dynamic icons and connectors
+  const headCenterX = headBbox.x + headBbox.width * 0.415
+  const headCenterY = headBbox.y + headBbox.height * 0.35
+
   return (
     <g ref={svgRef}>
-      <defs>
-        {count !== 4 && sectorClips.map(clip => (
-          <clipPath key={clip.id} id={clip.id}>
-            <path d={clip.path} />
-          </clipPath>
-        ))}
-      </defs>
-
       {/* Head Silhouette + Brain vector container from dessin-1.svg */}
       <g transform={getTransform(headId, headBbox)}>
         <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(${SVG_TRANSFORM_OFFSET_X}, ${SVG_TRANSFORM_OFFSET_Y})`}>
+          <defs>
+            {count !== 4 && sectorClips.map(clip => (
+              <clipPath key={clip.id} id={clip.id}>
+                <path d={clip.path} />
+              </clipPath>
+            ))}
+          </defs>
+
           {/* 1. SOLID Head Profile Silhouette (filled grey #F0F0F0) */}
           <path
             d={HEAD_PATH_EXACT}
@@ -293,9 +298,9 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
         } else {
           const midDeg = (i + 0.5) * (360 / count) - 90
           const rad = (midDeg * Math.PI) / 180
-          const rCenter = 42
-          iconX = 425 + rCenter * Math.cos(rad)
-          iconY = 190 + rCenter * Math.sin(rad)
+          const rCenter = 35
+          iconX = headCenterX + rCenter * Math.cos(rad)
+          iconY = headCenterY + rCenter * Math.sin(rad)
         }
 
         return (
@@ -354,9 +359,9 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
         } else {
           const midDeg = (i + 0.5) * (360 / count) - 90
           const rad = (midDeg * Math.PI) / 180
-          const rCenter = 48
-          pcX = 425 + rCenter * Math.cos(rad)
-          pcY = 190 + rCenter * Math.sin(rad)
+          const rCenter = 52
+          pcX = headCenterX + rCenter * Math.cos(rad)
+          pcY = headCenterY + rCenter * Math.sin(rad)
         }
 
         const pos = positions[id]
