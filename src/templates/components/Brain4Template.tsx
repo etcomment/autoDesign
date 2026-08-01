@@ -147,7 +147,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
             onMouseDown={e => startDrag(e, headId, headBbox)}
           />
 
-          {/* Solid White Brain Background & Halo (100% clean white joints and outer halo) */}
+          {/* Solid White Brain Background & Halo (Ultra-fine white halo) */}
           <g>
             {PIECES_CONFIG.map((piece, i) => (
               <path
@@ -155,14 +155,14 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
                 d={piece.path}
                 fill="#ffffff"
                 stroke="#ffffff"
-                strokeWidth={6}
+                strokeWidth={0.8}
                 strokeLinejoin="round"
                 strokeLinecap="round"
               />
             ))}
           </g>
 
-          {/* 2. The 4 Interlocking Brain Puzzle Pieces (micro-shifted 0.3px closer with fine 0.7px white stroke) */}
+          {/* 2. The 4 Interlocking Brain Puzzle Pieces (Ultra-thin 0.25px white stroke) */}
           {PIECES_CONFIG.map((piece, i) => {
             const pid = `piece-${i}`
             const branch = branches[i]
@@ -176,7 +176,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
                 d={piece.path}
                 fill={color}
                 stroke="#ffffff"
-                strokeWidth={0.7}
+                strokeWidth={0.25}
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 transform={`translate(${offset.dx}, ${offset.dy})`}
