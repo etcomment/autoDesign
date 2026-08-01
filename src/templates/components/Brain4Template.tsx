@@ -174,14 +174,14 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
     if (count === 2) {
       return [
         { path: `${PIECE_0_PATH} ${PIECE_2_PATH}`, clipId: null, cx: 68, cy: 75 },
-        { path: `${PIECE_1_PATH} ${PIECE_3_PATH}`, clipId: `clip-no-stem-${uid}`, cx: 118, cy: 75 },
+        { path: `${PIECE_1_PATH} ${PIECE_3_PATH}`, clipId: null, cx: 118, cy: 90 },
       ]
     }
     if (count === 3) {
       return [
         { path: PIECE_0_PATH, clipId: null, cx: 65, cy: 54 },
         { path: PIECE_1_PATH, clipId: null, cx: 118, cy: 54 },
-        { path: `${PIECE_2_PATH} ${PIECE_3_PATH}`, clipId: `clip-no-stem-${uid}`, cx: 96, cy: 105 },
+        { path: `${PIECE_2_PATH} ${PIECE_3_PATH}`, clipId: null, cx: 96, cy: 105 },
       ]
     }
     if (count === 4) {
@@ -189,7 +189,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
         { path: PIECE_0_PATH, clipId: null, cx: 65, cy: 54 },
         { path: PIECE_1_PATH, clipId: null, cx: 118, cy: 54 },
         { path: PIECE_2_PATH, clipId: null, cx: 74, cy: 96 },
-        { path: PIECE_3_PATH, clipId: `clip-no-stem-${uid}`, cx: 118, cy: 102 },
+        { path: PIECE_3_PATH, clipId: null, cx: 118, cy: 110 },
       ]
     }
     if (count === 5) {
@@ -198,7 +198,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
         { path: PIECE_0_PATH, clipId: `clip-bot-${uid}`, cx: 65, cy: 64 },
         { path: PIECE_1_PATH, clipId: null, cx: 118, cy: 54 },
         { path: PIECE_2_PATH, clipId: null, cx: 74, cy: 96 },
-        { path: PIECE_3_PATH, clipId: `clip-no-stem-${uid}`, cx: 118, cy: 102 },
+        { path: PIECE_3_PATH, clipId: null, cx: 118, cy: 110 },
       ]
     }
     if (count === 6) {
@@ -208,7 +208,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
         { path: PIECE_1_PATH, clipId: `clip-top-${uid}`, cx: 118, cy: 44 },
         { path: PIECE_1_PATH, clipId: `clip-bot-${uid}`, cx: 118, cy: 64 },
         { path: PIECE_2_PATH, clipId: null, cx: 74, cy: 96 },
-        { path: PIECE_3_PATH, clipId: `clip-no-stem-${uid}`, cx: 118, cy: 102 },
+        { path: PIECE_3_PATH, clipId: null, cx: 118, cy: 110 },
       ]
     }
     if (count === 7) {
@@ -219,7 +219,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
         { path: PIECE_1_PATH, clipId: `clip-bot-${uid}`, cx: 118, cy: 64 },
         { path: PIECE_2_PATH, clipId: `clip-b2-top-${uid}`, cx: 74, cy: 84 },
         { path: PIECE_2_PATH, clipId: `clip-b2-bot-${uid}`, cx: 74, cy: 108 },
-        { path: PIECE_3_PATH, clipId: `clip-no-stem-${uid}`, cx: 118, cy: 102 },
+        { path: PIECE_3_PATH, clipId: null, cx: 118, cy: 110 },
       ]
     }
     // count === 8
@@ -231,7 +231,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
       { path: PIECE_2_PATH, clipId: `clip-b2-top-${uid}`, cx: 74, cy: 84 },
       { path: PIECE_2_PATH, clipId: `clip-b2-bot-${uid}`, cx: 74, cy: 108 },
       { path: PIECE_3_PATH, clipId: `clip-b3-top-${uid}`, cx: 118, cy: 84 },
-      { path: PIECE_3_PATH, clipId: `clip-b3-bot-${uid}`, cx: 118, cy: 108 },
+      { path: PIECE_3_PATH, clipId: `clip-b3-bot-${uid}`, cx: 118, cy: 118 },
     ]
   }
 
