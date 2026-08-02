@@ -12,20 +12,28 @@ function squareDistanceToCenter(point: RingPoint): number {
   return dx * dx + dy * dy
 }
 
-function areaDensity(angle: number): number {
-  const inner = squareDistanceToCenter(sampleContour(INNER_CONTOUR, angle))
-  const outer = squareDistanceToCenter(sampleContour(OUTER_CONTOUR, angle))
+function areaDensity(
+  angle: number,
+  outerContour: readonly (readonly [number, number])[],
+  innerContour: readonly (readonly [number, number])[],
+): number {
+  const inner = squareDistanceToCenter(sampleContour(innerContour, angle))
+  const outer = squareDistanceToCenter(sampleContour(outerContour, angle))
   return 0.5 * (outer - inner)
 }
 
-export function equalAreaBoundaries(count: number): number[] {
+export function equalAreaBoundaries(
+  count: number,
+  outerContour: readonly (readonly [number, number])[] = OUTER_CONTOUR,
+  innerContour: readonly (readonly [number, number])[] = INNER_CONTOUR,
+): number[] {
   const span = RING_END_ANGLE - RING_START_ANGLE
   const angleForStep = (step: number) => RING_START_ANGLE + (span * step) / AREA_SAMPLES
   const cumulative = new Array<number>(AREA_SAMPLES + 1)
   cumulative[0] = 0
   for (let step = 1; step <= AREA_SAMPLES; step += 1) {
-    const previous = areaDensity(angleForStep(step - 1))
-    const current = areaDensity(angleForStep(step))
+    const previous = areaDensity(angleForStep(step - 1), outerContour, innerContour)
+    const current = areaDensity(angleForStep(step), outerContour, innerContour)
     cumulative[step] = cumulative[step - 1]! + 0.5 * (previous + current) * (span / AREA_SAMPLES)
   }
   const total = cumulative[AREA_SAMPLES]!
@@ -613,6 +621,26 @@ export const INNER_CONTOUR: readonly (readonly [number, number])[] = [
   [150.88, 161.42],
 ]
 
+function meanRadius(contour: readonly (readonly [number, number])[]): number {
+  let total = 0
+  for (const [x, y] of contour) {
+    total += Math.hypot(x - RING_CENTER.x, y - RING_CENTER.y)
+  }
+  return total / contour.length
+}
+
+function buildSmoothContour(radius: number): readonly (readonly [number, number])[] {
+  const points: [number, number][] = []
+  for (let step = 0; step <= RING_END_ANGLE - RING_START_ANGLE; step += RING_ANGLE_STEP) {
+    const radians = ((RING_START_ANGLE + step) * Math.PI) / 180
+    points.push([RING_CENTER.x + radius * Math.cos(radians), RING_CENTER.y + radius * Math.sin(radians)])
+  }
+  return points
+}
+
+export const SMOOTH_OUTER_CONTOUR: readonly (readonly [number, number])[] = buildSmoothContour(meanRadius(OUTER_CONTOUR))
+export const SMOOTH_INNER_CONTOUR: readonly (readonly [number, number])[] = buildSmoothContour(meanRadius(INNER_CONTOUR))
+
 function sampleContour(contour: readonly (readonly [number, number])[], angle: number): RingPoint {
   const normalized = Math.max(RING_START_ANGLE, Math.min(RING_END_ANGLE, angle))
   const position = (normalized - RING_START_ANGLE) / RING_ANGLE_STEP
@@ -692,17 +720,23 @@ const START_CAP_CURVE = "L 54.08487,180.74859 C 45.96142,188.97263 39.28987,195.
 const END_CAP_OUTER = { x: 176.88632, y: 195.46801 }
 const END_CAP_INNER = { x: 162.08327, y: 180.64845 }
 
-export function buildSectorPath(startAngle: number, endAngle: number, gapWidth = RING_GAP_WIDTH): string {
+export function buildSectorPath(
+  startAngle: number,
+  endAngle: number,
+  gapWidth = RING_GAP_WIDTH,
+  outerContour: readonly (readonly [number, number])[] = OUTER_CONTOUR,
+  innerContour: readonly (readonly [number, number])[] = INNER_CONTOUR,
+): string {
   const isFirst = startAngle === RING_START_ANGLE
   const isLast = endAngle === RING_END_ANGLE
   const startGap = isFirst ? 0 : gapWidth
   const endGap = isLast ? 0 : gapWidth
-  const outerStart = edgeIntersection(OUTER_CONTOUR, startAngle, 1, startGap)
-  const outerEnd = edgeIntersection(OUTER_CONTOUR, endAngle, -1, endGap)
-  const innerStart = edgeIntersection(INNER_CONTOUR, startAngle, 1, startGap)
-  const innerEnd = edgeIntersection(INNER_CONTOUR, endAngle, -1, endGap)
-  const outer = arcPoints(OUTER_CONTOUR, outerStart.angle, outerEnd.angle)
-  const inner = arcPoints(INNER_CONTOUR, innerEnd.angle, innerStart.angle)
+  const outerStart = edgeIntersection(outerContour, startAngle, 1, startGap)
+  const outerEnd = edgeIntersection(outerContour, endAngle, -1, endGap)
+  const innerStart = edgeIntersection(innerContour, startAngle, 1, startGap)
+  const innerEnd = edgeIntersection(innerContour, endAngle, -1, endGap)
+  const outer = arcPoints(outerContour, outerStart.angle, outerEnd.angle)
+  const inner = arcPoints(innerContour, innerEnd.angle, innerStart.angle)
   if (isFirst) {
     return [
       "M",
@@ -741,9 +775,14 @@ export function buildSectorPath(startAngle: number, endAngle: number, gapWidth =
   ].join(" ")
 }
 
-export function getRingPoint(angle: number, innerFraction: number): RingPoint {
-  const inner = sampleContour(INNER_CONTOUR, angle)
-  const outer = sampleContour(OUTER_CONTOUR, angle)
+export function getRingPoint(
+  angle: number,
+  innerFraction: number,
+  outerContour: readonly (readonly [number, number])[] = OUTER_CONTOUR,
+  innerContour: readonly (readonly [number, number])[] = INNER_CONTOUR,
+): RingPoint {
+  const inner = sampleContour(innerContour, angle)
+  const outer = sampleContour(outerContour, angle)
   return {
     x: inner.x + (outer.x - inner.x) * innerFraction,
     y: inner.y + (outer.y - inner.y) * innerFraction,
