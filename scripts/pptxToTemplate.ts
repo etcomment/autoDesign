@@ -430,6 +430,12 @@ Example:
   const templateFileName = `${pascalName}Template.tsx`
   const targetPath = path.join(process.cwd(), 'src/templates/components', templateFileName)
 
+  if (fs.existsSync(targetPath) && !args.includes('--force')) {
+    console.error(`⚠️ Attention : Le fichier ${templateFileName} existe déjà dans src/templates/components/.`)
+    console.error(`Pour le remplacer explicitement, ajoutez le drapeau --force.`)
+    process.exit(1)
+  }
+
   const componentTsx = generateComponentTsx(pascalName, shapes, svgPaths)
   fs.writeFileSync(targetPath, componentTsx, 'utf-8')
   console.log(`✅ Created Template Component: src/templates/components/${templateFileName}`)
