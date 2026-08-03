@@ -607,7 +607,7 @@ export type TemplateData =
   | ValueChain2Data
   | CircleData
 
-export type TemplateType = string
+export type TemplateType = | 'testlayout60' | string
 
 export interface TemplateDefinition {
   type: TemplateType

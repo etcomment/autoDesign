@@ -59,6 +59,92 @@ function extractTextFromSp(sp: any): string {
   return textParts.join(' ').trim()
 }
 
+function extractShapePathD(spPr: any, w: number, h: number): string | undefined {
+  if (!spPr) return undefined
+
+  // 1. Custom Geometry (a:custGeom)
+  const custGeom = spPr['a:custGeom']
+  if (custGeom && custGeom['a:pathLst']) {
+    const pathLst = custGeom['a:pathLst']
+    const paths = Array.isArray(pathLst['a:path']) ? pathLst['a:path'] : [pathLst['a:path']].filter(Boolean)
+    const commands: string[] = []
+
+    for (const p of paths) {
+      const pW = parseEMU(p['@_w']) || w || 1
+      const pH = parseEMU(p['@_h']) || h || 1
+      const scaleX = w > 0 ? w / pW : 1
+      const scaleY = h > 0 ? h / pH : 1
+
+      for (const key of Object.keys(p)) {
+        if (key === 'a:moveTo') {
+          const pt = p['a:moveTo']?.['a:pt']
+          if (pt) {
+            const x = Math.round(parseEMU(pt['@_x']) * scaleX)
+            const y = Math.round(parseEMU(pt['@_y']) * scaleY)
+            commands.push(`M ${x} ${y}`)
+          }
+        } else if (key === 'a:lnTo') {
+          const rawPts = Array.isArray(p['a:lnTo']) ? p['a:lnTo'] : [p['a:lnTo']].filter(Boolean)
+          for (const item of rawPts) {
+            const pt = item['a:pt']
+            if (pt) {
+              const x = Math.round(parseEMU(pt['@_x']) * scaleX)
+              const y = Math.round(parseEMU(pt['@_y']) * scaleY)
+              commands.push(`L ${x} ${y}`)
+            }
+          }
+        } else if (key === 'a:cubicBezTo') {
+          const rawPts = Array.isArray(p['a:cubicBezTo']) ? p['a:cubicBezTo'] : [p['a:cubicBezTo']].filter(Boolean)
+          for (const item of rawPts) {
+            const pts = Array.isArray(item['a:pt']) ? item['a:pt'] : [item['a:pt']].filter(Boolean)
+            if (pts.length >= 3) {
+              const x1 = Math.round(parseEMU(pts[0]['@_x']) * scaleX), y1 = Math.round(parseEMU(pts[0]['@_y']) * scaleY)
+              const x2 = Math.round(parseEMU(pts[1]['@_x']) * scaleX), y2 = Math.round(parseEMU(pts[1]['@_y']) * scaleY)
+              const x3 = Math.round(parseEMU(pts[2]['@_x']) * scaleX), y3 = Math.round(parseEMU(pts[2]['@_y']) * scaleY)
+              commands.push(`C ${x1} ${y1}, ${x2} ${y2}, ${x3} ${y3}`)
+            }
+          }
+        } else if (key === 'a:close') {
+          commands.push('Z')
+        }
+      }
+    }
+
+    if (commands.length > 0) {
+      return commands.join(' ')
+    }
+  }
+
+  // 2. Preset Geometry (a:prstGeom)
+  const prst = spPr['a:prstGeom']?.['@_prst']
+  if (prst) {
+    switch (prst) {
+      case 'ellipse':
+        return `M ${Math.round(w / 2)} 0 A ${Math.round(w / 2)} ${Math.round(h / 2)} 0 1 1 ${Math.round(w / 2 - 0.01)} 0 Z`
+      case 'triangle':
+        return `M ${Math.round(w / 2)} 0 L ${w} ${h} L 0 ${h} Z`
+      case 'diamond':
+        return `M ${Math.round(w / 2)} 0 L ${w} ${Math.round(h / 2)} L ${Math.round(w / 2)} ${h} L 0 ${Math.round(h / 2)} Z`
+      case 'chevron':
+        return `M 0 0 L ${Math.round(w * 0.75)} 0 L ${w} ${Math.round(h / 2)} L ${Math.round(w * 0.75)} ${h} L 0 ${h} L ${Math.round(w * 0.25)} ${Math.round(h / 2)} Z`
+      case 'rightArrow':
+        return `M 0 ${Math.round(h * 0.25)} L ${Math.round(w * 0.6)} ${Math.round(h * 0.25)} L ${Math.round(w * 0.6)} 0 L ${w} ${Math.round(h * 0.5)} L ${Math.round(w * 0.6)} ${h} L ${Math.round(w * 0.6)} ${Math.round(h * 0.75)} L 0 ${Math.round(h * 0.75)} Z`
+      case 'leftArrow':
+        return `M ${w} ${Math.round(h * 0.25)} L ${Math.round(w * 0.4)} ${Math.round(h * 0.25)} L ${Math.round(w * 0.4)} 0 L 0 ${Math.round(h * 0.5)} L ${Math.round(w * 0.4)} ${h} L ${Math.round(w * 0.4)} ${Math.round(h * 0.75)} L ${w} ${Math.round(h * 0.75)} Z`
+      case 'hexagon':
+        return `M ${Math.round(w * 0.25)} 0 L ${Math.round(w * 0.75)} 0 L ${w} ${Math.round(h * 0.5)} L ${Math.round(w * 0.75)} ${h} L ${Math.round(w * 0.25)} ${h} L 0 ${Math.round(h * 0.5)} Z`
+      case 'pentagon':
+        return `M ${Math.round(w * 0.5)} 0 L ${w} ${Math.round(h * 0.38)} L ${Math.round(w * 0.81)} ${h} L ${Math.round(w * 0.19)} ${h} L 0 ${Math.round(h * 0.38)} Z`
+      case 'star5':
+        return `M ${Math.round(w * 0.5)} 0 L ${Math.round(w * 0.62)} ${Math.round(h * 0.38)} L ${w} ${Math.round(h * 0.38)} L ${Math.round(w * 0.69)} ${Math.round(h * 0.62)} L ${Math.round(w * 0.81)} ${h} L ${Math.round(w * 0.5)} ${Math.round(h * 0.75)} L ${Math.round(w * 0.19)} ${h} L ${Math.round(w * 0.31)} ${Math.round(h * 0.62)} L 0 ${Math.round(h * 0.38)} L ${Math.round(w * 0.38)} ${Math.round(h * 0.38)} Z`
+      default:
+        return undefined
+    }
+  }
+
+  return undefined
+}
+
 function parseSp(sp: any, idx: number): ShapeInfo | null {
   const spPr = sp['p:spPr']
   if (!spPr) return null
@@ -80,6 +166,7 @@ function parseSp(sp: any, idx: number): ShapeInfo | null {
 
   const text = extractTextFromSp(sp)
   const name = sp['p:nvSpPr']?.['p:cNvPr']?.['@_name'] ?? `Shape_${idx}`
+  const pathD = extractShapePathD(spPr, w, h)
 
   return {
     id: `sp-${idx}`,
@@ -88,6 +175,7 @@ function parseSp(sp: any, idx: number): ShapeInfo | null {
     fillColor,
     strokeColor,
     text,
+    pathD,
   }
 }
 
@@ -191,6 +279,7 @@ function generateComponentTsx(
     fillColor: s.fillColor || defaultColors[i % defaultColors.length]!,
     strokeColor: s.strokeColor || '#ffffff',
     text: s.text || `Item ${i + 1}`,
+    pathD: s.pathD || undefined,
   }))
 
   const shapesConst = `const PPTX_EXTRACTED_SHAPES = ${JSON.stringify(sanitizedShapes, null, 2)}\n`
@@ -273,17 +362,28 @@ export function ${componentName}({ data }: { data: BrainData }): ReactElement {
 
         return (
           <g key={id} onMouseDown={e => startDrag(e, id, bbox)} transform={getTransform(id, bbox)} style={{ cursor: 'pointer' }}>
-            <rect
-              x={bbox.x}
-              y={bbox.y}
-              width={bbox.width}
-              height={bbox.height}
-              rx={8}
-              fill={color}
-              opacity={isSelected ? 0.88 : 1}
-              stroke={isSelected ? '#4a90d9' : (shapeDef.strokeColor || '#ffffff')}
-              strokeWidth={isSelected ? 2.5 : 1}
-            />
+            {shapeDef.pathD ? (
+              <path
+                d={shapeDef.pathD}
+                transform={"translate(" + bbox.x + ", " + bbox.y + ")"}
+                fill={color}
+                opacity={isSelected ? 0.88 : 1}
+                stroke={isSelected ? '#4a90d9' : (shapeDef.strokeColor || '#ffffff')}
+                strokeWidth={isSelected ? 2.5 : 1}
+              />
+            ) : (
+              <rect
+                x={bbox.x}
+                y={bbox.y}
+                width={bbox.width}
+                height={bbox.height}
+                rx={8}
+                fill={color}
+                opacity={isSelected ? 0.88 : 1}
+                stroke={isSelected ? '#4a90d9' : (shapeDef.strokeColor || '#ffffff')}
+                strokeWidth={isSelected ? 2.5 : 1}
+              />
+            )}
 
             {IconFn && (
               <g transform={\`translate(\${bbox.x + 10}, \${bbox.y + 10})\`}>
