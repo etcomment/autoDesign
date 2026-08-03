@@ -3,8 +3,8 @@ import {
   equalAreaBoundaries,
   buildSectorPath,
   getRingPoint,
-  SMOOTH_OUTER_CONTOUR,
-  SMOOTH_INNER_CONTOUR,
+  OUTER_CONTOUR,
+  INNER_CONTOUR,
 } from '../ringGeometry'
 import { RING_CENTER, RING_START_ANGLE, RING_END_ANGLE, RING_GAP_WIDTH } from '../ringGeometry'
 
@@ -12,76 +12,77 @@ function contourRadii(contour: readonly (readonly [number, number])[]): number[]
   return contour.map(([x, y]) => Math.hypot(x - RING_CENTER.x, y - RING_CENTER.y))
 }
 
-function mean(values: number[]): number {
-  return values.reduce((sum, value) => sum + value, 0) / values.length
+function firstSlice(boundaries: number[]): string {
+  return buildSectorPath(boundaries[0]!, boundaries[1]!, RING_GAP_WIDTH, OUTER_CONTOUR, INNER_CONTOUR)
 }
 
-describe('contours lisses pour N ≠ 6', () => {
-  it('le contour exterieur lisse a un rayon constant', () => {
-    const radii = contourRadii(SMOOTH_OUTER_CONTOUR)
-    const average = mean(radii)
-    for (const radius of radii) {
-      expect(Math.abs(radius - average)).toBeLessThan(0.01)
+function lastSlice(boundaries: number[]): string {
+  return buildSectorPath(
+    boundaries[boundaries.length - 2]!,
+    boundaries[boundaries.length - 1]!,
+    RING_GAP_WIDTH,
+    OUTER_CONTOUR,
+    INNER_CONTOUR,
+  )
+}
+
+describe('anneau exact pour tout N', () => {
+  const counts = [2, 5, 6, 7, 8, 11, 16]
+
+  it('equalAreaBoundaries couvre exactement l arc de l anneau', () => {
+    for (const count of counts) {
+      const boundaries = equalAreaBoundaries(count)
+      expect(boundaries[0]).toBe(RING_START_ANGLE)
+      expect(boundaries[boundaries.length - 1]).toBe(RING_END_ANGLE)
+      expect(boundaries.length).toBe(count + 1)
     }
   })
 
-  it('le contour interieur lisse a un rayon constant', () => {
-    const radii = contourRadii(SMOOTH_INNER_CONTOUR)
-    const average = mean(radii)
-    for (const radius of radii) {
-      expect(Math.abs(radius - average)).toBeLessThan(0.01)
+  it('le bas du premier bloc est identique quel que soit N (cape START_CAP_OUTER)', () => {
+    const starts = counts.map(count => firstSlice(equalAreaBoundaries(count)))
+    for (const d of starts) {
+      expect(d.startsWith('M 39.26,195.70 38.66,195.06')).toBe(true)
     }
   })
 
-  it('equalAreaBoundaries sur un anneau circulaire repartit les angles uniformement', () => {
-    const boundaries = equalAreaBoundaries(11, SMOOTH_OUTER_CONTOUR, SMOOTH_INNER_CONTOUR)
-    expect(boundaries[0]).toBe(RING_START_ANGLE)
-    expect(boundaries[boundaries.length - 1]).toBe(RING_END_ANGLE)
-    expect(boundaries.length).toBe(12)
-    const spans = boundaries.slice(1).map((end, i) => end - boundaries[i]!)
-    const reference = spans[0]!
-    for (const span of spans) {
-      expect(Math.abs(span - reference)).toBeLessThan(0.5)
+  it('le bas du dernier bloc est identique quel que soit N (cape END_CAP_OUTER)', () => {
+    const ends = counts.map(count => lastSlice(equalAreaBoundaries(count)))
+    for (const d of ends) {
+      expect(d).toContain('176.89,195.47 L 162.08,180.65')
     }
   })
 
-  it('buildSectorPath sur contours lisses produit des chemins fermes pour chaque tranche', () => {
-    const boundaries = equalAreaBoundaries(11, SMOOTH_OUTER_CONTOUR, SMOOTH_INNER_CONTOUR)
-    for (let i = 0; i < boundaries.length - 1; i += 1) {
-      const d = buildSectorPath(boundaries[i]!, boundaries[i + 1]!, RING_GAP_WIDTH, SMOOTH_OUTER_CONTOUR, SMOOTH_INNER_CONTOUR)
-      expect(d.startsWith('M ')).toBe(true)
-      expect(d.endsWith(' Z')).toBe(true)
+  it('le premier bloc se referme avec la courbe de cape issue de dessin-2.svg', () => {
+    for (const count of counts) {
+      const d = firstSlice(equalAreaBoundaries(count))
+      expect(d).toContain('68.85,165.80 L 54.08487,180.74859')
+      expect(d.endsWith('39.25919,195.70138 Z')).toBe(true)
     }
   })
 
-  it('la premiere et derniere tranche lisses ferment droit sans pointes externes', () => {
-    const boundaries = equalAreaBoundaries(11, SMOOTH_OUTER_CONTOUR, SMOOTH_INNER_CONTOUR)
-    const inner = mean(contourRadii(SMOOTH_INNER_CONTOUR))
-    const outer = mean(contourRadii(SMOOTH_OUTER_CONTOUR))
-    const tolerance = 0.01
-    const slices = [
-      buildSectorPath(boundaries[0]!, boundaries[1]!, RING_GAP_WIDTH, SMOOTH_OUTER_CONTOUR, SMOOTH_INNER_CONTOUR),
-      buildSectorPath(boundaries[10]!, boundaries[11]!, RING_GAP_WIDTH, SMOOTH_OUTER_CONTOUR, SMOOTH_INNER_CONTOUR),
-    ]
-    for (const d of slices) {
-      const pairs = d.match(/-?\d+\.?\d*(?:[eE]-?\d+)?,-?\d+\.?\d*(?:[eE]-?\d+)?/g) ?? []
-      for (const pair of pairs) {
-        const [x, y] = pair.split(',').map(Number)
-        const radius = Math.hypot(x! - RING_CENTER.x, y! - RING_CENTER.y)
-        expect(radius).toBeGreaterThanOrEqual(inner - tolerance)
-        expect(radius).toBeLessThanOrEqual(outer + tolerance)
+  it('chaque tranche produit un chemin ferme', () => {
+    for (const count of counts) {
+      const boundaries = equalAreaBoundaries(count)
+      for (let i = 0; i < boundaries.length - 1; i += 1) {
+        const d = buildSectorPath(boundaries[i]!, boundaries[i + 1]!, RING_GAP_WIDTH, OUTER_CONTOUR, INNER_CONTOUR)
+        expect(d.startsWith('M ')).toBe(true)
+        expect(d.endsWith(' Z')).toBe(true)
       }
     }
   })
 
-  it('getRingPoint avec contours lisses place le contenu entre les bords', () => {
-    const boundaries = equalAreaBoundaries(11, SMOOTH_OUTER_CONTOUR, SMOOTH_INNER_CONTOUR)
-    const bisector = (boundaries[1]! + boundaries[2]!) / 2
-    const point = getRingPoint(bisector, 0.5, SMOOTH_OUTER_CONTOUR, SMOOTH_INNER_CONTOUR)
-    const inner = mean(contourRadii(SMOOTH_INNER_CONTOUR))
-    const outer = mean(contourRadii(SMOOTH_OUTER_CONTOUR))
-    const radius = Math.hypot(point.x - RING_CENTER.x, point.y - RING_CENTER.y)
-    expect(radius).toBeGreaterThan(inner)
-    expect(radius).toBeLessThan(outer)
+  it('getRingPoint place le contenu entre les bords du contour exact', () => {
+    const innerMin = Math.min(...contourRadii(INNER_CONTOUR))
+    const outerMax = Math.max(...contourRadii(OUTER_CONTOUR))
+    for (const count of counts) {
+      const boundaries = equalAreaBoundaries(count)
+      const bisector = (boundaries[1]! + boundaries[2]!) / 2
+      for (const fraction of [0.1, 0.5, 0.9]) {
+        const point = getRingPoint(bisector, fraction, OUTER_CONTOUR, INNER_CONTOUR)
+        const radius = Math.hypot(point.x - RING_CENTER.x, point.y - RING_CENTER.y)
+        expect(radius).toBeGreaterThanOrEqual(innerMin)
+        expect(radius).toBeLessThanOrEqual(outerMax)
+      }
+    }
   })
 })

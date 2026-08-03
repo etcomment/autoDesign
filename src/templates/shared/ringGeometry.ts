@@ -621,26 +621,6 @@ export const INNER_CONTOUR: readonly (readonly [number, number])[] = [
   [150.88, 161.42],
 ]
 
-function meanRadius(contour: readonly (readonly [number, number])[]): number {
-  let total = 0
-  for (const [x, y] of contour) {
-    total += Math.hypot(x - RING_CENTER.x, y - RING_CENTER.y)
-  }
-  return total / contour.length
-}
-
-function buildSmoothContour(radius: number): readonly (readonly [number, number])[] {
-  const points: [number, number][] = []
-  for (let step = 0; step <= RING_END_ANGLE - RING_START_ANGLE; step += RING_ANGLE_STEP) {
-    const radians = ((RING_START_ANGLE + step) * Math.PI) / 180
-    points.push([RING_CENTER.x + radius * Math.cos(radians), RING_CENTER.y + radius * Math.sin(radians)])
-  }
-  return points
-}
-
-export const SMOOTH_OUTER_CONTOUR: readonly (readonly [number, number])[] = buildSmoothContour(meanRadius(OUTER_CONTOUR))
-export const SMOOTH_INNER_CONTOUR: readonly (readonly [number, number])[] = buildSmoothContour(meanRadius(INNER_CONTOUR))
-
 function sampleContour(contour: readonly (readonly [number, number])[], angle: number): RingPoint {
   const normalized = Math.max(RING_START_ANGLE, Math.min(RING_END_ANGLE, angle))
   const position = (normalized - RING_START_ANGLE) / RING_ANGLE_STEP
@@ -729,7 +709,6 @@ export function buildSectorPath(
 ): string {
   const isFirst = startAngle === RING_START_ANGLE
   const isLast = endAngle === RING_END_ANGLE
-  const usesSmoothContours = outerContour === SMOOTH_OUTER_CONTOUR && innerContour === SMOOTH_INNER_CONTOUR
   const startGap = isFirst ? 0 : gapWidth
   const endGap = isLast ? 0 : gapWidth
   const outerStart = edgeIntersection(outerContour, startAngle, 1, startGap)
@@ -738,7 +717,7 @@ export function buildSectorPath(
   const innerEnd = edgeIntersection(innerContour, endAngle, -1, endGap)
   const outer = arcPoints(outerContour, outerStart.angle, outerEnd.angle)
   const inner = arcPoints(innerContour, innerEnd.angle, innerStart.angle)
-  if (isFirst && !usesSmoothContours) {
+  if (isFirst) {
     return [
       "M",
       formatPoint(START_CAP_OUTER),
@@ -751,7 +730,7 @@ export function buildSectorPath(
       "Z",
     ].join(" ")
   }
-  if (isLast && !usesSmoothContours) {
+  if (isLast) {
     return [
       "M",
       ...outer,

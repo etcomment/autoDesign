@@ -5,7 +5,7 @@ import { useTemplateStore } from "../store"
 import { TEMPLATE_ICONS } from "../shared/icons"
 import { MIGSO_PALETTE } from "../../lib/theme"
 import * as LucideIcons from "lucide-react"
-import { buildSectorPath, getRingPoint, equalAreaBoundaries, RING_GAP_WIDTH, SMOOTH_OUTER_CONTOUR, SMOOTH_INNER_CONTOUR } from "../shared/ringGeometry"
+import { buildSectorPath, getRingPoint, equalAreaBoundaries, RING_GAP_WIDTH, OUTER_CONTOUR, INNER_CONTOUR } from "../shared/ringGeometry"
 
 // Exact SVG Path extracted directly from dessin-2.svg (Inkscape)
 const HEAD_PATH_EXACT = "M 93.79914,195.23832 C 94.20517,194.19898 96.92735,184.77713 97.64045,181.94301 C 99.98678,172.61776 100.89778,165.10145 99.91261,163.19634 C 99.00839,161.44777 97.58249,161.22470 90.18105,161.67396 C 85.65560,161.94864 84.26933,161.70606 83.21674,160.45509 C 82.44357,159.53623 82.36125,158.15090 82.96210,156.17023 C 83.52261,154.32258 83.46788,152.25170 82.82695,151.05586 C 82.23877,149.95845 82.15887,149.09486 82.57378,148.31960 C 82.78452,147.92583 82.75897,147.76906 82.46571,147.65653 C 82.25448,147.57543 81.93996,147.16707 81.76677,146.74898 C 81.49359,146.08946 81.54419,145.78723 82.14889,144.46639 C 83.27489,142.00689 82.86142,141.20856 79.98016,140.27901 C 76.82431,139.26087 77.43133,136.85161 82.40860,130.64064 C 85.31897,127.00888 85.73335,126.16233 85.73589,123.84314 C 85.73969,120.39654 87.93704,115.05060 90.73827,111.67294 C 95.63993,105.76264 103.93141,102.64323 112.80829,103.36979 C 123.08321,104.21078 131.59111,109.54717 135.38296,117.52924 C 136.95485,120.83817 137.41101,122.92504 137.40448,126.77738 C 137.39398,132.94986 135.78197,137.55096 130.45225,146.62062 C 126.34581,153.60860 125.77689,155.28954 126.21358,159.14444 C 126.81406,164.44522 130.01530,174.20685 133.31176,180.78910 C 134.03042,182.22411 135.06463,184.58884 135.60999,186.04405 C 136.59529,188.67317 138.12486,194.24218 138.12486,195.20040 C 138.12486,195.68796 137.53051,195.70134 115.87156,195.70134 C 94.78541,195.70134 93.62774,195.67704 93.79914,195.23832 Z"
@@ -91,6 +91,10 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
   }
   const isHeadSelected = selectedIds.has(headId)
 
+  const headRaise = headBbox.height * 0.05
+  const headShiftX = 0
+  const headShiftY = 23
+
   const branches = data.branches.length > 0 ? data.branches : [
     { title: "MIGSO-PCUBED", subtitle: "content", icon: "wrench", color: "#282a5d" },
     { title: "MIGSO-PCUBED", subtitle: "content", icon: "lightbulb", color: "#3365cc" },
@@ -101,8 +105,8 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
   ]
   const count = Math.max(1, branches.length)
   const isExactSix = count === 6
-  const outerContour = isExactSix ? undefined : SMOOTH_OUTER_CONTOUR
-  const innerContour = isExactSix ? undefined : SMOOTH_INNER_CONTOUR
+  const outerContour = OUTER_CONTOUR
+  const innerContour = INNER_CONTOUR
   const boundaries = equalAreaBoundaries(count, outerContour, innerContour)
   const sectorAngles = branches.map((_, i) => ({
     start: boundaries[i]!,
@@ -266,17 +270,18 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
         style={{ cursor: "pointer" }}
         onMouseDown={e => startDrag(e, headId, headBbox)}
       >
-        <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(-12.41, -33.54)`}>
-          <path
-            d={HEAD_PATH_EXACT}
-            fill="#111319"
-            stroke={isHeadSelected ? "#4a90d9" : "none"}
-            strokeWidth={isHeadSelected ? 1 : 0}
-          />
-        </g>
+        <g transform={`translate(-${headShiftX}, ${headShiftY - headRaise})`}>
+          <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(-12.41, -33.54)`}>
+            <path
+              d={HEAD_PATH_EXACT}
+              fill="#111319"
+              stroke={isHeadSelected ? "#4a90d9" : "none"}
+              strokeWidth={isHeadSelected ? 1 : 0}
+            />
+          </g>
 
-        {/* Lightbulb with horizontal arrows icon inside head */}
-        <g transform={`translate(${headBbox.x + headBbox.width * 0.12}, ${headBbox.y + headBbox.height * 0.24})`}>
+          {/* Lightbulb with horizontal arrows icon inside head */}
+          <g transform={`translate(${headBbox.x + headBbox.width * 0.12}, ${headBbox.y + headBbox.height * 0.24})`}>
           {/* Lightbulb contour */}
           <path
             d="M 25 5 C 14 5 5 14 5 25 C 5 32 8 38 14 42 L 14 50 L 36 50 L 36 42 C 42 38 45 32 45 25 C 45 14 36 5 25 5 Z"
@@ -294,6 +299,7 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
           <path d="M 34 20 L 14 20 M 20 14 L 14 20 L 20 26" stroke="#d1d5db" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
           {/* Bottom Arrow pointing right */}
           <path d="M 16 32 L 36 32 M 30 26 L 36 32 L 30 38" stroke="#d1d5db" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+          </g>
         </g>
 
         {isHeadSelected && renderHandles(headBbox, headId)}
