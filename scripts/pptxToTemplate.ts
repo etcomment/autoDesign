@@ -442,6 +442,7 @@ Example:
   }
 
   const cleanName = nameArg.toLowerCase().replace(/[^a-z0-9]/g, '')
+  let currentCategory = 'Other'
 
   for (let idx = 0; idx < slidesToProcess.length; idx++) {
     const slideFile = slidesToProcess[idx]!
@@ -453,6 +454,18 @@ Example:
     console.log(`  Found ${shapes.length} shapes/groups in Slide ${slideNum}.`)
 
     const { repeatingItems, staticElements } = clusterShapes(shapes)
+
+    // Check if this slide is a Category Title / Section Header Slide
+    const textShapes = shapes.filter(s => s.text && s.text.length > 0)
+    const isCategoryTitleSlide = shapes.length <= 4 && repeatingItems.length === 0 && textShapes.length >= 1
+
+    if (isCategoryTitleSlide) {
+      const headerTitle = textShapes[0]!.text
+      currentCategory = headerTitle
+      console.log(`  📌 Detected Section Header Slide! Setting category for subsequent slides to: "${currentCategory}"`)
+      continue
+    }
+
     console.log(`  Detected ${repeatingItems.length} repeating shape clusters and ${staticElements.length} static elements.`)
 
     const slideCleanName = slidesToProcess.length === 1 ? cleanName : `${cleanName}${slideNum}`
@@ -469,7 +482,7 @@ Example:
     fs.writeFileSync(targetPath, componentTsx, 'utf-8')
     console.log(`  ✅ Created Template Component: src/templates/components/${templateFileName}`)
 
-    // Auto-register in src/templates/registry.ts
+    // Auto-register in src/templates/registry.ts with detected category
     const registryPath = path.join(process.cwd(), 'src/templates/registry.ts')
     if (fs.existsSync(registryPath)) {
       let registryContent = fs.readFileSync(registryPath, 'utf-8')
@@ -478,7 +491,7 @@ Example:
     type: '${slideCleanName}' as any,
     label: '${pascalName} PowerPoint Template (Slide ${slideNum})',
     description: 'Template auto-généré depuis PowerPoint (${path.basename(pptxPath)}, slide ${slideNum})',
-    category: 'Other',
+    category: '${currentCategory}',
     defaultData: {
       type: 'brain',
       branches: [
@@ -490,7 +503,7 @@ Example:
   },`
         registryContent = registryContent.replace('export const TEMPLATES: TemplateDefinition[] = [', `export const TEMPLATES: TemplateDefinition[] = [\n${newEntry}`)
         fs.writeFileSync(registryPath, registryContent, 'utf-8')
-        console.log(`  🎉 Auto-registered '${slideCleanName}' in src/templates/registry.ts!`)
+        console.log(`  🎉 Auto-registered '${slideCleanName}' under category "${currentCategory}" in src/templates/registry.ts!`)
       }
     }
   }
