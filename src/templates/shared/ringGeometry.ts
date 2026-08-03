@@ -729,6 +729,7 @@ export function buildSectorPath(
 ): string {
   const isFirst = startAngle === RING_START_ANGLE
   const isLast = endAngle === RING_END_ANGLE
+  const usesSmoothContours = outerContour === SMOOTH_OUTER_CONTOUR && innerContour === SMOOTH_INNER_CONTOUR
   const startGap = isFirst ? 0 : gapWidth
   const endGap = isLast ? 0 : gapWidth
   const outerStart = edgeIntersection(outerContour, startAngle, 1, startGap)
@@ -737,7 +738,7 @@ export function buildSectorPath(
   const innerEnd = edgeIntersection(innerContour, endAngle, -1, endGap)
   const outer = arcPoints(outerContour, outerStart.angle, outerEnd.angle)
   const inner = arcPoints(innerContour, innerEnd.angle, innerStart.angle)
-  if (isFirst) {
+  if (isFirst && !usesSmoothContours) {
     return [
       "M",
       formatPoint(START_CAP_OUTER),
@@ -750,7 +751,7 @@ export function buildSectorPath(
       "Z",
     ].join(" ")
   }
-  if (isLast) {
+  if (isLast && !usesSmoothContours) {
     return [
       "M",
       ...outer,

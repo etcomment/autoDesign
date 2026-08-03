@@ -54,6 +54,26 @@ describe('contours lisses pour N ≠ 6', () => {
     }
   })
 
+  it('la premiere et derniere tranche lisses ferment droit sans pointes externes', () => {
+    const boundaries = equalAreaBoundaries(11, SMOOTH_OUTER_CONTOUR, SMOOTH_INNER_CONTOUR)
+    const inner = mean(contourRadii(SMOOTH_INNER_CONTOUR))
+    const outer = mean(contourRadii(SMOOTH_OUTER_CONTOUR))
+    const tolerance = 0.01
+    const slices = [
+      buildSectorPath(boundaries[0]!, boundaries[1]!, RING_GAP_WIDTH, SMOOTH_OUTER_CONTOUR, SMOOTH_INNER_CONTOUR),
+      buildSectorPath(boundaries[10]!, boundaries[11]!, RING_GAP_WIDTH, SMOOTH_OUTER_CONTOUR, SMOOTH_INNER_CONTOUR),
+    ]
+    for (const d of slices) {
+      const pairs = d.match(/-?\d+\.?\d*(?:[eE]-?\d+)?,-?\d+\.?\d*(?:[eE]-?\d+)?/g) ?? []
+      for (const pair of pairs) {
+        const [x, y] = pair.split(',').map(Number)
+        const radius = Math.hypot(x! - RING_CENTER.x, y! - RING_CENTER.y)
+        expect(radius).toBeGreaterThanOrEqual(inner - tolerance)
+        expect(radius).toBeLessThanOrEqual(outer + tolerance)
+      }
+    }
+  })
+
   it('getRingPoint avec contours lisses place le contenu entre les bords', () => {
     const boundaries = equalAreaBoundaries(11, SMOOTH_OUTER_CONTOUR, SMOOTH_INNER_CONTOUR)
     const bisector = (boundaries[1]! + boundaries[2]!) / 2
