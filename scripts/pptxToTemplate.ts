@@ -401,9 +401,14 @@ Example:
   const fileData = fs.readFileSync(pptxPath)
   const zip = await JSZip.loadAsync(fileData)
 
-  const slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slides/slide') && f.endsWith('.xml'))
+  let slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slides/slide') && f.endsWith('.xml'))
   if (slideFiles.length === 0) {
-    console.error('Error: No slides found in .pptx file.')
+    // If it's a .potx template file, check slideLayouts
+    slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slideLayouts/slideLayout') && f.endsWith('.xml'))
+  }
+
+  if (slideFiles.length === 0) {
+    console.error('Error: No slides or slide layouts found in .pptx / .potx file.')
     process.exit(1)
   }
 

@@ -55,18 +55,24 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
     setTemplateName(defaultName || 'CustomTemplate')
 
     try {
-      if (inputFile.name.endsWith('.pptx')) {
+      const lowerName = inputFile.name.toLowerCase()
+      if (lowerName.endsWith('.pptx') || lowerName.endsWith('.potx')) {
         const zip = await JSZip.loadAsync(inputFile)
-        const slideFiles = Object.keys(zip.files)
+        let slideFiles = Object.keys(zip.files)
           .filter(f => f.startsWith('ppt/slides/slide') && f.endsWith('.xml'))
-          .sort((a, b) => {
-            const numA = Number.parseInt(a.replace(/[^0-9]/g, '') || '0', 10)
-            const numB = Number.parseInt(b.replace(/[^0-9]/g, '') || '0', 10)
-            return numA - numB
-          })
 
         if (slideFiles.length === 0) {
-          throw new Error('Aucune diapositive n’a été trouvée dans ce fichier PowerPoint.')
+          slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slideLayouts/slideLayout') && f.endsWith('.xml'))
+        }
+
+        slideFiles.sort((a, b) => {
+          const numA = Number.parseInt(a.replace(/[^0-9]/g, '') || '0', 10)
+          const numB = Number.parseInt(b.replace(/[^0-9]/g, '') || '0', 10)
+          return numA - numB
+        })
+
+        if (slideFiles.length === 0) {
+          throw new Error('Aucune diapositive ou masquage de diapositive n’a été trouvé dans ce fichier PowerPoint (.potx / .pptx).')
         }
 
         const extractedPreviews: ExtractedSlidePreview[] = []
@@ -78,7 +84,7 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
           const sFile = slideFiles[i]!
           const slideXml = await zip.file(sFile)!.async('text')
           const jsonObj = parser.parse(slideXml)
-          const spTree = jsonObj['p:sld']?.['p:cSld']?.['p:spTree']
+          const spTree = jsonObj['p:sld']?.['p:cSld']?.['p:spTree'] || jsonObj['p:sldLayout']?.['p:cSld']?.['p:spTree']
 
           const rawShapes = spTree ? (Array.isArray(spTree['p:sp']) ? spTree['p:sp'] : [spTree['p:sp']].filter(Boolean)) : []
           const parsedShapes: { x: number; y: number; w: number; h: number; fill?: string; stroke?: string; text?: string }[] = []
@@ -138,7 +144,7 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
           setCategoryName(extractedPreviews[0].category)
         }
       } else {
-        throw new Error('Veuillez sélectionner un fichier .pptx valide.')
+        throw new Error('Veuillez sélectionner un fichier PowerPoint valide (.pptx ou .potx).')
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Erreur lors de la lecture du fichier PowerPoint.')
