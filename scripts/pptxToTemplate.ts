@@ -506,6 +506,30 @@ Example:
         console.log(`  🎉 Auto-registered '${slideCleanName}' under category "${currentCategory}" in src/templates/registry.ts!`)
       }
     }
+
+    // Auto-register in src/templates/types.ts
+    const typesPath = path.join(process.cwd(), 'src/templates/types.ts')
+    if (fs.existsSync(typesPath)) {
+      let typesContent = fs.readFileSync(typesPath, 'utf-8')
+      if (!typesContent.includes(`'${slideCleanName}'`)) {
+        typesContent = typesContent.replace('export type TemplateType =', `export type TemplateType = | '${slideCleanName}' |`)
+        fs.writeFileSync(typesPath, typesContent, 'utf-8')
+        console.log(`  📝 Auto-registered '${slideCleanName}' in TemplateType (src/templates/types.ts)!`)
+      }
+    }
+
+    // Auto-register in src/templates/TemplateRenderer.tsx
+    const rendererPath = path.join(process.cwd(), 'src/templates/TemplateRenderer.tsx')
+    if (fs.existsSync(rendererPath)) {
+      let rendererContent = fs.readFileSync(rendererPath, 'utf-8')
+      if (!rendererContent.includes(`import { ${pascalName}Template }`)) {
+        rendererContent = `import { ${pascalName}Template } from './components/${pascalName}Template'\n` + rendererContent
+        const mapEntry = `  '${slideCleanName}': ({ data }: { data: any }) => <${pascalName}Template data={data as any} />,`
+        rendererContent = rendererContent.replace('const TEMPLATE_MAP: Record<TemplateType, TemplateComponent> = {', `const TEMPLATE_MAP: Record<TemplateType, TemplateComponent> = {\n${mapEntry}`)
+        fs.writeFileSync(rendererPath, rendererContent, 'utf-8')
+        console.log(`  ⚛️ Auto-registered '${pascalName}Template' in src/templates/TemplateRenderer.tsx!`)
+      }
+    }
   }
 
   console.log(`\n🎉 Tous les templates de votre PowerPoint ont été générés avec succès !`)
