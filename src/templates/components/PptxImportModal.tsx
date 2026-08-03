@@ -9,13 +9,130 @@ interface PptxImportModalProps {
   onClose: () => void
 }
 
+interface ParsedShape {
+  id: string
+  x: number
+  y: number
+  w: number
+  h: number
+  fill: string
+  stroke?: string
+  text?: string
+}
+
 interface ExtractedSlidePreview {
   slideNumber: number
   category: string
   shapesCount: number
   colors: string[]
   sampleText: string
-  shapes: { x: number; y: number; w: number; h: number; fill?: string; stroke?: string; text?: string }[]
+  shapes: ParsedShape[]
+  bbox: { minX: number; minY: number; maxX: number; maxY: number; width: number; height: number }
+}
+
+const PALETTE_FALLBACKS = ['#282a5d', '#3365cc', '#ff4d38', '#ffb900', '#52c49c', '#ee6d90', '#7c3aed', '#0284c7']
+
+function parseEMU(val: any): number {
+  if (!val) return 0
+  const n = typeof val === 'string' || typeof val === 'number' ? Number.parseInt(String(val), 10) : 0
+  if (isNaN(n)) return 0
+  return Math.round((n / 914400) * 96)
+}
+
+function extractColor(clrObj: any): string | null {
+  if (!clrObj) return null
+  if (clrObj['a:srgbClr']?.['@_val']) return `#${clrObj['a:srgbClr']['@_val']}`
+  if (clrObj['a:sysClr']?.['@_lastClr']) return `#${clrObj['a:sysClr']['@_lastClr']}`
+  if (clrObj['a:schemeClr']?.['@_val']) {
+    const val = clrObj['a:schemeClr']['@_val']
+    if (val.includes('accent1')) return '#3365cc'
+    if (val.includes('accent2')) return '#ff4d38'
+    if (val.includes('accent3')) return '#ffb900'
+    if (val.includes('accent4')) return '#52c49c'
+    if (val.includes('accent5')) return '#ee6d90'
+    if (val.includes('accent6')) return '#7c3aed'
+    if (val.includes('dk1') || val.includes('tx1')) return '#282a5d'
+    if (val.includes('lt1') || val.includes('bg1')) return '#ffffff'
+  }
+  return null
+}
+
+function extractText(sp: any): string {
+  const txBody = sp['p:txBody']
+  if (!txBody) return ''
+  const paragraphs = Array.isArray(txBody['a:p']) ? txBody['a:p'] : [txBody['a:p']].filter(Boolean)
+  const parts: string[] = []
+  for (const p of paragraphs) {
+    const runs = Array.isArray(p['a:r']) ? p['a:r'] : [p['a:r']].filter(Boolean)
+    for (const r of runs) {
+      if (r['a:t']) {
+        const textVal = typeof r['a:t'] === 'object' ? r['a:t']['#text'] : r['a:t']
+        if (textVal) parts.push(String(textVal))
+      }
+    }
+  }
+  return parts.join(' ').trim()
+}
+
+function parseSingleShape(sp: any, idx: number, parentX = 0, parentY = 0): ParsedShape | null {
+  const spPr = sp['p:spPr']
+  if (!spPr) return null
+
+  const xfrm = spPr['a:xfrm']
+  const off = xfrm?.['a:off']
+  const ext = xfrm?.['a:ext']
+
+  const x = parentX + parseEMU(off?.['@_x'])
+  const y = parentY + parseEMU(off?.['@_y'])
+  const w = parseEMU(ext?.['@_cx'])
+  const h = parseEMU(ext?.['@_cy'])
+
+  if (w <= 2 && h <= 2) return null
+
+  const fill = extractColor(spPr['a:solidFill']) ?? PALETTE_FALLBACKS[idx % PALETTE_FALLBACKS.length]!
+  const stroke = extractColor(spPr['a:ln']?.['a:solidFill']) ?? undefined
+  const text = extractText(sp)
+
+  return {
+    id: `sp-${idx}`,
+    x, y, w, h,
+    fill,
+    stroke,
+    text,
+  }
+}
+
+function extractShapesRecursively(spTree: any, parentX = 0, parentY = 0): ParsedShape[] {
+  if (!spTree) return []
+  const result: ParsedShape[] = []
+
+  let shapeIndex = 0
+
+  // 1. Direct shapes (p:sp)
+  const rawSp = Array.isArray(spTree['p:sp']) ? spTree['p:sp'] : [spTree['p:sp']].filter(Boolean)
+  for (const sp of rawSp) {
+    const s = parseSingleShape(sp, shapeIndex++, parentX, parentY)
+    if (s) result.push(s)
+  }
+
+  // 2. Connection shapes (p:cxnSp)
+  const rawCxn = Array.isArray(spTree['p:cxnSp']) ? spTree['p:cxnSp'] : [spTree['p:cxnSp']].filter(Boolean)
+  for (const cxn of rawCxn) {
+    const s = parseSingleShape(cxn, shapeIndex++, parentX, parentY)
+    if (s) result.push(s)
+  }
+
+  // 3. Grouped shapes (p:grpSp)
+  const rawGrp = Array.isArray(spTree['p:grpSp']) ? spTree['p:grpSp'] : [spTree['p:grpSp']].filter(Boolean)
+  for (const grp of rawGrp) {
+    const grpXfrm = grp['p:grpSpPr']?.['a:xfrm']
+    const grpX = parentX + parseEMU(grpXfrm?.['a:off']?.['@_x'])
+    const grpY = parentY + parseEMU(grpXfrm?.['a:off']?.['@_y'])
+    const childShapes = extractShapesRecursively(grp, grpX, grpY)
+    result.push(...childShapes)
+  }
+
+  return result
 }
 
 export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
@@ -72,7 +189,7 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
         })
 
         if (slideFiles.length === 0) {
-          throw new Error('Aucune diapositive ou masquage n’a été trouvé dans ce fichier PowerPoint (.potx / .pptx).')
+          throw new Error('Aucune diapositive n’a été trouvée dans ce fichier PowerPoint (.potx / .pptx).')
         }
 
         const extractedPreviews: ExtractedSlidePreview[] = []
@@ -86,56 +203,44 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
           const jsonObj = parser.parse(slideXml)
           const spTree = jsonObj['p:sld']?.['p:cSld']?.['p:spTree'] || jsonObj['p:sldLayout']?.['p:cSld']?.['p:spTree']
 
-          const rawShapes = spTree ? (Array.isArray(spTree['p:sp']) ? spTree['p:sp'] : [spTree['p:sp']].filter(Boolean)) : []
-          const parsedShapes: { x: number; y: number; w: number; h: number; fill?: string; stroke?: string; text?: string }[] = []
+          const shapes = extractShapesRecursively(spTree)
           const colorsFound = new Set<string>()
           let textSample = ''
 
-          for (const sp of rawShapes) {
-            const xfrm = sp['p:spPr']?.['a:xfrm']
-            const off = xfrm?.['a:off']
-            const ext = xfrm?.['a:ext']
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
 
-            const x = off?.['@_x'] ? Math.round((Number.parseInt(off['@_x'], 10) / 914400) * 96) : 50
-            const y = off?.['@_y'] ? Math.round((Number.parseInt(off['@_y'], 10) / 914400) * 96) : 50
-            const w = ext?.['@_cx'] ? Math.round((Number.parseInt(ext['@_cx'], 10) / 914400) * 96) : 150
-            const h = ext?.['@_cy'] ? Math.round((Number.parseInt(ext['@_cy'], 10) / 914400) * 96) : 80
+          for (const s of shapes) {
+            colorsFound.add(s.fill)
+            if (s.text && !textSample) textSample = s.text
 
-            let fill = sp['p:spPr']?.['a:solidFill']?.['a:srgbClr']?.['@_val']
-            if (fill) fill = `#${fill}`
-            if (fill) colorsFound.add(fill)
-
-            let textVal = ''
-            const txBody = sp['p:txBody']
-            if (txBody) {
-              const pList = Array.isArray(txBody['a:p']) ? txBody['a:p'] : [txBody['a:p']].filter(Boolean)
-              for (const p of pList) {
-                const rList = Array.isArray(p['a:r']) ? p['a:r'] : [p['a:r']].filter(Boolean)
-                for (const r of rList) {
-                  if (r['a:t']) {
-                    const t = typeof r['a:t'] === 'object' ? r['a:t']['#text'] : r['a:t']
-                    if (t) textVal += ` ${t}`
-                  }
-                }
-              }
-            }
-            textVal = textVal.trim()
-            if (textVal && !textSample) textSample = textVal
-
-            parsedShapes.push({ x, y, w, h, fill: fill ?? '#282a5d', text: textVal })
+            minX = Math.min(minX, s.x)
+            minY = Math.min(minY, s.y)
+            maxX = Math.max(maxX, s.x + s.w)
+            maxY = Math.max(maxY, s.y + s.h)
           }
 
-          if (parsedShapes.length <= 3 && textSample && !textSample.includes('Description')) {
+          if (minX === Infinity) {
+            minX = 0; minY = 0; maxX = 800; maxY = 500
+          }
+
+          const bbox = {
+            minX, minY, maxX, maxY,
+            width: Math.max(100, maxX - minX),
+            height: Math.max(100, maxY - minY),
+          }
+
+          if (shapes.length <= 3 && textSample && !textSample.includes('Description')) {
             currentCategory = textSample
           }
 
           extractedPreviews.push({
             slideNumber: i + 1,
             category: currentCategory,
-            shapesCount: parsedShapes.length,
+            shapesCount: shapes.length,
             colors: Array.from(colorsFound),
             sampleText: textSample || `Diapositive ${i + 1}`,
-            shapes: parsedShapes,
+            shapes,
+            bbox,
           })
         }
 
@@ -323,30 +428,33 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
 
                 <div style={styles.canvasContainer}>
                   {activePreview && (
-                    <svg viewBox="0 0 800 500" style={{ width: '100%', height: '100%' }}>
+                    <svg
+                      viewBox={`${activePreview.bbox.minX - 30} ${activePreview.bbox.minY - 30} ${activePreview.bbox.width + 60} ${activePreview.bbox.height + 60}`}
+                      style={{ width: '100%', height: '100%' }}
+                    >
                       {activePreview.shapes.map((shape, idx) => (
                         <g key={idx}>
                           <rect
-                            x={shape.x * 0.8}
-                            y={shape.y * 0.8}
-                            width={Math.max(40, shape.w * 0.8)}
-                            height={Math.max(25, shape.h * 0.8)}
+                            x={shape.x}
+                            y={shape.y}
+                            width={shape.w}
+                            height={shape.h}
                             rx={6}
-                            fill={shape.fill || '#3365cc'}
-                            stroke="#ffffff"
-                            strokeWidth={1}
-                            opacity={0.85}
+                            fill={shape.fill}
+                            stroke={shape.stroke || '#ffffff'}
+                            strokeWidth={1.5}
+                            opacity={0.9}
                           />
                           {shape.text && (
                             <text
-                              x={shape.x * 0.8 + (shape.w * 0.8) / 2}
-                              y={shape.y * 0.8 + (shape.h * 0.8) / 2 + 4}
+                              x={shape.x + shape.w / 2}
+                              y={shape.y + shape.h / 2 + 5}
                               textAnchor="middle"
                               fill="#ffffff"
-                              fontSize={11}
+                              fontSize={Math.min(14, Math.max(9, shape.h * 0.25))}
                               fontWeight="bold"
                             >
-                              {shape.text.slice(0, 16)}
+                              {shape.text.length > 25 ? `${shape.text.slice(0, 22)}...` : shape.text}
                             </text>
                           )}
                         </g>
