@@ -94,42 +94,43 @@ function parseSp(sp: any, idx: number): ShapeInfo | null {
 function parsePptxSlide(slideXml: string): ShapeInfo[] {
   const parser = new XMLParser({ ignoreAttributes: false })
   const jsonObj = parser.parse(slideXml)
-  const spTree = jsonObj['p:sld']?.['p:cSld']?.['p:spTree']
+  const spTree = jsonObj['p:sld']?.['p:cSld']?.['p:spTree'] || jsonObj['p:sldLayout']?.['p:cSld']?.['p:spTree']
   if (!spTree) return []
 
   const shapes: ShapeInfo[] = []
-  const rawShapes = Array.isArray(spTree['p:sp']) ? spTree['p:sp'] : [spTree['p:sp']].filter(Boolean)
-  rawShapes.forEach((sp: any, i: number) => {
-    const s = parseSp(sp, i)
-    if (s) shapes.push(s)
-  })
 
-  // Also parse group shapes
-  const rawGroups = Array.isArray(spTree['p:grpSp']) ? spTree['p:grpSp'] : [spTree['p:grpSp']].filter(Boolean)
-  rawGroups.forEach((grp: any, i: number) => {
-    const grpSpPr = grp['p:grpSpPr']
-    const xfrm = grpSpPr?.['a:xfrm']
-    const x = parseEMU(xfrm?.['a:off']?.['@_x'])
-    const y = parseEMU(xfrm?.['a:off']?.['@_y'])
-    const w = parseEMU(xfrm?.['a:ext']?.['@_cx'])
-    const h = parseEMU(xfrm?.['a:ext']?.['@_cy'])
-
-    const innerRaw = Array.isArray(grp['p:sp']) ? grp['p:sp'] : [grp['p:sp']].filter(Boolean)
-    const children: ShapeInfo[] = []
-    innerRaw.forEach((sp: any, j: number) => {
-      const s = parseSp(sp, j)
-      if (s) children.push(s)
+  function extractRecursive(tree: any, parentX = 0, parentY = 0) {
+    if (!tree) return
+    const rawSp = Array.isArray(tree['p:sp']) ? tree['p:sp'] : [tree['p:sp']].filter(Boolean)
+    rawSp.forEach((sp: any, i: number) => {
+      const s = parseSp(sp, shapes.length)
+      if (s) {
+        s.x += parentX
+        s.y += parentY
+        shapes.push(s)
+      }
     })
 
-    shapes.push({
-      id: `grp-${i}`,
-      name: grp['p:nvGrpSpPr']?.['p:cNvPr']?.['@_name'] ?? `Group_${i}`,
-      x, y, w, h,
-      isGroup: true,
-      children,
+    const rawCxn = Array.isArray(tree['p:cxnSp']) ? tree['p:cxnSp'] : [tree['p:cxnSp']].filter(Boolean)
+    rawCxn.forEach((cxn: any, i: number) => {
+      const s = parseSp(cxn, shapes.length)
+      if (s) {
+        s.x += parentX
+        s.y += parentY
+        shapes.push(s)
+      }
     })
-  })
 
+    const rawGroups = Array.isArray(tree['p:grpSp']) ? tree['p:grpSp'] : [tree['p:grpSp']].filter(Boolean)
+    rawGroups.forEach((grp: any) => {
+      const grpXfrm = grp['p:grpSpPr']?.['a:xfrm']
+      const gx = parentX + parseEMU(grpXfrm?.['a:off']?.['@_x'])
+      const gy = parentY + parseEMU(grpXfrm?.['a:off']?.['@_y'])
+      extractRecursive(grp, gx, gy)
+    })
+  }
+
+  extractRecursive(spTree)
   return shapes
 }
 
@@ -181,21 +182,28 @@ function generateComponentTsx(
   const defaultColors = ['#282a5d', '#3365cc', '#ff4d38', '#ffb900', '#52c49c', '#ee6d90']
   const defaultIcons = ['wrench', 'lightbulb', 'zap', 'git-branch', 'target', 'mouse-pointer']
 
-  const hasSvgPaths = svgPaths.length > 0
-  const svgPathsConst = hasSvgPaths
-    ? `const SVG_VECTOR_PATHS = ${JSON.stringify(svgPaths, null, 2)}\n`
-    : ''
+  const sanitizedShapes = shapes.map((s, i) => ({
+    id: s.id || `sp-${i}`,
+    x: s.x || (60 + (i % 3) * 240),
+    y: s.y || (60 + Math.floor(i / 3) * 120),
+    width: Math.max(40, s.w || 200),
+    height: Math.max(25, s.h || 90),
+    fillColor: s.fillColor || defaultColors[i % defaultColors.length]!,
+    strokeColor: s.strokeColor || '#ffffff',
+    text: s.text || `Item ${i + 1}`,
+  }))
+
+  const shapesConst = `const PPTX_EXTRACTED_SHAPES = ${JSON.stringify(sanitizedShapes, null, 2)}\n`
 
   return `import { useRef, type ReactElement } from 'react'
 import type { BrainData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { HEAD_PATH } from '../shared/headPath'
 import { TEMPLATE_ICONS } from '../shared/icons'
 import { MIGSO_PALETTE } from '../../lib/theme'
 import * as LucideIcons from 'lucide-react'
 
-${svgPathsConst}
+${shapesConst}
 const DEFAULT_COLORS = ${JSON.stringify(defaultColors)}
 const DEFAULT_ICONS = ${JSON.stringify(defaultIcons)}
 
@@ -240,52 +248,28 @@ export function ${componentName}({ data }: { data: BrainData }): ReactElement {
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const centerId = 'center-elem'
-  const centerDef = { x: 330, y: 220, width: 240, height: 320 }
-  const centerPos = positions[centerId]
-  const centerBbox = {
-    x: centerPos?.x ?? centerDef.x,
-    y: centerPos?.y ?? centerDef.y,
-    width: centerPos?.width ?? centerDef.width,
-    height: centerPos?.height ?? centerDef.height,
-  }
-  const isCenterSelected = selectedIds.has(centerId)
-
-  const branches = data.branches && data.branches.length > 0 ? data.branches : [
-    { title: 'MIGSO-PCUBED', subtitle: 'content', icon: 'wrench', color: '#282a5d' },
-    { title: 'MIGSO-PCUBED', subtitle: 'content', icon: 'lightbulb', color: '#3365cc' },
-    { title: 'MIGSO-PCUBED', subtitle: 'content', icon: 'zap', color: '#ff4d38' },
-    { title: 'MIGSO-PCUBED', subtitle: 'content', icon: 'git-branch', color: '#ffb900' },
-    { title: 'MIGSO-PCUBED', subtitle: 'content', icon: 'target', color: '#52c49c' },
-    { title: 'MIGSO-PCUBED', subtitle: 'content', icon: 'mouse-pointer', color: '#ee6d90' },
-  ]
-  const count = Math.max(1, branches.length)
-  const scaleFactor = Math.min(1.2, Math.max(0.6, 6 / count))
+  const branches = data?.branches && data.branches.length > 0 ? data.branches : []
 
   return (
     <g ref={svgRef}>
-      {/* 1. Dynamic PPTX Item Blocks (Interactive & Resizable) */}
-      {branches.map((branch, i) => {
-        const id = \`item-\${i}\`
-        const color = tplColors[id] ?? branch.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
+      {PPTX_EXTRACTED_SHAPES.map((shapeDef, i) => {
+        const id = shapeDef.id || \`item-\${i}\`
+        const branch = branches[i]
+        const color = tplColors[id] ?? branch?.color ?? shapeDef.fillColor ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         const isSelected = selectedIds.has(id)
-
-        const defaultW = Math.max(120, 220 * scaleFactor)
-        const defaultH = Math.max(60, 90 * scaleFactor)
-        const defaultX = 60 + (i % 3) * (defaultW + 30)
-        const defaultY = 60 + Math.floor(i / 3) * (defaultH + 30)
 
         const pos = positions[id]
         const bbox = {
-          x: pos?.x ?? defaultX,
-          y: pos?.y ?? defaultY,
-          width: pos?.width ?? defaultW,
-          height: pos?.height ?? defaultH,
+          x: pos?.x ?? shapeDef.x,
+          y: pos?.y ?? shapeDef.y,
+          width: pos?.width ?? shapeDef.width,
+          height: pos?.height ?? shapeDef.height,
         }
 
-        const iconKey = branch.icon ?? DEFAULT_ICONS[i % DEFAULT_ICONS.length]
-        const IconFn = getDynamicIcon(iconKey, Math.round(24 * scaleFactor))
-        const titleLines = wrapText(branch.title, Math.max(8, Math.floor(bbox.width / 10)))
+        const titleText = branch?.title || shapeDef.text || \`Item \${i + 1}\`
+        const iconKey = branch?.icon ?? DEFAULT_ICONS[i % DEFAULT_ICONS.length]
+        const IconFn = getDynamicIcon(iconKey, 20)
+        const titleLines = wrapText(titleText, Math.max(8, Math.floor(bbox.width / 10)))
 
         return (
           <g key={id} onMouseDown={e => startDrag(e, id, bbox)} transform={getTransform(id, bbox)} style={{ cursor: 'pointer' }}>
@@ -294,44 +278,43 @@ export function ${componentName}({ data }: { data: BrainData }): ReactElement {
               y={bbox.y}
               width={bbox.width}
               height={bbox.height}
-              rx={10}
+              rx={8}
               fill={color}
               opacity={isSelected ? 0.88 : 1}
-              stroke={isSelected ? '#4a90d9' : '#ffffff'}
+              stroke={isSelected ? '#4a90d9' : (shapeDef.strokeColor || '#ffffff')}
               strokeWidth={isSelected ? 2.5 : 1}
-              filter="drop-shadow(0 4px 12px rgba(0,0,0,0.1))"
             />
 
             {IconFn && (
-              <g transform={\`translate(\${bbox.x + 14}, \${bbox.y + 14})\`}>
-                <IconFn size={Math.round(24 * scaleFactor)} color="#ffffff" />
+              <g transform={\`translate(\${bbox.x + 10}, \${bbox.y + 10})\`}>
+                <IconFn size={20} color="#ffffff" />
               </g>
             )}
 
             <text
-              x={bbox.x + (IconFn ? 46 : 16)}
-              y={bbox.y + 24}
+              x={bbox.x + (IconFn ? 38 : 12)}
+              y={bbox.y + 20}
               fontFamily="Arial, sans-serif"
-              fontSize={Math.round(13 * scaleFactor)}
+              fontSize={12}
               fontWeight={700}
               fill="#ffffff"
             >
               {titleLines.map((line, lIdx) => (
-                <tspan key={lIdx} x={bbox.x + (IconFn ? 46 : 16)} dy={lIdx === 0 ? 0 : 16}>
+                <tspan key={lIdx} x={bbox.x + (IconFn ? 38 : 12)} dy={lIdx === 0 ? 0 : 15}>
                   {line}
                 </tspan>
               ))}
             </text>
 
-            {branch.subtitle && (
+            {branch?.subtitle && (
               <text
-                x={bbox.x + (IconFn ? 46 : 16)}
-                y={bbox.y + 28 + titleLines.length * 14}
+                x={bbox.x + (IconFn ? 38 : 12)}
+                y={bbox.y + 24 + titleLines.length * 13}
                 fontFamily="Arial, sans-serif"
-                fontSize={Math.round(11 * scaleFactor)}
+                fontSize={10}
                 fontWeight={400}
                 fill="#ffffff"
-                opacity={0.9}
+                opacity={0.85}
               >
                 {branch.subtitle}
               </text>
@@ -341,22 +324,6 @@ export function ${componentName}({ data }: { data: BrainData }): ReactElement {
           </g>
         )
       })}
-
-      {/* 2. Central Static Silhouette / Element */}
-      <g
-        transform={getTransform(centerId, centerBbox)}
-        style={{ cursor: 'pointer' }}
-        onMouseDown={e => startDrag(e, centerId, centerBbox)}
-      >
-        <path
-          d={HEAD_PATH}
-          transform={\`translate(\${centerBbox.x},\${centerBbox.y}) scale(\${centerBbox.width / 300},\${centerBbox.height / 420})\`}
-          fill="#111319"
-          stroke={isCenterSelected ? '#4a90d9' : 'none'}
-          strokeWidth={isCenterSelected ? 3 : 0}
-        />
-        {isCenterSelected && renderHandles(centerBbox, centerId)}
-      </g>
     </g>
   )
 }
@@ -411,10 +378,13 @@ Example:
   const fileData = fs.readFileSync(pptxPath)
   const zip = await JSZip.loadAsync(fileData)
 
-  let slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slides/slide') && f.endsWith('.xml'))
+  const isPotx = pptxPath.toLowerCase().endsWith('.potx')
+  let slideFiles = isPotx
+    ? Object.keys(zip.files).filter(f => f.startsWith('ppt/slideLayouts/slideLayout') && f.endsWith('.xml'))
+    : Object.keys(zip.files).filter(f => f.startsWith('ppt/slides/slide') && f.endsWith('.xml'))
+
   if (slideFiles.length === 0) {
-    // If it's a .potx template file, check slideLayouts
-    slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slideLayouts/slideLayout') && f.endsWith('.xml'))
+    slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slides/slide') || f.startsWith('ppt/slideLayouts/slideLayout') && f.endsWith('.xml'))
   }
 
   if (slideFiles.length === 0) {
@@ -438,7 +408,7 @@ Example:
   })
 
   const slidesToProcess = slideNumberArg
-    ? slideFiles.filter(f => f.endsWith(`slide${slideNumberArg}.xml`))
+    ? slideFiles.filter(f => f.endsWith(`slideLayout${slideNumberArg}.xml`) || f.endsWith(`slide${slideNumberArg}.xml`))
     : slideFiles
 
   if (slidesToProcess.length === 0) {
