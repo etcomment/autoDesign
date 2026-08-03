@@ -10,6 +10,7 @@ import { Toolbar } from './panels/Toolbar'
 import { MermaidEditor } from './panels/MermaidEditor'
 import { SubgraphStylePanel } from './panels/SubgraphStylePanel'
 import { LayersPanel } from './panels/LayersPanel'
+import { PptxImportModal } from './templates/components/PptxImportModal'
 import { useDiagramStore } from './store/diagramStore'
 import { useTemplateStore } from './templates/store'
 import type { Shape, ShapeStyle, ShapeText, ShapeType, Position, Dimensions } from './core/model/Shape'
@@ -30,6 +31,8 @@ export function App() {
   const selectedShapeIds = useDiagramStore(s => s.selectedShapeIds)
   const removeShape = useDiagramStore(s => s.removeShape)
   const clearSelection = useDiagramStore(s => s.clearSelection)
+
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
 
   const [sidebarWidth, setSidebarWidth] = useState(280)
   const [rightPanelWidth, setRightPanelWidth] = useState(280)
@@ -242,6 +245,7 @@ export function App() {
         onToggleLeftSidebar={() => setLeftSidebarCollapsed(!leftSidebarCollapsed)}
         rightPanelCollapsed={rightPanelCollapsed}
         onToggleRightSidebar={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+        onOpenImportModal={() => setIsImportModalOpen(true)}
       />
       <div style={styles.workspace}>
         {!leftSidebarCollapsed && (
@@ -287,6 +291,12 @@ export function App() {
           </div>
         )}
       </div>
+
+      {/* Interactive PowerPoint (.pptx) Import & Visualizer Modal */}
+      <PptxImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+      />
     </div>
   )
 }

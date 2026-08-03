@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
 import { useTemplateStore } from '../templates/store'
-import { Undo2, Redo2, Trash2, MousePointer2, Download, Link2, ChevronsUp, ChevronUp, ChevronDown, ChevronsDown, Group, Ungroup, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { Undo2, Redo2, Trash2, MousePointer2, Download, Link2, ChevronsUp, ChevronUp, ChevronDown, ChevronsDown, Group, Ungroup, ChevronsLeft, ChevronsRight, Sparkles } from 'lucide-react'
 import { downloadContentSvg } from '../export/generateSvg'
 import { downloadCanvasPptx } from '../export/generatePptx'
 import { generateCanvasPng, generateCanvasJpg, downloadBlob, copyCanvasToClipboard } from '../export/generateImage'
@@ -11,6 +11,7 @@ interface ToolbarProps {
   onToggleLeftSidebar?: () => void
   rightPanelCollapsed?: boolean
   onToggleRightSidebar?: () => void
+  onOpenImportModal?: () => void
 }
 
 export function Toolbar({
@@ -18,6 +19,7 @@ export function Toolbar({
   onToggleLeftSidebar,
   rightPanelCollapsed = false,
   onToggleRightSidebar,
+  onOpenImportModal,
 }: ToolbarProps) {
   const canUndo = useDiagramStore(s => s.canUndo)
   const canRedo = useDiagramStore(s => s.canRedo)
@@ -256,6 +258,15 @@ export function Toolbar({
           </div>
         )}
       </div>
+      <div style={styles.separator} />
+      <button
+        style={{ ...styles.button, background: '#2563eb', color: '#ffffff', gap: 6, paddingLeft: 10, paddingRight: 10 }}
+        onClick={onOpenImportModal}
+        title="Importer & Visualiser PowerPoint (.pptx)"
+      >
+        <Sparkles size={16} />
+        <span style={{ fontSize: 12, fontWeight: 600 }}>Importer PPTX</span>
+      </button>
       <div style={styles.separator} />
       <button
         style={{
