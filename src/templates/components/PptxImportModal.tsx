@@ -168,8 +168,11 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
     setIsLoading(true)
     setPreviews([])
 
-    const defaultName = inputFile.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9]/g, '')
-    setTemplateName(defaultName || 'CustomTemplate')
+    const now = new Date()
+    const timestamp = now.toISOString().replace(/[-:T.]/g, '').slice(0, 14)
+    const baseName = inputFile.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9]/g, '')
+    const defaultName = `Import_${timestamp}_${baseName || 'Template'}`
+    setTemplateName(defaultName)
 
     try {
       const lowerName = inputFile.name.toLowerCase()

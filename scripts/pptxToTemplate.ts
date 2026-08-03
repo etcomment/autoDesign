@@ -379,17 +379,27 @@ Example:
 
   let pptxPath = ''
   let svgPath = ''
-  let nameArg = 'CustomPPTX'
+  let nameArg = ''
+  let useTimestamp = false
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--name' && args[i + 1]) {
       nameArg = args[i + 1]!
       i++
-    } else if (args[i]!.endsWith('.pptx')) {
+    } else if (args[i] === '--timestamp' || args[i] === '-t') {
+      useTimestamp = true
+    } else if (args[i]!.endsWith('.pptx') || args[i]!.endsWith('.potx')) {
       pptxPath = args[i]!
     } else if (args[i]!.endsWith('.svg')) {
       svgPath = args[i]!
     }
+  }
+
+  if (!nameArg || useTimestamp) {
+    const now = new Date()
+    const ts = now.toISOString().replace(/[-:T.]/g, '').slice(0, 14)
+    const base = pptxPath ? path.basename(pptxPath, path.extname(pptxPath)).replace(/[^a-zA-Z0-9]/g, '') : 'Template'
+    nameArg = nameArg ? `Import_${ts}_${nameArg}` : `Import_${ts}_${base}`
   }
 
   if (!pptxPath) {
