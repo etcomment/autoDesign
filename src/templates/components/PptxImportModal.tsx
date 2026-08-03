@@ -72,7 +72,7 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
         })
 
         if (slideFiles.length === 0) {
-          throw new Error('Aucune diapositive ou masquage de diapositive n’a été trouvé dans ce fichier PowerPoint (.potx / .pptx).')
+          throw new Error('Aucune diapositive ou masquage n’a été trouvé dans ce fichier PowerPoint (.potx / .pptx).')
         }
 
         const extractedPreviews: ExtractedSlidePreview[] = []
@@ -156,9 +156,7 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
   const handleValidateImport = () => {
     if (previews.length === 0) return
 
-    // Register dynamically in Template Store so user can preview and place immediately
     const cleanName = templateName.toLowerCase().replace(/[^a-z0-9]/g, '')
-    const selectedSlide = previews[selectedSlideIdx]!
 
     useTemplateStore.setState(s => ({
       ...s,
@@ -175,110 +173,114 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
   const activePreview = previews[selectedSlideIdx]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden text-slate-800 dark:text-slate-100">
+    <div style={styles.overlay}>
+      <div style={styles.modal}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg">
-              <Sparkles className="w-5 h-5" />
+        <div style={styles.header}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={styles.headerIconBg}>
+              <Sparkles size={20} color="#2563eb" />
             </div>
             <div>
-              <h2 className="text-lg fontWeight-700 font-bold">Importateur & Visualiseur PowerPoint (.pptx)</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Prévisualisez les calques, validez ou rejetez les templates avant intégration.</p>
+              <h2 style={styles.headerTitle}>Importateur & Visualiseur PowerPoint (.pptx / .potx)</h2>
+              <p style={styles.headerSubtitle}>Prévisualisez les calques vectoriels, validez ou rejetez les templates avant intégration.</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
+          <button onClick={onClose} style={styles.closeBtn} title="Fermer">
+            <X size={20} />
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div style={styles.body}>
           {/* Dropzone if no file selected */}
           {!file && (
             <div
               onDragOver={e => e.preventDefault()}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-400 rounded-xl p-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors bg-slate-50/50 dark:bg-slate-900/30 hover:bg-blue-50/30 dark:hover:bg-blue-950/20 text-center"
+              style={styles.dropzone}
             >
-              <div className="p-4 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-full">
-                <FileUp className="w-8 h-8" />
+              <div style={styles.dropIconBg}>
+                <FileUp size={32} color="#2563eb" />
               </div>
-              <div>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">Glissez-déposez votre présentation PowerPoint (.pptx)</span>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">ou cliquez pour parcourir les fichiers de votre ordinateur</p>
+              <div style={{ textAlign: 'center' }}>
+                <span style={{ fontWeight: 600, fontSize: 15, color: '#1e293b' }}>
+                  Glissez-déposez votre modèle ou présentation PowerPoint (.pptx / .potx)
+                </span>
+                <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                  ou cliquez pour parcourir les fichiers de votre ordinateur
+                </p>
               </div>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pptx"
-                className="hidden"
+                accept=".pptx,.potx"
+                style={{ display: 'none' }}
                 onChange={handleFileChange}
               />
             </div>
           )}
 
           {isLoading && (
-            <div className="flex items-center justify-center gap-3 py-12 text-blue-600 dark:text-blue-400 font-medium">
-              <RefreshCw className="w-6 h-6 animate-spin" />
-              <span>Analyse et extraction des diapositives PowerPoint en cours...</span>
+            <div style={styles.loadingContainer}>
+              <RefreshCw size={24} color="#2563eb" style={{ animation: 'spin 1s linear infinite' }} />
+              <span style={{ fontSize: 14, fontWeight: 500, color: '#2563eb' }}>
+                Analyse et extraction des calques PowerPoint en cours...
+              </span>
             </div>
           )}
 
           {errorMsg && (
-            <div className="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-lg text-red-600 dark:text-red-400 flex items-center gap-3 text-sm">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <div style={styles.errorBox}>
+              <AlertCircle size={20} color="#dc2626" />
               <span>{errorMsg}</span>
             </div>
           )}
 
           {/* Inspection & Visualizer Panel */}
           {file && !isLoading && previews.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div style={styles.gridContainer}>
               {/* Left Column: Form & Slide Selector */}
-              <div className="space-y-4 md:col-span-1">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nom du Template</label>
+              <div style={styles.leftColumn}>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Nom du Template</label>
                   <input
                     type="text"
                     value={templateName}
                     onChange={e => setTemplateName(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+                    style={styles.input}
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Catégorie Détectée</label>
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>Catégorie Détectée</label>
                   <input
                     type="text"
                     value={categoryName}
                     onChange={e => setCategoryName(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+                    style={styles.input}
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">
+                <div style={styles.formGroup}>
+                  <label style={styles.label}>
                     Diapositives Détectées ({previews.length})
                   </label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  <div style={styles.slideList}>
                     {previews.map((prev, idx) => (
                       <button
                         key={idx}
                         onClick={() => setSelectedSlideIdx(idx)}
-                        className={`w-full p-2.5 rounded-lg border text-left flex items-center justify-between transition-colors ${
-                          selectedSlideIdx === idx
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-semibold'
-                            : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`}
+                        style={{
+                          ...styles.slideItem,
+                          ...(selectedSlideIdx === idx ? styles.slideItemActive : {}),
+                        }}
                       >
-                        <span className="text-xs truncate">Slide {prev.slideNumber}: {prev.sampleText.slice(0, 20) || 'Sans titre'}</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                        <span style={styles.slideText}>
+                          Slide {prev.slideNumber}: {prev.sampleText.slice(0, 18) || 'Sans titre'}
+                        </span>
+                        <span style={styles.badge}>
                           {prev.shapesCount} formes
                         </span>
                       </button>
@@ -286,10 +288,10 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
                   </div>
                 </div>
 
-                <div className="pt-2">
+                <div style={{ marginTop: 12 }}>
                   <button
                     onClick={() => { setFile(null); setPreviews([]); }}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    style={styles.changeFileBtn}
                   >
                     Changer de fichier PowerPoint
                   </button>
@@ -297,22 +299,31 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
               </div>
 
               {/* Right Column: Visualizer Canvas Preview */}
-              <div className="md:col-span-2 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">Aperçu Vectoriel Interactif</span>
-                  {activePreview && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] text-slate-400">Couleurs :</span>
+              <div style={styles.rightColumn}>
+                <div style={styles.previewHeader}>
+                  <span style={styles.label}>Aperçu Vectoriel Interactif</span>
+                  {activePreview && activePreview.colors.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 11, color: '#94a3b8' }}>Couleurs :</span>
                       {activePreview.colors.map((clr, i) => (
-                        <div key={i} className="w-3.5 h-3.5 rounded-full border border-black/10" style={{ backgroundColor: clr }} />
+                        <div
+                          key={i}
+                          style={{
+                            width: 14,
+                            height: 14,
+                            borderRadius: '50%',
+                            backgroundColor: clr,
+                            border: '1px solid rgba(255,255,255,0.2)',
+                          }}
+                        />
                       ))}
                     </div>
                   )}
                 </div>
 
-                <div className="w-full h-72 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-center p-4 relative overflow-hidden shadow-inner">
+                <div style={styles.canvasContainer}>
                   {activePreview && (
-                    <svg viewBox="0 0 800 500" className="w-full h-full">
+                    <svg viewBox="0 0 800 500" style={{ width: '100%', height: '100%' }}>
                       {activePreview.shapes.map((shape, idx) => (
                         <g key={idx}>
                           <rect
@@ -349,34 +360,266 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
+        <div style={styles.footer}>
+          <button onClick={onClose} style={styles.cancelBtn}>
             Rejeter / Annuler
           </button>
 
           {file && previews.length > 0 && (
-            <button
-              onClick={handleValidateImport}
-              className="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-lg shadow-sm flex items-center gap-2 transition-colors"
-            >
-              {isSuccess ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  <span>Importation Validée !</span>
-                </>
-              ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  <span>Valider et Importer le Template</span>
-                </>
-              )}
+            <button onClick={handleValidateImport} style={styles.validateBtn}>
+              <Check size={16} />
+              <span>{isSuccess ? 'Importation Validée !' : 'Valider et Importer le Template'}</span>
             </button>
           )}
         </div>
       </div>
     </div>
   )
+}
+
+const styles: Record<string, React.CSSProperties> = {
+  overlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    backdropFilter: 'blur(4px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+    padding: 16,
+  },
+  modal: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    width: '100%',
+    maxWidth: 860,
+    maxHeight: '90vh',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    border: '1px solid #e2e8f0',
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '16px 24px',
+    borderBottom: '1px solid #e2e8f0',
+    backgroundColor: '#f8fafc',
+  },
+  headerIconBg: {
+    padding: 8,
+    backgroundColor: '#eff6ff',
+    borderRadius: 8,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: 700,
+    color: '#0f172a',
+    margin: 0,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#64748b',
+    margin: 0,
+    marginTop: 2,
+  },
+  closeBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: '#94a3b8',
+    cursor: 'pointer',
+    padding: 6,
+    borderRadius: 6,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  body: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: 24,
+  },
+  dropzone: {
+    border: '2px dashed #cbd5e1',
+    borderRadius: 16,
+    padding: 40,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    cursor: 'pointer',
+    backgroundColor: '#f8fafc',
+    transition: 'all 0.2s',
+  },
+  dropIconBg: {
+    padding: 14,
+    backgroundColor: '#eff6ff',
+    borderRadius: '50%',
+  },
+  loadingContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    padding: 48,
+  },
+  errorBox: {
+    padding: 14,
+    backgroundColor: '#fef2f2',
+    border: '1px solid #fecaca',
+    borderRadius: 8,
+    color: '#dc2626',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    fontSize: 13,
+  },
+  gridContainer: {
+    display: 'grid',
+    gridTemplateColumns: '260px 1fr',
+    gap: 24,
+  },
+  leftColumn: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 16,
+  },
+  rightColumn: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  formGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: '#475569',
+  },
+  input: {
+    width: '100%',
+    padding: '8px 12px',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: 8,
+    fontSize: 13,
+    fontWeight: 500,
+    color: '#0f172a',
+    outline: 'none',
+    boxSizing: 'border-box',
+  },
+  slideList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+    maxHeight: 180,
+    overflowY: 'auto',
+  },
+  slideItem: {
+    width: '100%',
+    padding: '8px 10px',
+    borderRadius: 8,
+    border: '1px solid #e2e8f0',
+    backgroundColor: '#f8fafc',
+    cursor: 'pointer',
+    textAlign: 'left',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontSize: 12,
+    color: '#334155',
+  },
+  slideItemActive: {
+    borderColor: '#2563eb',
+    backgroundColor: '#eff6ff',
+    color: '#1d4ed8',
+    fontWeight: 600,
+  },
+  slideText: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    maxWidth: 160,
+  },
+  badge: {
+    fontSize: 10,
+    padding: '2px 6px',
+    borderRadius: 4,
+    backgroundColor: '#e2e8f0',
+    color: '#475569',
+  },
+  changeFileBtn: {
+    background: 'none',
+    border: 'none',
+    color: '#2563eb',
+    fontSize: 12,
+    fontWeight: 500,
+    cursor: 'pointer',
+    padding: 0,
+    textDecoration: 'underline',
+  },
+  previewHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  canvasContainer: {
+    width: '100%',
+    height: 280,
+    backgroundColor: '#0f172a',
+    borderRadius: 12,
+    border: '1px solid #1e293b',
+    padding: 16,
+    boxSizing: 'border-box',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  footer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '16px 24px',
+    borderTop: '1px solid #e2e8f0',
+    backgroundColor: '#f8fafc',
+  },
+  cancelBtn: {
+    padding: '8px 16px',
+    fontSize: 13,
+    fontWeight: 500,
+    color: '#475569',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: 8,
+    cursor: 'pointer',
+  },
+  validateBtn: {
+    padding: '9px 18px',
+    fontSize: 13,
+    fontWeight: 600,
+    color: '#ffffff',
+    backgroundColor: '#059669',
+    border: 'none',
+    borderRadius: 8,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+  },
 }
