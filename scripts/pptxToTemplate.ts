@@ -407,12 +407,31 @@ Example:
     process.exit(1)
   }
 
-  const firstSlideFile = slideFiles[0]!
-  console.log(`📄 Analyzing slide: ${firstSlideFile}`)
-  const slideXml = await zip.file(firstSlideFile)!.async('text')
+  let slideNumberArg: number | null = null
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--slide' && args[i + 1]) {
+      slideNumberArg = Number.parseInt(args[i + 1]!, 10)
+      i++
+    }
+  }
 
-  const shapes = parsePptxSlide(slideXml)
-  console.log(`✨ Found ${shapes.length} shapes/groups in PowerPoint slide.`)
+  // Sort slide files naturally (slide1.xml, slide2.xml, slide10.xml...)
+  slideFiles.sort((a, b) => {
+    const numA = Number.parseInt(a.replace(/[^0-9]/g, '') || '0', 10)
+    const numB = Number.parseInt(b.replace(/[^0-9]/g, '') || '0', 10)
+    return numA - numB
+  })
+
+  const slidesToProcess = slideNumberArg
+    ? slideFiles.filter(f => f.endsWith(`slide${slideNumberArg}.xml`))
+    : slideFiles
+
+  if (slidesToProcess.length === 0) {
+    console.error(`Error: Slide ${slideNumberArg} not found in .pptx file. Found ${slideFiles.length} slides.`)
+    process.exit(1)
+  }
+
+  console.log(`✨ Processing ${slidesToProcess.length} slide(s) from presentation...`)
 
   let svgPaths: string[] = []
   if (svgPath && fs.existsSync(svgPath)) {
@@ -422,33 +441,43 @@ Example:
     console.log(`⚡ Extracted ${svgPaths.length} clean SVG path vectors.`)
   }
 
-  const { repeatingItems, staticElements } = clusterShapes(shapes)
-  console.log(`🔍 Detected ${repeatingItems.length} repeating shape clusters and ${staticElements.length} static elements.`)
-
   const cleanName = nameArg.toLowerCase().replace(/[^a-z0-9]/g, '')
-  const pascalName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1)
-  const templateFileName = `${pascalName}Template.tsx`
-  const targetPath = path.join(process.cwd(), 'src/templates/components', templateFileName)
 
-  if (fs.existsSync(targetPath) && !args.includes('--force')) {
-    console.error(`⚠️ Attention : Le fichier ${templateFileName} existe déjà dans src/templates/components/.`)
-    console.error(`Pour le remplacer explicitement, ajoutez le drapeau --force.`)
-    process.exit(1)
-  }
+  for (let idx = 0; idx < slidesToProcess.length; idx++) {
+    const slideFile = slidesToProcess[idx]!
+    const slideNum = slideFile.replace(/[^0-9]/g, '')
+    console.log(`\n📄 Analyzing Slide ${slideNum} (${slideFile})...`)
+    const slideXml = await zip.file(slideFile)!.async('text')
 
-  const componentTsx = generateComponentTsx(pascalName, shapes, svgPaths)
-  fs.writeFileSync(targetPath, componentTsx, 'utf-8')
-  console.log(`✅ Created Template Component: src/templates/components/${templateFileName}`)
+    const shapes = parsePptxSlide(slideXml)
+    console.log(`  Found ${shapes.length} shapes/groups in Slide ${slideNum}.`)
 
-  // Auto-register in src/templates/registry.ts
-  const registryPath = path.join(process.cwd(), 'src/templates/registry.ts')
-  if (fs.existsSync(registryPath)) {
-    let registryContent = fs.readFileSync(registryPath, 'utf-8')
-    if (!registryContent.includes(`type: '${cleanName}'`)) {
-      const newEntry = `  {
-    type: '${cleanName}' as any,
-    label: '${pascalName} PowerPoint Template',
-    description: 'Template auto-généré depuis PowerPoint (${path.basename(pptxPath)})',
+    const { repeatingItems, staticElements } = clusterShapes(shapes)
+    console.log(`  Detected ${repeatingItems.length} repeating shape clusters and ${staticElements.length} static elements.`)
+
+    const slideCleanName = slidesToProcess.length === 1 ? cleanName : `${cleanName}${slideNum}`
+    const pascalName = slideCleanName.charAt(0).toUpperCase() + slideCleanName.slice(1)
+    const templateFileName = `${pascalName}Template.tsx`
+    const targetPath = path.join(process.cwd(), 'src/templates/components', templateFileName)
+
+    if (fs.existsSync(targetPath) && !args.includes('--force')) {
+      console.error(`  ⚠️ Attention : Le fichier ${templateFileName} existe déjà. Ignoré (utilisez --force pour le remplacer).`)
+      continue
+    }
+
+    const componentTsx = generateComponentTsx(pascalName, shapes, svgPaths)
+    fs.writeFileSync(targetPath, componentTsx, 'utf-8')
+    console.log(`  ✅ Created Template Component: src/templates/components/${templateFileName}`)
+
+    // Auto-register in src/templates/registry.ts
+    const registryPath = path.join(process.cwd(), 'src/templates/registry.ts')
+    if (fs.existsSync(registryPath)) {
+      let registryContent = fs.readFileSync(registryPath, 'utf-8')
+      if (!registryContent.includes(`type: '${slideCleanName}'`)) {
+        const newEntry = `  {
+    type: '${slideCleanName}' as any,
+    label: '${pascalName} PowerPoint Template (Slide ${slideNum})',
+    description: 'Template auto-généré depuis PowerPoint (${path.basename(pptxPath)}, slide ${slideNum})',
     category: 'Other',
     defaultData: {
       type: 'brain',
@@ -459,13 +488,14 @@ Example:
       ],
     },
   },`
-      registryContent = registryContent.replace('export const TEMPLATES: TemplateDefinition[] = [', `export const TEMPLATES: TemplateDefinition[] = [\n${newEntry}`)
-      fs.writeFileSync(registryPath, registryContent, 'utf-8')
-      console.log(`🎉 Auto-registered '${cleanName}' in src/templates/registry.ts!`)
+        registryContent = registryContent.replace('export const TEMPLATES: TemplateDefinition[] = [', `export const TEMPLATES: TemplateDefinition[] = [\n${newEntry}`)
+        fs.writeFileSync(registryPath, registryContent, 'utf-8')
+        console.log(`  🎉 Auto-registered '${slideCleanName}' in src/templates/registry.ts!`)
+      }
     }
   }
 
-  console.log(`\n🎉 Success! You can now use your PowerPoint template in autoDesign with keyword: @${cleanName}`)
+  console.log(`\n🎉 Tous les templates de votre PowerPoint ont été générés avec succès !`)
 }
 
 main().catch(err => {
