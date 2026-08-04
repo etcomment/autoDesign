@@ -133,7 +133,7 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
           const id = `arc-${i}`
           const color = tplColors[id] ?? branch.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
           const isSelected = selectedIds.has(id)
-          const pathD = isExactSix ? SLICE_PATHS[i]! : buildSectorPath(sectorAngles[i]!.start, sectorAngles[i]!.end, RING_GAP_WIDTH, outerContour, innerContour)
+          const pathD = buildSectorPath(sectorAngles[i]!.start, sectorAngles[i]!.end, RING_GAP_WIDTH, outerContour, innerContour)
 
           return (
             <path
@@ -156,15 +156,7 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
       {branches.map((branch, i) => {
         const id = `arc-${i}`
         const isSelected = selectedIds.has(id)
-        const cfg = isExactSix
-          ? SLICE_CONTENT_POS[i]!
-          : (() => {
-              const bisector = (sectorAngles[i]!.start + sectorAngles[i]!.end) / 2
-              const icon = getRingPoint(bisector, 0.72, outerContour, innerContour)
-              const text = getRingPoint(bisector, 0.52, outerContour, innerContour)
-              const number = getRingPoint(bisector, 0.2, outerContour, innerContour)
-              return { iconX: icon.x, iconY: icon.y, textX: text.x, textY: text.y, numX: number.x, numY: number.y }
-            })()
+        const cfg = SLICE_CONTENT_POS[i]!
 
         // Transform Inkscape coords to Canvas Space
         const ptIconX = baseTx + (cfg.iconX - 12.41) * baseScale
