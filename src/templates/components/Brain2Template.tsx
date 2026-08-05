@@ -115,16 +115,16 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
 
   const getInterpolatedPath = (index: number) => {
     if (isExactSix) return SLICE_PATHS[index]!
-    const mapping = count === 4 ? [0, 1, 3, 5] : count === 5 ? [0, 1, 2, 4, 5] : count === 7 ? [0, 0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5]
-    const srcIndex = mapping[index] ?? Math.min(5, Math.round((index / (count - 1)) * 5))
-    return SLICE_PATHS[srcIndex]!
+    return buildSectorPath(sectorAngles[index]!.start, sectorAngles[index]!.end, RING_GAP_WIDTH, outerContour, innerContour)
   }
 
   const getInterpolatedContentPos = (index: number) => {
     if (isExactSix) return SLICE_CONTENT_POS[index]!
-    const mapping = count === 4 ? [0, 1, 3, 5] : count === 5 ? [0, 1, 2, 4, 5] : count === 7 ? [0, 0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5]
-    const srcIndex = mapping[index] ?? Math.min(5, Math.round((index / (count - 1)) * 5))
-    return SLICE_CONTENT_POS[srcIndex]!
+    const bisector = (sectorAngles[index]!.start + sectorAngles[index]!.end) / 2
+    const icon = getRingPoint(bisector, 0.72, outerContour, innerContour)
+    const text = getRingPoint(bisector, 0.52, outerContour, innerContour)
+    const number = getRingPoint(bisector, 0.2, outerContour, innerContour)
+    return { iconX: icon.x, iconY: icon.y, textX: text.x, textY: text.y, numX: number.x, numY: number.y }
   }
 
   // Scale and translate dessin-2.svg coordinates to Canvas space
