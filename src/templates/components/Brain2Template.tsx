@@ -30,23 +30,17 @@ const SLICE_CONTENT_POS = [
   { iconX: 26.0, iconY: 78.0,  textX: 42.0, textY: 95.0,  numX: 58.0, numY: 98.0 },
   // 3: Top Left
   { iconX: 54.0, iconY: 46.0,  textX: 74.0, textY: 62.0,  numX: 88.0, numY: 76.0 },
-  // 4: Top Right
-  { iconX: 124.0, iconY: 46.0, textX: 142.0, textY: 62.0, numX: 128.0, numY: 76.0 },
-  // 5: Middle Right
-  { iconX: 158.0, iconY: 78.0, textX: 174.0, textY: 95.0, numX: 158.0, numY: 98.0 },
-  // 6: Bottom Right
-  { iconX: 158.0, iconY: 150.0, textX: 172.0, textY: 162.0, numX: 156.0, numY: 178.0 },
-]
+import * as LucideIcons from 'lucide-react'
+
+const HEAD_PATH_EXACT = "M 160.77662,382.72352 C 160.77662,382.72352 144.13222,347.16515 152.02324,314.19129 C 158.45564,287.31688 178.69176,279.11714 179.91901,247.90483 C 180.20842,240.54848 174.52054,233.15175 168.03138,228.66567 C 162.7753,225.03194 153.25048,224.23724 152.09117,215.11195 C 151.78248,212.68172 153.86478,211.77093 154.51069,210.02102 C 155.67919,206.85573 153.53503,203.46979 152.79361,199.5583 C 151.81055,194.37258 155.64169,189.65866 156.91682,185.03541 C 158.55829,179.08344 159.95758,172.93652 163.67055,167.73489 C 168.01955,161.64132 173.34447,156.40261 179.37893,151.83403 C 187.67499,145.55395 201.27515,138.99595 210.87122,141.22915 C 220.30154,143.42377 227.18562,151.27218 233.72591,157.91771 C 242.06222,166.38804 246.68007,177.30055 251.52044,188.16919 C 255.45266,197.00007 260.6728,206.39893 259.9142,216.53754 C 259.41804,223.16723 255.41219,228.61803 252.12879,234.33156 C 248.51357,240.6219 245.92215,248.16362 244.60156,255.51868 C 243.68962,260.59604 245.24278,265.41091 246.06014,270.36199 C 247.92548,281.65757 248.88796,293.18956 250.60946,304.5323 C 252.92349,319.77977 263.15197,330.40428 268.0264,345.10519 C 273.81187,362.5534 276.54084,383.1664 276.54084,383.1664 Z"
 
 const DEFAULT_COLORS = ["#282a5d", "#3365cc", "#ff4d38", "#ffb900", "#52c49c", "#ee6d90"]
-const DEFAULT_ICONS = ["wrench", "lightbulb", "zap", "git-branch", "target", "mouse-pointer"]
+const DEFAULT_ICONS = ["Wrench", "Lightbulb", "Zap", "GitBranch", "Target", "MousePointer"]
 
-function getDynamicIcon(iconName?: string, size = 24) {
-  if (!iconName) return null
-  const clean = iconName.trim()
-
-  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
-  if (templateFn) return templateFn
+function getDynamicIcon(name: string | undefined, size: number) {
+  if (!name) return null
+  const clean = name.replace(/[^a-zA-Z0-9]/g, "")
+  if (!clean) return null
 
   const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
   const LucideFn = (LucideIcons as Record<string, any>)[pascalName] || (LucideIcons as Record<string, any>)[clean] || (LucideIcons as Record<string, any>)[clean.toUpperCase()]
@@ -55,24 +49,6 @@ function getDynamicIcon(iconName?: string, size = 24) {
   }
 
   return null
-}
-
-function wrapText(text: string, maxCharsPerLine: number): string[] {
-  if (!text) return []
-  const words = text.split(" ")
-  const lines: string[] = []
-  let currentLine = ""
-
-  for (const word of words) {
-    if ((currentLine + " " + word).trim().length <= maxCharsPerLine) {
-      currentLine = (currentLine + " " + word).trim()
-    } else {
-      if (currentLine) lines.push(currentLine)
-      currentLine = word
-    }
-  }
-  if (currentLine) lines.push(currentLine)
-  return lines
 }
 
 export function Brain2Template({ data }: { data: BrainData }): ReactElement {
@@ -107,7 +83,6 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
   ]
   const count = Math.max(1, branches.length)
 
-  // Mathematically perfect concentric donut logic
   const cx = 108
   const cy = 129
   const R = 96
@@ -164,16 +139,10 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
   const getInterpolatedContentPos = (index: number) => {
     const anglePerSlice = totalAngle / count
     const midAngle = startAngle + (index + 0.5) * anglePerSlice
-    
-    // Shift icon towards top corners (270 degrees)
     const isLeft = midAngle < 270
     const iconAngleOffset = isLeft ? 9 : -9
-    
-    // Icon is near outer edge (radius 90) and shifted slightly upwards
     const iconPt = polarToCartesian(cx, cy, R - 6, midAngle + iconAngleOffset)
-    // Text is moved a bit further out to allow more content
     const textPt = polarToCartesian(cx, cy, r + (R - r) * 0.62, midAngle)
-    // Num is near inner edge (radius 60)
     const numPt = polarToCartesian(cx, cy, r + 6, midAngle)
     
     return {
@@ -183,12 +152,10 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
     }
   }
 
-  // Scale and translate dessin-2.svg coordinates to Canvas space
   const baseScale = (headBbox.width / 191.32) * 1.55
   const baseTx = headBbox.x - 75
   const baseTy = headBbox.y - 120
 
-  // Proportional scale factor based on branch count N
   const scaleFactor = Math.min(1.2, Math.max(0.65, 6 / count))
   const iconSize = Math.round(32 * scaleFactor)
   const titleFontSize = Math.round(13 * scaleFactor)
@@ -197,38 +164,15 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      {/* 1. Exact SVG Arch Slices from dessin-2.svg (Interactive) */}
-      <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(-12.41, -33.54)`}>
-        {branches.map((branch, i) => {
-          const id = `arc-${i}`
-          const color = tplColors[id] ?? branch.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
-          const isSelected = selectedIds.has(id)
-          const pathD = getInterpolatedPath(i)
-
-          return (
-            <path
-              key={id}
-              d={pathD}
-              fill={color}
-              opacity={isSelected ? 0.88 : 1}
-              stroke={isSelected ? "#4a90d9" : "#ffffff"}
-              strokeWidth={isSelected ? 1.5 : 0.4}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              style={{ cursor: "pointer" }}
-              onMouseDown={e => startDrag(e, id, headBbox)}
-            />
-          )
-        })}
-      </g>
-
-      {/* 2. Text, Numbers (1..6) and Icons centered over Slices (Exact dessin-2.svg positioning) */}
+      {/* 1 & 2. Slices and Content grouped together for interaction */}
       {branches.map((branch, i) => {
         const id = `arc-${i}`
+        const color = tplColors[id] ?? branch.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         const isSelected = selectedIds.has(id)
+        
+        const pathD = getInterpolatedPath(i)
         const cfg = getInterpolatedContentPos(i)
 
-        // Transform Inkscape coords to Canvas Space
         const ptIconX = baseTx + (cfg.iconX - 12.41) * baseScale
         const ptIconY = baseTy + (cfg.iconY - 33.54) * baseScale
 
@@ -243,84 +187,53 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
         const iconKey = branch.icon ?? DEFAULT_ICONS[i % DEFAULT_ICONS.length]
         const IconFn = getDynamicIcon(iconKey, iconSize)
 
-        const titleLines = wrapText(branch.title, Math.max(8, Math.floor(14 * scaleFactor)))
-        const subtitleLines = branch.subtitle ? wrapText(branch.subtitle, Math.max(10, Math.floor(16 * scaleFactor))) : []
+        const titleLines = wrapTextByWidth(branch.title, Math.max(8, Math.floor(14 * scaleFactor)))
+        const subtitleLines = branch.subtitle ? wrapTextByWidth(branch.subtitle, Math.max(10, Math.floor(16 * scaleFactor))) : []
 
         return (
-          <g key={`content-${id}`} onMouseDown={e => startDrag(e, id, aBbox)} style={{ cursor: "pointer" }}>
-            {/* Icon in top-left area of slice */}
-            {IconFn && (
-              <g transform={`translate(${ptIconX - iconSize / 2}, ${ptIconY - iconSize / 2})`}>
-                <IconFn size={iconSize} color="#ffffff" />
-              </g>
-            )}
+          <g key={id} transform={getTransform(id, aBbox)} onMouseDown={e => startDrag(e, id, aBbox)} style={{ cursor: "pointer" }}>
+            <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(-12.41, -33.54)`}>
+              <path
+                d={pathD}
+                fill={color}
+                opacity={isSelected ? 0.88 : 1}
+                stroke={isSelected ? "#4a90d9" : "#ffffff"}
+                strokeWidth={isSelected ? 1.5 : 0.4}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            </g>
 
-            {/* Title & Subtitle centered in middle of slice */}
-            <text
-              x={ptTextX}
-              y={ptTextY - (titleLines.length > 1 ? titleFontSize * 0.6 : 4)}
-              textAnchor="middle"
-              fontFamily="Arial, sans-serif"
-              fontSize={titleFontSize}
-              fontWeight={700}
-              fill="#ffffff"
-            >
-              {titleLines.map((line, lIdx) => (
-                <tspan key={lIdx} x={ptTextX} dy={lIdx === 0 ? 0 : titleFontSize * 1.15}>
-                  {line}
-                </tspan>
-              ))}
-            </text>
+            <g>
+              {IconFn && (
+                <g transform={`translate(${ptIconX - iconSize / 2}, ${ptIconY - iconSize / 2})`}>
+                  <IconFn size={iconSize} color="#ffffff" />
+                </g>
+              )}
 
-            {/* Subtitle */}
-            {subtitleLines.length > 0 && (
-              <text
-                x={ptTextX}
-                y={ptTextY + titleLines.length * titleFontSize * 0.7 + 6}
-                textAnchor="middle"
-                fontFamily="Arial, sans-serif"
-                fontSize={subtitleFontSize}
-                fontWeight={400}
-                fill="#ffffff"
-                opacity={0.92}
-              >
-                {subtitleLines.map((line, lIdx) => (
-                  <tspan key={lIdx} x={ptTextX} dy={lIdx === 0 ? 0 : subtitleFontSize * 1.15}>
-                    {line}
-                  </tspan>
+              <text x={ptTextX} y={ptTextY - (titleLines.length > 1 ? titleFontSize * 0.6 : 4)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={titleFontSize} fontWeight={700} fill="#ffffff">
+                {titleLines.map((line, lIdx) => (
+                  <tspan key={lIdx} x={ptTextX} dy={lIdx === 0 ? 0 : titleFontSize * 1.15}>{line}</tspan>
                 ))}
               </text>
-            )}
 
-            {/* DSL Attributes: val / pct / date if present */}
-            {(branch.val || branch.pct || branch.date) && (
-              <text
-                x={ptTextX}
-                y={ptTextY + titleLines.length * titleFontSize * 0.7 + (subtitleLines.length + 1) * subtitleFontSize * 1.1}
-                textAnchor="middle"
-                fontFamily="Arial, sans-serif"
-                fontSize={Math.max(9, subtitleFontSize - 1)}
-                fontWeight={600}
-                fill="#ffffff"
-                opacity={0.95}
-              >
+              {subtitleLines.length > 0 && (
+                <text x={ptTextX} y={ptTextY + titleLines.length * titleFontSize * 0.7 + 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={subtitleFontSize} fontWeight={600} fill="#ffffff" opacity={0.95}>
+                  {subtitleLines.map((line, lIdx) => (
+                    <tspan key={lIdx} x={ptTextX} dy={lIdx === 0 ? 0 : subtitleFontSize * 1.15}>{line}</tspan>
+                  ))}
+                </text>
+              )}
+
+              <text x={ptTextX} y={ptTextY + titleLines.length * titleFontSize * 0.7 + (subtitleLines.length + 1) * subtitleFontSize * 1.1} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={Math.max(9, subtitleFontSize - 1)} fontWeight={600} fill="#ffffff" opacity={0.95}>
                 {[branch.val, branch.pct, branch.date].filter(Boolean).join(" • ")}
               </text>
-            )}
 
-            {/* Big bold number near inner edge */}
-            <text
-              x={ptNumX}
-              y={ptNumY}
-              textAnchor="middle"
-              fontFamily="Arial, sans-serif"
-              fontSize={numFontSize}
-              fontWeight={900}
-              fill="#ffffff"
-            >
-              {i + 1}
-            </text>
-
+              <text x={ptNumX} y={ptNumY} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={numFontSize} fontWeight={900} fill="#ffffff">
+                {i + 1}
+              </text>
+            </g>
+            
             {isSelected && renderHandles(aBbox, id)}
           </g>
         )
