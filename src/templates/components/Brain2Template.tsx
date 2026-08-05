@@ -137,9 +137,9 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
 
   const scaleFactor = Math.min(1.2, Math.max(0.65, 6 / count))
   const iconSize = Math.round(32 * scaleFactor)
-  const titleFontSize = Math.round(13 * scaleFactor)
-  const subtitleFontSize = Math.round(10 * scaleFactor)
-  const numFontSize = Math.round(22 * scaleFactor)
+  const titleFontSize = Math.round(11 * scaleFactor)
+  const subtitleFontSize = Math.round(9 * scaleFactor)
+  const numFontSize = Math.round(18 * scaleFactor)
 
   return (
     <g ref={svgRef}>
@@ -161,10 +161,7 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
         const ptNumX = baseTx + (cfg.numX - 12.41) * baseScale
         const ptNumY = baseTy + (cfg.numY - 33.54) * baseScale
 
-        const brainCx = baseTx + (cx - 12.41) * baseScale
-        const brainCy = baseTy + (cy - 33.54) * baseScale
-        const brainR = R * baseScale + 40
-        const aBbox = { x: brainCx - brainR, y: brainCy - brainR, width: brainR * 2, height: brainR * 2 }
+        const aBbox = { x: ptTextX - 75, y: ptTextY - 50, width: 150, height: 100 }
 
         const IconFn = branch.icon ? getDynamicIcon(branch.icon, iconSize) : null
 
@@ -237,7 +234,7 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
           </g>
 
           {/* Lightbulb with horizontal arrows icon inside head */}
-          <g transform={`translate(${headBbox.x + headBbox.width * 0.12}, ${headBbox.y + headBbox.height * 0.24})`}>
+          <g transform={`translate(${headBbox.x + headBbox.width * 0.40}, ${headBbox.y + headBbox.height * 0.20}) scale(0.8)`}>
           {/* Lightbulb contour */}
           <path
             d="M 25 5 C 14 5 5 14 5 25 C 5 32 8 38 14 42 L 14 50 L 36 50 L 36 42 C 42 38 45 32 45 25 C 45 14 36 5 25 5 Z"
