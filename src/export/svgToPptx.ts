@@ -321,57 +321,71 @@ function addPolygonToSlide(
     points: relPoints as unknown as PptxGenJS.ShapeProps['points'],
     fill: hexFill ? { color: hexFill } : { type: 'none' },
     line: hexStroke && strokeWidth > 0 ? { color: hexStroke, width: Math.max(0.25, strokeWidth * layout.scaleX * 72) } : undefined,
-  } as PptxGenJS.ShapeProps)
+async function rasterizeElementToPng(el: SVGGraphicsElement, bbox: DOMRect | SVGRect, defsString: string): Promise<string> {
+  const sw = parseFloat(el.getAttribute('stroke-width') || window.getComputedStyle(el).strokeWidth || '0')
+  const strokePad = isNaN(sw) ? 0 : sw / 2
+  const pad = 4 + strokePad
+  const vbX = bbox.x - pad
+  const vbY = bbox.y - pad
+  const vbW = bbox.width + pad * 2
+  const vbH = bbox.height + pad * 2
+  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" width="${vbW}" height="${vbH}">${defsString}${el.outerHTML}</svg>`
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([svgStr], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(blob)
+    const img = new Image()
+    img.onload = () => {
+      const scale = 12 // Super high scale for ultra crisp vectors in PPTX
+      const canvas = document.createElement('canvas')
+      canvas.width = (img.naturalWidth || img.width) * scale
+      canvas.height = (img.naturalHeight || img.height) * scale
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { URL.revokeObjectURL(url); reject(new Error('no ctx')); return }
+      ctx.scale(scale, scale)
+      ctx.imageSmoothingEnabled = true
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(img, 0, 0)
+      URL.revokeObjectURL(url)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('raster fail')) }
+    img.src = url
+  })
 }
 
-function addPathAsPolygonToSlide(
+async function addElementAsImageToSlide(
   slide: PptxGenJS.Slide,
-  el: SVGPathElement,
-  svgRoot: SVGSVGElement,
+  el: SVGGraphicsElement,
+  bounds: AbsBounds,
   vb: ViewBox,
   layout: SlideLayout,
-): void {
-  let ctm: DOMMatrix | null = null
-  try { ctm = el.getCTM() } catch { return }
-  if (!ctm) return
+  defsString: string
+): Promise<void> {
+  try {
+    const bbox = el.getBBox()
+    if (bbox.width <= 0 || bbox.height <= 0) return
+    const pngData = await rasterizeElementToPng(el, bbox, defsString)
+    
+    let ctmScale = 1
+    try {
+      const ctm = el.getCTM()
+      if (ctm) ctmScale = Math.hypot(ctm.a, ctm.b)
+    } catch {}
 
-  let len = 0
-  try { len = el.getTotalLength() } catch { return }
-  if (len <= 0) return
+    const sw = parseFloat(el.getAttribute('stroke-width') || window.getComputedStyle(el).strokeWidth || '0')
+    const strokePad = isNaN(sw) ? 0 : sw / 2
+    const padAbs = (4 + strokePad) * ctmScale
+    const padW = padAbs * layout.scaleX
+    const padH = padAbs * layout.scaleY
 
-  const pt = svgRoot.createSVGPoint()
-  const absPoints: Array<{ x: number; y: number }> = []
-  
-  // Sample every 2 pixels (in local SVG space) for smooth vector curves
-  const steps = Math.max(12, Math.ceil(len / 2))
-  for (let i = 0; i <= steps; i++) {
-    const p = el.getPointAtLength((i * len) / steps)
-    pt.x = p.x
-    pt.y = p.y
-    const abs = pt.matrixTransform(ctm)
-    absPoints.push({ x: toSlideX(abs.x, vb, layout), y: toSlideY(abs.y, vb, layout) })
-  }
-
-  const { fill, stroke, strokeWidth } = getElementStyle(el)
-  const hexFill = resolveColor(fill)
-  const hexStroke = resolveColor(stroke)
-
-  const minX = Math.min(...absPoints.map(p => p.x))
-  const minY = Math.min(...absPoints.map(p => p.y))
-  const maxX = Math.max(...absPoints.map(p => p.x))
-  const maxY = Math.max(...absPoints.map(p => p.y))
-
-  const relPoints = absPoints.map(p => ({ x: p.x - minX, y: p.y - minY }))
-
-  slide.addShape('custGeom' as PptxGenJS.ShapeType, {
-    x: minX,
-    y: minY,
-    w: Math.max(0.01, maxX - minX),
-    h: Math.max(0.01, maxY - minY),
-    points: relPoints as unknown as PptxGenJS.ShapeProps['points'],
-    fill: hexFill ? { color: hexFill } : { type: 'none' },
-    line: hexStroke && strokeWidth > 0 ? { color: hexStroke, width: Math.max(0.25, strokeWidth * layout.scaleX * 72) } : undefined,
-  } as PptxGenJS.ShapeProps)
+    slide.addImage({
+      data: pngData,
+      x: toSlideX(bounds.x, vb, layout) - padW,
+      y: toSlideY(bounds.y, vb, layout) - padH,
+      w: Math.max(0.01, toSlideW(bounds.w, layout)) + padW * 2,
+      h: Math.max(0.01, toSlideH(bounds.h, layout)) + padH * 2,
+    })
+  } catch { /* skip unrenderable elements */ }
 }
 
 function addTextToSlide(
@@ -508,6 +522,20 @@ export async function generateCanvasPptx(): Promise<Blob> {
 
   // Removed white slide background completely so it defaults to transparent / slide master background
 
+  const allDefs = Array.from(svgRoot.querySelectorAll('defs')).map(d => d.outerHTML).join('\n')
+
+  // Export clipped groups as high-res images to support complex cuts (e.g. Brain1 silhouette)
+  const clippedGroups = Array.from(svgRoot.querySelectorAll<SVGGraphicsElement>('g[clip-path]'))
+  for (const g of clippedGroups) {
+    if (isInteractiveElement(g) || isInsideDefs(g)) continue
+    const bounds = getAbsBounds(g, svgRoot)
+    if (bounds && bounds.w > 0 && bounds.h > 0) {
+      await addElementAsImageToSlide(slide, g, bounds, vb, layout, allDefs)
+    }
+    // Remove so children aren't drawn independently as unclipped rects
+    g.remove()
+  }
+
   const shapes = Array.from(svgRoot.querySelectorAll<SVGGraphicsElement>('rect, circle, ellipse, polygon, path, line'))
   for (const el of shapes) {
     if (isInteractiveElement(el) || isInsideDefs(el)) continue
@@ -530,7 +558,7 @@ export async function generateCanvasPptx(): Promise<Blob> {
 
     if (tag === 'rect') addRectToSlide(slide, el, bounds, vb, layout)
     else if (tag === 'circle' || tag === 'ellipse') addEllipseToSlide(slide, el, bounds, vb, layout)
-    else if (tag === 'path') addPathAsPolygonToSlide(slide, el as SVGPathElement, svgRoot, vb, layout)
+    else if (tag === 'path') await addElementAsImageToSlide(slide, el, bounds, vb, layout, allDefs)
   }
 
   const texts = Array.from(svgRoot.querySelectorAll<SVGTextElement>('text'))
