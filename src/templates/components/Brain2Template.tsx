@@ -1,5 +1,6 @@
 import { useRef, type ReactElement } from "react"
 import type { BrainData } from "../types"
+import { wrapTextByWidth } from "../shared/primitives"
 import { useTemplateDragResize } from "../shared/useTemplateDragResize"
 import { useTemplateStore } from "../store"
 import { TEMPLATE_ICONS } from "../shared/icons"
