@@ -161,13 +161,15 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
         const ptNumX = baseTx + (cfg.numX - 12.41) * baseScale
         const ptNumY = baseTy + (cfg.numY - 33.54) * baseScale
 
-        const aBbox = { x: ptTextX - 50, y: ptTextY - 50, width: 100, height: 100 }
+        const brainCx = baseTx + (cx - 12.41) * baseScale
+        const brainCy = baseTy + (cy - 33.54) * baseScale
+        const brainR = R * baseScale + 40
+        const aBbox = { x: brainCx - brainR, y: brainCy - brainR, width: brainR * 2, height: brainR * 2 }
 
-        const iconKey = branch.icon ?? DEFAULT_ICONS[i % DEFAULT_ICONS.length]
-        const IconFn = getDynamicIcon(iconKey, iconSize)
+        const IconFn = branch.icon ? getDynamicIcon(branch.icon, iconSize) : null
 
-        const titleLines = wrapTextByWidth(branch.title, Math.max(8, Math.floor(14 * scaleFactor)))
-        const subtitleLines = branch.subtitle ? wrapTextByWidth(branch.subtitle, Math.max(10, Math.floor(16 * scaleFactor))) : []
+        const titleLines = wrapTextByWidth(branch.title, Math.max(12, Math.round(18 * scaleFactor)))
+        const subtitleLines = branch.subtitle ? wrapTextByWidth(branch.subtitle, Math.max(14, Math.round(22 * scaleFactor))) : []
 
         return (
           <g key={id} transform={getTransform(id, aBbox)} onMouseDown={e => startDrag(e, id, aBbox)} style={{ cursor: "pointer" }}>
