@@ -36,6 +36,7 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const positions = useTemplateStore(s => s.templateElementPositions)
   const templateElementRotations = useTemplateStore(s => s.templateElementRotations)
+  const hiddenIds = useTemplateStore(s => s.hiddenTemplateElementIds)
 
   const headId = "head"
   const headDef = { x: 300, y: 140, width: 300, height: 420 }
@@ -47,6 +48,7 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
     height: headPos?.height ?? headDef.height,
   }
   const isHeadSelected = selectedIds.has(headId)
+  const isHeadHidden = hiddenIds.has(headId)
 
   const headRaise = headBbox.height * 0.05
   const headShiftX = 0
@@ -58,9 +60,8 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
     { title: "MIGSO-PCUBED", subtitle: "content", icon: "zap", color: "#ff4d38" },
     { title: "MIGSO-PCUBED", subtitle: "content", icon: "git-branch", color: "#ffb900" },
     { title: "MIGSO-PCUBED", subtitle: "content", icon: "target", color: "#52c49c" },
-    { title: "MIGSO-PCUBED", subtitle: "content", icon: "mouse-pointer", color: "#ee6d90" },
   ]
-  const count = Math.max(1, branches.length)
+  const count = branches.length
 
   const cx = 108
   const cy = 129
@@ -121,14 +122,14 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
     const isLeft = midAngle < 270
     
     // Position of the icon (closer to outer edge by default)
-    const iconAngleOffset = isLeft ? 18 : -18
-    const iconPt = polarToCartesian(cx, cy, customR - 10, midAngle + iconAngleOffset)
+    const iconAngleOffset = isLeft ? 9 : -9
+    const iconPt = polarToCartesian(cx, cy, customR - 15, midAngle + iconAngleOffset)
     
     // Position of the text (centered between inner and outer radius)
-    const textPt = polarToCartesian(cx, cy, customr + (customR - customr) * 0.58, midAngle)
+    const textPt = polarToCartesian(cx, cy, customr + (customR - customr) * 0.62, midAngle)
     
     // Position of the number (closer to inner edge)
-    const numPt = polarToCartesian(cx, cy, customr + 6, midAngle)
+    const numPt = polarToCartesian(cx, cy, customr + 15, midAngle)
     
     return {
       iconX: iconPt.x, iconY: iconPt.y,
@@ -142,8 +143,8 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
   const baseTy = headBbox.y - 120
 
   const scaleFactor = Math.min(1.2, Math.max(0.65, 6 / count))
-  const iconSize = Math.round(28 * scaleFactor)
-  const titleFontSize = Math.round(7 * scaleFactor)
+  const iconSize = Math.round(32 * scaleFactor)
+  const titleFontSize = Math.round(8 * scaleFactor)
   const subtitleFontSize = Math.round(6 * scaleFactor)
   const numFontSize = Math.round(14 * scaleFactor)
 
@@ -152,6 +153,8 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
       {/* 1 & 2. Slices and Content grouped together for interaction */}
       {branches.map((branch, i) => {
         const id = `arc-${i}`
+        if (hiddenIds.has(id)) return null;
+        
         const color = tplColors[id] ?? branch.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         const isSelected = selectedIds.has(id)
         
@@ -240,45 +243,47 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
       })}
 
       {/* 3. Central Head Silhouette from dessin-2.svg (Interactive & Horizontally Aligned at Base) */}
-      <g
-        transform={getTransform(headId, headBbox)}
-        style={{ cursor: "pointer" }}
-        onMouseDown={e => startDrag(e, headId, headBbox)}
-      >
-        <g transform={`translate(-${headShiftX}, ${headShiftY - headRaise})`}>
-          <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(-12.41, -33.54)`}>
+      {!isHeadHidden && (
+        <g
+          transform={getTransform(headId, headBbox)}
+          style={{ cursor: "pointer" }}
+          onMouseDown={e => startDrag(e, headId, headBbox)}
+        >
+          <g transform={`translate(-${headShiftX}, ${headShiftY - headRaise})`}>
+            <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(-12.41, -33.54)`}>
+              <path
+                d={HEAD_PATH_EXACT}
+                fill="#111319"
+                stroke={isHeadSelected ? "#4a90d9" : "none"}
+                strokeWidth={isHeadSelected ? 1 : 0}
+              />
+            </g>
+
+            {/* Lightbulb with horizontal arrows icon inside head */}
+            <g transform={`translate(${baseTx + (cx - 12.41) * baseScale - 20}, ${baseTy + (cy - 33.54) * baseScale - 25}) scale(0.8)`}>
+            {/* Lightbulb contour */}
             <path
-              d={HEAD_PATH_EXACT}
-              fill="#111319"
-              stroke={isHeadSelected ? "#4a90d9" : "none"}
-              strokeWidth={isHeadSelected ? 1 : 0}
+              d="M 25 5 C 14 5 5 14 5 25 C 5 32 8 38 14 42 L 14 50 L 36 50 L 36 42 C 42 38 45 32 45 25 C 45 14 36 5 25 5 Z"
+              fill="none"
+              stroke="#d1d5db"
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
+            {/* Lightbulb base lines */}
+            <line x1={17} y1={55} x2={33} y2={55} stroke="#d1d5db" strokeWidth={2.5} strokeLinecap="round" />
+            <line x1={20} y1={60} x2={30} y2={60} stroke="#d1d5db" strokeWidth={2.5} strokeLinecap="round" />
+
+            {/* Top Arrow pointing left */}
+            <path d="M 34 20 L 14 20 M 20 14 L 14 20 L 20 26" stroke="#d1d5db" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+            {/* Bottom Arrow pointing right */}
+            <path d="M 16 32 L 36 32 M 30 26 L 36 32 L 30 38" stroke="#d1d5db" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+            </g>
           </g>
 
-          {/* Lightbulb with horizontal arrows icon inside head */}
-          <g transform={`translate(${baseTx + (cx - 12.41) * baseScale - 20}, ${baseTy + (cy - 33.54) * baseScale - 25}) scale(0.8)`}>
-          {/* Lightbulb contour */}
-          <path
-            d="M 25 5 C 14 5 5 14 5 25 C 5 32 8 38 14 42 L 14 50 L 36 50 L 36 42 C 42 38 45 32 45 25 C 45 14 36 5 25 5 Z"
-            fill="none"
-            stroke="#d1d5db"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {/* Lightbulb base lines */}
-          <line x1={17} y1={55} x2={33} y2={55} stroke="#d1d5db" strokeWidth={2.5} strokeLinecap="round" />
-          <line x1={20} y1={60} x2={30} y2={60} stroke="#d1d5db" strokeWidth={2.5} strokeLinecap="round" />
-
-          {/* Top Arrow pointing left */}
-          <path d="M 34 20 L 14 20 M 20 14 L 14 20 L 20 26" stroke="#d1d5db" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-          {/* Bottom Arrow pointing right */}
-          <path d="M 16 32 L 36 32 M 30 26 L 36 32 L 30 38" stroke="#d1d5db" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
-          </g>
+          {isHeadSelected && renderHandles(headBbox, headId)}
         </g>
-
-        {isHeadSelected && renderHandles(headBbox, headId)}
-      </g>
+      )}
     </g>
   )
 }
