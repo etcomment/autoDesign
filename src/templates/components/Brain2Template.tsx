@@ -36,6 +36,7 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const positions = useTemplateStore(s => s.templateElementPositions)
+  const templateElementRotations = useTemplateStore(s => s.templateElementRotations)
 
   const headId = "head"
   const headDef = { x: 300, y: 140, width: 300, height: 420 }
