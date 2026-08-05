@@ -167,7 +167,7 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
     
     // Shift icon towards top corners (270 degrees)
     const isLeft = midAngle < 270
-    const iconAngleOffset = isLeft ? 5 : -5
+    const iconAngleOffset = isLeft ? 9 : -9
     
     // Icon is near outer edge (radius 90) and shifted slightly upwards
     const iconPt = polarToCartesian(cx, cy, R - 6, midAngle + iconAngleOffset)
@@ -190,7 +190,7 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
 
   // Proportional scale factor based on branch count N
   const scaleFactor = Math.min(1.2, Math.max(0.65, 6 / count))
-  const iconSize = Math.round(28 * scaleFactor)
+  const iconSize = Math.round(32 * scaleFactor)
   const titleFontSize = Math.round(13 * scaleFactor)
   const subtitleFontSize = Math.round(10 * scaleFactor)
   const numFontSize = Math.round(22 * scaleFactor)
