@@ -79,9 +79,9 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
     }
   }
 
-  const getDonutSectorPath = (startA: number, endA: number) => {
-    const rShrink = (Math.asin((gapPixels/2) / r) * 180 / Math.PI) || 0
-    const RShrink = (Math.asin((gapPixels/2) / R) * 180 / Math.PI) || 0
+  const getDonutSectorPath = (startA: number, endA: number, customR: number, customr: number) => {
+    const rShrink = (Math.asin((gapPixels/2) / customr) * 180 / Math.PI) || 0
+    const RShrink = (Math.asin((gapPixels/2) / customR) * 180 / Math.PI) || 0
 
     let startR = startA + RShrink
     let endR = endA - RShrink
@@ -91,28 +91,28 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
     if (startR > endR) { startR = (startA+endA)/2; endR = startR }
     if (start_r > end_r) { start_r = (startA+endA)/2; end_r = start_r }
 
-    const p1 = polarToCartesian(cx, cy, R, startR)
-    const p2 = polarToCartesian(cx, cy, R, endR)
-    const p3 = polarToCartesian(cx, cy, r, end_r)
-    const p4 = polarToCartesian(cx, cy, r, start_r)
+    const p1 = polarToCartesian(cx, cy, customR, startR)
+    const p2 = polarToCartesian(cx, cy, customR, endR)
+    const p3 = polarToCartesian(cx, cy, customr, end_r)
+    const p4 = polarToCartesian(cx, cy, customr, start_r)
     
     const largeArcFlagOuter = endR - startR <= 180 ? "0" : "1"
     const largeArcFlagInner = end_r - start_r <= 180 ? "0" : "1"
 
     return [
       `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)}`,
-      `A ${R} ${R} 0 ${largeArcFlagOuter} 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`,
+      `A ${customR} ${customR} 0 ${largeArcFlagOuter} 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`,
       `L ${p3.x.toFixed(2)} ${p3.y.toFixed(2)}`,
-      `A ${r} ${r} 0 ${largeArcFlagInner} 0 ${p4.x.toFixed(2)} ${p4.y.toFixed(2)}`,
+      `A ${customr} ${customr} 0 ${largeArcFlagInner} 0 ${p4.x.toFixed(2)} ${p4.y.toFixed(2)}`,
       "Z"
     ].join(" ")
   }
 
-  const getInterpolatedPath = (index: number) => {
+  const getInterpolatedPath = (index: number, customR: number, customr: number) => {
     const anglePerSlice = totalAngle / count
     const startA = startAngle + index * anglePerSlice
     const endA = startAngle + (index + 1) * anglePerSlice
-    return getDonutSectorPath(startA, endA)
+    return getDonutSectorPath(startA, endA, customR, customr)
   }
 
   const getInterpolatedContentPos = (index: number) => {
@@ -137,9 +137,9 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
 
   const scaleFactor = Math.min(1.2, Math.max(0.65, 6 / count))
   const iconSize = Math.round(32 * scaleFactor)
-  const titleFontSize = Math.round(11 * scaleFactor)
-  const subtitleFontSize = Math.round(9 * scaleFactor)
-  const numFontSize = Math.round(18 * scaleFactor)
+  const titleFontSize = Math.round(8 * scaleFactor)
+  const subtitleFontSize = Math.round(6 * scaleFactor)
+  const numFontSize = Math.round(14 * scaleFactor)
 
   return (
     <g ref={svgRef}>
@@ -149,7 +149,6 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
         const color = tplColors[id] ?? branch.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         const isSelected = selectedIds.has(id)
         
-        const pathD = getInterpolatedPath(i)
         const cfg = getInterpolatedContentPos(i)
 
         const ptIconX = baseTx + (cfg.iconX - 12.41) * baseScale
@@ -161,7 +160,25 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
         const ptNumX = baseTx + (cfg.numX - 12.41) * baseScale
         const ptNumY = baseTy + (cfg.numY - 33.54) * baseScale
 
-        const aBbox = { x: ptTextX - 75, y: ptTextY - 50, width: 150, height: 100 }
+        const slicePos = positions[id]
+        const defaultBbox = { x: ptTextX - 75, y: ptTextY - 50, width: 150, height: 100 }
+        const sliceBbox = {
+          x: slicePos?.x ?? defaultBbox.x,
+          y: slicePos?.y ?? defaultBbox.y,
+          width: slicePos?.width ?? defaultBbox.width,
+          height: slicePos?.height ?? defaultBbox.height
+        }
+
+        const localSliceScale = sliceBbox.width / 150
+        const localR = R * localSliceScale
+        const localr = r * localSliceScale
+
+        const pathD = getInterpolatedPath(i, localR, localr)
+        
+        // Only apply translate (and rotation if any) natively, removing nested getTransform scaling
+        const dx = sliceBbox.x - defaultBbox.x
+        const dy = sliceBbox.y - defaultBbox.y
+        const rotationStr = templateElementRotations[id] ? `rotate(${templateElementRotations[id]} ${sliceBbox.x + sliceBbox.width/2} ${sliceBbox.y + sliceBbox.height/2})` : ""
 
         const IconFn = branch.icon ? getDynamicIcon(branch.icon, iconSize) : null
 
@@ -169,7 +186,7 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
         const subtitleLines = branch.subtitle ? wrapTextByWidth(branch.subtitle, Math.max(14, Math.round(22 * scaleFactor))) : []
 
         return (
-          <g key={id} transform={getTransform(id, aBbox)} onMouseDown={e => startDrag(e, id, aBbox)} style={{ cursor: "pointer" }}>
+          <g key={id} transform={`translate(${dx}, ${dy}) ${rotationStr}`} onMouseDown={e => startDrag(e, id, defaultBbox)} style={{ cursor: "pointer" }}>
             <g transform={`translate(${baseTx}, ${baseTy}) scale(${baseScale}) translate(-12.41, -33.54)`}>
               <path
                 d={pathD}
@@ -234,7 +251,7 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
           </g>
 
           {/* Lightbulb with horizontal arrows icon inside head */}
-          <g transform={`translate(${headBbox.x + headBbox.width * 0.40}, ${headBbox.y + headBbox.height * 0.20}) scale(0.8)`}>
+          <g transform={`translate(${baseTx + (cx - 12.41) * baseScale - 20}, ${baseTy + (cy - 33.54) * baseScale - 25}) scale(0.8)`}>
           {/* Lightbulb contour */}
           <path
             d="M 25 5 C 14 5 5 14 5 25 C 5 32 8 38 14 42 L 14 50 L 36 50 L 36 42 C 42 38 45 32 45 25 C 45 14 36 5 25 5 Z"
