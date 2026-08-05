@@ -14,7 +14,6 @@ const BRAIN2_INNER_CONTOUR: readonly (readonly [number, number])[] = [[63.58, 16
 const HEAD_PATH_EXACT = "M 93.79914,195.23832 C 94.20517,194.19898 96.92735,184.77713 97.64045,181.94301 C 99.98678,172.61776 100.89778,165.10145 99.91261,163.19634 C 99.00839,161.44777 97.58249,161.22470 90.18105,161.67396 C 85.65560,161.94864 84.26933,161.70606 83.21674,160.45509 C 82.44357,159.53623 82.36125,158.15090 82.96210,156.17023 C 83.52261,154.32258 83.46788,152.25170 82.82695,151.05586 C 82.23877,149.95845 82.15887,149.09486 82.57378,148.31960 C 82.78452,147.92583 82.75897,147.76906 82.46571,147.65653 C 82.25448,147.57543 81.93996,147.16707 81.76677,146.74898 C 81.49359,146.08946 81.54419,145.78723 82.14889,144.46639 C 83.27489,142.00689 82.86142,141.20856 79.98016,140.27901 C 76.82431,139.26087 77.43133,136.85161 82.40860,130.64064 C 85.31897,127.00888 85.73335,126.16233 85.73589,123.84314 C 85.73969,120.39654 87.93704,115.05060 90.73827,111.67294 C 95.63993,105.76264 103.93141,102.64323 112.80829,103.36979 C 123.08321,104.21078 131.59111,109.54717 135.38296,117.52924 C 136.95485,120.83817 137.41101,122.92504 137.40448,126.77738 C 137.39398,132.94986 135.78197,137.55096 130.45225,146.62062 C 126.34581,153.60860 125.77689,155.28954 126.21358,159.14444 C 126.81406,164.44522 130.01530,174.20685 133.31176,180.78910 C 134.03042,182.22411 135.06463,184.58884 135.60999,186.04405 C 136.59529,188.67317 138.12486,194.24218 138.12486,195.20040 C 138.12486,195.68796 137.53051,195.70134 115.87156,195.70134 C 94.78541,195.70134 93.62774,195.67704 93.79914,195.23832 Z"
 
 const DEFAULT_COLORS = ["#282a5d", "#3365cc", "#ff4d38", "#ffb900", "#52c49c", "#ee6d90"]
-const DEFAULT_ICONS = ["Wrench", "Lightbulb", "Zap", "GitBranch", "Target", "MousePointer"]
 
 function getDynamicIcon(name: string | undefined, size: number) {
   if (!name) return null
@@ -122,14 +121,14 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
     const isLeft = midAngle < 270
     
     // Position of the icon (closer to outer edge by default)
-    const iconAngleOffset = isLeft ? 9 : -9
-    const iconPt = polarToCartesian(cx, cy, customR - 15, midAngle + iconAngleOffset)
+    const iconAngleOffset = isLeft ? 18 : -18
+    const iconPt = polarToCartesian(cx, cy, customR - 10, midAngle + iconAngleOffset)
     
     // Position of the text (centered between inner and outer radius)
-    const textPt = polarToCartesian(cx, cy, customr + (customR - customr) * 0.62, midAngle)
+    const textPt = polarToCartesian(cx, cy, customr + (customR - customr) * 0.58, midAngle)
     
     // Position of the number (closer to inner edge)
-    const numPt = polarToCartesian(cx, cy, customr + 15, midAngle)
+    const numPt = polarToCartesian(cx, cy, customr + 6, midAngle)
     
     return {
       iconX: iconPt.x, iconY: iconPt.y,
@@ -143,8 +142,8 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
   const baseTy = headBbox.y - 120
 
   const scaleFactor = Math.min(1.2, Math.max(0.65, 6 / count))
-  const iconSize = Math.round(32 * scaleFactor)
-  const titleFontSize = Math.round(8 * scaleFactor)
+  const iconSize = Math.round(28 * scaleFactor)
+  const titleFontSize = Math.round(7 * scaleFactor)
   const subtitleFontSize = Math.round(6 * scaleFactor)
   const numFontSize = Math.round(14 * scaleFactor)
 
@@ -219,7 +218,7 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
               </text>
 
               {subtitleLines.length > 0 && (
-                <text x={ptTextX} y={ptTextY + titleLines.length * titleFontSize * 0.7 + 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={subtitleFontSize} fontWeight={600} fill="#ffffff" opacity={0.95}>
+                <text x={ptTextX} y={ptTextY + titleLines.length * titleFontSize * 0.7 + 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={subtitleFontSize} fontWeight={500} fill="#ffffff" opacity={0.95}>
                   {subtitleLines.map((line, lIdx) => (
                     <tspan key={lIdx} x={ptTextX} dy={lIdx === 0 ? 0 : subtitleFontSize * 1.15}>{line}</tspan>
                   ))}
@@ -235,7 +234,7 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
               </text>
             </g>
             
-            {isSelected && renderHandles(aBbox, id)}
+            {isSelected && renderHandles(defaultBbox, id)}
           </g>
         )
       })}
