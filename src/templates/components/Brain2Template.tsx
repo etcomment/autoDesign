@@ -171,8 +171,8 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
     
     // Icon is near outer edge (radius 90) and shifted slightly upwards
     const iconPt = polarToCartesian(cx, cy, R - 6, midAngle + iconAngleOffset)
-    // Text is in the middle (radius 75)
-    const textPt = polarToCartesian(cx, cy, r + (R - r) * 0.5, midAngle)
+    // Text is moved a bit further out to allow more content
+    const textPt = polarToCartesian(cx, cy, r + (R - r) * 0.62, midAngle)
     // Num is near inner edge (radius 60)
     const numPt = polarToCartesian(cx, cy, r + 6, midAngle)
     
