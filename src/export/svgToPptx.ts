@@ -320,7 +320,9 @@ function addPolygonToSlide(
     h: Math.max(0.01, maxY - minY),
     points: relPoints as unknown as PptxGenJS.ShapeProps['points'],
     fill: hexFill ? { color: hexFill } : { type: 'none' },
-    line: hexStroke && strokeWidth > 0 ? { color: hexStroke, width: Math.max(0.25, strokeWidth * layout.scaleX * 72) } : undefined,
+  } as PptxGenJS.ShapeProps)
+}
+
 async function rasterizeElementToPng(el: SVGGraphicsElement, bbox: DOMRect | SVGRect, defsString: string): Promise<string> {
   const sw = parseFloat(el.getAttribute('stroke-width') || window.getComputedStyle(el).strokeWidth || '0')
   const strokePad = isNaN(sw) ? 0 : sw / 2
