@@ -114,17 +114,31 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
   }))
 
   const getInterpolatedPath = (index: number) => {
-    if (isExactSix) return SLICE_PATHS[index]!
-    return buildSectorPath(sectorAngles[index]!.start, sectorAngles[index]!.end, RING_GAP_WIDTH, outerContour, innerContour)
+    let srcIndex = index
+    if (count === 4) {
+      srcIndex = [0, 1, 4, 5][index] ?? index
+    } else if (count === 5) {
+      srcIndex = [0, 1, 2, 4, 5][index] ?? index
+    } else if (count === 7) {
+      srcIndex = Math.min(5, Math.round((index / 6) * 5))
+    } else {
+      srcIndex = Math.min(5, Math.round((index / Math.max(1, count - 1)) * 5))
+    }
+    return SLICE_PATHS[srcIndex]!
   }
 
   const getInterpolatedContentPos = (index: number) => {
-    if (isExactSix) return SLICE_CONTENT_POS[index]!
-    const bisector = (sectorAngles[index]!.start + sectorAngles[index]!.end) / 2
-    const icon = getRingPoint(bisector, 0.72, outerContour, innerContour)
-    const text = getRingPoint(bisector, 0.52, outerContour, innerContour)
-    const number = getRingPoint(bisector, 0.2, outerContour, innerContour)
-    return { iconX: icon.x, iconY: icon.y, textX: text.x, textY: text.y, numX: number.x, numY: number.y }
+    let srcIndex = index
+    if (count === 4) {
+      srcIndex = [0, 1, 4, 5][index] ?? index
+    } else if (count === 5) {
+      srcIndex = [0, 1, 2, 4, 5][index] ?? index
+    } else if (count === 7) {
+      srcIndex = Math.min(5, Math.round((index / 6) * 5))
+    } else {
+      srcIndex = Math.min(5, Math.round((index / Math.max(1, count - 1)) * 5))
+    }
+    return SLICE_CONTENT_POS[srcIndex]!
   }
 
   // Scale and translate dessin-2.svg coordinates to Canvas space
