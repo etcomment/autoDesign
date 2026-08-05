@@ -232,7 +232,7 @@ export async function getContentSvg(): Promise<string> {
   const defsContent = Array.from(allDefs).map(d => d.innerHTML).join('\n')
   const defsString = defsContent ? `<defs>\n${defsContent}\n</defs>` : ''
 
-  let rawSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">\n  ${defsString}\n  <rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="white"/>\n  ${inner}\n</svg>`
+  let rawSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">\n  ${defsString}\n  ${inner}\n</svg>`
   
   // Fix Safari/Chrome absolute URL resolution for masks and clipPaths in SPAs
   rawSvg = rawSvg.replace(/url\(['"]?https?:\/\/[^#]*#([^)'"]+)['"]?\)/g, 'url(#$1)')

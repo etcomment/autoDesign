@@ -338,7 +338,7 @@ async function rasterizePathToPng(el: SVGGraphicsElement, bbox: DOMRect | SVGRec
     const url = URL.createObjectURL(blob)
     const img = new Image()
     img.onload = () => {
-      const scale = 2
+      const scale = 6 // Higher scale for crisp images in PPTX
       const canvas = document.createElement('canvas')
       canvas.width = (img.naturalWidth || img.width) * scale
       canvas.height = (img.naturalHeight || img.height) * scale
@@ -520,11 +520,7 @@ export async function generateCanvasPptx(): Promise<Blob> {
   svgRoot.removeAttribute('width')
   svgRoot.removeAttribute('height')
 
-  slide.addShape('rect', {
-    x: 0, y: 0, w: SLIDE_W, h: SLIDE_H,
-    fill: { color: 'FFFFFF' },
-    line: { color: 'FFFFFF', width: 0 },
-  })
+  // Removed white slide background completely so it defaults to transparent / slide master background
 
   const shapes = Array.from(svgRoot.querySelectorAll<SVGGraphicsElement>('rect, circle, ellipse, polygon, path, line'))
   for (const el of shapes) {
