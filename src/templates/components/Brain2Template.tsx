@@ -115,14 +115,20 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
     return getDonutSectorPath(startA, endA, customR, customr)
   }
 
-  const getInterpolatedContentPos = (index: number) => {
+  const getInterpolatedContentPos = (index: number, customR: number, customr: number) => {
     const anglePerSlice = totalAngle / count
     const midAngle = startAngle + (index + 0.5) * anglePerSlice
     const isLeft = midAngle < 270
+    
+    // Position of the icon (closer to outer edge by default)
     const iconAngleOffset = isLeft ? 9 : -9
-    const iconPt = polarToCartesian(cx, cy, R - 6, midAngle + iconAngleOffset)
-    const textPt = polarToCartesian(cx, cy, r + (R - r) * 0.62, midAngle)
-    const numPt = polarToCartesian(cx, cy, r + 6, midAngle)
+    const iconPt = polarToCartesian(cx, cy, customR - 15, midAngle + iconAngleOffset)
+    
+    // Position of the text (centered between inner and outer radius)
+    const textPt = polarToCartesian(cx, cy, customr + (customR - customr) * 0.62, midAngle)
+    
+    // Position of the number (closer to inner edge)
+    const numPt = polarToCartesian(cx, cy, customr + 15, midAngle)
     
     return {
       iconX: iconPt.x, iconY: iconPt.y,
@@ -149,19 +155,8 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
         const color = tplColors[id] ?? branch.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         const isSelected = selectedIds.has(id)
         
-        const cfg = getInterpolatedContentPos(i)
-
-        const ptIconX = baseTx + (cfg.iconX - 12.41) * baseScale
-        const ptIconY = baseTy + (cfg.iconY - 33.54) * baseScale
-
-        const ptTextX = baseTx + (cfg.textX - 12.41) * baseScale
-        const ptTextY = baseTy + (cfg.textY - 33.54) * baseScale
-
-        const ptNumX = baseTx + (cfg.numX - 12.41) * baseScale
-        const ptNumY = baseTy + (cfg.numY - 33.54) * baseScale
-
         const slicePos = positions[id]
-        const defaultBbox = { x: ptTextX - 75, y: ptTextY - 50, width: 150, height: 100 }
+        const defaultBbox = { x: baseTx + (polarToCartesian(cx, cy, r + (R - r) * 0.62, startAngle + (i + 0.5) * (totalAngle / count)).x - 12.41) * baseScale - 75, y: baseTy + (polarToCartesian(cx, cy, r + (R - r) * 0.62, startAngle + (i + 0.5) * (totalAngle / count)).y - 33.54) * baseScale - 50, width: 150, height: 100 }
         const sliceBbox = {
           x: slicePos?.x ?? defaultBbox.x,
           y: slicePos?.y ?? defaultBbox.y,
@@ -174,6 +169,16 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
         const localr = r * localSliceScale
 
         const pathD = getInterpolatedPath(i, localR, localr)
+        const cfg = getInterpolatedContentPos(i, localR, localr)
+
+        const ptIconX = baseTx + (cfg.iconX - 12.41) * baseScale
+        const ptIconY = baseTy + (cfg.iconY - 33.54) * baseScale
+
+        const ptTextX = baseTx + (cfg.textX - 12.41) * baseScale
+        const ptTextY = baseTy + (cfg.textY - 33.54) * baseScale
+
+        const ptNumX = baseTx + (cfg.numX - 12.41) * baseScale
+        const ptNumY = baseTy + (cfg.numY - 33.54) * baseScale
         
         // Only apply translate (and rotation if any) natively, removing nested getTransform scaling
         const dx = sliceBbox.x - defaultBbox.x
