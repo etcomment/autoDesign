@@ -115,13 +115,13 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
 
   const getInterpolatedPath = (index: number) => {
     if (isExactSix) return SLICE_PATHS[index]!
-    const srcIndex = Math.min(5, Math.floor((index / count) * 6))
+    const srcIndex = Math.min(5, Math.round((index / (count - 1)) * 5))
     return SLICE_PATHS[srcIndex]!
   }
 
   const getInterpolatedContentPos = (index: number) => {
     if (isExactSix) return SLICE_CONTENT_POS[index]!
-    const srcIndex = Math.min(5, Math.floor((index / count) * 6))
+    const srcIndex = Math.min(5, Math.round((index / (count - 1)) * 5))
     return SLICE_CONTENT_POS[srcIndex]!
   }
 
