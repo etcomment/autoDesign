@@ -2,7 +2,7 @@ import { useState, useRef, type ChangeEvent } from 'react'
 import { X, Check, FileUp, Sparkles, AlertCircle, RefreshCw } from 'lucide-react'
 import { useTemplateStore } from '../store'
 import { PptxRenderer } from 'pptx-svg'
-import wasmUrl from 'pptx-svg/dist/main.wasm?url'
+import wasmUrl from 'pptx-svg/wasm?url'
 
 interface PptxImportModalProps {
   isOpen: boolean
