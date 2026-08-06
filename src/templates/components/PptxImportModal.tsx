@@ -13,6 +13,9 @@ interface ExtractedSlidePreview {
   slideNumber: number
   category: string
   svgString: string
+  shapesCount: number
+  colors: string[]
+  sampleText: string
 }
 
 export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
@@ -68,17 +71,43 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
         }
 
         const extractedPreviews: ExtractedSlidePreview[] = []
+        let globalCategory = 'Other'
+
         for (let i = 0; i < slideCount; i++) {
           const svg = renderer.renderSlideSvg(i)
+          
+          // Parse SVG to extract metadata
+          const parser = new DOMParser()
+          const doc = parser.parseFromString(svg, 'image/svg+xml')
+          
+          const textNodes = Array.from(doc.querySelectorAll('text, tspan'))
+            .map(n => n.textContent?.trim())
+            .filter(Boolean) as string[]
+          const textSample = textNodes.join(' ').substring(0, 50)
+          
+          const fillNodes = Array.from(doc.querySelectorAll('[fill]'))
+            .map(n => n.getAttribute('fill'))
+            .filter(f => f && f.startsWith('#') && f !== '#ffffff' && f !== '#000000') as string[]
+          
+          const colors = Array.from(new Set(fillNodes)).slice(0, 6)
+          const shapesCount = doc.querySelectorAll('g[data-ooxml-id], path, rect, circle, ellipse').length
+
+          if (i === 0 && textNodes.length > 0 && textNodes[0]) {
+            globalCategory = textNodes[0].substring(0, 20)
+          }
+
           extractedPreviews.push({
             slideNumber: i + 1,
-            category: 'Import PPTX',
+            category: textNodes[0]?.substring(0, 20) || 'Slide',
             svgString: svg,
+            shapesCount,
+            colors,
+            sampleText: textSample || `Diapositive ${i + 1}`
           })
         }
 
         setPreviews(extractedPreviews)
-        setCategoryName('Import PPTX')
+        setCategoryName(globalCategory)
       } else {
         throw new Error('Veuillez sélectionner un fichier PowerPoint valide (.pptx ou .potx).')
       }
@@ -129,6 +158,30 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
 
         {/* Content Body */}
         <div style={styles.body}>
+          {/* Form / Meta row */}
+          {file && !isLoading && previews.length > 0 && (
+            <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Nom du Template</label>
+                <input
+                  type="text"
+                  value={templateName}
+                  onChange={e => setTemplateName(e.target.value)}
+                  style={styles.input}
+                />
+              </div>
+              <div style={styles.formGroup}>
+                <label style={styles.label}>Catégorie Détectée</label>
+                <input
+                  type="text"
+                  value={categoryName}
+                  onChange={e => setCategoryName(e.target.value)}
+                  style={styles.input}
+                />
+              </div>
+            </div>
+          )}
+
           {!file && (
             <div
               onDragOver={e => e.preventDefault()}
@@ -186,7 +239,10 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
                         }}
                       >
                         <span style={styles.slideText}>
-                          Slide {prev.slideNumber}
+                          Slide {prev.slideNumber}: {prev.sampleText.slice(0, 18) || 'Sans titre'}
+                        </span>
+                        <span style={styles.badge}>
+                          {prev.shapesCount} éléments
                         </span>
                       </button>
                     ))}
@@ -206,6 +262,23 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
               <div style={styles.rightColumn}>
                 <div style={styles.previewHeader}>
                   <span style={styles.label}>Aperçu Exact (Généré par pptx-svg)</span>
+                  {activePreview && activePreview.colors.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 11, color: '#94a3b8' }}>Couleurs détectées :</span>
+                      {activePreview.colors.map((clr, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            width: 14,
+                            height: 14,
+                            borderRadius: '50%',
+                            backgroundColor: clr,
+                            border: '1px solid rgba(255,255,255,0.2)',
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div style={styles.canvasContainer}>
                   {activePreview && (
@@ -365,6 +438,18 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: 6,
   },
+  input: {
+    width: '100%',
+    padding: '8px 12px',
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: 8,
+    fontSize: 13,
+    fontWeight: 500,
+    color: '#0f172a',
+    outline: 'none',
+    boxSizing: 'border-box',
+  },
   label: {
     fontSize: 12,
     fontWeight: 600,
@@ -401,7 +486,14 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    maxWidth: 160,
+    maxWidth: 140,
+  },
+  badge: {
+    fontSize: 10,
+    padding: '2px 6px',
+    borderRadius: 4,
+    backgroundColor: '#e2e8f0',
+    color: '#475569',
   },
   changeFileBtn: {
     background: 'none',
