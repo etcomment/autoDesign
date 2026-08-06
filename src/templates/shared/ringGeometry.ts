@@ -502,10 +502,16 @@ export function buildSectorPath(
   const isLast = endAngle === RING_END_ANGLE
   const startGap = isFirst ? 0 : gapWidth
   const endGap = isLast ? 0 : gapWidth
+  
+  const midAngle = (startAngle + endAngle) / 2
+  const outerRadius = Math.sqrt(squareDistanceToCenter(sampleContour(outerContour, midAngle)))
+  const innerRadius = Math.sqrt(squareDistanceToCenter(sampleContour(innerContour, midAngle)))
+  const innerGapWidth = gapWidth * (innerRadius / Math.max(outerRadius, 1))
+
   const outerStart = edgeIntersection(outerContour, startAngle, 1, startGap)
   const outerEnd = edgeIntersection(outerContour, endAngle, -1, endGap)
-  const innerStart = edgeIntersection(innerContour, startAngle, 1, startGap)
-  const innerEnd = edgeIntersection(innerContour, endAngle, -1, endGap)
+  const innerStart = edgeIntersection(innerContour, startAngle, 1, isFirst ? 0 : innerGapWidth)
+  const innerEnd = edgeIntersection(innerContour, endAngle, -1, isLast ? 0 : innerGapWidth)
   const outer = arcPoints(outerContour, outerStart.angle, outerEnd.angle)
   const inner = arcPoints(innerContour, innerEnd.angle, innerStart.angle)
   if (isFirst) {

@@ -18,6 +18,2946 @@ import type {
 
 export const TEMPLATES: TemplateDefinition[] = [
   {
+    type: 'vship47' as any,
+    label: 'Vship Template Slide 47',
+    description: 'Vship specific template',
+    category: 'Vship',
+    defaultData: {
+      type: 'vship47',
+      branches: [],
+    },
+  },
+  {
+    type: 'vship48' as any,
+    label: 'Vship Template Slide 48',
+    description: 'Vship specific template',
+    category: 'Vship',
+    defaultData: {
+      type: 'vship48',
+      branches: [],
+    },
+  },
+  {
+    type: 'vship49' as any,
+    label: 'Vship Template Slide 49',
+    description: 'Vship specific template',
+    category: 'Vship',
+    defaultData: {
+      type: 'vship49',
+      branches: [],
+    },
+  },
+  {
+    type: 'vship50' as any,
+    label: 'Vship Template Slide 50',
+    description: 'Vship specific template',
+    category: 'Vship',
+    defaultData: {
+      type: 'vship50',
+      branches: [],
+    },
+  },
+  {
+    type: 'vship51' as any,
+    label: 'Vship Template Slide 51',
+    description: 'Vship specific template',
+    category: 'Vship',
+    defaultData: {
+      type: 'vship51',
+      branches: [],
+    },
+  },
+  {
+    type: 'vship52' as any,
+    label: 'Vship Template Slide 52',
+    description: 'Vship specific template',
+    category: 'Vship',
+    defaultData: {
+      type: 'vship52',
+      branches: [],
+    },
+  },
+  {
+    type: 'vship53' as any,
+    label: 'Vship Template Slide 53',
+    description: 'Vship specific template',
+    category: 'Vship',
+    defaultData: {
+      type: 'vship53',
+      branches: [],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates205' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates205 PowerPoint Template (Slide 205)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 205)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates204' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates204 PowerPoint Template (Slide 204)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 204)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates203' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates203 PowerPoint Template (Slide 203)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 203)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates202' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates202 PowerPoint Template (Slide 202)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 202)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates201' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates201 PowerPoint Template (Slide 201)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 201)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates200' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates200 PowerPoint Template (Slide 200)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 200)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates199' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates199 PowerPoint Template (Slide 199)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 199)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates198' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates198 PowerPoint Template (Slide 198)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 198)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates197' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates197 PowerPoint Template (Slide 197)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 197)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates196' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates196 PowerPoint Template (Slide 196)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 196)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates195' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates195 PowerPoint Template (Slide 195)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 195)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates194' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates194 PowerPoint Template (Slide 194)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 194)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates193' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates193 PowerPoint Template (Slide 193)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 193)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates192' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates192 PowerPoint Template (Slide 192)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 192)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates191' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates191 PowerPoint Template (Slide 191)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 191)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates190' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates190 PowerPoint Template (Slide 190)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 190)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates189' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates189 PowerPoint Template (Slide 189)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 189)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates188' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates188 PowerPoint Template (Slide 188)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 188)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates187' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates187 PowerPoint Template (Slide 187)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 187)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates186' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates186 PowerPoint Template (Slide 186)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 186)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates185' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates185 PowerPoint Template (Slide 185)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 185)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates184' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates184 PowerPoint Template (Slide 184)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 184)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates183' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates183 PowerPoint Template (Slide 183)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 183)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates182' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates182 PowerPoint Template (Slide 182)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 182)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates181' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates181 PowerPoint Template (Slide 181)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 181)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates180' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates180 PowerPoint Template (Slide 180)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 180)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates179' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates179 PowerPoint Template (Slide 179)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 179)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates178' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates178 PowerPoint Template (Slide 178)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 178)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates177' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates177 PowerPoint Template (Slide 177)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 177)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates176' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates176 PowerPoint Template (Slide 176)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 176)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates175' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates175 PowerPoint Template (Slide 175)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 175)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates174' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates174 PowerPoint Template (Slide 174)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 174)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates173' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates173 PowerPoint Template (Slide 173)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 173)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates172' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates172 PowerPoint Template (Slide 172)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 172)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates171' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates171 PowerPoint Template (Slide 171)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 171)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates170' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates170 PowerPoint Template (Slide 170)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 170)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates169' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates169 PowerPoint Template (Slide 169)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 169)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates168' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates168 PowerPoint Template (Slide 168)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 168)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates167' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates167 PowerPoint Template (Slide 167)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 167)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates166' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates166 PowerPoint Template (Slide 166)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 166)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates165' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates165 PowerPoint Template (Slide 165)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 165)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates164' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates164 PowerPoint Template (Slide 164)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 164)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates163' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates163 PowerPoint Template (Slide 163)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 163)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates162' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates162 PowerPoint Template (Slide 162)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 162)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates161' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates161 PowerPoint Template (Slide 161)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 161)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates160' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates160 PowerPoint Template (Slide 160)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 160)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates159' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates159 PowerPoint Template (Slide 159)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 159)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates158' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates158 PowerPoint Template (Slide 158)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 158)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates157' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates157 PowerPoint Template (Slide 157)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 157)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates156' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates156 PowerPoint Template (Slide 156)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 156)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates155' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates155 PowerPoint Template (Slide 155)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 155)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates154' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates154 PowerPoint Template (Slide 154)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 154)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates153' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates153 PowerPoint Template (Slide 153)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 153)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates152' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates152 PowerPoint Template (Slide 152)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 152)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates151' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates151 PowerPoint Template (Slide 151)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 151)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates150' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates150 PowerPoint Template (Slide 150)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 150)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates149' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates149 PowerPoint Template (Slide 149)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 149)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates148' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates148 PowerPoint Template (Slide 148)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 148)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates147' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates147 PowerPoint Template (Slide 147)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 147)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates146' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates146 PowerPoint Template (Slide 146)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 146)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates145' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates145 PowerPoint Template (Slide 145)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 145)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates144' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates144 PowerPoint Template (Slide 144)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 144)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates143' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates143 PowerPoint Template (Slide 143)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 143)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates142' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates142 PowerPoint Template (Slide 142)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 142)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates141' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates141 PowerPoint Template (Slide 141)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 141)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates140' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates140 PowerPoint Template (Slide 140)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 140)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates139' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates139 PowerPoint Template (Slide 139)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 139)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates138' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates138 PowerPoint Template (Slide 138)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 138)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates137' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates137 PowerPoint Template (Slide 137)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 137)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates136' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates136 PowerPoint Template (Slide 136)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 136)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates135' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates135 PowerPoint Template (Slide 135)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 135)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates134' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates134 PowerPoint Template (Slide 134)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 134)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates133' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates133 PowerPoint Template (Slide 133)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 133)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates132' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates132 PowerPoint Template (Slide 132)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 132)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates131' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates131 PowerPoint Template (Slide 131)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 131)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates130' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates130 PowerPoint Template (Slide 130)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 130)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates129' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates129 PowerPoint Template (Slide 129)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 129)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates128' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates128 PowerPoint Template (Slide 128)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 128)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates127' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates127 PowerPoint Template (Slide 127)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 127)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates126' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates126 PowerPoint Template (Slide 126)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 126)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates125' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates125 PowerPoint Template (Slide 125)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 125)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates124' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates124 PowerPoint Template (Slide 124)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 124)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates123' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates123 PowerPoint Template (Slide 123)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 123)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates122' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates122 PowerPoint Template (Slide 122)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 122)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates121' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates121 PowerPoint Template (Slide 121)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 121)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates120' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates120 PowerPoint Template (Slide 120)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 120)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates119' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates119 PowerPoint Template (Slide 119)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 119)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates118' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates118 PowerPoint Template (Slide 118)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 118)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates117' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates117 PowerPoint Template (Slide 117)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 117)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates116' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates116 PowerPoint Template (Slide 116)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 116)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates115' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates115 PowerPoint Template (Slide 115)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 115)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates114' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates114 PowerPoint Template (Slide 114)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 114)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates113' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates113 PowerPoint Template (Slide 113)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 113)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates112' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates112 PowerPoint Template (Slide 112)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 112)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates111' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates111 PowerPoint Template (Slide 111)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 111)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates110' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates110 PowerPoint Template (Slide 110)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 110)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates109' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates109 PowerPoint Template (Slide 109)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 109)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates108' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates108 PowerPoint Template (Slide 108)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 108)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates107' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates107 PowerPoint Template (Slide 107)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 107)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates106' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates106 PowerPoint Template (Slide 106)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 106)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates105' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates105 PowerPoint Template (Slide 105)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 105)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates104' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates104 PowerPoint Template (Slide 104)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 104)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates103' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates103 PowerPoint Template (Slide 103)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 103)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates102' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates102 PowerPoint Template (Slide 102)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 102)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates101' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates101 PowerPoint Template (Slide 101)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 101)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates100' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates100 PowerPoint Template (Slide 100)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 100)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates99' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates99 PowerPoint Template (Slide 99)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 99)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates98' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates98 PowerPoint Template (Slide 98)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 98)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates97' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates97 PowerPoint Template (Slide 97)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 97)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates96' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates96 PowerPoint Template (Slide 96)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 96)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates95' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates95 PowerPoint Template (Slide 95)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 95)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates94' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates94 PowerPoint Template (Slide 94)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 94)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates93' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates93 PowerPoint Template (Slide 93)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 93)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates92' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates92 PowerPoint Template (Slide 92)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 92)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates91' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates91 PowerPoint Template (Slide 91)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 91)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates90' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates90 PowerPoint Template (Slide 90)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 90)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates89' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates89 PowerPoint Template (Slide 89)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 89)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates88' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates88 PowerPoint Template (Slide 88)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 88)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates87' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates87 PowerPoint Template (Slide 87)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 87)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates86' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates86 PowerPoint Template (Slide 86)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 86)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates85' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates85 PowerPoint Template (Slide 85)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 85)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates84' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates84 PowerPoint Template (Slide 84)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 84)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates83' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates83 PowerPoint Template (Slide 83)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 83)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates82' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates82 PowerPoint Template (Slide 82)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 82)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates81' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates81 PowerPoint Template (Slide 81)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 81)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates80' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates80 PowerPoint Template (Slide 80)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 80)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates79' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates79 PowerPoint Template (Slide 79)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 79)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates78' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates78 PowerPoint Template (Slide 78)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 78)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates77' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates77 PowerPoint Template (Slide 77)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 77)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates76' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates76 PowerPoint Template (Slide 76)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 76)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates75' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates75 PowerPoint Template (Slide 75)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 75)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates74' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates74 PowerPoint Template (Slide 74)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 74)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates73' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates73 PowerPoint Template (Slide 73)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 73)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates72' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates72 PowerPoint Template (Slide 72)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 72)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates71' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates71 PowerPoint Template (Slide 71)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 71)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates70' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates70 PowerPoint Template (Slide 70)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 70)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates69' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates69 PowerPoint Template (Slide 69)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 69)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates68' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates68 PowerPoint Template (Slide 68)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 68)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates67' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates67 PowerPoint Template (Slide 67)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 67)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates66' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates66 PowerPoint Template (Slide 66)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 66)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates65' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates65 PowerPoint Template (Slide 65)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 65)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates64' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates64 PowerPoint Template (Slide 64)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 64)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates63' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates63 PowerPoint Template (Slide 63)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 63)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates62' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates62 PowerPoint Template (Slide 62)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 62)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates61' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates61 PowerPoint Template (Slide 61)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 61)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates60' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates60 PowerPoint Template (Slide 60)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 60)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates59' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates59 PowerPoint Template (Slide 59)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 59)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates58' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates58 PowerPoint Template (Slide 58)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 58)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates57' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates57 PowerPoint Template (Slide 57)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 57)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates56' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates56 PowerPoint Template (Slide 56)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 56)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates55' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates55 PowerPoint Template (Slide 55)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 55)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates54' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates54 PowerPoint Template (Slide 54)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 54)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates53' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates53 PowerPoint Template (Slide 53)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 53)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates52' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates52 PowerPoint Template (Slide 52)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 52)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates51' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates51 PowerPoint Template (Slide 51)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 51)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates50' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates50 PowerPoint Template (Slide 50)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 50)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates49' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates49 PowerPoint Template (Slide 49)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 49)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates48' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates48 PowerPoint Template (Slide 48)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 48)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates47' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates47 PowerPoint Template (Slide 47)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 47)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates46' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates46 PowerPoint Template (Slide 46)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 46)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates45' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates45 PowerPoint Template (Slide 45)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 45)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates44' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates44 PowerPoint Template (Slide 44)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 44)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates43' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates43 PowerPoint Template (Slide 43)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 43)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates42' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates42 PowerPoint Template (Slide 42)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 42)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates41' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates41 PowerPoint Template (Slide 41)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 41)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates40' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates40 PowerPoint Template (Slide 40)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 40)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates39' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates39 PowerPoint Template (Slide 39)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 39)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates38' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates38 PowerPoint Template (Slide 38)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 38)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates37' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates37 PowerPoint Template (Slide 37)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 37)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates36' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates36 PowerPoint Template (Slide 36)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 36)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates35' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates35 PowerPoint Template (Slide 35)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 35)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates34' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates34 PowerPoint Template (Slide 34)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 34)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates33' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates33 PowerPoint Template (Slide 33)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 33)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates32' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates32 PowerPoint Template (Slide 32)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 32)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates31' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates31 PowerPoint Template (Slide 31)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 31)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates30' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates30 PowerPoint Template (Slide 30)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 30)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates29' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates29 PowerPoint Template (Slide 29)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 29)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates28' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates28 PowerPoint Template (Slide 28)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 28)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates27' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates27 PowerPoint Template (Slide 27)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 27)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates26' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates26 PowerPoint Template (Slide 26)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 26)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates25' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates25 PowerPoint Template (Slide 25)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 25)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates24' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates24 PowerPoint Template (Slide 24)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 24)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates23' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates23 PowerPoint Template (Slide 23)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 23)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates22' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates22 PowerPoint Template (Slide 22)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 22)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates21' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates21 PowerPoint Template (Slide 21)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 21)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates20' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates20 PowerPoint Template (Slide 20)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 20)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates19' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates19 PowerPoint Template (Slide 19)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 19)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates18' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates18 PowerPoint Template (Slide 18)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 18)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates17' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates17 PowerPoint Template (Slide 17)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 17)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates16' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates16 PowerPoint Template (Slide 16)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 16)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates15' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates15 PowerPoint Template (Slide 15)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 15)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates14' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates14 PowerPoint Template (Slide 14)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 14)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates13' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates13 PowerPoint Template (Slide 13)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 13)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates12' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates12 PowerPoint Template (Slide 12)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 12)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates11' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates11 PowerPoint Template (Slide 11)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 11)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates10' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates10 PowerPoint Template (Slide 10)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 10)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates9' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates9 PowerPoint Template (Slide 9)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 9)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates8' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates8 PowerPoint Template (Slide 8)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 8)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates7' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates7 PowerPoint Template (Slide 7)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 7)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates6' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates6 PowerPoint Template (Slide 6)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 6)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates5' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates5 PowerPoint Template (Slide 5)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 5)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates4' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates4 PowerPoint Template (Slide 4)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 4)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates3' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates3 PowerPoint Template (Slide 3)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 3)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates2' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates2 PowerPoint Template (Slide 2)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 2)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
+    type: 'imported2025migsopcubedcreativeandexampletemplates1' as any,
+    label: 'Imported2025migsopcubedcreativeandexampletemplates1 PowerPoint Template (Slide 1)',
+    description: 'Template auto-généré depuis PowerPoint (2025 - MIGSO-PCUBED - Creative and Example Templates.potx, slide 1)',
+    category: 'Other',
+    defaultData: {
+      type: 'brain',
+      branches: [
+        { title: 'Item 1', subtitle: 'Description 1', color: '#282a5d' },
+        { title: 'Item 2', subtitle: 'Description 2', color: '#3365cc' },
+        { title: 'Item 3', subtitle: 'Description 3', color: '#ff4d38' },
+      ],
+    },
+  },
+  {
     type: 'roadmap',
     label: 'Timeline avec Jalons Alternés',
     description: 'Timeline horizontale avec jalons numérotés positionnés alternativement au-dessus et en-dessous de la ligne.',

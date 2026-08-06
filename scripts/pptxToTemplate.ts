@@ -10,12 +10,19 @@ interface ShapeInfo {
   y: number
   w: number
   h: number
+  localPctX?: number
+  localPctY?: number
+  localPctW?: number
+  localPctH?: number
   fillColor?: string
   strokeColor?: string
   text?: string
+  textColor?: string
+  textSize?: number
   pathD?: string
   isGroup?: boolean
   children?: ShapeInfo[]
+  idx?: number
 }
 
 interface ClusteringResult {
@@ -31,6 +38,21 @@ function parseEMU(val?: string | number): number {
   return Math.round((num / 914400) * 96)
 }
 
+const THEME_COLORS: Record<string, string> = {
+  accent1: '#3365cc',
+  accent2: '#ff4d38',
+  accent3: '#52c49c',
+  accent4: '#ffb900',
+  accent5: '#ee6d90',
+  accent6: '#4a90d9',
+  dk1: '#000000',
+  lt1: '#ffffff',
+  dk2: '#282a5d',
+  lt2: '#f0f0f0',
+  bg1: '#ffffff',
+  bg2: '#f0f0f0',
+}
+
 function hexFromColorVal(clrObj: any): string | undefined {
   if (!clrObj) return undefined
   if (clrObj['a:srgbClr']?.['@_val']) {
@@ -39,24 +61,72 @@ function hexFromColorVal(clrObj: any): string | undefined {
   if (clrObj['a:sysClr']?.['@_lastClr']) {
     return `#${clrObj['a:sysClr']['@_lastClr']}`
   }
+  if (clrObj['a:schemeClr']?.['@_val']) {
+    const val = clrObj['a:schemeClr']['@_val']
+    return THEME_COLORS[val] || undefined
+  }
   return undefined
 }
 
-function extractTextFromSp(sp: any): string {
+function extractTextFromSp(sp: any): { text: string; textColor?: string; textSize?: number } {
   const txBody = sp['p:txBody']
-  if (!txBody) return ''
+  if (!txBody) return { text: '' }
   const paragraphs = Array.isArray(txBody['a:p']) ? txBody['a:p'] : [txBody['a:p']].filter(Boolean)
   const textParts: string[] = []
+  let textColor: string | undefined = undefined
+  let textSize: number | undefined = undefined
+
+  let lstTextSize: number | undefined = undefined
+  let lstTextColor: string | undefined = undefined
+  if (txBody['a:lstStyle']) {
+    const lst = txBody['a:lstStyle']
+    const defRPr = lst['a:defPPr']?.['a:defRPr'] || lst['a:lvl1pPr']?.['a:defRPr'] || lst['a:lvl2pPr']?.['a:defRPr']
+    if (defRPr) {
+      if (defRPr['@_sz']) lstTextSize = Number.parseInt(defRPr['@_sz'], 10) / 100
+      if (defRPr['a:solidFill']) lstTextColor = hexFromColorVal(defRPr['a:solidFill'])
+    }
+  }
+
   for (const p of paragraphs) {
+    let defTextSize: number | undefined = undefined
+    let defTextColor: string | undefined = undefined
+
+    if (p['a:pPr'] && p['a:pPr']['a:defRPr']) {
+      const defRPr = p['a:pPr']['a:defRPr']
+      if (defRPr['@_sz']) defTextSize = Number.parseInt(defRPr['@_sz'], 10) / 100
+      if (defRPr['a:solidFill']) defTextColor = hexFromColorVal(defRPr['a:solidFill'])
+    }
+
     const runs = Array.isArray(p['a:r']) ? p['a:r'] : [p['a:r']].filter(Boolean)
     for (const r of runs) {
       if (r['a:t']) {
         const textVal = typeof r['a:t'] === 'object' ? r['a:t']['#text'] : r['a:t']
-        if (textVal) textParts.push(String(textVal))
+        if (textVal) {
+          textParts.push(String(textVal))
+          if (r['a:rPr']) {
+            if (!textSize && r['a:rPr']['@_sz']) textSize = Number.parseInt(r['a:rPr']['@_sz'], 10) / 100
+            if (!textColor && r['a:rPr']['a:solidFill']) textColor = hexFromColorVal(r['a:rPr']['a:solidFill'])
+          }
+          if (!textSize && defTextSize) textSize = defTextSize
+          if (!textColor && defTextColor) textColor = defTextColor
+          if (!textSize && lstTextSize) textSize = lstTextSize
+          if (!textColor && lstTextColor) textColor = lstTextColor
+        }
       }
     }
   }
-  return textParts.join(' ').trim()
+  return {
+    text: textParts.join(' ').trim(),
+    textColor,
+    textSize,
+  }
+}
+
+function parseLocalCoord(val: any): number {
+  if (val === undefined || val === null) return 0
+  const num = typeof val === 'number' ? val : Number.parseInt(String(val), 10)
+  if (Number.isNaN(num)) return 0
+  return num
 }
 
 function extractShapePathD(spPr: any, w: number, h: number): string | undefined {
@@ -70,41 +140,45 @@ function extractShapePathD(spPr: any, w: number, h: number): string | undefined 
     const commands: string[] = []
 
     for (const p of paths) {
-      const pW = parseEMU(p['@_w']) || w || 1
-      const pH = parseEMU(p['@_h']) || h || 1
+      const pW = parseLocalCoord(p['@_w']) || w || 1
+      const pH = parseLocalCoord(p['@_h']) || h || 1
       const scaleX = w > 0 ? w / pW : 1
       const scaleY = h > 0 ? h / pH : 1
 
-      for (const key of Object.keys(p)) {
-        if (key === 'a:moveTo') {
-          const pt = p['a:moveTo']?.['a:pt']
+      const rawCmds = Array.isArray(p['a:pathCmd']) ? p['a:pathCmd'] : [p['a:pathCmd']].filter(Boolean)
+
+      for (const cmd of rawCmds) {
+        const type = cmd['@_type']
+        if (type === 'moveTo') {
+          const pt = cmd['a:pt']
           if (pt) {
-            const x = Math.round(parseEMU(pt['@_x']) * scaleX)
-            const y = Math.round(parseEMU(pt['@_y']) * scaleY)
+            const x = Math.round(parseLocalCoord(pt['@_x']) * scaleX)
+            const y = Math.round(parseLocalCoord(pt['@_y']) * scaleY)
             commands.push(`M ${x} ${y}`)
           }
-        } else if (key === 'a:lnTo') {
-          const rawPts = Array.isArray(p['a:lnTo']) ? p['a:lnTo'] : [p['a:lnTo']].filter(Boolean)
-          for (const item of rawPts) {
-            const pt = item['a:pt']
-            if (pt) {
-              const x = Math.round(parseEMU(pt['@_x']) * scaleX)
-              const y = Math.round(parseEMU(pt['@_y']) * scaleY)
-              commands.push(`L ${x} ${y}`)
-            }
+        } else if (type === 'lnTo') {
+          const pt = cmd['a:pt']
+          if (pt) {
+            const x = Math.round(parseLocalCoord(pt['@_x']) * scaleX)
+            const y = Math.round(parseLocalCoord(pt['@_y']) * scaleY)
+            commands.push(`L ${x} ${y}`)
           }
-        } else if (key === 'a:cubicBezTo') {
-          const rawPts = Array.isArray(p['a:cubicBezTo']) ? p['a:cubicBezTo'] : [p['a:cubicBezTo']].filter(Boolean)
-          for (const item of rawPts) {
-            const pts = Array.isArray(item['a:pt']) ? item['a:pt'] : [item['a:pt']].filter(Boolean)
-            if (pts.length >= 3) {
-              const x1 = Math.round(parseEMU(pts[0]['@_x']) * scaleX), y1 = Math.round(parseEMU(pts[0]['@_y']) * scaleY)
-              const x2 = Math.round(parseEMU(pts[1]['@_x']) * scaleX), y2 = Math.round(parseEMU(pts[1]['@_y']) * scaleY)
-              const x3 = Math.round(parseEMU(pts[2]['@_x']) * scaleX), y3 = Math.round(parseEMU(pts[2]['@_y']) * scaleY)
-              commands.push(`C ${x1} ${y1}, ${x2} ${y2}, ${x3} ${y3}`)
-            }
+        } else if (type === 'cubicBezTo') {
+          const pts = Array.isArray(cmd['a:pt']) ? cmd['a:pt'] : [cmd['a:pt']].filter(Boolean)
+          if (pts.length >= 3) {
+            const x1 = Math.round(parseLocalCoord(pts[0]['@_x']) * scaleX), y1 = Math.round(parseLocalCoord(pts[0]['@_y']) * scaleY)
+            const x2 = Math.round(parseLocalCoord(pts[1]['@_x']) * scaleX), y2 = Math.round(parseLocalCoord(pts[1]['@_y']) * scaleY)
+            const x3 = Math.round(parseLocalCoord(pts[2]['@_x']) * scaleX), y3 = Math.round(parseLocalCoord(pts[2]['@_y']) * scaleY)
+            commands.push(`C ${x1} ${y1}, ${x2} ${y2}, ${x3} ${y3}`)
           }
-        } else if (key === 'a:close') {
+        } else if (type === 'quadBezTo') {
+          const pts = Array.isArray(cmd['a:pt']) ? cmd['a:pt'] : [cmd['a:pt']].filter(Boolean)
+          if (pts.length >= 2) {
+            const x1 = Math.round(parseLocalCoord(pts[0]['@_x']) * scaleX), y1 = Math.round(parseLocalCoord(pts[0]['@_y']) * scaleY)
+            const x2 = Math.round(parseLocalCoord(pts[1]['@_x']) * scaleX), y2 = Math.round(parseLocalCoord(pts[1]['@_y']) * scaleY)
+            commands.push(`Q ${x1} ${y1}, ${x2} ${y2}`)
+          }
+        } else if (type === 'close') {
           commands.push('Z')
         }
       }
@@ -137,6 +211,14 @@ function extractShapePathD(spPr: any, w: number, h: number): string | undefined 
         return `M ${Math.round(w * 0.5)} 0 L ${w} ${Math.round(h * 0.38)} L ${Math.round(w * 0.81)} ${h} L ${Math.round(w * 0.19)} ${h} L 0 ${Math.round(h * 0.38)} Z`
       case 'star5':
         return `M ${Math.round(w * 0.5)} 0 L ${Math.round(w * 0.62)} ${Math.round(h * 0.38)} L ${w} ${Math.round(h * 0.38)} L ${Math.round(w * 0.69)} ${Math.round(h * 0.62)} L ${Math.round(w * 0.81)} ${h} L ${Math.round(w * 0.5)} ${Math.round(h * 0.75)} L ${Math.round(w * 0.19)} ${h} L ${Math.round(w * 0.31)} ${Math.round(h * 0.62)} L 0 ${Math.round(h * 0.38)} L ${Math.round(w * 0.38)} ${Math.round(h * 0.38)} Z`
+      case 'roundRect':
+        return `M 10 0 L ${w-10} 0 Q ${w} 0 ${w} 10 L ${w} ${h-10} Q ${w} ${h} ${w-10} ${h} L 10 ${h} Q 0 ${h} 0 ${h-10} L 0 10 Q 0 0 10 0 Z`
+      case 'parallelogram':
+        return `M ${Math.round(w * 0.2)} 0 L ${w} 0 L ${Math.round(w * 0.8)} ${h} L 0 ${h} Z`
+      case 'upArrow':
+        return `M ${Math.round(w * 0.25)} ${h} L ${Math.round(w * 0.25)} ${Math.round(h * 0.4)} L 0 ${Math.round(h * 0.4)} L ${Math.round(w * 0.5)} 0 L ${w} ${Math.round(h * 0.4)} L ${Math.round(w * 0.75)} ${Math.round(h * 0.4)} L ${Math.round(w * 0.75)} ${h} Z`
+      case 'downArrow':
+        return `M ${Math.round(w * 0.25)} 0 L ${Math.round(w * 0.75)} 0 L ${Math.round(w * 0.75)} ${Math.round(h * 0.6)} L ${w} ${Math.round(h * 0.6)} L ${Math.round(w * 0.5)} ${h} L 0 ${Math.round(h * 0.6)} L ${Math.round(w * 0.25)} ${Math.round(h * 0.6)} Z`
       default:
         return undefined
     }
@@ -145,7 +227,7 @@ function extractShapePathD(spPr: any, w: number, h: number): string | undefined 
   return undefined
 }
 
-function parseSp(sp: any, idx: number): ShapeInfo | null {
+function parseSp(sp: any, idx: number, gx: number, gy: number, scaleX: number, scaleY: number): ShapeInfo | null {
   const spPr = sp['p:spPr']
   if (!spPr) return null
 
@@ -153,10 +235,10 @@ function parseSp(sp: any, idx: number): ShapeInfo | null {
   const off = xfrm?.['a:off']
   const ext = xfrm?.['a:ext']
 
-  const x = parseEMU(off?.['@_x'])
-  const y = parseEMU(off?.['@_y'])
-  const w = parseEMU(ext?.['@_cx'])
-  const h = parseEMU(ext?.['@_cy'])
+  const x = gx + (parseEMU(off?.['@_x']) * scaleX)
+  const y = gy + (parseEMU(off?.['@_y']) * scaleY)
+  const w = Math.max(1, parseEMU(ext?.['@_cx']) * scaleX)
+  const h = Math.max(1, parseEMU(ext?.['@_cy']) * scaleY)
 
   const solidFill = spPr['a:solidFill']
   const fillColor = hexFromColorVal(solidFill)
@@ -164,7 +246,7 @@ function parseSp(sp: any, idx: number): ShapeInfo | null {
   const ln = spPr['a:ln']
   const strokeColor = hexFromColorVal(ln?.['a:solidFill'])
 
-  const text = extractTextFromSp(sp)
+  const textInfo = extractTextFromSp(sp)
   const name = sp['p:nvSpPr']?.['p:cNvPr']?.['@_name'] ?? `Shape_${idx}`
   const pathD = extractShapePathD(spPr, w, h)
 
@@ -174,51 +256,121 @@ function parseSp(sp: any, idx: number): ShapeInfo | null {
     x, y, w, h,
     fillColor,
     strokeColor,
-    text,
+    text: textInfo.text || undefined,
+    textColor: textInfo.textColor,
+    textSize: textInfo.textSize,
     pathD,
+    idx: sp['@_data-idx'] !== undefined ? Number.parseInt(sp['@_data-idx'], 10) : idx,
   }
 }
 
 function parsePptxSlide(slideXml: string): ShapeInfo[] {
+  let elementIndex = 0
+  let processedXml = slideXml
+    .replace(/<(p:sp|p:grpSp|p:cxnSp)\b/g, (match) => {
+      return `${match} data-idx="${elementIndex++}"`
+    })
+    .replace(/<a:moveTo/g, '<a:pathCmd type="moveTo"')
+    .replace(/<\/a:moveTo>/g, '</a:pathCmd>')
+    .replace(/<a:lnTo/g, '<a:pathCmd type="lnTo"')
+    .replace(/<\/a:lnTo>/g, '</a:pathCmd>')
+    .replace(/<a:cubicBezTo/g, '<a:pathCmd type="cubicBezTo"')
+    .replace(/<\/a:cubicBezTo>/g, '</a:pathCmd>')
+    .replace(/<a:quadBezTo/g, '<a:pathCmd type="quadBezTo"')
+    .replace(/<\/a:quadBezTo>/g, '</a:pathCmd>')
+    .replace(/<a:arcTo/g, '<a:pathCmd type="arcTo"')
+    .replace(/<\/a:arcTo>/g, '</a:pathCmd>')
+    .replace(/<a:close/g, '<a:pathCmd type="close"')
+    .replace(/<\/a:close>/g, '</a:pathCmd>')
+
   const parser = new XMLParser({ ignoreAttributes: false })
-  const jsonObj = parser.parse(slideXml)
+  const jsonObj = parser.parse(processedXml)
   const spTree = jsonObj['p:sld']?.['p:cSld']?.['p:spTree'] || jsonObj['p:sldLayout']?.['p:cSld']?.['p:spTree']
   if (!spTree) return []
 
   const shapes: ShapeInfo[] = []
+  let globalIdCounter = 0
 
-  function extractRecursive(tree: any, parentX = 0, parentY = 0) {
+  function extractRecursive(tree: any, parentX = 0, parentY = 0, scaleX = 1, scaleY = 1, targetArray: ShapeInfo[] = shapes) {
     if (!tree) return
     const rawSp = Array.isArray(tree['p:sp']) ? tree['p:sp'] : [tree['p:sp']].filter(Boolean)
-    rawSp.forEach((sp: any, i: number) => {
-      const s = parseSp(sp, shapes.length)
+    rawSp.forEach((sp: any) => {
+      const s = parseSp(sp, globalIdCounter++, parentX, parentY, scaleX, scaleY)
       if (s) {
-        s.x += parentX
-        s.y += parentY
-        shapes.push(s)
+        targetArray.push(s)
       }
     })
 
     const rawCxn = Array.isArray(tree['p:cxnSp']) ? tree['p:cxnSp'] : [tree['p:cxnSp']].filter(Boolean)
-    rawCxn.forEach((cxn: any, i: number) => {
-      const s = parseSp(cxn, shapes.length)
+    rawCxn.forEach((cxn: any) => {
+      const s = parseSp(cxn, globalIdCounter++, parentX, parentY, scaleX, scaleY)
       if (s) {
-        s.x += parentX
-        s.y += parentY
-        shapes.push(s)
+        targetArray.push(s)
       }
     })
 
     const rawGroups = Array.isArray(tree['p:grpSp']) ? tree['p:grpSp'] : [tree['p:grpSp']].filter(Boolean)
     rawGroups.forEach((grp: any) => {
       const grpXfrm = grp['p:grpSpPr']?.['a:xfrm']
-      const gx = parentX + parseEMU(grpXfrm?.['a:off']?.['@_x'])
-      const gy = parentY + parseEMU(grpXfrm?.['a:off']?.['@_y'])
-      extractRecursive(grp, gx, gy)
+      
+      const offX = parseEMU(grpXfrm?.['a:off']?.['@_x'])
+      const offY = parseEMU(grpXfrm?.['a:off']?.['@_y'])
+      const extCX = parseEMU(grpXfrm?.['a:ext']?.['@_cx']) || 1
+      const extCY = parseEMU(grpXfrm?.['a:ext']?.['@_cy']) || 1
+      
+      const chOffX = parseEMU(grpXfrm?.['a:chOff']?.['@_x'])
+      const chOffY = parseEMU(grpXfrm?.['a:chOff']?.['@_y'])
+      const chExtCX = parseEMU(grpXfrm?.['a:chExt']?.['@_cx']) || extCX
+      const chExtCY = parseEMU(grpXfrm?.['a:chExt']?.['@_cy']) || extCY
+      
+      const childScaleX = scaleX * (extCX / chExtCX)
+      const childScaleY = scaleY * (extCY / chExtCY)
+      
+      const gx = parentX + (offX * scaleX) - (chOffX * childScaleX)
+      const gy = parentY + (offY * scaleY) - (chOffY * childScaleY)
+      
+      // Calculate group's own bounding box
+      const groupX = parentX + (offX * scaleX)
+      const groupY = parentY + (offY * scaleY)
+      const groupW = extCX * scaleX
+      const groupH = extCY * scaleY
+      
+      const groupIdx = grp['@_data-idx'] !== undefined ? Number.parseInt(grp['@_data-idx'], 10) : globalIdCounter++
+      const groupName = grp['p:nvGrpSpPr']?.['p:cNvPr']?.['@_name'] ?? `Group_${groupIdx}`
+
+      const groupShape: ShapeInfo = {
+         id: `grp-${groupIdx}`,
+         name: groupName,
+         x: groupX,
+         y: groupY,
+         w: groupW,
+         h: groupH,
+         isGroup: true,
+         children: [],
+         idx: groupIdx
+      }
+
+      // Extract children into the group's children array
+      extractRecursive(grp, gx, gy, childScaleX, childScaleY, groupShape.children)
+      
+      if (groupShape.children && groupShape.children.length > 0) {
+         groupShape.children.sort((a, b) => (a.idx ?? 0) - (b.idx ?? 0))
+         
+         // Calculate local percentages for precise resizing
+         for (const child of groupShape.children) {
+            child.localPctX = groupW === 0 ? 0 : (child.x - groupX) / groupW
+            child.localPctY = groupH === 0 ? 0 : (child.y - groupY) / groupH
+            child.localPctW = groupW === 0 ? 1 : child.w / groupW
+            child.localPctH = groupH === 0 ? 1 : child.h / groupH
+         }
+         
+         targetArray.push(groupShape)
+      }
     })
   }
 
   extractRecursive(spTree)
+  shapes.sort((a, b) => (a.idx ?? 0) - (b.idx ?? 0))
   return shapes
 }
 
@@ -234,7 +386,12 @@ function parseSvgPaths(svgContent: string): string[] {
   return paths
 }
 
-function clusterShapes(shapes: ShapeInfo[]): ClusteringResult {
+interface ClusteringResult {
+  repeatingItems: ShapeInfo[][]
+  staticElements: ShapeInfo[]
+}
+
+function clusterShapes(shapes: ShapeInfo[]) {
   const sizeMap: Record<string, ShapeInfo[]> = {}
   for (const s of shapes) {
     const key = `${Math.round(s.w / 15) * 15}x${Math.round(s.h / 15) * 15}`
@@ -253,8 +410,35 @@ function clusterShapes(shapes: ShapeInfo[]): ClusteringResult {
     }
   }
 
-  if (repeatingItems.length === 0 && shapes.length > 0) {
-    repeatingItems.push(shapes)
+  for (const cluster of repeatingItems) {
+    cluster.sort((a, b) => {
+      if (Math.abs(a.y - b.y) > 30) return a.y - b.y
+      return a.x - b.x
+    })
+
+    const hasText = cluster.some(s => s.text && s.text.trim().length > 0)
+    let role = 'none'
+
+    if (hasText) {
+      const texts = cluster.map(s => s.text || '').filter(t => t.length > 0)
+      const isNumeric = texts.every(t => !isNaN(Number(t.replace(/[^0-9]/g, ''))))
+      if (isNumeric) {
+        role = 'numeric'
+      } else {
+        const avgLen = texts.reduce((sum, t) => sum + t.length, 0) / texts.length
+        if (avgLen < 30) role = 'title'
+        else role = 'subtitle'
+      }
+    } else {
+      role = 'color'
+    }
+
+    cluster.forEach((s, i) => {
+      s.dataNodeIdx = i
+      if (role === 'title') s.isTitle = true
+      if (role === 'subtitle') s.isSubtitle = true
+      if (role === 'color') s.isColorNode = true
+    })
   }
 
   return { repeatingItems, staticElements }
@@ -268,49 +452,44 @@ function generateComponentTsx(
   const componentName = `${templateName.charAt(0).toUpperCase()}${templateName.slice(1)}Template`
 
   const defaultColors = ['#282a5d', '#3365cc', '#ff4d38', '#ffb900', '#52c49c', '#ee6d90']
-  const defaultIcons = ['wrench', 'lightbulb', 'zap', 'git-branch', 'target', 'mouse-pointer']
+  
+  const sanitizeShape = (s: ShapeInfo, idx: number): any => {
+    return {
+      id: s.id || `sp-${idx}`,
+      isGroup: s.isGroup,
+      children: s.children?.map((c, i) => sanitizeShape(c, i)),
+      isTitle: s.isTitle,
+      isSubtitle: s.isSubtitle,
+      isColorNode: s.isColorNode,
+      dataNodeIdx: s.dataNodeIdx,
+      x: s.x,
+      y: s.y,
+      width: Math.max(10, s.w),
+      height: Math.max(10, s.h),
+      localPctX: s.localPctX,
+      localPctY: s.localPctY,
+      localPctW: s.localPctW,
+      localPctH: s.localPctH,
+      fillColor: s.fillColor,
+      strokeColor: s.strokeColor,
+      text: s.text,
+      textColor: s.textColor,
+      textSize: s.textSize,
+      pathD: s.pathD,
+    }
+  }
 
-  const sanitizedShapes = shapes.map((s, i) => ({
-    id: s.id || `sp-${i}`,
-    x: s.x || (60 + (i % 3) * 240),
-    y: s.y || (60 + Math.floor(i / 3) * 120),
-    width: Math.max(40, s.w || 200),
-    height: Math.max(25, s.h || 90),
-    fillColor: s.fillColor || defaultColors[i % defaultColors.length]!,
-    strokeColor: s.strokeColor || '#ffffff',
-    text: s.text || `Item ${i + 1}`,
-    pathD: s.pathD || undefined,
-  }))
-
+  const sanitizedShapes = shapes.map((s, i) => sanitizeShape(s, i))
   const shapesConst = `const PPTX_EXTRACTED_SHAPES = ${JSON.stringify(sanitizedShapes, null, 2)}\n`
 
   return `import { useRef, type ReactElement } from 'react'
 import type { BrainData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { TEMPLATE_ICONS } from '../shared/icons'
 import { MIGSO_PALETTE } from '../../lib/theme'
-import * as LucideIcons from 'lucide-react'
 
 ${shapesConst}
 const DEFAULT_COLORS = ${JSON.stringify(defaultColors)}
-const DEFAULT_ICONS = ${JSON.stringify(defaultIcons)}
-
-function getDynamicIcon(iconName?: string, size = 24) {
-  if (!iconName) return null
-  const clean = iconName.trim()
-
-  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
-  if (templateFn) return templateFn
-
-  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
-  const LucideFn = (LucideIcons as Record<string, any>)[pascalName] || (LucideIcons as Record<string, any>)[clean] || (LucideIcons as Record<string, any>)[clean.toUpperCase()]
-  if (LucideFn) {
-    return (props: { size?: number; color?: string }) => <LucideFn size={props.size ?? size} color={props.color ?? 'white'} />
-  }
-
-  return null
-}
 
 function wrapText(text: string, maxCharsPerLine: number): string[] {
   if (!text) return []
@@ -339,91 +518,123 @@ export function ${componentName}({ data }: { data: BrainData }): ReactElement {
 
   const branches = data?.branches && data.branches.length > 0 ? data.branches : []
 
-  return (
-    <g ref={svgRef}>
-      {PPTX_EXTRACTED_SHAPES.map((shapeDef, i) => {
-        const id = shapeDef.id || \`item-\${i}\`
-        const branch = branches[i]
-        const color = tplColors[id] ?? branch?.color ?? shapeDef.fillColor ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
-        const isSelected = selectedIds.has(id)
+  const renderShape = (shapeDef: any, parentBbox: any) => {
+    const id = shapeDef.id
+    const isRoot = parentBbox === null
+    
+    let bbox = { x: shapeDef.x, y: shapeDef.y, width: shapeDef.width || shapeDef.w, height: shapeDef.height || shapeDef.h }
+    
+    if (isRoot) {
+      const pos = positions[id]
+      bbox = {
+        x: pos?.x ?? bbox.x,
+        y: pos?.y ?? bbox.y,
+        width: pos?.width ?? bbox.width,
+        height: pos?.height ?? bbox.height,
+      }
+    } else if (parentBbox && shapeDef.localPctX !== undefined) {
+      bbox = {
+        x: parentBbox.x + shapeDef.localPctX * parentBbox.width,
+        y: parentBbox.y + shapeDef.localPctY * parentBbox.height,
+        width: Math.max(1, shapeDef.localPctW * parentBbox.width),
+        height: Math.max(1, shapeDef.localPctH * parentBbox.height),
+      }
+    }
 
-        const pos = positions[id]
-        const bbox = {
-          x: pos?.x ?? shapeDef.x,
-          y: pos?.y ?? shapeDef.y,
-          width: pos?.width ?? shapeDef.width,
-          height: pos?.height ?? shapeDef.height,
-        }
+    const isSelected = selectedIds.has(id)
+    
+    const branch = (shapeDef.dataNodeIdx !== undefined && shapeDef.dataNodeIdx !== -1 && shapeDef.dataNodeIdx < branches.length) 
+      ? branches[shapeDef.dataNodeIdx] 
+      : null
 
-        const titleText = branch?.title || shapeDef.text || \`Item \${i + 1}\`
-        const iconKey = branch?.icon ?? DEFAULT_ICONS[i % DEFAULT_ICONS.length]
-        const IconFn = getDynamicIcon(iconKey, 20)
-        const titleLines = wrapText(titleText, Math.max(8, Math.floor(bbox.width / 10)))
+    let finalColor = shapeDef.fillColor
+    let finalStroke = shapeDef.strokeColor
+    if (shapeDef.isColorNode && branch) {
+      const branchColor = branch.color || DEFAULT_COLORS[shapeDef.dataNodeIdx % DEFAULT_COLORS.length]
+      if (finalColor && finalColor.toLowerCase() !== '#ffffff' && finalColor.toLowerCase() !== '#000000') {
+        finalColor = branchColor
+      }
+      if (finalStroke && finalStroke.toLowerCase() !== '#ffffff' && finalStroke.toLowerCase() !== '#000000') {
+        finalStroke = branchColor
+      }
+    }
+    
+    finalColor = tplColors[id] ?? finalColor
 
-        return (
-          <g key={id} onMouseDown={e => startDrag(e, id, bbox)} transform={getTransform(id, bbox)} style={{ cursor: 'pointer' }}>
-            {shapeDef.pathD ? (
-              <path
-                d={shapeDef.pathD}
-                transform={"translate(" + bbox.x + ", " + bbox.y + ")"}
-                fill={color}
-                opacity={isSelected ? 0.88 : 1}
-                stroke={isSelected ? '#4a90d9' : (shapeDef.strokeColor || '#ffffff')}
-                strokeWidth={isSelected ? 2.5 : 1}
-              />
-            ) : (
-              <rect
-                x={bbox.x}
-                y={bbox.y}
-                width={bbox.width}
-                height={bbox.height}
-                rx={8}
-                fill={color}
-                opacity={isSelected ? 0.88 : 1}
-                stroke={isSelected ? '#4a90d9' : (shapeDef.strokeColor || '#ffffff')}
-                strokeWidth={isSelected ? 2.5 : 1}
-              />
-            )}
+    let finalText = shapeDef.text
+    if (shapeDef.isTitle && branch?.title) {
+      finalText = branch.title
+    }
+    if (shapeDef.isSubtitle && branch?.subtitle) {
+      finalText = branch.subtitle
+    }
 
-            {IconFn && (
-              <g transform={\`translate(\${bbox.x + 10}, \${bbox.y + 10})\`}>
-                <IconFn size={20} color="#ffffff" />
-              </g>
-            )}
+    if (shapeDef.isGroup) {
+      return (
+        <g key={id} onMouseDown={isRoot ? (e => startDrag(e, id, bbox)) : undefined} transform={isRoot ? getTransform(id, bbox) : undefined} style={{ cursor: isRoot ? 'pointer' : 'default' }}>
+          {shapeDef.children?.map((child: any) => renderShape(child, bbox))}
+          {isRoot && isSelected && renderHandles(bbox, id)}
+        </g>
+      )
+    }
 
+    const titleLines = finalText ? wrapText(finalText, Math.max(10, Math.floor(bbox.width / 6))) : []
+
+    return (
+      <g key={id} onMouseDown={isRoot ? (e => startDrag(e, id, bbox)) : undefined} transform={isRoot ? getTransform(id, bbox) : undefined} style={{ cursor: isRoot ? 'pointer' : 'default' }}>
+        {shapeDef.pathD ? (
+          <path
+            d={shapeDef.pathD}
+            transform={\`translate(\${bbox.x}, \${bbox.y}) scale(\${bbox.width / Math.max(1, shapeDef.width || shapeDef.w)}, \${bbox.height / Math.max(1, shapeDef.height || shapeDef.h)})\`}
+            fill={finalColor || 'transparent'}
+            opacity={isSelected && isRoot ? 0.88 : 1}
+            stroke={isSelected && isRoot ? '#4a90d9' : (finalStroke || 'transparent')}
+            strokeWidth={isSelected && isRoot ? 2.5 : (finalStroke ? 1.5 : 0)}
+          />
+        ) : (
+          (finalColor || finalStroke) && (
+            <rect
+              x={bbox.x}
+              y={bbox.y}
+              width={bbox.width}
+              height={bbox.height}
+              rx={8}
+              fill={finalColor || 'transparent'}
+              opacity={isSelected && isRoot ? 0.88 : 1}
+              stroke={isSelected && isRoot ? '#4a90d9' : (finalStroke || 'transparent')}
+              strokeWidth={isSelected && isRoot ? 2.5 : (finalStroke ? 1.5 : 0)}
+            />
+          )
+        )}
+
+        {titleLines.length > 0 ? (() => {
+          const fs = shapeDef.textSize || (shapeDef.isTitle ? 14 : (shapeDef.isSubtitle ? 10 : 12));
+          return (
             <text
-              x={bbox.x + (IconFn ? 38 : 12)}
-              y={bbox.y + 20}
+              x={bbox.x + (shapeDef.pathD || finalColor ? 10 : 0)}
+              y={bbox.y + fs * 0.9 + (shapeDef.pathD || finalColor ? 10 : 0)}
               fontFamily="Arial, sans-serif"
-              fontSize={12}
-              fontWeight={700}
-              fill="#ffffff"
+              fontSize={fs}
+              fontWeight={shapeDef.isTitle ? 700 : 400}
+              fill={shapeDef.textColor || (shapeDef.isTitle ? '#111827' : '#4b5563')}
             >
-              {titleLines.map((line, lIdx) => (
-                <tspan key={lIdx} x={bbox.x + (IconFn ? 38 : 12)} dy={lIdx === 0 ? 0 : 15}>
+              {titleLines.map((line: string, lIdx: number) => (
+                <tspan key={lIdx} x={bbox.x + (shapeDef.pathD || finalColor ? 10 : 0)} dy={lIdx === 0 ? 0 : Math.round(fs * 1.2)}>
                   {line}
                 </tspan>
               ))}
             </text>
+          );
+        })() : null}
 
-            {branch?.subtitle && (
-              <text
-                x={bbox.x + (IconFn ? 38 : 12)}
-                y={bbox.y + 24 + titleLines.length * 13}
-                fontFamily="Arial, sans-serif"
-                fontSize={10}
-                fontWeight={400}
-                fill="#ffffff"
-                opacity={0.85}
-              >
-                {branch.subtitle}
-              </text>
-            )}
+        {isRoot && isSelected && renderHandles(bbox, id)}
+      </g>
+    )
+  }
 
-            {isSelected && renderHandles(bbox, id)}
-          </g>
-        )
-      })}
+  return (
+    <g ref={svgRef}>
+      {PPTX_EXTRACTED_SHAPES.map((shapeDef) => renderShape(shapeDef, null))}
     </g>
   )
 }
@@ -462,11 +673,9 @@ Example:
     }
   }
 
-  if (!nameArg || useTimestamp) {
-    const now = new Date()
-    const ts = now.toISOString().replace(/[-:T.]/g, '').slice(0, 14)
+  if (!nameArg) {
     const base = pptxPath ? path.basename(pptxPath, path.extname(pptxPath)).replace(/[^a-zA-Z0-9]/g, '') : 'Template'
-    nameArg = nameArg ? `Import_${ts}_${nameArg}` : `Import_${ts}_${base}`
+    nameArg = `Imported_${base}`
   }
 
   if (!pptxPath) {
@@ -478,13 +687,10 @@ Example:
   const fileData = fs.readFileSync(pptxPath)
   const zip = await JSZip.loadAsync(fileData)
 
-  const isPotx = pptxPath.toLowerCase().endsWith('.potx')
-  let slideFiles = isPotx
-    ? Object.keys(zip.files).filter(f => f.startsWith('ppt/slideLayouts/slideLayout') && f.endsWith('.xml'))
-    : Object.keys(zip.files).filter(f => f.startsWith('ppt/slides/slide') && f.endsWith('.xml'))
+  let slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slides/slide') && f.endsWith('.xml'))
 
   if (slideFiles.length === 0) {
-    slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slides/slide') || f.startsWith('ppt/slideLayouts/slideLayout') && f.endsWith('.xml'))
+    slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slideLayouts/slideLayout') && f.endsWith('.xml'))
   }
 
   if (slideFiles.length === 0) {
@@ -538,18 +744,7 @@ Example:
     const shapes = parsePptxSlide(slideXml)
     console.log(`  Found ${shapes.length} shapes/groups in Slide ${slideNum}.`)
 
-    const { repeatingItems, staticElements } = clusterShapes(shapes)
-
-    // Check if this slide is a Category Title / Section Header Slide
-    const textShapes = shapes.filter(s => s.text && s.text.length > 0)
-    const isCategoryTitleSlide = shapes.length <= 4 && repeatingItems.length === 0 && textShapes.length >= 1
-
-    if (isCategoryTitleSlide) {
-      const headerTitle = textShapes[0]!.text
-      currentCategory = headerTitle
-      console.log(`  📌 Detected Section Header Slide! Setting category for subsequent slides to: "${currentCategory}"`)
-      continue
-    }
+    const { repeatingItems, staticElements, primaryDataNodes } = clusterShapes(shapes)
 
     console.log(`  Detected ${repeatingItems.length} repeating shape clusters and ${staticElements.length} static elements.`)
 
@@ -563,7 +758,7 @@ Example:
       continue
     }
 
-    const componentTsx = generateComponentTsx(pascalName, shapes, svgPaths)
+    const componentTsx = generateComponentTsx(pascalName, shapes, svgPaths, primaryDataNodes)
     fs.writeFileSync(targetPath, componentTsx, 'utf-8')
     console.log(`  ✅ Created Template Component: src/templates/components/${templateFileName}`)
 
@@ -597,7 +792,7 @@ Example:
     if (fs.existsSync(typesPath)) {
       let typesContent = fs.readFileSync(typesPath, 'utf-8')
       if (!typesContent.includes(`'${slideCleanName}'`)) {
-        typesContent = typesContent.replace('export type TemplateType =', `export type TemplateType = | '${slideCleanName}' |`)
+        typesContent = typesContent.replace('export type TemplateType =', `export type TemplateType = '${slideCleanName}' |`)
         fs.writeFileSync(typesPath, typesContent, 'utf-8')
         console.log(`  📝 Auto-registered '${slideCleanName}' in TemplateType (src/templates/types.ts)!`)
       }
