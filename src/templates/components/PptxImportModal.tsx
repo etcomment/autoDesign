@@ -1,223 +1,18 @@
 import { useState, useRef, type ChangeEvent } from 'react'
-import JSZip from 'jszip'
-import { XMLParser } from 'fast-xml-parser'
 import { X, Check, FileUp, Sparkles, AlertCircle, RefreshCw } from 'lucide-react'
 import { useTemplateStore } from '../store'
+import { PptxRenderer } from 'pptx-svg'
+import wasmUrl from 'pptx-svg/dist/main.wasm?url'
 
 interface PptxImportModalProps {
   isOpen: boolean
   onClose: () => void
 }
 
-interface ParsedShape {
-  id: string
-  x: number
-  y: number
-  w: number
-  h: number
-  fill: string
-  stroke?: string
-  text?: string
-  pathD?: string
-}
-
 interface ExtractedSlidePreview {
   slideNumber: number
   category: string
-  shapesCount: number
-  colors: string[]
-  sampleText: string
-  shapes: ParsedShape[]
-  bbox: { minX: number; minY: number; maxX: number; maxY: number; width: number; height: number }
-}
-
-const PALETTE_FALLBACKS = ['#282a5d', '#3365cc', '#ff4d38', '#ffb900', '#52c49c', '#ee6d90', '#7c3aed', '#0284c7']
-
-function parseEMU(val: any): number {
-  if (!val) return 0
-  const n = typeof val === 'string' || typeof val === 'number' ? Number.parseInt(String(val), 10) : 0
-  if (isNaN(n)) return 0
-  return Math.round((n / 914400) * 96)
-}
-
-function extractColor(clrObj: any): string | null {
-  if (!clrObj) return null
-  if (clrObj['a:srgbClr']?.['@_val']) return `#${clrObj['a:srgbClr']['@_val']}`
-  if (clrObj['a:sysClr']?.['@_lastClr']) return `#${clrObj['a:sysClr']['@_lastClr']}`
-  if (clrObj['a:schemeClr']?.['@_val']) {
-    const val = clrObj['a:schemeClr']['@_val']
-    if (val.includes('accent1')) return '#3365cc'
-    if (val.includes('accent2')) return '#ff4d38'
-    if (val.includes('accent3')) return '#ffb900'
-    if (val.includes('accent4')) return '#52c49c'
-    if (val.includes('accent5')) return '#ee6d90'
-    if (val.includes('accent6')) return '#7c3aed'
-    if (val.includes('dk1') || val.includes('tx1')) return '#282a5d'
-    if (val.includes('lt1') || val.includes('bg1')) return '#ffffff'
-  }
-  return null
-}
-
-function extractText(sp: any): string {
-  const txBody = sp['p:txBody']
-  if (!txBody) return ''
-  const paragraphs = Array.isArray(txBody['a:p']) ? txBody['a:p'] : [txBody['a:p']].filter(Boolean)
-  const parts: string[] = []
-  for (const p of paragraphs) {
-    const runs = Array.isArray(p['a:r']) ? p['a:r'] : [p['a:r']].filter(Boolean)
-    for (const r of runs) {
-      if (r['a:t']) {
-        const textVal = typeof r['a:t'] === 'object' ? r['a:t']['#text'] : r['a:t']
-        if (textVal) parts.push(String(textVal))
-      }
-    }
-  }
-  return parts.join(' ').trim()
-}
-
-function extractShapePathD(spPr: any, w: number, h: number): string | undefined {
-  if (!spPr) return undefined
-
-  const custGeom = spPr['a:custGeom']
-  if (custGeom && custGeom['a:pathLst']) {
-    const pathLst = custGeom['a:pathLst']
-    const paths = Array.isArray(pathLst['a:path']) ? pathLst['a:path'] : [pathLst['a:path']].filter(Boolean)
-    const commands: string[] = []
-
-    for (const p of paths) {
-      const pW = parseEMU(p['@_w']) || w || 1
-      const pH = parseEMU(p['@_h']) || h || 1
-      const scaleX = w > 0 ? w / pW : 1
-      const scaleY = h > 0 ? h / pH : 1
-
-      for (const key of Object.keys(p)) {
-        if (key === 'a:moveTo') {
-          const pt = p['a:moveTo']?.['a:pt']
-          if (pt) {
-            const x = Math.round(parseEMU(pt['@_x']) * scaleX)
-            const y = Math.round(parseEMU(pt['@_y']) * scaleY)
-            commands.push(`M ${x} ${y}`)
-          }
-        } else if (key === 'a:lnTo') {
-          const rawPts = Array.isArray(p['a:lnTo']) ? p['a:lnTo'] : [p['a:lnTo']].filter(Boolean)
-          for (const item of rawPts) {
-            const pt = item['a:pt']
-            if (pt) {
-              const x = Math.round(parseEMU(pt['@_x']) * scaleX)
-              const y = Math.round(parseEMU(pt['@_y']) * scaleY)
-              commands.push(`L ${x} ${y}`)
-            }
-          }
-        } else if (key === 'a:cubicBezTo') {
-          const rawPts = Array.isArray(p['a:cubicBezTo']) ? p['a:cubicBezTo'] : [p['a:cubicBezTo']].filter(Boolean)
-          for (const item of rawPts) {
-            const pts = Array.isArray(item['a:pt']) ? item['a:pt'] : [item['a:pt']].filter(Boolean)
-            if (pts.length >= 3) {
-              const x1 = Math.round(parseEMU(pts[0]['@_x']) * scaleX), y1 = Math.round(parseEMU(pts[0]['@_y']) * scaleY)
-              const x2 = Math.round(parseEMU(pts[1]['@_x']) * scaleX), y2 = Math.round(parseEMU(pts[1]['@_y']) * scaleY)
-              const x3 = Math.round(parseEMU(pts[2]['@_x']) * scaleX), y3 = Math.round(parseEMU(pts[2]['@_y']) * scaleY)
-              commands.push(`C ${x1} ${y1}, ${x2} ${y2}, ${x3} ${y3}`)
-            }
-          }
-        } else if (key === 'a:close') {
-          commands.push('Z')
-        }
-      }
-    }
-
-    if (commands.length > 0) return commands.join(' ')
-  }
-
-  const prst = spPr['a:prstGeom']?.['@_prst']
-  if (prst) {
-    switch (prst) {
-      case 'ellipse':
-        return `M ${Math.round(w / 2)} 0 A ${Math.round(w / 2)} ${Math.round(h / 2)} 0 1 1 ${Math.round(w / 2 - 0.01)} 0 Z`
-      case 'triangle':
-        return `M ${Math.round(w / 2)} 0 L ${w} ${h} L 0 ${h} Z`
-      case 'diamond':
-        return `M ${Math.round(w / 2)} 0 L ${w} ${Math.round(h / 2)} L ${Math.round(w / 2)} ${h} L 0 ${Math.round(h / 2)} Z`
-      case 'chevron':
-        return `M 0 0 L ${Math.round(w * 0.75)} 0 L ${w} ${Math.round(h / 2)} L ${Math.round(w * 0.75)} ${h} L 0 ${h} L ${Math.round(w * 0.25)} ${Math.round(h / 2)} Z`
-      case 'rightArrow':
-        return `M 0 ${Math.round(h * 0.25)} L ${Math.round(w * 0.6)} ${Math.round(h * 0.25)} L ${Math.round(w * 0.6)} 0 L ${w} ${Math.round(h * 0.5)} L ${Math.round(w * 0.6)} ${h} L ${Math.round(w * 0.6)} ${Math.round(h * 0.75)} L 0 ${Math.round(h * 0.75)} Z`
-      case 'leftArrow':
-        return `M ${w} ${Math.round(h * 0.25)} L ${Math.round(w * 0.4)} ${Math.round(h * 0.25)} L ${Math.round(w * 0.4)} 0 L 0 ${Math.round(h * 0.5)} L ${Math.round(w * 0.4)} ${h} L ${Math.round(w * 0.4)} ${Math.round(h * 0.75)} L ${w} ${Math.round(h * 0.75)} Z`
-      case 'hexagon':
-        return `M ${Math.round(w * 0.25)} 0 L ${Math.round(w * 0.75)} 0 L ${w} ${Math.round(h * 0.5)} L ${Math.round(w * 0.75)} ${h} L ${Math.round(w * 0.25)} ${h} L 0 ${Math.round(h * 0.5)} Z`
-      case 'pentagon':
-        return `M ${Math.round(w * 0.5)} 0 L ${w} ${Math.round(h * 0.38)} L ${Math.round(w * 0.81)} ${h} L ${Math.round(w * 0.19)} ${h} L 0 ${Math.round(h * 0.38)} Z`
-      case 'star5':
-        return `M ${Math.round(w * 0.5)} 0 L ${Math.round(w * 0.62)} ${Math.round(h * 0.38)} L ${w} ${Math.round(h * 0.38)} L ${Math.round(w * 0.69)} ${Math.round(h * 0.62)} L ${Math.round(w * 0.81)} ${h} L ${Math.round(w * 0.5)} ${Math.round(h * 0.75)} L ${Math.round(w * 0.19)} ${h} L ${Math.round(w * 0.31)} ${Math.round(h * 0.62)} L 0 ${Math.round(h * 0.38)} L ${Math.round(w * 0.38)} ${Math.round(h * 0.38)} Z`
-      default:
-        return undefined
-    }
-  }
-
-  return undefined
-}
-
-function parseSingleShape(sp: any, idx: number, parentX = 0, parentY = 0): ParsedShape | null {
-  const spPr = sp['p:spPr']
-  if (!spPr) return null
-
-  const xfrm = spPr['a:xfrm']
-  const off = xfrm?.['a:off']
-  const ext = xfrm?.['a:ext']
-
-  const x = parentX + parseEMU(off?.['@_x'])
-  const y = parentY + parseEMU(off?.['@_y'])
-  const w = parseEMU(ext?.['@_cx'])
-  const h = parseEMU(ext?.['@_cy'])
-
-  if (w <= 2 && h <= 2) return null
-
-  const fill = extractColor(spPr['a:solidFill']) ?? PALETTE_FALLBACKS[idx % PALETTE_FALLBACKS.length]!
-  const stroke = extractColor(spPr['a:ln']?.['a:solidFill']) ?? undefined
-  const text = extractText(sp)
-  const pathD = extractShapePathD(spPr, w, h)
-
-  return {
-    id: `sp-${idx}`,
-    x, y, w, h,
-    fill,
-    stroke,
-    text,
-    pathD,
-  }
-}
-
-function extractShapesRecursively(spTree: any, parentX = 0, parentY = 0): ParsedShape[] {
-  if (!spTree) return []
-  const result: ParsedShape[] = []
-
-  let shapeIndex = 0
-
-  // 1. Direct shapes (p:sp)
-  const rawSp = Array.isArray(spTree['p:sp']) ? spTree['p:sp'] : [spTree['p:sp']].filter(Boolean)
-  for (const sp of rawSp) {
-    const s = parseSingleShape(sp, shapeIndex++, parentX, parentY)
-    if (s) result.push(s)
-  }
-
-  // 2. Connection shapes (p:cxnSp)
-  const rawCxn = Array.isArray(spTree['p:cxnSp']) ? spTree['p:cxnSp'] : [spTree['p:cxnSp']].filter(Boolean)
-  for (const cxn of rawCxn) {
-    const s = parseSingleShape(cxn, shapeIndex++, parentX, parentY)
-    if (s) result.push(s)
-  }
-
-  // 3. Grouped shapes (p:grpSp)
-  const rawGrp = Array.isArray(spTree['p:grpSp']) ? spTree['p:grpSp'] : [spTree['p:grpSp']].filter(Boolean)
-  for (const grp of rawGrp) {
-    const grpXfrm = grp['p:grpSpPr']?.['a:xfrm']
-    const grpX = parentX + parseEMU(grpXfrm?.['a:off']?.['@_x'])
-    const grpY = parentY + parseEMU(grpXfrm?.['a:off']?.['@_y'])
-    const childShapes = extractShapesRecursively(grp, grpX, grpY)
-    result.push(...childShapes)
-  }
-
-  return result
+  svgString: string
 }
 
 export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
@@ -262,80 +57,28 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
     try {
       const lowerName = inputFile.name.toLowerCase()
       if (lowerName.endsWith('.pptx') || lowerName.endsWith('.potx')) {
-        const zip = await JSZip.loadAsync(inputFile)
-        let slideFiles = Object.keys(zip.files)
-          .filter(f => f.startsWith('ppt/slides/slide') && f.endsWith('.xml'))
-
-        if (slideFiles.length === 0) {
-          slideFiles = Object.keys(zip.files).filter(f => f.startsWith('ppt/slideLayouts/slideLayout') && f.endsWith('.xml'))
-        }
-
-        slideFiles.sort((a, b) => {
-          const numA = Number.parseInt(a.replace(/[^0-9]/g, '') || '0', 10)
-          const numB = Number.parseInt(b.replace(/[^0-9]/g, '') || '0', 10)
-          return numA - numB
-        })
-
-        if (slideFiles.length === 0) {
-          throw new Error('Aucune diapositive n’a été trouvée dans ce fichier PowerPoint (.potx / .pptx).')
+        const arrayBuffer = await inputFile.arrayBuffer()
+        
+        const renderer = new PptxRenderer()
+        await renderer.init(wasmUrl)
+        const { slideCount } = await renderer.loadPptx(arrayBuffer)
+        
+        if (slideCount === 0) {
+          throw new Error('Aucune diapositive trouvée.')
         }
 
         const extractedPreviews: ExtractedSlidePreview[] = []
-        const parser = new XMLParser({ ignoreAttributes: false })
-
-        let currentCategory = 'Other'
-
-        for (let i = 0; i < slideFiles.length; i++) {
-          const sFile = slideFiles[i]!
-          const slideXml = await zip.file(sFile)!.async('text')
-          const jsonObj = parser.parse(slideXml)
-          const spTree = jsonObj['p:sld']?.['p:cSld']?.['p:spTree'] || jsonObj['p:sldLayout']?.['p:cSld']?.['p:spTree']
-
-          const shapes = extractShapesRecursively(spTree)
-          const colorsFound = new Set<string>()
-          let textSample = ''
-
-          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-
-          for (const s of shapes) {
-            colorsFound.add(s.fill)
-            if (s.text && !textSample) textSample = s.text
-
-            minX = Math.min(minX, s.x)
-            minY = Math.min(minY, s.y)
-            maxX = Math.max(maxX, s.x + s.w)
-            maxY = Math.max(maxY, s.y + s.h)
-          }
-
-          if (minX === Infinity) {
-            minX = 0; minY = 0; maxX = 800; maxY = 500
-          }
-
-          const bbox = {
-            minX, minY, maxX, maxY,
-            width: Math.max(100, maxX - minX),
-            height: Math.max(100, maxY - minY),
-          }
-
-          if (shapes.length <= 3 && textSample && !textSample.includes('Description')) {
-            currentCategory = textSample
-          }
-
+        for (let i = 0; i < slideCount; i++) {
+          const svg = renderer.renderSlideSvg(i)
           extractedPreviews.push({
             slideNumber: i + 1,
-            category: currentCategory,
-            shapesCount: shapes.length,
-            colors: Array.from(colorsFound),
-            sampleText: textSample || `Diapositive ${i + 1}`,
-            shapes,
-            bbox,
+            category: 'Import PPTX',
+            svgString: svg,
           })
         }
 
         setPreviews(extractedPreviews)
-        if (extractedPreviews[0]?.category) {
-          setCategoryName(extractedPreviews[0].category)
-        }
+        setCategoryName('Import PPTX')
       } else {
         throw new Error('Veuillez sélectionner un fichier PowerPoint valide (.pptx ou .potx).')
       }
@@ -375,8 +118,8 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
               <Sparkles size={20} color="#2563eb" />
             </div>
             <div>
-              <h2 style={styles.headerTitle}>Importateur & Visualiseur PowerPoint (.pptx / .potx)</h2>
-              <p style={styles.headerSubtitle}>Prévisualisez les calques vectoriels, validez ou rejetez les templates avant intégration.</p>
+              <h2 style={styles.headerTitle}>Importateur PowerPoint VRAI (.pptx)</h2>
+              <p style={styles.headerSubtitle}>Basé sur pptx-svg pour un rendu haute fidélité</p>
             </div>
           </div>
           <button onClick={onClose} style={styles.closeBtn} title="Fermer">
@@ -386,7 +129,6 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
 
         {/* Content Body */}
         <div style={styles.body}>
-          {/* Dropzone if no file selected */}
           {!file && (
             <div
               onDragOver={e => e.preventDefault()}
@@ -399,11 +141,8 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
               </div>
               <div style={{ textAlign: 'center' }}>
                 <span style={{ fontWeight: 600, fontSize: 15, color: '#1e293b' }}>
-                  Glissez-déposez votre modèle ou présentation PowerPoint (.pptx / .potx)
+                  Glissez-déposez votre PPTX
                 </span>
-                <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                  ou cliquez pour parcourir les fichiers de votre ordinateur
-                </p>
               </div>
               <input
                 ref={fileInputRef}
@@ -419,7 +158,7 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
             <div style={styles.loadingContainer}>
               <RefreshCw size={24} color="#2563eb" style={{ animation: 'spin 1s linear infinite' }} />
               <span style={{ fontSize: 14, fontWeight: 500, color: '#2563eb' }}>
-                Analyse et extraction des calques PowerPoint en cours...
+                Rendu SVG natif via pptx-svg...
               </span>
             </div>
           )}
@@ -431,35 +170,11 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
             </div>
           )}
 
-          {/* Inspection & Visualizer Panel */}
           {file && !isLoading && previews.length > 0 && (
             <div style={styles.gridContainer}>
-              {/* Left Column: Form & Slide Selector */}
               <div style={styles.leftColumn}>
                 <div style={styles.formGroup}>
-                  <label style={styles.label}>Nom du Template</label>
-                  <input
-                    type="text"
-                    value={templateName}
-                    onChange={e => setTemplateName(e.target.value)}
-                    style={styles.input}
-                  />
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>Catégorie Détectée</label>
-                  <input
-                    type="text"
-                    value={categoryName}
-                    onChange={e => setCategoryName(e.target.value)}
-                    style={styles.input}
-                  />
-                </div>
-
-                <div style={styles.formGroup}>
-                  <label style={styles.label}>
-                    Diapositives Détectées ({previews.length})
-                  </label>
+                  <label style={styles.label}>Diapositives Détectées ({previews.length})</label>
                   <div style={styles.slideList}>
                     {previews.map((prev, idx) => (
                       <button
@@ -471,10 +186,7 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
                         }}
                       >
                         <span style={styles.slideText}>
-                          Slide {prev.slideNumber}: {prev.sampleText.slice(0, 18) || 'Sans titre'}
-                        </span>
-                        <span style={styles.badge}>
-                          {prev.shapesCount} formes
+                          Slide {prev.slideNumber}
                         </span>
                       </button>
                     ))}
@@ -486,79 +198,21 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
                     onClick={() => { setFile(null); setPreviews([]); }}
                     style={styles.changeFileBtn}
                   >
-                    Changer de fichier PowerPoint
+                    Changer de fichier
                   </button>
                 </div>
               </div>
 
-              {/* Right Column: Visualizer Canvas Preview */}
               <div style={styles.rightColumn}>
                 <div style={styles.previewHeader}>
-                  <span style={styles.label}>Aperçu Vectoriel Interactif</span>
-                  {activePreview && activePreview.colors.length > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 11, color: '#94a3b8' }}>Couleurs :</span>
-                      {activePreview.colors.map((clr, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            width: 14,
-                            height: 14,
-                            borderRadius: '50%',
-                            backgroundColor: clr,
-                            border: '1px solid rgba(255,255,255,0.2)',
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
+                  <span style={styles.label}>Aperçu Exact (Généré par pptx-svg)</span>
                 </div>
-
                 <div style={styles.canvasContainer}>
                   {activePreview && (
-                    <svg
-                      viewBox={`${activePreview.bbox.minX - 30} ${activePreview.bbox.minY - 30} ${activePreview.bbox.width + 60} ${activePreview.bbox.height + 60}`}
-                      style={{ width: '100%', height: '100%' }}
-                    >
-                      {activePreview.shapes.map((shape, idx) => (
-                        <g key={idx}>
-                          {shape.pathD ? (
-                            <path
-                              d={shape.pathD}
-                              transform={`translate(${shape.x}, ${shape.y})`}
-                              fill={shape.fill}
-                              stroke={shape.stroke || '#ffffff'}
-                              strokeWidth={1.5}
-                              opacity={0.9}
-                            />
-                          ) : (
-                            <rect
-                              x={shape.x}
-                              y={shape.y}
-                              width={shape.w}
-                              height={shape.h}
-                              rx={6}
-                              fill={shape.fill}
-                              stroke={shape.stroke || '#ffffff'}
-                              strokeWidth={1.5}
-                              opacity={0.9}
-                            />
-                          )}
-                          {shape.text && (
-                            <text
-                              x={shape.x + shape.w / 2}
-                              y={shape.y + shape.h / 2 + 5}
-                              textAnchor="middle"
-                              fill="#ffffff"
-                              fontSize={Math.min(14, Math.max(9, shape.h * 0.25))}
-                              fontWeight="bold"
-                            >
-                              {shape.text.length > 25 ? `${shape.text.slice(0, 22)}...` : shape.text}
-                            </text>
-                          )}
-                        </g>
-                      ))}
-                    </svg>
+                    <div 
+                      dangerouslySetInnerHTML={{ __html: activePreview.svgString }} 
+                      style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    />
                   )}
                 </div>
               </div>
@@ -569,13 +223,12 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
         {/* Footer Actions */}
         <div style={styles.footer}>
           <button onClick={onClose} style={styles.cancelBtn}>
-            Rejeter / Annuler
+            Fermer
           </button>
-
           {file && previews.length > 0 && (
             <button onClick={handleValidateImport} style={styles.validateBtn}>
               <Check size={16} />
-              <span>{isSuccess ? 'Importation Validée !' : 'Valider et Importer le Template'}</span>
+              <span>{isSuccess ? 'Importation Validée !' : 'Valider'}</span>
             </button>
           )}
         </div>
@@ -604,7 +257,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 16,
     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
     width: '100%',
-    maxWidth: 860,
+    maxWidth: 960,
     maxHeight: '90vh',
     display: 'flex',
     flexDirection: 'column',
@@ -717,23 +370,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     color: '#475569',
   },
-  input: {
-    width: '100%',
-    padding: '8px 12px',
-    backgroundColor: '#ffffff',
-    border: '1px solid #cbd5e1',
-    borderRadius: 8,
-    fontSize: 13,
-    fontWeight: 500,
-    color: '#0f172a',
-    outline: 'none',
-    boxSizing: 'border-box',
-  },
   slideList: {
     display: 'flex',
     flexDirection: 'column',
     gap: 6,
-    maxHeight: 180,
+    maxHeight: 280,
     overflowY: 'auto',
   },
   slideItem: {
@@ -762,13 +403,6 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: 'nowrap',
     maxWidth: 160,
   },
-  badge: {
-    fontSize: 10,
-    padding: '2px 6px',
-    borderRadius: 4,
-    backgroundColor: '#e2e8f0',
-    color: '#475569',
-  },
   changeFileBtn: {
     background: 'none',
     border: 'none',
@@ -786,8 +420,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   canvasContainer: {
     width: '100%',
-    height: 280,
-    backgroundColor: '#0f172a',
+    height: 480,
+    backgroundColor: '#cbd5e1',
     borderRadius: 12,
     border: '1px solid #1e293b',
     padding: 16,
