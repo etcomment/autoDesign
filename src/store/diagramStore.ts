@@ -43,6 +43,7 @@ interface DiagramStore {
   moveShape: (id: string, position: Position) => void
   resizeShape: (id: string, dimensions: Dimensions) => void
   updateShapeStyle: (id: string, style: Partial<ShapeStyle>) => void
+  updateShapeRotation: (id: string, rotation: number) => void
   updateShapeText: (id: string, text: Partial<ShapeText>) => void
   moveAndResizeShape: (id: string, position: Position, dimensions: Dimensions) => void
   batchUpdateShapeStyle: (ids: string[], style: Partial<ShapeStyle>) => void
@@ -157,6 +158,11 @@ export const useDiagramStore = create<DiagramStore>((set, get) => {
 
     updateShapeStyle: (id, style) => {
       history.updateShapeStyle(id, style)
+      set(syncState())
+    },
+
+    updateShapeRotation: (id, rotation) => {
+      history.updateShapeRotation(id, rotation)
       set(syncState())
     },
 

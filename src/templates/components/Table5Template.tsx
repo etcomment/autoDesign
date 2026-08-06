@@ -6,7 +6,7 @@ import { useTemplateStore } from '../store'
 
 export function Table5Template({ data }: { data: TableData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
 
   const { title, columns, rows } = data
@@ -47,7 +47,7 @@ export function Table5Template({ data }: { data: TableData }): ReactElement {
 
         return (
           <g key={`r-${ri}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <text x={tableX + labelW / 2} y={rowY + rowH / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#333">
                 {row.label}
               </text>

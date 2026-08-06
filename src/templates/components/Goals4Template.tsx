@@ -5,7 +5,7 @@ import { useTemplateStore } from '../store'
 
 export function Goals4Template({ data }: { data: GoalsData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
 
   const { title, metrics } = data
@@ -41,7 +41,7 @@ export function Goals4Template({ data }: { data: GoalsData }): ReactElement {
               {metric.label}
             </text>
             <rect x={startX} y={y} width={barMaxW} height={barH} rx={6} fill="#f0f0f0" />
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={startX} y={y} width={barWidth} height={barH} rx={6} fill={fillColor} opacity={0.85} stroke={isSelected ? '#4a90d9' : 'none'} strokeWidth={isSelected ? 2.5 : 0} strokeDasharray={isSelected ? '4 2' : undefined} />
               <text x={startX + barWidth / 2} y={y + barH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
                 {Math.round(pct * 100)}%

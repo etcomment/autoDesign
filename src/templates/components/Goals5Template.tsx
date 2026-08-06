@@ -5,7 +5,7 @@ import { useTemplateStore } from '../store'
 
 export function Goals5Template({ data }: { data: GoalsData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
 
   const { title, metrics } = data
@@ -49,7 +49,7 @@ export function Goals5Template({ data }: { data: GoalsData }): ReactElement {
               TARGET
             </text>
 
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               {fillH > 0 && (
                 <>
                   <rect x={x - thermoW / 2 + 4} y={startY + tubeH - fillH} width={thermoW - 8} height={fillH} rx={fillH >= tubeH - 4 ? thermoW / 2 - 4 : 0} fill={fillColor} opacity={0.85} />

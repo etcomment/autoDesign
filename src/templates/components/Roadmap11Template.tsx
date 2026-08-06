@@ -23,7 +23,7 @@ function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, Rect
 
 export function Roadmap11Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
@@ -44,6 +44,15 @@ export function Roadmap11Template({ data }: { data: RoadmapData }): ReactElement
       const isTop = i % 2 === 0
       const textY = isTop ? 100 : 380
       m.set(`text-${i}`, { x: cx + blockW/2 - 100, y: textY, width: 200, height: 60 })
+      
+      const lineY1 = isTop ? LINE_Y : LINE_Y + BLOCK_H
+      const lineY2 = isTop ? textY + 60 : textY
+      m.set(`conn-${i}`, { 
+        x: cx + blockW/2 - 1.5, 
+        y: Math.min(lineY1, lineY2), 
+        width: 3, 
+        height: Math.abs(lineY2 - lineY1) 
+      })
     })
     return m
   }, [milestones, N])
@@ -101,10 +110,26 @@ export function Roadmap11Template({ data }: { data: RoadmapData }): ReactElement
         return (
           <g key={i}>
             {/* Connection Line */}
-            <line x1={blockCx} y1={lineY1} x2={textCx} y2={lineY2} stroke="#cccccc" strokeWidth={3} />
+            {(() => {
+              const cid = `conn-${i}`
+              const cr = rects.get(cid)!
+              return (
+                <g onMouseDown={e => startDrag(e, cid, cr)} transform={getTransform(cid, cr)} style={{ cursor: 'pointer' }}>
+                  <line 
+                    x1={cr.x + cr.width/2} 
+                    y1={isTop ? cr.y + cr.height : cr.y} 
+                    x2={cr.x + cr.width/2} 
+                    y2={isTop ? cr.y : cr.y + cr.height} 
+                    stroke={tplColors[cid] || tplStrokeColors[cid] || "#cccccc"} 
+                    strokeWidth={tplStrokeWidths[cid] || 3} 
+                  />
+                  {selectedIds.has(cid) && renderHandles(cr, cid)}
+                </g>
+              )
+            })()}
 
             {/* Block */}
-            <g onMouseDown={e => startDrag(e, bid, br)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, bid, br)} transform={getTransform(bid, br)} style={{ cursor: 'pointer' }}>
               <rect 
                 x={br.x + 2} y={br.y} width={br.width - 4} height={br.height} 
                 fill={color} 
@@ -118,7 +143,7 @@ export function Roadmap11Template({ data }: { data: RoadmapData }): ReactElement
             </g>
 
             {/* Text Area */}
-            <g onMouseDown={e => startDrag(e, tid, tr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, tid, tr)} transform={getTransform(tid, tr)} style={{ cursor: 'pointer' }}>
               <rect x={tr.x} y={tr.y} width={tr.width} height={tr.height} fill="transparent" stroke={isSelText ? '#4a90d9' : 'none'} strokeWidth={1} strokeDasharray="4" />
               <text x={textCx - 10} y={tr.y + 15} textAnchor="end" dominantBaseline="hanging" fontFamily="Arial, sans-serif" fontSize={26} fontWeight={700} fill={color}>
                 {bigNum}

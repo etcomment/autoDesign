@@ -320,11 +320,10 @@ function addPolygonToSlide(
     h: Math.max(0.01, maxY - minY),
     points: relPoints as unknown as PptxGenJS.ShapeProps['points'],
     fill: hexFill ? { color: hexFill } : { type: 'none' },
-    line: hexStroke && strokeWidth > 0 ? { color: hexStroke, width: Math.max(0.25, strokeWidth * layout.scaleX * 72) } : undefined,
   } as PptxGenJS.ShapeProps)
 }
 
-async function rasterizePathToPng(el: SVGGraphicsElement, bbox: DOMRect | SVGRect): Promise<string> {
+async function getElementAsSvgImage(el: SVGGraphicsElement, bbox: DOMRect | SVGRect, defsString: string): Promise<string> {
   const sw = parseFloat(el.getAttribute('stroke-width') || window.getComputedStyle(el).strokeWidth || '0')
   const strokePad = isNaN(sw) ? 0 : sw / 2
   const pad = 4 + strokePad
@@ -332,39 +331,27 @@ async function rasterizePathToPng(el: SVGGraphicsElement, bbox: DOMRect | SVGRec
   const vbY = bbox.y - pad
   const vbW = bbox.width + pad * 2
   const vbH = bbox.height + pad * 2
-  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" width="${vbW}" height="${vbH}">${el.outerHTML}</svg>`
-  return new Promise((resolve, reject) => {
-    const blob = new Blob([svgStr], { type: 'image/svg+xml' })
-    const url = URL.createObjectURL(blob)
-    const img = new Image()
-    img.onload = () => {
-      const scale = 2
-      const canvas = document.createElement('canvas')
-      canvas.width = (img.naturalWidth || img.width) * scale
-      canvas.height = (img.naturalHeight || img.height) * scale
-      const ctx = canvas.getContext('2d')
-      if (!ctx) { URL.revokeObjectURL(url); reject(new Error('no ctx')); return }
-      ctx.scale(scale, scale)
-      ctx.drawImage(img, 0, 0)
-      URL.revokeObjectURL(url)
-      resolve(canvas.toDataURL('image/png'))
-    }
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('raster fail')) }
-    img.src = url
-  })
+  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" width="${vbW}" height="${vbH}">${defsString}${el.outerHTML}</svg>`
+  
+  // PptxGenJS v3.7+ natively supports data:image/svg+xml.
+  // PowerPoint will embed this as a true vector SVG file inside the PPTX media folder.
+  // Users can then right-click the image in PowerPoint and "Convert to Shape" to make it fully editable.
+  const base64 = btoa(unescape(encodeURIComponent(svgStr)))
+  return `data:image/svg+xml;base64,${base64}`
 }
 
-async function addPathAsImageToSlide(
+async function addElementAsImageToSlide(
   slide: PptxGenJS.Slide,
   el: SVGGraphicsElement,
   bounds: AbsBounds,
   vb: ViewBox,
-  layout: SlideLayout
+  layout: SlideLayout,
+  defsString: string
 ): Promise<void> {
   try {
     const bbox = el.getBBox()
     if (bbox.width <= 0 || bbox.height <= 0) return
-    const pngData = await rasterizePathToPng(el, bbox)
+    const svgDataUri = await getElementAsSvgImage(el, bbox, defsString)
     
     let ctmScale = 1
     try {
@@ -379,13 +366,13 @@ async function addPathAsImageToSlide(
     const padH = padAbs * layout.scaleY
 
     slide.addImage({
-      data: pngData,
+      data: svgDataUri,
       x: toSlideX(bounds.x, vb, layout) - padW,
       y: toSlideY(bounds.y, vb, layout) - padH,
       w: Math.max(0.01, toSlideW(bounds.w, layout)) + padW * 2,
       h: Math.max(0.01, toSlideH(bounds.h, layout)) + padH * 2,
     })
-  } catch { /* skip unrenderable paths */ }
+  } catch { /* skip unrenderable elements */ }
 }
 
 function addTextToSlide(
@@ -520,11 +507,21 @@ export async function generateCanvasPptx(): Promise<Blob> {
   svgRoot.removeAttribute('width')
   svgRoot.removeAttribute('height')
 
-  slide.addShape('rect', {
-    x: 0, y: 0, w: SLIDE_W, h: SLIDE_H,
-    fill: { color: 'FFFFFF' },
-    line: { color: 'FFFFFF', width: 0 },
-  })
+  // Removed white slide background completely so it defaults to transparent / slide master background
+
+  const allDefs = Array.from(svgRoot.querySelectorAll('defs')).map(d => d.outerHTML).join('\n')
+
+  // Export clipped groups as high-res images to support complex cuts (e.g. Brain1 silhouette)
+  const clippedGroups = Array.from(svgRoot.querySelectorAll<SVGGraphicsElement>('g[clip-path]'))
+  for (const g of clippedGroups) {
+    if (isInteractiveElement(g) || isInsideDefs(g)) continue
+    const bounds = getAbsBounds(g, svgRoot)
+    if (bounds && bounds.w > 0 && bounds.h > 0) {
+      await addElementAsImageToSlide(slide, g, bounds, vb, layout, allDefs)
+    }
+    // Remove so children aren't drawn independently as unclipped rects
+    g.remove()
+  }
 
   const shapes = Array.from(svgRoot.querySelectorAll<SVGGraphicsElement>('rect, circle, ellipse, polygon, path, line'))
   for (const el of shapes) {
@@ -548,7 +545,7 @@ export async function generateCanvasPptx(): Promise<Blob> {
 
     if (tag === 'rect') addRectToSlide(slide, el, bounds, vb, layout)
     else if (tag === 'circle' || tag === 'ellipse') addEllipseToSlide(slide, el, bounds, vb, layout)
-    else if (tag === 'path') await addPathAsImageToSlide(slide, el, bounds, vb, layout)
+    else if (tag === 'path') await addElementAsImageToSlide(slide, el, bounds, vb, layout, allDefs)
   }
 
   const texts = Array.from(svgRoot.querySelectorAll<SVGTextElement>('text'))

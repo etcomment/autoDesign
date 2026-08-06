@@ -1,19 +1,21 @@
 import { useRef, type ReactElement } from 'react'
 import type { Strategy2Data } from '../types'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db']
-
 export function Strategy2Template({ data }: { data: Strategy2Data }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const toggleElement = useTemplateStore(s => s.toggleTemplateElement)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, blocks } = data
+  const { blocks } = data
   const W = 940
   const minW = 260
   const maxW = 620
@@ -21,49 +23,94 @@ export function Strategy2Template({ data }: { data: Strategy2Data }): ReactEleme
   const gap = 6
   const topBlockY = 100
 
+  const getBlockW = (index: number) =>
+    blocks.length > 1
+      ? minW + (index / (blocks.length - 1)) * (maxW - minW)
+      : (minW + maxW) / 2
+
+  const getBbox = (elementId: string, index: number) => {
+    const blockW = getBlockW(index)
+    const defaultX = (W - blockW) / 2
+    const defaultY = topBlockY + index * (blockH + gap)
+    const pos = positions[elementId]
+    return {
+      x: pos?.x ?? defaultX,
+      y: pos?.y ?? defaultY,
+      width: pos?.width ?? blockW,
+      height: pos?.height ?? blockH,
+    }
+  }
+
   return (
     <g ref={svgRef}>
-
-      {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
-          {title}
-        </text>
-      )}
-
       {blocks.map((block, index) => {
         const elementId = `block-${index}`
-        const color = tplColors[elementId] ?? PALETTE[index % PALETTE.length]!
+        const color = tplColors[elementId] ?? block.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
         const isSelected = selectedIds.has(elementId)
-        const blockW = blocks.length > 1
-          ? minW + (index / (blocks.length - 1)) * (maxW - minW)
-          : (minW + maxW) / 2
-        const bx = (W - blockW) / 2
-        const by = topBlockY + index * (blockH + gap)
-        const visualRect = { x: bx, y: by, width: blockW, height: blockH }
-
-        const labelY1 = by + blockH / 2 - 5
-        const labelY2 = by + blockH / 2 + 12
+        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2 : 0)
+        const bbox = getBbox(elementId, index)
+        const Icon = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
+        const badge = block.value ?? block.percent
+        const titleX = bbox.x + bbox.width / 2 + (Icon ? 10 : 0)
+        const maxChars = Math.max(10, Math.floor(bbox.width / 6.5))
+        const titleLines = wrapTextByWidth(`${block.number} ${block.title}`, maxChars)
+        const subtitleLines = block.subtitle ? wrapTextByWidth(block.subtitle, maxChars) : []
 
         return (
-          <g key={index}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
-              <rect x={bx} y={by} width={blockW} height={blockH} rx={6} fill={color} />
-
-              {isSelected && (
-                <rect x={bx - 1} y={by - 1} width={blockW + 2} height={blockH + 2} rx={6} fill="none" stroke="#4a90d9" strokeWidth={2.5} strokeDasharray="4 2" />
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill={color} stroke={strokeColor} strokeWidth={strokeWidth} />
+              {Icon && (
+                <g transform={`translate(${bbox.x + 14}, ${bbox.y + bbox.height / 2 - 7})`}>
+                  <Icon size={14} color="white" />
+                </g>
               )}
-
-              <text x={bx + blockW / 2} y={labelY1} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
-                {block.number} {block.title.length > 24 ? block.title.slice(0, 22) + '...' : block.title}
+              <text
+                x={titleX}
+                y={bbox.y + 18}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={12}
+                fontWeight={700}
+                fill="white"
+              >
+                {titleLines.map((line, li) => (
+                  <tspan key={li} x={titleX} dy={li === 0 ? 0 : 13}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
-
               {block.subtitle && (
-                <text x={bx + blockW / 2} y={labelY2} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="rgba(255,255,255,0.8)">
-                  {block.subtitle.length > 36 ? block.subtitle.slice(0, 34) + '...' : block.subtitle}
+                <text
+                  x={bbox.x + bbox.width / 2}
+                  y={bbox.y + 34}
+                  textAnchor="middle"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={10}
+                  fill="rgba(255,255,255,0.8)"
+                >
+                  {subtitleLines.map((line, li) => (
+                    <tspan key={li} x={bbox.x + bbox.width / 2} dy={li === 0 ? 0 : 12}>
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
               )}
-
-              {isSelected && renderHandles(visualRect, elementId)}
+              {badge && (
+                <g transform={`translate(${bbox.x + bbox.width - 26}, ${bbox.y + 12})`}>
+                  <rect x={-14} y={-9} width={28} height={18} rx={9} fill="white" opacity={0.85} />
+                  <text x={0} y={3} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fontWeight={700} fill={color}>
+                    {badge}
+                  </text>
+                </g>
+              )}
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
           </g>
         )

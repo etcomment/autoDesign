@@ -223,12 +223,20 @@ export async function getContentSvg(): Promise<string> {
   // Remove any remaining root transform from cloned group so elements align with computed viewbox
   clonedGroup.removeAttribute('transform')
 
+  // Remove all defs from clonedGroup to avoid duplicates inside inner
+  clonedGroup.querySelectorAll('defs').forEach(el => el.remove())
   const inner = clonedGroup.innerHTML
 
-  const defs = svgElement.querySelector('defs')
-  const defsString = defs ? defs.outerHTML : ''
+  // Grab all defs from the original SVG and merge them
+  const allDefs = svgElement.querySelectorAll('defs')
+  const defsContent = Array.from(allDefs).map(d => d.innerHTML).join('\n')
+  const defsString = defsContent ? `<defs>\n${defsContent}\n</defs>` : ''
 
-  const rawSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">\n  ${defsString}\n  <rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="white"/>\n  ${inner}\n</svg>`
+  let rawSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">\n  ${defsString}\n  ${inner}\n</svg>`
+  
+  // Fix Safari/Chrome absolute URL resolution for masks and clipPaths in SPAs
+  rawSvg = rawSvg.replace(/url\(['"]?https?:\/\/[^#]*#([^)'"]+)['"]?\)/g, 'url(#$1)')
+  
   return inlineFonts(rawSvg)
 }
 

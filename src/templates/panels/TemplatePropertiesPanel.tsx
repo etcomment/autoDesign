@@ -1,6 +1,7 @@
 import { useTemplateStore } from '../store'
 import { useDiagramStore } from '../../store/diagramStore'
 import { MIGSO_PALETTE } from '../../lib/theme'
+import { getTemplateByType } from '../registry'
 
 const PRESET_COLORS = [
   '#ffffff', '#f44336', '#e91e63', '#9c27b0', '#673ab7',
@@ -93,6 +94,8 @@ const collectionKeys: Record<string, string> = {
   quadrant: 'quadrants',
 }
 
+const numericFields = new Set(['percentage', 'width', 'height', 'x', 'y'])
+
 function updateElementField(
   elementId: string,
   field: string,
@@ -106,9 +109,10 @@ function updateElementField(
   if (!collectionKey) return templateData
   const items = templateData[collectionKey] as Record<string, unknown>[] | undefined
   if (!items || !items[index]) return templateData
+  const coerced = numericFields.has(field) ? (value === '' ? '' : Number(value)) : value
   const newItems = items.map((item, i) => {
     if (i !== index) return item
-    return { ...item, [field]: value }
+    return { ...item, [field]: coerced }
   })
   return { ...templateData, [collectionKey]: newItems }
 }
@@ -120,13 +124,22 @@ export function TemplatePropertiesPanel() {
   const templateColors = useTemplateStore(s => s.templateElementColors)
   const templateStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const templateStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
+  const templateElementRotations = useTemplateStore(s => s.templateElementRotations)
   const templateData = useTemplateStore(s => s.templateData)
+  
   const updateTemplateColor = useTemplateStore(s => s.updateTemplateColor)
   const updateTemplateStrokeColor = useTemplateStore(s => s.updateTemplateStrokeColor)
   const updateTemplateStrokeWidth = useTemplateStore(s => s.updateTemplateStrokeWidth)
   const updateTemplateData = useTemplateStore(s => s.updateTemplateData)
+  const moveTemplateElement = useTemplateStore(s => s.moveTemplateElement)
+  const resizeTemplateElement = useTemplateStore(s => s.resizeTemplateElement)
+  const rotateTemplateElement = useTemplateStore(s => s.rotateTemplateElement)
 
   if (!activeTemplate || selectedIds.size === 0 || selectedShapeIds.size > 0) return null
+
+  const tplDef = getTemplateByType(activeTemplate)
+  const supportsStroke = tplDef?.supportsStroke ?? true
 
   const elements = [...selectedIds]
   const primaryId = elements[0]!
@@ -134,52 +147,67 @@ export function TemplatePropertiesPanel() {
   const primaryFill = templateColors[primaryId] ?? ''
   const primaryStroke = templateStrokeColors[primaryId] ?? ''
   const primaryStrokeWidth = templateStrokeWidths[primaryId] ?? 1
+  const primaryPos = templateElementPositions[primaryId] ?? { x: 0, y: 0, width: 100, height: 100 }
+  const primaryRot = templateElementRotations[primaryId] ?? 0
 
   const prefix = primaryId.split('-')[0]!
   const paramIndex = parseInt(primaryId.split('-')[1]!, 10)
   const collKey = collectionKeys[prefix]
   let currentTitle = ''
   let currentSubtitle = ''
-  if (templateData && collKey && !isNaN(paramIndex)) {
-    const items = (templateData as unknown as Record<string, unknown>)[collKey] as Record<string, string>[] | undefined
-    if (items && items[paramIndex]) {
-      currentTitle = items[paramIndex].title ?? ''
-      currentSubtitle = items[paramIndex].subtitle ?? items[paramIndex].description ?? ''
+  let currentAmount = ''
+  let currentPercentage = ''
+
+  if (templateData) {
+    if (primaryId === 'title' && typeof templateData.title === 'string') {
+      currentTitle = templateData.title
+    } else if (collKey && !isNaN(paramIndex)) {
+      const items = (templateData as unknown as Record<string, unknown>)[collKey] as Record<string, string>[] | undefined
+      if (items && items[paramIndex]) {
+        currentTitle = items[paramIndex].label ?? items[paramIndex].title ?? items[paramIndex].name ?? items[paramIndex].text ?? ''
+        currentSubtitle = items[paramIndex].subtitle ?? items[paramIndex].description ?? ''
+        currentAmount = items[paramIndex].amount ?? ''
+        currentPercentage = items[paramIndex].percentage != null ? String(items[paramIndex].percentage) : ''
+      }
     }
   }
 
   const handleFieldChange = (field: string, value: string) => {
     if (!templateData) return
+    if (primaryId === 'title' && field === 'title') {
+      updateTemplateData({ ...templateData, title: value })
+      return
+    }
     const updated = updateElementField(primaryId, field, value, templateData as unknown as Record<string, unknown>)
     updateTemplateData(updated as never)
   }
 
   return (
     <div style={styles.panel}>
-      <h3 style={styles.title}>Element Properties</h3>
+      <h3 style={styles.title}>Propriétés de l'élément</h3>
 
       <div style={styles.section}>
         <label style={styles.label}>
-          {isMulti ? `${elements.length} elements` : elementLabel(primaryId)}
+          {isMulti ? `${elements.length} éléments sélectionnés` : elementLabel(primaryId)}
         </label>
       </div>
 
       {!isMulti && (
         <div style={styles.section}>
-          <label style={styles.sectionLabel}>Title</label>
+          <label style={styles.sectionLabel}>Titre / Texte</label>
           <textarea
             value={currentTitle}
             onChange={(e) => handleFieldChange('title', e.target.value)}
-            placeholder="Title..."
+            placeholder="Titre..."
             style={styles.textarea}
             rows={2}
           />
         </div>
       )}
 
-      {!isMulti && paramsAllowSubtitle.has(prefix) && (
+      {!isMulti && (primaryId !== 'title') && (
         <div style={styles.section}>
-          <label style={styles.sectionLabel}>Description</label>
+          <label style={styles.sectionLabel}>Sous-titre / Description</label>
           <textarea
             value={currentSubtitle}
             onChange={(e) => handleFieldChange('subtitle', e.target.value)}
@@ -190,8 +218,93 @@ export function TemplatePropertiesPanel() {
         </div>
       )}
 
+      {!isMulti && prefix === 'item' && currentAmount !== '' && (
+        <div style={styles.section}>
+          <label style={styles.sectionLabel}>Montant / Tarif</label>
+          <input
+            type="text"
+            value={currentAmount}
+            onChange={(e) => handleFieldChange('amount', e.target.value)}
+            placeholder="Ex: €40,000"
+            style={styles.textInput}
+          />
+        </div>
+      )}
+
+      {!isMulti && prefix === 'item' && currentPercentage !== '' && (
+        <div style={styles.section}>
+          <label style={styles.sectionLabel}>Pourcentage</label>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={currentPercentage}
+            onChange={(e) => handleFieldChange('percentage', e.target.value)}
+            placeholder="Ex: 40"
+            style={styles.textInput}
+          />
+        </div>
+      )}
+
+      {/* Position & Size Controls */}
       <div style={styles.section}>
-        <label style={styles.sectionLabel}>Fill</label>
+        <label style={styles.sectionLabel}>Géométrie</label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 6 }}>
+          <div>
+            <label style={{ fontSize: 10, color: '#666' }}>X (px)</label>
+            <input
+              type="number"
+              value={Math.round(primaryPos.x)}
+              onChange={(e) => moveTemplateElement(primaryId, { x: Number(e.target.value), y: primaryPos.y })}
+              style={styles.textInput}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 10, color: '#666' }}>Y (px)</label>
+            <input
+              type="number"
+              value={Math.round(primaryPos.y)}
+              onChange={(e) => moveTemplateElement(primaryId, { x: primaryPos.x, y: Number(e.target.value) })}
+              style={styles.textInput}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 10, color: '#666' }}>Largeur (px)</label>
+            <input
+              type="number"
+              value={Math.round(primaryPos.width)}
+              onChange={(e) => resizeTemplateElement(primaryId, { width: Number(e.target.value), height: primaryPos.height })}
+              style={styles.textInput}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: 10, color: '#666' }}>Hauteur (px)</label>
+            <input
+              type="number"
+              value={Math.round(primaryPos.height)}
+              onChange={(e) => resizeTemplateElement(primaryId, { width: primaryPos.width, height: Number(e.target.value) })}
+              style={styles.textInput}
+            />
+          </div>
+        </div>
+
+        <label style={{ ...styles.sectionLabel, marginTop: 6 }}>Rotation</label>
+        <div style={styles.row}>
+          <input
+            type="range"
+            min={0}
+            max={360}
+            step={1}
+            value={primaryRot}
+            onChange={(e) => rotateTemplateElement(primaryId, Number(e.target.value))}
+            style={styles.range}
+          />
+          <span style={styles.value}>{primaryRot}°</span>
+        </div>
+      </div>
+
+      <div style={styles.section}>
+        <label style={styles.sectionLabel}>Remplissage (Fill)</label>
         <ColorGrid currentColor={primaryFill} onPick={(c) => elements.forEach(id => updateTemplateColor(id, c))} prefix="tpl-f-" />
         <div style={styles.row}>
           <input
@@ -203,8 +316,9 @@ export function TemplatePropertiesPanel() {
         </div>
       </div>
 
+      {supportsStroke && (
       <div style={styles.section}>
-        <label style={styles.sectionLabel}>Stroke</label>
+        <label style={styles.sectionLabel}>Contour (Stroke)</label>
         <ColorGrid currentColor={primaryStroke} onPick={(c) => elements.forEach(id => updateTemplateStrokeColor(id, c))} prefix="tpl-s-" />
         <div style={styles.row}>
           <input
@@ -214,7 +328,7 @@ export function TemplatePropertiesPanel() {
             style={styles.colorInput}
           />
         </div>
-        <label style={{ ...styles.sectionLabel, marginTop: 8 }}>Stroke Width</label>
+        <label style={{ ...styles.sectionLabel, marginTop: 8 }}>Épaisseur de contour</label>
         <div style={styles.row}>
           <input
             type="range"
@@ -228,6 +342,7 @@ export function TemplatePropertiesPanel() {
           <span style={styles.value}>{primaryStrokeWidth}px</span>
         </div>
       </div>
+      )}
     </div>
   )
 }
@@ -236,11 +351,12 @@ const paramsAllowSubtitle = new Set(['milestone', 'block', 'step', 'piece', 'lev
 
 const styles: Record<string, React.CSSProperties> = {
   panel: {
-    width: 220,
+    width: '100%',
     background: '#ffffff',
-    borderLeft: '1px solid #ddd',
+    borderBottom: '1px solid #ddd',
     padding: 12,
     overflowY: 'auto',
+    boxSizing: 'border-box',
   },
   title: {
     fontSize: 14,

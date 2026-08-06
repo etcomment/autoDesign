@@ -35,33 +35,33 @@
 - [x] Export JPG par rasterisation canvas
 - [x] Dropdown export multi-format dans la toolbar
 - [x] Couleurs mappées correctement (fill → PPTX fill, stroke → PPTX line)
-- [x] Texte exporté dans le PPTX
+### Phase 4 — Rotation, Groupement & Templates
+- [x] **Rotate** : poignée de rotation sur les formes sélectionnées + affichage dynamique des degrés (0-360°)
+- [x] **Rotation & Redimensionnement des Templates** : support du déplacement, redimensionnement (avec maintien des proportions via Shift) et rotation visuelle avec badge de degrés sur l'ensemble des éléments de templates
+- [x] **Groupement (Group/Ungroup)** : Ctrl+G, Ctrl+Shift+G fonctionnels pour les formes et les éléments de templates avec calcul d'enveloppe englobante et trajectoires synchronisées
+- [x] **Subgraphs Mermaid visuels** : `subgraph title ... end` — afficher un cadre groupé
+- [x] **Snapping à la grille** : alignement des formes pendant drag/resize
+- [x] **Coordonnées négatives** : les formes ne devraient pas pouvoir avoir de dimensions négatives
+- [x] **Export PPTX** : les connexions en ligne simple, pas de vraies courbes — ajouter flèches PPTX
+- [x] **Verrouillage** : lock une forme (position + dimensions fixes)
+- [x] **Z-order** : bring to front, send to back (Ctrl+[, Ctrl+])
+- [x] **Formes Lucide** : bibliothèque d'icônes (server, cloud, database, etc.)
+- [x] **Templates** : bibliothèque de diagrammes pré-faits (116 templates)
 
 ---
 
 ## À faire
 
-### Bugs
-- [x] **Subgraphs Mermaid visuels** : `subgraph title ... end` — afficher un cadre groupé
-- [x] **Snapping à la grille** : alignement des formes pendant drag/resize
-- [x] **Coordonnées négatives** : les formes ne devraient pas pouvoir avoir de dimensions négatives
-- [x] **Export PPTX** : les connexions en ligne simple, pas de vraies courbes — ajouter flèches PPTX
-
 ### Features — Éditeur
-- [ ] **Rotate** : poignée de rotation sur les formes sélectionnées
 - [ ] **Alignement** : toolbar pour aligner (gauche, centre, droite, haut, milieu, bas)
 - [ ] **Distribute** : espacement égal horizontal/vertical
 - [ ] **Copier/Coller** : Ctrl+C, Ctrl+V avec undo
-- [ ] **Group/Ungroup** : Ctrl+G, Ctrl+Shift+G
-- [ ] **Verrouillage** : lock une forme (position + dimensions fixes)
-- [ ] **Z-order** : bring to front, send to back (Ctrl+[, Ctrl+])
 - [ ] **Snap to grid** : option activable/désactivable
 - [ ] **Smart guides** : lignes d'alignement pendant le drag
 
 ### Features — Formes
 - [ ] **Plus de types de formes** : triangle, pentagon, hexagone, arrow, star
 - [ ] **Formes flowchart** : process, decision, document, data, terminator
-- [ ] **Formes Lucide** : bibliothèque d'icônes (server, cloud, database, etc.)
 - [ ] **Shape Library extensible** : stockage JSON + lazy loading par catégorie
 - [ ] **Styles personnalisés** : ombre portée, dégradés, coins arrondis variables
 
@@ -94,7 +94,6 @@
 - [ ] **Auto-save** : IndexedDB avec debounce 2s
 - [ ] **Crash recovery** : restore dernier état valide à l'ouverture
 - [ ] **Recent files** : liste des derniers projets ouverts
-- [ ] **Templates** : bibliothèque de diagrammes pré-faits
 - [ ] **Thème global** : palettes de couleurs, polices par défaut
 
 ### Features — UX/UI

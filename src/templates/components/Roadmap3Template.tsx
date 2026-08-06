@@ -13,7 +13,7 @@ interface Rect {
 
 export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const pos = useTemplateStore(s => s.templateElementPositions)
@@ -93,6 +93,26 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
       const cardH = 200
       const cardY = above ? 180 : timelineY + 60
       map.set(`card-${i}`, { x: pinX - cardW / 2, y: cardY, width: cardW, height: cardH })
+      
+      const lineY1 = above ? cardY + cardH : timelineY
+      const lineY2 = above ? timelineY : cardY
+      map.set(`vline-${i}`, { x: pinX - 2, y: Math.min(lineY1, lineY2), width: 4, height: Math.abs(lineY2 - lineY1) })
+    })
+
+    sortedByDate.forEach((mi, si) => {
+      const pinX = startX + pinIndices[mi]! * spacing
+      const prevMi = si > 0 ? sortedByDate[si - 1] : undefined
+      const prevX = prevMi !== undefined ? startX + pinIndices[prevMi]! * spacing : 0
+      
+      if (si === 0) {
+        map.set(`timeline-line-first-${mi}`, { x: 0, y: timelineY - 2, width: pinX, height: 4 })
+      }
+      if (si > 0) {
+        map.set(`timeline-line-${mi}`, { x: prevX, y: timelineY - 2, width: pinX - prevX, height: 4 })
+      }
+      if (si === sortedByDate.length - 1) {
+        map.set(`timeline-line-last-${mi}`, { x: pinX, y: timelineY - 2, width: 1000 - pinX, height: 4 })
+      }
     })
 
     years.forEach((_, i) => {
@@ -102,7 +122,7 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
     })
 
     return map
-  }, [years, spacing, milestones, pinIndices])
+  }, [years, spacing, milestones, pinIndices, sortedByDate])
 
   useEffect(() => {
     for (const [id, rect] of defaultPositions.entries()) {
@@ -128,10 +148,10 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
 
   const cardPath = (r: Rect, above: boolean, leftArrow: boolean): string => {
     const { x, y, width: w, height: h } = r
-    const aY1 = y + 120
-    const aY2 = y + 150
-    const aYM = y + 135
-    const aW = 16
+    const aY1 = y + h * 0.6
+    const aY2 = y + h * 0.75
+    const aYM = y + h * 0.675
+    const aW = Math.min(16, w * 0.1)
     if (above && leftArrow) {
       return `M ${x} ${y} L ${x + w} ${y} L ${x + w} ${y + h} L ${x} ${y + h} L ${x} ${aY2} L ${x - aW} ${aYM} L ${x} ${aY1} Z`
     }
@@ -147,10 +167,10 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
   return (
     <g ref={svgRef}>
       {title && (
-        <g onMouseDown={e => startDrag(e, 'main-title', titleR)} style={{ cursor: 'pointer' }}>
+        <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', titleR)} transform={getTransform('main-title', titleR)} style={{ cursor: 'pointer' }}>
           <text
-            x={W / 2}
-            y={48}
+            x={titleR.x + titleR.width / 2}
+            y={titleR.y + titleR.height / 2 + 8}
             textAnchor="middle"
             fontFamily="Arial, sans-serif"
             fontSize={22}
@@ -164,16 +184,38 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
       )}
 
       {sortedByDate.map((mi, si) => {
-        const pinX = startX + pinIndices[mi]! * spacing
-        const prevMi = si > 0 ? sortedByDate[si - 1] : undefined
-        const prevX = prevMi !== undefined ? startX + pinIndices[prevMi]! * spacing : 0
         const color = getMsColor(mi)
+        const prevMi = si > 0 ? sortedByDate[si - 1] : undefined
         const prevColor = prevMi !== undefined ? getMsColor(prevMi) : color
+
+        const firstId = `timeline-line-first-${mi}`
+        const midId = `timeline-line-${mi}`
+        const lastId = `timeline-line-last-${mi}`
+
+        const firstR = getR(firstId)
+        const midR = getR(midId)
+        const lastR = getR(lastId)
+
         return (
           <g key={`line-${mi}`}>
-            {si === 0 && <line x1={0} y1={timelineY} x2={pinX} y2={timelineY} stroke={color} strokeWidth={4} />}
-            {si > 0 && <line x1={prevX} y1={timelineY} x2={pinX} y2={timelineY} stroke={prevColor} strokeWidth={4} />}
-            {si === sortedByDate.length - 1 && <line x1={pinX} y1={timelineY} x2={1000} y2={timelineY} stroke="#e0e0e0" strokeWidth={4} />}
+            {si === 0 && (
+              <g onMouseDown={e => startDrag(e, firstId, firstR)} transform={getTransform(firstId, firstR)} style={{ cursor: 'pointer' }}>
+                <rect x={firstR.x} y={firstR.y} width={firstR.width} height={firstR.height} fill={tplColors[firstId] || color} />
+                {selectedIds.has(firstId) && renderHandles(firstR, firstId)}
+              </g>
+            )}
+            {si > 0 && (
+              <g onMouseDown={e => startDrag(e, midId, midR)} transform={getTransform(midId, midR)} style={{ cursor: 'pointer' }}>
+                <rect x={midR.x} y={midR.y} width={midR.width} height={midR.height} fill={tplColors[midId] || prevColor} />
+                {selectedIds.has(midId) && renderHandles(midR, midId)}
+              </g>
+            )}
+            {si === sortedByDate.length - 1 && (
+              <g onMouseDown={e => startDrag(e, lastId, lastR)} transform={getTransform(lastId, lastR)} style={{ cursor: 'pointer' }}>
+                <rect x={lastR.x} y={lastR.y} width={lastR.width} height={lastR.height} fill={tplColors[lastId] || "#e0e0e0"} />
+                {selectedIds.has(lastId) && renderHandles(lastR, lastId)}
+              </g>
+            )}
           </g>
         )
       })}
@@ -189,19 +231,29 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
 
         return (
           <g key={`card-${i}`}>
-            <line
-              x1={pinX}
-              y1={above ? r.y + r.height : timelineY}
-              x2={pinX}
-              y2={above ? timelineY : r.y}
-              stroke={color}
-              strokeWidth={4}
-            />
-            <g onMouseDown={e => startDrag(e, `card-${i}`, r)} style={{ cursor: 'pointer' }}>
+            {(() => {
+              const pinYearIdx = pinIndices[i]!
+              const dotR = getR(`dot-${pinYearIdx}`)
+              const dotCx = dotR.x + dotR.width / 2
+              const dotCy = dotR.y + dotR.height / 2
+              const cardMiddleX = r.x + r.width / 2
+              const cardYEdge = above ? r.y + r.height : r.y
+              return (
+                <line
+                  x1={cardMiddleX}
+                  y1={cardYEdge}
+                  x2={dotCx}
+                  y2={dotCy}
+                  stroke={tplColors[`vline-${i}`] || color}
+                  strokeWidth={4}
+                />
+              )
+            })()}
+            <g data-element-id={`card-${i}`} onMouseDown={e => startDrag(e, `card-${i}`, r)} transform={getTransform(`card-${i}`, r)} style={{ cursor: 'pointer' }}>
               <path d={cardPath(r, above, leftArrow)} fill={tplColors[`card-${i}`] || color} />
               <text
                 x={textX}
-                y={r.y + 55}
+                y={r.y + r.height * 0.275}
                 textAnchor={textAnchor}
                 fontFamily="Arial, sans-serif"
                 fontSize={22}
@@ -211,7 +263,7 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
                 {ms.title}
               </text>
               {ms.date && (
-                <text x={textX} y={r.y + 82} textAnchor={textAnchor} fontFamily="Arial, sans-serif" fontSize={13} fill="#ffffff" opacity={0.7}>
+                <text x={textX} y={r.y + r.height * 0.41} textAnchor={textAnchor} fontFamily="Arial, sans-serif" fontSize={13} fill="#ffffff" opacity={0.7}>
                   {ms.date}
                 </text>
               )}
@@ -219,7 +271,7 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
                 <text
                   key={li}
                   x={textX}
-                  y={r.y + 105 + li * 26}
+                  y={r.y + r.height * 0.525 + li * 26}
                   textAnchor={textAnchor}
                   fontFamily="Arial, sans-serif"
                   fontSize={15}
@@ -242,18 +294,18 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
         const cx = dotR.x + dotR.width / 2
         const cy = dotR.y + dotR.height / 2
         const pinIdx = pinIndices.findIndex(p => p === i)
-        const yrY = pinIdx >= 0 && pinIdx % 2 !== 0 ? timelineY - 35 : yrR.y + 20
+        const yrY = pinIdx >= 0 && pinIdx % 2 !== 0 ? yrR.y + yrR.height / 2 : yrR.y + 20
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, `dot-${i}`, dotR)} style={{ cursor: 'pointer' }}>
-              <circle cx={cx} cy={cy} r={10} fill={tplColors[`dot-${i}`] || dotColor} />
+            <g data-element-id={`dot-${i}`} onMouseDown={e => startDrag(e, `dot-${i}`, dotR)} transform={getTransform(`dot-${i}`, dotR)} style={{ cursor: 'pointer' }}>
+              <circle cx={cx} cy={cy} r={Math.min(dotR.width, dotR.height) / 2} fill={tplColors[`dot-${i}`] || dotColor} />
               {selectedIds.has(`dot-${i}`) && renderHandles(dotR, `dot-${i}`)}
             </g>
-            <g onMouseDown={e => startDrag(e, `year-${i}`, yrR)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={`year-${i}`} onMouseDown={e => startDrag(e, `year-${i}`, yrR)} transform={getTransform(`year-${i}`, yrR)} style={{ cursor: 'pointer' }}>
               <text
                 x={yrR.x + yrR.width / 2}
-                y={yrY}
+                y={yrR.y + yrR.height / 2 + 6}
                 textAnchor="middle"
                 fontFamily="Arial, sans-serif"
                 fontSize={22}

@@ -63,7 +63,7 @@ function wrapText(text: string, maxLen: number): string[] {
 
 export function Roadmap6Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
@@ -155,7 +155,7 @@ export function Roadmap6Template({ data }: { data: RoadmapData }): ReactElement 
         if (!lr) return null
         const color = tplColors[labelId] ?? PALETTE[gi % PALETTE.length]!
         return (
-          <g key={`grp-${gi}`} onMouseDown={e => startDrag(e, labelId, lr)} style={{ cursor: 'pointer' }}>
+          <g key={`grp-${gi}`} onMouseDown={e => startDrag(e, labelId, lr)} transform={getTransform(labelId, lr)} style={{ cursor: 'pointer' }}>
             <text
               x={lr.x}
               y={lr.y + lr.height - 4}
@@ -193,7 +193,7 @@ export function Roadmap6Template({ data }: { data: RoadmapData }): ReactElement 
         return (
           <g key={i}>
             {/* Chevron shape */}
-            <g onMouseDown={e => startDrag(e, chevId, cr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, chevId, cr)} transform={getTransform(chevId, cr)} style={{ cursor: 'pointer' }}>
               <polygon
                 points={points}
                 fill={color}
@@ -204,7 +204,7 @@ export function Roadmap6Template({ data }: { data: RoadmapData }): ReactElement 
             </g>
 
             {/* Milestone title below ribbon */}
-            <g onMouseDown={e => startDrag(e, titleId, tr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, titleId, tr)} transform={getTransform(titleId, tr)} style={{ cursor: 'pointer' }}>
               <text
                 x={tr.x + tr.width / 2}
                 y={tr.y + 16}
@@ -221,7 +221,7 @@ export function Roadmap6Template({ data }: { data: RoadmapData }): ReactElement 
 
             {/* Subtitle below title */}
             {ms.subtitle && (
-              <g onMouseDown={e => startDrag(e, subId, sr)} style={{ cursor: 'pointer' }}>
+              <g onMouseDown={e => startDrag(e, subId, sr)} transform={getTransform(subId, sr)} style={{ cursor: 'pointer' }}>
                 {wrapText(ms.subtitle, 28).map((line, li) => (
                   <text
                     key={li}

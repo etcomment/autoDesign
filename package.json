@@ -9,10 +9,12 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "template:from-pptx": "tsx scripts/pptxToTemplate.ts"
   },
   "dependencies": {
     "dagre": "^0.8.5",
+    "pptx-svg": "^0.6.5",
     "pptxgenjs": "^4.0.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
@@ -25,10 +27,13 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "fast-xml-parser": "^5.10.1",
     "immer": "^11.1.15",
     "jsdom": "^29.1.1",
+    "jszip": "^3.10.1",
     "lucide-react": "^1.25.0",
     "oxlint": "^1.71.0",
+    "tsx": "^4.23.5",
     "typescript": "~6.0.2",
     "vite": "^8.1.1",
     "vitest": "^4.1.10",

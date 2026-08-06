@@ -8,7 +8,7 @@ const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '
 
 export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const pos = useTemplateStore(s => s.templateElementPositions)
@@ -52,7 +52,7 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             {title.split('\n').map((line, i) => (
               <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
                 {line}
@@ -82,7 +82,7 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
         const isSelected = selectedIds.has(qId)
 
         return (
-          <g key={`q-group-${qKey}`} onMouseDown={e => startDrag(e, qId, qRect)} style={{ cursor: 'pointer' }}>
+          <g key={`q-group-${qKey}`} onMouseDown={e => startDrag(e, qId, qRect)} transform={getTransform(qId, qRect)} style={{ cursor: 'pointer' }}>
             <rect x={qRect.x} y={qRect.y} width={qRect.width} height={qRect.height} rx={8} fill={color} opacity={0.1} stroke={stroke} strokeWidth={strokeWidth} />
             <text x={qRect.x + qRect.width / 2} y={qRect.y + qRect.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill={color}>
               {qKey} {quarter.year ? quarter.year : ''}
@@ -92,7 +92,17 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
         )
       })}
 
-      <line x1={startX} y1={timelineY + 30} x2={startX + (totalCards - 1) * cardSpacing + cardW} y2={timelineY + 30} stroke={tplStrokeColors['timeline'] ?? '#c0c8d0'} strokeWidth={tplStrokeWidths['timeline'] ?? 2} />
+      {(() => {
+        const tId = 'timeline'
+        const tr = pos[tId] ?? { x: startX, y: timelineY + 28, width: (totalCards - 1) * cardSpacing + cardW, height: 4 }
+        return (
+          <g onMouseDown={e => startDrag(e, tId, tr)} transform={getTransform(tId, tr)} style={{ cursor: 'pointer' }}>
+            <rect x={tr.x} y={tr.y - 4} width={tr.width} height={tr.height + 8} fill="transparent" />
+            <line x1={tr.x} y1={tr.y + tr.height / 2} x2={tr.x + tr.width} y2={tr.y + tr.height / 2} stroke={tplStrokeColors[tId] ?? '#c0c8d0'} strokeWidth={tplStrokeWidths[tId] ?? 2} />
+            {selectedIds.has(tId) && renderHandles(tr, tId)}
+          </g>
+        )
+      })()}
 
       {sortedMilestones.map((milestone, mi) => {
         const elementId = `milestone-${mi}`
@@ -116,7 +126,7 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
 
         return (
           <g key={`m-${mi}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={mRectX} y={mRectY} width={mRectW} height={mRectH} rx={8} fill="#fff" stroke={stroke} strokeWidth={strokeWidth} />
               <rect x={mRectX} y={mRectY} width={mRectW} height={32} rx={8} fill={color} opacity={0.15} />
               <rect x={mRectX} y={mRectY + 24} width={mRectW} height={8} fill={color} opacity={0.15} />
@@ -137,11 +147,16 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
       })}
 
       {totalCards > 0 && [...Array(totalCards)].map((_, i) => {
-        const cx = startX + i * cardSpacing + cardW / 2
+        const dId = `dot-${i}`
+        const defaultCx = startX + i * cardSpacing + cardW / 2
+        const defaultCy = timelineY + 30
+        const r = pos[dId] ?? { x: defaultCx - 5, y: defaultCy - 5, width: 10, height: 10 }
+        const dotColor = tplColors[dId] ?? PALETTE[sortedMilestones[i] ? quarters.findIndex(q => q.label === sortedMilestones[i]!.quarter) % PALETTE.length : i % PALETTE.length]
         return (
-          <g key={`dot-${i}`}>
-            <circle cx={cx} cy={timelineY + 30} r={5} fill={PALETTE[sortedMilestones[i] ? quarters.findIndex(q => q.label === sortedMilestones[i]!.quarter) % PALETTE.length : i % PALETTE.length]} />
-            <circle cx={cx} cy={timelineY + 30} r={2.5} fill="#fff" />
+          <g key={dId} onMouseDown={e => startDrag(e, dId, r)} transform={getTransform(dId, r)} style={{ cursor: 'pointer' }}>
+            <circle cx={r.x + r.width / 2} cy={r.y + r.height / 2} r={Math.min(r.width, r.height) / 2} fill={dotColor} />
+            <circle cx={r.x + r.width / 2} cy={r.y + r.height / 2} r={Math.min(r.width, r.height) / 4} fill="#fff" />
+            {selectedIds.has(dId) && renderHandles(r, dId)}
           </g>
         )
       })}

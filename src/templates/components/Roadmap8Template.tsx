@@ -19,7 +19,7 @@ function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, Rect
 
 export function Roadmap8Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
@@ -78,7 +78,7 @@ export function Roadmap8Template({ data }: { data: RoadmapData }): ReactElement 
         const stroke = tplStrokeColors[id]
         const sW = tplStrokeWidths[id] ?? 1
         return (
-          <g onMouseDown={e => startDrag(e, id, r)} style={{ cursor: 'pointer' }}>
+          <g onMouseDown={e => startDrag(e, id, r)} transform={getTransform(id, r)} style={{ cursor: 'pointer' }}>
             {title.split('\n').map((line, i) => (
               <text key={i} x={r.x} y={r.y + 32 + i * 36} fontFamily="Arial, sans-serif" fontSize={42} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
                 {line}
@@ -95,7 +95,7 @@ export function Roadmap8Template({ data }: { data: RoadmapData }): ReactElement 
         if (!r) return null
         const fill = tplColors[id] ?? '#2c3e50'
         return (
-          <g onMouseDown={e => startDrag(e, id, r)} style={{ cursor: 'pointer' }}>
+          <g onMouseDown={e => startDrag(e, id, r)} transform={getTransform(id, r)} style={{ cursor: 'pointer' }}>
             <rect x={r.x} y={r.y} width={r.width} height={r.height} fill={fill} />
             {selectedIds.has(id) && renderHandles(r, id)}
           </g>
@@ -126,20 +126,20 @@ export function Roadmap8Template({ data }: { data: RoadmapData }): ReactElement 
         return (
           <g key={i}>
             {ar && (
-              <g onMouseDown={e => startDrag(e, aid, ar)} style={{ cursor: 'pointer' }}>
+              <g onMouseDown={e => startDrag(e, aid, ar)} transform={getTransform(aid, ar)} style={{ cursor: 'pointer' }}>
                 <polygon points={`${ar.x},${ar.y} ${ar.x + ar.width},${ar.y + ar.height/2} ${ar.x},${ar.y + ar.height}`} fill={tplColors[aid] ?? '#dcdcdc'} />
                 {isSelArr && renderHandles(ar, aid)}
               </g>
             )}
 
-            <g onMouseDown={e => startDrag(e, yid, yr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, yid, yr)} transform={getTransform(yid, yr)} style={{ cursor: 'pointer' }}>
               <text x={yr.x + yr.width/2} y={yr.y + 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={36} fontWeight={700} fill={tplColors[yid] ?? '#2c3e50'}>
                 {(ms as any).date || (2019 + i).toString()}
               </text>
               {isSelYear && renderHandles(yr, yid)}
             </g>
 
-            <g onMouseDown={e => startDrag(e, cid, cr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, cid, cr)} transform={getTransform(cid, cr)} style={{ cursor: 'pointer' }}>
               <rect x={cr.x} y={cr.y} width={cr.width} height={cr.height} fill={color} stroke={tplStrokeColors[cid] || (isSelCard ? '#4a90d9' : undefined)} strokeWidth={isSelCard ? 2 : (tplStrokeWidths[cid] ?? 0)} />
               <text x={cr.x + cr.width / 2} y={cr.y + cr.height / 2 + 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>
                 {ms.title}
@@ -147,7 +147,7 @@ export function Roadmap8Template({ data }: { data: RoadmapData }): ReactElement 
               {isSelCard && renderHandles(cr, cid)}
             </g>
 
-            <g onMouseDown={e => startDrag(e, did, dr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, did, dr)} transform={getTransform(did, dr)} style={{ cursor: 'pointer' }}>
               <text x={dr.x + dr.width/2} y={dr.y + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fill={tplColors[did] ?? '#555'}>
                 {ms.subtitle ? ms.subtitle.split('\n').map((l, j) => (
                   <tspan x={dr.x + dr.width/2} dy={j === 0 ? 0 : 20} key={j}>{l}</tspan>

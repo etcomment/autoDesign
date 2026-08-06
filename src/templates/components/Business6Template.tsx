@@ -12,7 +12,7 @@ const DEFAULT_TITLES = ['Your title 01', 'Your title 02', 'Your title 03', 'Your
 export function Business6Template({ data }: { data: BusinessData }): ReactElement {
   const W = 900
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
@@ -114,7 +114,7 @@ export function Business6Template({ data }: { data: BusinessData }): ReactElemen
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}>
                 {i === 0 && <line x1={xLeft + shapeW} y1={175} x2={xLeft + shapeW} y2={yRTop} stroke="#cccccc" strokeWidth={2} />}
                 {i === 1 && <line x1={xLeft + shapeW} y1={145} x2={xLeft + shapeW} y2={yRTop} stroke="#cccccc" strokeWidth={2} />}

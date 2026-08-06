@@ -12,7 +12,7 @@ const HEADER_H = 28
 
 export function ProductRoadmap11Template({ data }: { data: ProductRoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
@@ -30,14 +30,24 @@ export function ProductRoadmap11Template({ data }: { data: ProductRoadmapData })
 
   return (
     <g ref={svgRef}>
-      <rect width={Math.max(W, 960)} height={Math.max(H, 350)} fill="white" rx={8} />
+      {(() => {
+        const bgId = 'bg-rect'
+        const defaultBg = { x: 0, y: 0, width: Math.max(W, 960), height: Math.max(H, 350) }
+        const r = pos[bgId] ?? defaultBg
+        return (
+          <g onMouseDown={e => startDrag(e, bgId, r)} transform={getTransform(bgId, r)} style={{ cursor: 'pointer' }}>
+            <rect x={r.x} y={r.y} width={r.width} height={r.height} fill={tplColors[bgId] ?? "white"} rx={8} stroke={tplStrokeColors[bgId]} strokeWidth={tplStrokeWidths[bgId]} />
+            {selectedIds.has(bgId) && renderHandles(r, bgId)}
+          </g>
+        )
+      })()}
       {(() => {
         const r = pos['main-title'] ?? { x: W / 2 - 250, y: 15, width: 500, height: 35 }
         const fill = tplColors['main-title'] ?? TITLE_COLOR
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             {title.split('\n').map((line, i) => (
               <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
                 {line}
@@ -64,7 +74,7 @@ export function ProductRoadmap11Template({ data }: { data: ProductRoadmapData })
 
         return (
           <g key={`card-${mi}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={visualRect.x} y={visualRect.y} width={visualRect.width} height={visualRect.height} rx={10} fill="white" stroke={customStroke || (isSelected ? '#4a90d9' : (styleStroke || '#cbd5e0'))} strokeWidth={isSelected ? 2.5 : customStrokeWidth} />
               <rect x={visualRect.x} y={visualRect.y} width={visualRect.width} height={HEADER_H} rx={10} fill={color} />
               <rect x={visualRect.x} y={visualRect.y + HEADER_H - 10} width={visualRect.width} height={10} fill={color} />
@@ -79,13 +89,22 @@ export function ProductRoadmap11Template({ data }: { data: ProductRoadmapData })
               {isSelected && renderHandles(visualRect, elementId)}
             </g>
 
-            {mi < Math.min(milestones.length, 5) - 1 && (
-              <Arrow
-                from={{ x: visualRect.x + visualRect.width + 4, y: visualRect.y + visualRect.height / 2 }}
-                to={{ x: startX + (mi + 1) * (CARD_W + 40) - 4, y: cardY + CARD_H / 2 }}
-                color={tplColors[`arrow-${mi}`] ?? color}
-              />
-            )}
+            {mi < Math.min(milestones.length, 5) - 1 && (() => {
+              const arrowId = `arrow-${mi}`
+              const nextCardId = `card-${mi+1}`
+              const nextCardRect = pos[nextCardId] ?? { x: startX + (mi + 1) * (CARD_W + 40), y: cardY, width: CARD_W, height: CARD_H }
+              const arrowR = pos[arrowId] ?? { x: 0, y: 0, width: 0, height: 0 }
+              return (
+                <g onMouseDown={e => startDrag(e, arrowId, arrowR)} transform={[getTransform(arrowId, arrowR), `translate(${arrowR.x}, ${arrowR.y})`].filter(Boolean).join(' ')} style={{ cursor: 'pointer' }}>
+                  <Arrow
+                    from={{ x: visualRect.x + visualRect.width + 4, y: visualRect.y + visualRect.height / 2 }}
+                    to={{ x: nextCardRect.x - 4, y: nextCardRect.y + nextCardRect.height / 2 }}
+                    color={tplColors[arrowId] ?? color}
+                  />
+                  {selectedIds.has(arrowId) && renderHandles(arrowR, arrowId)}
+                </g>
+              )
+            })()}
           </g>
         )
       })}

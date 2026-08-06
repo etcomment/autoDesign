@@ -13,18 +13,9 @@ interface Rect {
   height: number
 }
 
-// Colors from page 136:
-// Road path: #dedede / #e3e3e3 with white dashed line
-// Titles & Boxes:
-// Dark Blue: #23255a
-// Medium Blue: #2d62ed
-// Orange/Red: #ff4a2b
-// Teal/Green: #4cbfa0
-// Yellow/Gold: #ffbe00
-
 export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
@@ -33,35 +24,36 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   const moveEl = useTemplateStore(s => s.moveTemplateElement)
   const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
-  const { title, milestones } = data
-
-  const ms1 = milestones[0] || { title: 'Milestone 01', subtitle: 'Content and description to be added here as required' }
-  const ms2 = milestones[1] || { title: 'Milestone 02', subtitle: 'Content and description to be added here as required' }
-  const ms3 = milestones[2] || { title: 'Milestone 03', subtitle: 'Content and description to be added here as required' }
+  const { title, milestones = [] } = data
 
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
     map.set('main-title', { x: 45, y: 40, width: 350, height: 60 })
-    map.set('road-path', { x: 280, y: 150, width: 440, height: 350 })
+    map.set('road-path', { x: 300, y: 220, width: 400, height: 440 })
     
-    // Milestone 01 (Dark Blue box top right)
-    map.set('card-0', { x: 680, y: 150, width: 215, height: 220 })
-    // Milestone 02 (Blue box top left)
-    map.set('card-1', { x: 100, y: 260, width: 215, height: 220 })
-    // Milestone 03 (Red box bottom right)
-    map.set('card-2', { x: 680, y: 665, width: 215, height: 220 })
-
-    // Green arrow banner top (pointing right/left at top road)
-    map.set('banner-0', { x: 560, y: 195, width: 115, height: 70 })
-    // Green arrow banner bottom
-    map.set('banner-1', { x: 560, y: 705, width: 115, height: 70 })
-
-    // Yellow circles along the road
-    map.set('circle-0', { x: 370, y: 335, width: 66, height: 66 })
-    map.set('circle-1', { x: 475, y: 505, width: 66, height: 66 })
+    milestones.forEach((_, idx) => {
+      if (idx === 0) {
+        map.set('card-0', { x: 680, y: 150, width: 215, height: 220 })
+        map.set('banner-0', { x: 560, y: 195, width: 115, height: 70 })
+        map.set('circle-0', { x: 370, y: 335, width: 66, height: 66 })
+      } else if (idx === 1) {
+        map.set('card-1', { x: 100, y: 260, width: 215, height: 220 })
+        map.set('banner-1', { x: 560, y: 705, width: 115, height: 70 }) // Used originally near bottom
+        map.set('circle-1', { x: 475, y: 505, width: 66, height: 66 })
+      } else if (idx === 2) {
+        map.set('card-2', { x: 680, y: 665, width: 215, height: 220 })
+      } else {
+        // dynamic placement for 4th+ milestone
+        const yOffset = 665 + (idx - 2) * 250
+        const isRight = idx % 2 === 0
+        map.set(`card-${idx}`, { x: isRight ? 680 : 100, y: yOffset, width: 215, height: 220 })
+        map.set(`banner-${idx}`, { x: isRight ? 560 : 320, y: yOffset + 40, width: 115, height: 70 })
+        map.set(`circle-${idx}`, { x: 475, y: yOffset - 50, width: 66, height: 66 })
+      }
+    })
 
     return map
-  }, [])
+  }, [milestones.length])
 
   useEffect(() => {
     for (const [id, rect] of defaultPositions.entries()) {
@@ -83,243 +75,82 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
     }
   }
 
-  // Draw S-curved winding road according to exact layout in PDF 136
-  // Top horizontal lane ~ y=270, Middle ~ y=440, Bottom ~ y=610
-  // Left curve around x=350, Right curve around x=650
   const roadD = "M 680 270 L 400 270 A 85 85 0 0 0 400 440 L 600 440 A 85 85 0 0 1 600 610 L 680 610"
-
   const titleR = getR('main-title')
-  const card0R = getR('card-0')
-  const card1R = getR('card-1')
-  const card2R = getR('card-2')
-  const banner0R = getR('banner-0')
-  const banner1R = getR('banner-1')
-  const circ0R = getR('circle-0')
-  const circ1R = getR('circle-1')
+  const roadPathR = getR('road-path')
 
   return (
     <g ref={svgRef}>
-      {/* S-shaped Road Vector */}
-      <g>
-        {/* Grey outer road */}
-        <path
-          d={roadD}
-          fill="none"
-          stroke="#e0e0e0"
-          strokeWidth={90}
-          strokeLinecap="square"
-          strokeLinejoin="round"
-        />
-        {/* White center dashed line */}
-        <path
-          d={roadD}
-          fill="none"
-          stroke="#ffffff"
-          strokeWidth={8}
-          strokeDasharray="24 16"
-          strokeLinecap="butt"
-          strokeLinejoin="round"
-        />
+      <g data-element-id="road-path" onMouseDown={e => startDrag(e, 'road-path', roadPathR)} transform={getTransform('road-path', roadPathR)} style={{ cursor: 'pointer' }}>
+        <g transform={`translate(${roadPathR.x - 300}, ${roadPathR.y - 220}) scale(${roadPathR.width / 400}, ${roadPathR.height / 440})`}>
+          <path d={roadD} fill="none" stroke="#e0e0e0" strokeWidth={90} strokeLinecap="square" strokeLinejoin="round" />
+          <path d={roadD} fill="none" stroke="#ffffff" strokeWidth={8} strokeDasharray="24 16" strokeLinecap="butt" strokeLinejoin="round" />
+        </g>
+        {selectedIds.has('road-path') && renderHandles(roadPathR, 'road-path')}
       </g>
 
-      {/* Main Title */}
       {title && (
-        <g onMouseDown={e => startDrag(e, 'main-title', titleR)} style={{ cursor: 'pointer' }}>
-          <text
-            x={W / 2}
-            y={48}
-            textAnchor="middle"
-            fontFamily="Arial, sans-serif"
-            fontSize={22}
-            fontWeight={700}
-            fill={tplColors['main-title'] || TITLE_COLOR}
-          >
-            {title}
-          </text>
+        <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', titleR)} transform={getTransform('main-title', titleR)} style={{ cursor: 'pointer' }}>
+          <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={tplColors['main-title'] || TITLE_COLOR}>{title}</text>
           {selectedIds.has('main-title') && renderHandles(titleR, 'main-title')}
         </g>
       )}
 
-      {/* Green Banner 1 (Top Road) */}
-      <g onMouseDown={e => startDrag(e, 'banner-0', banner0R)} style={{ cursor: 'pointer' }}>
-        {/* Vertical line connecting to road */}
-        <line x1={banner0R.x + 63} y1={banner0R.y + 35} x2={banner0R.x + 63} y2={banner0R.y + 75} stroke={tplColors['banner-0'] || '#4cbfa0'} strokeWidth={6} />
-        {/* Arrow shape */}
-        <path
-          d={`M ${banner0R.x + 25} ${banner0R.y} L ${banner0R.x + banner0R.width} ${banner0R.y} L ${banner0R.x + banner0R.width} ${banner0R.y + 70} L ${banner0R.x + 25} ${banner0R.y + 70} L ${banner0R.x} ${banner0R.y + 35} Z`}
-          fill={tplColors['banner-0'] || '#4cbfa0'}
-        />
-        <text
-          x={banner0R.x + 65}
-          y={banner0R.y + 42}
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={15}
-          fontWeight="bold"
-          fill="#ffffff"
-        >
-          Your title
-        </text>
-        {selectedIds.has('banner-0') && renderHandles(banner0R, 'banner-0')}
-      </g>
+      {milestones.map((ms, idx) => {
+        const cardId = `card-${idx}`
+        const bannerId = `banner-${idx}`
+        const circleId = `circle-${idx}`
+        
+        const cardR = getR(cardId)
+        const bannerR = getR(bannerId)
+        const circleR = getR(circleId)
 
-      {/* Green Banner 2 (Bottom Road) */}
-      <g onMouseDown={e => startDrag(e, 'banner-1', banner1R)} style={{ cursor: 'pointer' }}>
-        {/* Vertical line connecting to road */}
-        <line x1={banner1R.x + 56} y1={banner1R.y + 35} x2={banner1R.x + 56} y2={banner1R.y + 105} stroke={tplColors['banner-1'] || '#4cbfa0'} strokeWidth={6} />
-        {/* Arrow shape */}
-        <path
-          d={`M ${banner1R.x + 25} ${banner1R.y} L ${banner1R.x + banner1R.width} ${banner1R.y} L ${banner1R.x + banner1R.width} ${banner1R.y + 70} L ${banner1R.x + 25} ${banner1R.y + 70} L ${banner1R.x} ${banner1R.y + 35} Z`}
-          fill={tplColors['banner-1'] || '#4cbfa0'}
-        />
-        <text
-          x={banner1R.x + 65}
-          y={banner1R.y + 42}
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={15}
-          fontWeight="bold"
-          fill="#ffffff"
-        >
-          Your title
-        </text>
-        {selectedIds.has('banner-1') && renderHandles(banner1R, 'banner-1')}
-      </g>
+        // Only render banner/circle if they have default positions initialized
+        const hasBanner = defaultPositions.has(bannerId)
+        const hasCircle = defaultPositions.has(circleId)
 
-      {/* Yellow Circle 1 (YOUR TITLE) */}
-      <g onMouseDown={e => startDrag(e, 'circle-0', circ0R)} style={{ cursor: 'pointer' }}>
-        <line x1={circ0R.x + 33} y1={circ0R.y + 33} x2={circ0R.x + 33} y2={circ0R.y + 115} stroke={tplColors['circle-0'] || '#ffbe00'} strokeWidth={6} />
-        <circle cx={circ0R.x + 33} cy={circ0R.y + 33} r={33} fill={tplColors['circle-0'] || '#ffbe00'} />
-        <text x={circ0R.x + 33} y={circ0R.y + 26} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">YOUR</text>
-        <text x={circ0R.x + 33} y={circ0R.y + 42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">TITLE</text>
-        {selectedIds.has('circle-0') && renderHandles(circ0R, 'circle-0')}
-      </g>
+        return (
+          <g key={idx} data-element-id={`milestone-${idx}`}>
+            {hasBanner && (
+              <>
+                <line x1={bannerR.x + bannerR.width * (63/115)} y1={bannerR.y + bannerR.height * (35/70)} x2={bannerR.x + bannerR.width * (63/115)} y2={roadPathR.y + roadPathR.height * (50/440)} stroke={tplColors[bannerId] || '#4cbfa0'} strokeWidth={6} />
+                <g data-element-id={bannerId} onMouseDown={e => startDrag(e, bannerId, bannerR)} transform={getTransform(bannerId, bannerR)} style={{ cursor: 'pointer' }}>
+                <g transform={`translate(${bannerR.x - 560}, ${bannerR.y - 195}) scale(${bannerR.width / 115}, ${bannerR.height / 70})`}>
+                  
+                  <path d={`M ${560 + 25} ${195} L ${560 + 115} ${195} L ${560 + 115} ${195 + 70} L ${560 + 25} ${195 + 70} L ${560} ${195 + 35} Z`} fill={tplColors[bannerId] || '#4cbfa0'} />
+                  <text x={560 + 65} y={195 + 42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight="bold" fill="#ffffff">Your title</text>
+                </g>
+                {selectedIds.has(bannerId) && renderHandles(bannerR, bannerId)}
+              </g>
+              </>
+            )}
 
-      {/* Yellow Circle 2 (YOUR TITLE) */}
-      <g onMouseDown={e => startDrag(e, 'circle-1', circ1R)} style={{ cursor: 'pointer' }}>
-        <line x1={circ1R.x + 33} y1={circ1R.y + 33} x2={circ1R.x + 33} y2={circ1R.y + 115} stroke={tplColors['circle-1'] || '#ffbe00'} strokeWidth={6} />
-        <circle cx={circ1R.x + 33} cy={circ1R.y + 33} r={33} fill={tplColors['circle-1'] || '#ffbe00'} />
-        <text x={circ1R.x + 33} y={circ1R.y + 26} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">YOUR</text>
-        <text x={circ1R.x + 33} y={circ1R.y + 42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">TITLE</text>
-        {selectedIds.has('circle-1') && renderHandles(circ1R, 'circle-1')}
-      </g>
+            {hasCircle && (
+              <>
+                <line x1={circleR.x + circleR.width / 2} y1={circleR.y + circleR.height / 2} x2={circleR.x + circleR.width / 2} y2={roadPathR.y + roadPathR.height * (230/440)} stroke={tplColors[circleId] || '#ffbe00'} strokeWidth={6} />
+                <g data-element-id={circleId} onMouseDown={e => startDrag(e, circleId, circleR)} transform={getTransform(circleId, circleR)} style={{ cursor: 'pointer' }}>
+                <g transform={`translate(${circleR.x - 370}, ${circleR.y - 335}) scale(${circleR.width / 66}, ${circleR.height / 66})`}>
+                  
+                  <circle cx={370 + 33} cy={335 + 33} r={33} fill={tplColors[circleId] || '#ffbe00'} />
+                  <text x={370 + 33} y={335 + 26} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">YOUR</text>
+                  <text x={370 + 33} y={335 + 42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">TITLE</text>
+                </g>
+                {selectedIds.has(circleId) && renderHandles(circleR, circleId)}
+              </g>
+              </>
+            )}
 
-      {/* Milestone 01 Box (Dark Blue) */}
-      <g onMouseDown={e => startDrag(e, 'card-0', card0R)} style={{ cursor: 'pointer' }}>
-        <rect
-          x={card0R.x}
-          y={card0R.y}
-          width={card0R.width}
-          height={card0R.height}
-          fill={tplColors['card-0'] || '#23255a'}
-          stroke={tplStrokeColors['card-0']}
-          strokeWidth={tplStrokeWidths['card-0']}
-        />
-        <text
-          x={card0R.x + card0R.width / 2}
-          y={card0R.y + 50}
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={20}
-          fontWeight="bold"
-          fill="#ffffff"
-        >
-          {ms1.title}
-        </text>
-        {ms1.subtitle && ms1.subtitle.split('\n').map((line, idx) => (
-          <text
-            key={idx}
-            x={card0R.x + card0R.width / 2}
-            y={card0R.y + 95 + idx * 24}
-            textAnchor="middle"
-            fontFamily="Arial, sans-serif"
-            fontSize={14}
-            fill="#ffffff"
-            opacity={0.9}
-          >
-            {line}
-          </text>
-        ))}
-        {selectedIds.has('card-0') && renderHandles(card0R, 'card-0')}
-      </g>
-
-      {/* Milestone 02 Box (Blue) */}
-      <g onMouseDown={e => startDrag(e, 'card-1', card1R)} style={{ cursor: 'pointer' }}>
-        <rect
-          x={card1R.x}
-          y={card1R.y}
-          width={card1R.width}
-          height={card1R.height}
-          fill={tplColors['card-1'] || '#2d62ed'}
-          stroke={tplStrokeColors['card-1']}
-          strokeWidth={tplStrokeWidths['card-1']}
-        />
-        <text
-          x={card1R.x + card1R.width / 2}
-          y={card1R.y + 50}
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={20}
-          fontWeight="bold"
-          fill="#ffffff"
-        >
-          {ms2.title}
-        </text>
-        {ms2.subtitle && ms2.subtitle.split('\n').map((line, idx) => (
-          <text
-            key={idx}
-            x={card1R.x + card1R.width / 2}
-            y={card1R.y + 95 + idx * 24}
-            textAnchor="middle"
-            fontFamily="Arial, sans-serif"
-            fontSize={14}
-            fill="#ffffff"
-            opacity={0.9}
-          >
-            {line}
-          </text>
-        ))}
-        {selectedIds.has('card-1') && renderHandles(card1R, 'card-1')}
-      </g>
-
-      {/* Milestone 03 Box (Red/Orange) */}
-      <g onMouseDown={e => startDrag(e, 'card-2', card2R)} style={{ cursor: 'pointer' }}>
-        <rect
-          x={card2R.x}
-          y={card2R.y}
-          width={card2R.width}
-          height={card2R.height}
-          fill={tplColors['card-2'] || '#ff4a2b'}
-          stroke={tplStrokeColors['card-2']}
-          strokeWidth={tplStrokeWidths['card-2']}
-        />
-        <text
-          x={card2R.x + card2R.width / 2}
-          y={card2R.y + 50}
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={20}
-          fontWeight="bold"
-          fill="#ffffff"
-        >
-          {ms3.title}
-        </text>
-        {ms3.subtitle && ms3.subtitle.split('\n').map((line, idx) => (
-          <text
-            key={idx}
-            x={card2R.x + card2R.width / 2}
-            y={card2R.y + 95 + idx * 24}
-            textAnchor="middle"
-            fontFamily="Arial, sans-serif"
-            fontSize={14}
-            fill="#ffffff"
-            opacity={0.9}
-          >
-            {line}
-          </text>
-        ))}
-        {selectedIds.has('card-2') && renderHandles(card2R, 'card-2')}
-      </g>
+            <g data-element-id={cardId} onMouseDown={e => startDrag(e, cardId, cardR)} transform={getTransform(cardId, cardR)} style={{ cursor: 'pointer' }}>
+              <rect x={cardR.x} y={cardR.y} width={cardR.width} height={cardR.height} fill={tplColors[cardId] || (idx === 0 ? '#23255a' : idx === 1 ? '#2d62ed' : '#ff4a2b')} stroke={tplStrokeColors[cardId]} strokeWidth={tplStrokeWidths[cardId]} />
+              <text x={cardR.x + cardR.width / 2} y={cardR.y + 50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{ms.title}</text>
+              {ms.subtitle && ms.subtitle.split('\n').map((line, lIdx) => (
+                <text key={lIdx} x={cardR.x + cardR.width / 2} y={cardR.y + 95 + lIdx * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fill="#ffffff" opacity={0.9}>{line}</text>
+              ))}
+              {selectedIds.has(cardId) && renderHandles(cardR, cardId)}
+            </g>
+          </g>
+        )
+      })}
     </g>
   )
 }

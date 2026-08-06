@@ -1,11 +1,26 @@
 import { useState } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
-import { Undo2, Redo2, Trash2, MousePointer2, Download, Link2, ChevronsUp, ChevronUp, ChevronDown, ChevronsDown, Group, Ungroup } from 'lucide-react'
+import { useTemplateStore } from '../templates/store'
+import { Undo2, Redo2, Trash2, MousePointer2, Download, Link2, ChevronsUp, ChevronUp, ChevronDown, ChevronsDown, Group, Ungroup, ChevronsLeft, ChevronsRight, Sparkles } from 'lucide-react'
 import { downloadContentSvg } from '../export/generateSvg'
 import { downloadCanvasPptx } from '../export/generatePptx'
 import { generateCanvasPng, generateCanvasJpg, downloadBlob, copyCanvasToClipboard } from '../export/generateImage'
 
-export function Toolbar() {
+interface ToolbarProps {
+  leftSidebarCollapsed?: boolean
+  onToggleLeftSidebar?: () => void
+  rightPanelCollapsed?: boolean
+  onToggleRightSidebar?: () => void
+  onOpenImportModal?: () => void
+}
+
+export function Toolbar({
+  leftSidebarCollapsed = false,
+  onToggleLeftSidebar,
+  rightPanelCollapsed = false,
+  onToggleRightSidebar,
+  onOpenImportModal,
+}: ToolbarProps) {
   const canUndo = useDiagramStore(s => s.canUndo)
   const canRedo = useDiagramStore(s => s.canRedo)
   const undo = useDiagramStore(s => s.undo)
@@ -24,9 +39,15 @@ export function Toolbar() {
   const ungroupSelectedShapes = useDiagramStore(s => s.ungroupSelectedShapes)
   const shapes = useDiagramStore(s => s.shapes)
 
+  const selectedTemplateIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const templateElementGroupIds = useTemplateStore(s => s.templateElementGroupIds)
+  
   const selectedShapesArray = shapes.filter(s => selectedShapeIds.has(s.id))
-  const canGroup = selectedShapeIds.size >= 2
-  const canUngroup = selectedShapesArray.some(s => s.groupId !== undefined)
+  
+  const canGroup = selectedShapeIds.size >= 2 || selectedTemplateIds.size >= 2
+  const canUngroup = selectedShapesArray.some(s => s.groupId !== undefined) || 
+    Array.from(selectedTemplateIds).some(id => templateElementGroupIds[id] !== undefined)
+
 
   const [exportOpen, setExportOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -89,6 +110,17 @@ export function Toolbar() {
 
   return (
     <div style={styles.bar}>
+      <button
+        style={{
+          ...styles.button,
+          background: leftSidebarCollapsed ? '#4a90d9' : 'transparent',
+          marginRight: 6,
+        }}
+        onClick={onToggleLeftSidebar}
+        title={leftSidebarCollapsed ? 'Afficher le panneau gauche' : 'Masquer le panneau gauche'}
+      >
+        {leftSidebarCollapsed ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />}
+      </button>
       <span style={styles.brand}>autoDesign</span>
       <div style={styles.spacer} />
       <button
@@ -126,7 +158,13 @@ export function Toolbar() {
         <button
           style={{ ...styles.button, opacity: canGroup ? 1 : 0.4 }}
           disabled={!canGroup}
-          onClick={groupSelectedShapes}
+          onClick={() => {
+            if (selectedTemplateIds.size > 0) {
+              useTemplateStore.getState().groupTemplateElements()
+            } else {
+              groupSelectedShapes()
+            }
+          }}
           title="Grouper (Ctrl+G)"
         >
           <Group size={18} />
@@ -134,7 +172,13 @@ export function Toolbar() {
         <button
           style={{ ...styles.button, opacity: canUngroup ? 1 : 0.4 }}
           disabled={!canUngroup}
-          onClick={ungroupSelectedShapes}
+          onClick={() => {
+            if (selectedTemplateIds.size > 0) {
+              useTemplateStore.getState().ungroupTemplateElements()
+            } else {
+              ungroupSelectedShapes()
+            }
+          }}
           title="Dégrouper (Ctrl+Shift+G)"
         >
           <Ungroup size={18} />
@@ -214,6 +258,27 @@ export function Toolbar() {
           </div>
         )}
       </div>
+      <div style={styles.separator} />
+      <button
+        style={{ ...styles.button, background: '#2563eb', color: '#ffffff', gap: 6, paddingLeft: 10, paddingRight: 10 }}
+        onClick={onOpenImportModal}
+        title="Importer & Visualiser PowerPoint (.pptx)"
+      >
+        <Sparkles size={16} />
+        <span style={{ fontSize: 12, fontWeight: 600 }}>Importer PPTX</span>
+      </button>
+      <div style={styles.separator} />
+      <button
+        style={{
+          ...styles.button,
+          background: rightPanelCollapsed ? '#4a90d9' : 'transparent',
+          marginLeft: 2,
+        }}
+        onClick={onToggleRightSidebar}
+        title={rightPanelCollapsed ? 'Afficher le panneau droit' : 'Masquer le panneau droit'}
+      >
+        {rightPanelCollapsed ? <ChevronsLeft size={18} /> : <ChevronsRight size={18} />}
+      </button>
     </div>
   )
 }

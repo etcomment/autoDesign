@@ -31,6 +31,9 @@ import { GroupSelectionRenderer } from './shapes/GroupSelectionRenderer'
 import { TemplateRenderer } from '../templates/TemplateRenderer'
 import { GRID_SIZE, snapToGrid } from '../core/grid'
 import type { ShapeType } from '../core/model/Shape'
+import { calculateSmartGuides } from '../core/smartGuides'
+import { useSmartGuidesStore } from '../store/smartGuidesStore'
+import { SmartGuidesOverlay } from './SmartGuidesOverlay'
 
 interface MarqueeRect {
   startX: number
@@ -143,6 +146,7 @@ export function Canvas() {
         dragStartMouse.current = { x: e.clientX, y: e.clientY }
         const currentSelectedIds = Array.from(useDiagramStore.getState().selectedShapeIds)
         dragStartPositions.current.clear()
+    useSmartGuidesStore.getState().clearGuides()
         for (const sId of currentSelectedIds) {
           const s = shapes.find(item => item.id === sId)
           if (s && !s.isLocked) {
@@ -188,10 +192,56 @@ export function Canvas() {
         const dx = (e.clientX - dragStartMouse.current.x) / viewBox.scale
         const dy = (e.clientY - dragStartMouse.current.y) / viewBox.scale
         isDragging.current = true
+
+        const targetShapeId = dragTarget.current
+        const targetShape = shapes.find(s => s.id === targetShapeId)
+        const targetStartPos = dragStartPositions.current.get(targetShapeId)
+
+        let finalDx = dx
+        let finalDy = dy
+
+        if (targetShape && targetStartPos && !e.altKey) {
+          const activeBox = {
+            x: targetStartPos.x + dx,
+            y: targetStartPos.y + dy,
+            width: targetShape.dimensions.width,
+            height: targetShape.dimensions.height,
+          }
+
+          const targetBoxes = shapes
+            .filter(s => s.id !== targetShapeId && !dragStartPositions.current.has(s.id))
+            .map(s => ({
+              x: s.position.x,
+              y: s.position.y,
+              width: s.dimensions.width,
+              height: s.dimensions.height,
+            }))
+
+          // Also get template boxes
+          const templateStore = useTemplateStore.getState()
+          for (const pos of Object.values(templateStore.templateElementPositions)) {
+            targetBoxes.push({
+              x: pos.x,
+              y: pos.y,
+              width: pos.width,
+              height: pos.height,
+            })
+          }
+
+          const { snappedBBox, guides } = calculateSmartGuides(activeBox, targetBoxes, 5 / viewBox.scale)
+          
+          useSmartGuidesStore.getState().setActiveGuides(guides)
+          
+          finalDx = snappedBBox.x - targetStartPos.x
+          finalDy = snappedBBox.y - targetStartPos.y
+        } else {
+          useSmartGuidesStore.getState().clearGuides()
+        }
+
         for (const [sId, startPos] of dragStartPositions.current.entries()) {
           moveShape(sId, {
-            x: startPos.x + dx,
-            y: startPos.y + dy,
+            x: startPos.x + finalDx,
+            y: startPos.y + finalDy,
           })
         }
       }
@@ -244,9 +294,9 @@ export function Canvas() {
   const onWheel = useCallback(
     (e: React.WheelEvent<SVGSVGElement>) => {
       e.preventDefault()
-      const delta = e.deltaY > 0 ? -0.1 : 0.1
-      const newScale = Math.max(0.1, Math.min(5, viewBox.scale + delta))
-      setViewBox({ ...viewBox, scale: newScale })
+      const step = e.deltaY > 0 ? -0.01 : 0.01
+      const newScale = Math.max(0.1, Math.min(5, viewBox.scale + step))
+      setViewBox({ ...viewBox, scale: Number(newScale.toFixed(3)) })
     },
     [viewBox, setViewBox],
   )
@@ -371,6 +421,7 @@ export function Canvas() {
         })()}
 
         <GroupSelectionRenderer />
+        <SmartGuidesOverlay />
 
         {marquee && (
           <rect

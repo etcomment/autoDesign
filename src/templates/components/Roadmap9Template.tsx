@@ -30,7 +30,7 @@ function getChevronPath(x: number, y: number, w: number, h: number, isFirst: boo
 
 export function Roadmap9Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
@@ -88,7 +88,7 @@ export function Roadmap9Template({ data }: { data: RoadmapData }): ReactElement 
         const stroke = tplStrokeColors[id]
         const sW = tplStrokeWidths[id] ?? 1
         return (
-          <g onMouseDown={e => startDrag(e, id, r)} style={{ cursor: 'pointer' }}>
+          <g onMouseDown={e => startDrag(e, id, r)} transform={getTransform(id, r)} style={{ cursor: 'pointer' }}>
             {title.split('\n').map((line, i) => (
               <text key={i} x={r.x} y={r.y + 32 + i * 36} fontFamily="Arial, sans-serif" fontSize={42} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
                 {line}
@@ -105,7 +105,7 @@ export function Roadmap9Template({ data }: { data: RoadmapData }): ReactElement 
         if (!r) return null
         const fill = tplColors[id] ?? '#2c3e50'
         return (
-          <g onMouseDown={e => startDrag(e, id, r)} style={{ cursor: 'pointer' }}>
+          <g onMouseDown={e => startDrag(e, id, r)} transform={getTransform(id, r)} style={{ cursor: 'pointer' }}>
             <rect x={r.x} y={r.y} width={r.width} height={r.height} fill={fill} />
             {selectedIds.has(id) && renderHandles(r, id)}
           </g>
@@ -134,7 +134,7 @@ export function Roadmap9Template({ data }: { data: RoadmapData }): ReactElement 
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, chid, chr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, chid, chr)} transform={getTransform(chid, chr)} style={{ cursor: 'pointer' }}>
               <path d={path} fill={color} stroke={tplStrokeColors[chid] || (isSelCh ? '#4a90d9' : 'white')} strokeWidth={isSelCh ? 2 : (tplStrokeWidths[chid] ?? 2)} />
               <text x={chr.x + chr.width / 2 + (i === 0 ? -arrowW/4 : i === N-1 ? arrowW/4 : 0)} y={chr.y + chr.height / 2 + 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={36} fontWeight={700} fill={ms.style?.fontColor ?? 'white'}>
                 {(ms as any).date || (2019 + i).toString()}
@@ -142,14 +142,14 @@ export function Roadmap9Template({ data }: { data: RoadmapData }): ReactElement 
               {isSelCh && renderHandles(chr, chid)}
             </g>
 
-            <g onMouseDown={e => startDrag(e, tid, tr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, tid, tr)} transform={getTransform(tid, tr)} style={{ cursor: 'pointer' }}>
               <text x={tr.x + tr.width/2} y={tr.y + 20} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={tplColors[tid] ?? '#2c3e50'}>
                 {ms.title}
               </text>
               {isSelTitle && renderHandles(tr, tid)}
             </g>
 
-            <g onMouseDown={e => startDrag(e, did, dr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, did, dr)} transform={getTransform(did, dr)} style={{ cursor: 'pointer' }}>
               <text x={dr.x + dr.width/2} y={dr.y + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fill={tplColors[did] ?? '#555'}>
                 {ms.subtitle ? ms.subtitle.split('\n').map((l, j) => (
                   <tspan x={dr.x + dr.width/2} dy={j === 0 ? 0 : 20} key={j}>{l}</tspan>

@@ -99,7 +99,7 @@ function renderIcon(type: string, strokeColor: string) {
 export function Business2Template({ data }: { data: BusinessData }): ReactElement {
   const W = 900
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
 
@@ -216,7 +216,7 @@ export function Business2Template({ data }: { data: BusinessData }): ReactElemen
         return (
           <g key={i}>
             {/* Main Interactive Polygon Block */}
-            <g onMouseDown={e => startDrag(e, elementId, bbox)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
               <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
                 <polygon
                   points={poly}

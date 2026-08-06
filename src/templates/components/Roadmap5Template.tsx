@@ -22,7 +22,7 @@ const POSITIONS_X = [320, 515, 710, 905]  // default x positions for 4 milestone
 
 export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const pos = useTemplateStore(s => s.templateElementPositions)
@@ -101,7 +101,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
     <g ref={svgRef}>
       {/* Title */}
       {title && (
-        <g onMouseDown={e => startDrag(e, 'main-title', titleR)} style={{ cursor: 'pointer' }}>
+        <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', titleR)} transform={getTransform('main-title', titleR)} style={{ cursor: 'pointer' }}>
           <text
             x={W / 2}
             y={48}
@@ -119,7 +119,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
 
       {/* Horizontal Timeline Lines */}
       {/* Dark Navy line from START to slot[1].x (pivot) */}
-      <line x1={startCircleX + startCircleR} y1={timelineY} x2={slots[1]!.x} y2={timelineY} stroke="#23255a" strokeWidth={5} />
+      <line x1={startR.x + startR.width} y1={startR.y + startR.height / 2} x2={slots[1]!.x} y2={timelineY} stroke="#23255a" strokeWidth={5} />
       {/* Light Grey line from slot[1].x to end */}
       <line x1={slots[1]!.x} y1={timelineY} x2={slots[3]!.x + 50} y2={timelineY} stroke="#e0e0e0" strokeWidth={5} />
 
@@ -134,10 +134,10 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
           return (
             <line
               key={`stem-${i}`}
-              x1={startCircleX}
+              x1={cardR.x + cardR.width / 2}
               y1={cardR.y + cardR.height}
-              x2={startCircleX}
-              y2={timelineY - startCircleR}
+              x2={startR.x + startR.width / 2}
+              y2={startR.y}
               stroke={color}
               strokeWidth={4}
             />
@@ -148,7 +148,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
           return (
             <line
               key={`stem-${i}`}
-              x1={slot.x}
+              x1={cardR.x + cardR.width / 2}
               y1={cardR.y + cardR.height}
               x2={slot.x}
               y2={timelineY}
@@ -161,10 +161,10 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         return (
           <line
             key={`stem-${i}`}
-            x1={slot.x}
-            y1={timelineY}
+            x1={cardR.x + cardR.width / 2}
+            y1={cardR.y}
             x2={slot.x}
-            y2={cardR.y}
+            y2={timelineY}
             stroke={color}
             strokeWidth={4}
           />
@@ -188,7 +188,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         const above = i % 2 === 0
         const yPos = above ? timelineY - 15 : timelineY + 32
         return (
-          <g key={`year-${i}`} onMouseDown={e => startDrag(e, `year-${i}`, yrR)} style={{ cursor: 'pointer' }}>
+          <g data-element-id={`year-${i}`} key={`year-${i}`} onMouseDown={e => startDrag(e, `year-${i}`, yrR)} transform={getTransform(`year-${i}`, yrR)} style={{ cursor: 'pointer' }}>
             <text
               x={slot.x}
               y={yPos}
@@ -206,7 +206,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
       })}
 
       {/* START Badge (Large Green Circle) */}
-      <g onMouseDown={e => startDrag(e, 'start-badge', startR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="start-badge" onMouseDown={e => startDrag(e, 'start-badge', startR)} transform={getTransform('start-badge', startR)} style={{ cursor: 'pointer' }}>
         <circle cx={startCircleX} cy={timelineY} r={startCircleR} fill={tplColors['start-badge'] || '#4cbfa0'} />
         <text x={startCircleX} y={timelineY + 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight="bold" fill="#ffffff">START</text>
         {selectedIds.has('start-badge') && renderHandles(startR, 'start-badge')}
@@ -219,9 +219,9 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         const title_ = ms?.title ?? `Milestone 0${i + 1}`
         const subtitle_ = ms?.subtitle ?? 'Content and description to be\nadded here as required'
         return (
-          <g key={`card-${i}`} onMouseDown={e => startDrag(e, `card-${i}`, cardR)} style={{ cursor: 'pointer' }}>
+          <g data-element-id={`card-${i}`} key={`card-${i}`} onMouseDown={e => startDrag(e, `card-${i}`, cardR)} transform={getTransform(`card-${i}`, cardR)} style={{ cursor: 'pointer' }}>
             <text x={cardR.x} y={cardR.y + 25} fontFamily="Arial, sans-serif" fontSize={22} fontWeight="bold" fill="#23255a">{title_}</text>
-            {subtitle_.split('\n').map((line, li) => (
+            {subtitle_.split('\n').map((line: string, li: number) => (
               <text key={li} x={cardR.x} y={cardR.y + 55 + li * 24} fontFamily="Arial, sans-serif" fontSize={14} fill="#555555">{line}</text>
             ))}
             {selectedIds.has(`card-${i}`) && renderHandles(cardR, `card-${i}`)}

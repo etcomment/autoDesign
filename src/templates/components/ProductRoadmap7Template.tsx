@@ -8,7 +8,7 @@ const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '
 
 export function ProductRoadmap7Template({ data }: { data: ProductRoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
@@ -34,7 +34,7 @@ export function ProductRoadmap7Template({ data }: { data: ProductRoadmapData }):
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             {title.split('\n').map((line, i) => (
               <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
                 {line}
@@ -61,7 +61,7 @@ export function ProductRoadmap7Template({ data }: { data: ProductRoadmapData }):
 
         return (
           <g key={`q-${qi}`}>
-            <g onMouseDown={e => startDrag(e, headerId, headerRect)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, headerId, headerRect)} transform={getTransform(headerId, headerRect)} style={{ cursor: 'pointer' }}>
               <rect x={headerRect.x} y={headerRect.y} width={headerRect.width} height={headerRect.height} rx={6} fill={headerFill} stroke={headerStroke} strokeWidth={headerStroke ? headerStrokeWidth : undefined} />
               <text x={headerRect.x + headerRect.width / 2} y={headerRect.y + headerRect.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
                 {q.label} {q.year ?? ''}
@@ -85,7 +85,7 @@ export function ProductRoadmap7Template({ data }: { data: ProductRoadmapData }):
 
               return (
                 <g key={`qm-${qi}-${mi}`}>
-                  <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+                  <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
                     <rect x={visualRect.x} y={visualRect.y} width={visualRect.width} height={visualRect.height} rx={8} fill="white" stroke={customStroke || (isSelected ? '#4a90d9' : (styleStroke || '#e2e8f0'))} strokeWidth={isSelected ? 2.5 : customStrokeWidth} />
                     <text x={visualRect.x + visualRect.width / 2} y={visualRect.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>
                       {m.title}

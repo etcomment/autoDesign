@@ -9,7 +9,7 @@ const DAYS = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5']
 
 export function Manufacturing7Template({ data }: { data: ManufacturingData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
 
@@ -55,7 +55,7 @@ export function Manufacturing7Template({ data }: { data: ManufacturingData }): R
             <text x={10} y={barY + barH / 2 + 4} fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#555">
               {station.title}
             </text>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={barX} y={barY} width={barW} height={barH} rx={6} fill={color} opacity={isSelected ? 0.9 : 0.7} stroke={isSelected ? '#333' : color} strokeWidth={isSelected ? 1.5 : 1} />
               <text x={barX + barW / 2} y={barY + barH / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
                 {station.subtitle ?? ''}

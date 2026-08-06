@@ -10,7 +10,7 @@ const SUPPORT_PALETTE = ['#8eacbb', '#9db5c4', '#acbdcb', '#bbc6d2', '#cad0d9']
 
 export function ValueChain2Template({ data }: { data: ValueChainData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
 
@@ -47,7 +47,7 @@ export function ValueChain2Template({ data }: { data: ValueChainData }): ReactEl
 
         return (
           <g key={`p-${i}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={leftX} y={by} width={colW} height={blockH} rx={8} fill={color} opacity={isSelected ? 1 : 0.85} stroke={isSelected ? '#333' : undefined} strokeWidth={isSelected ? 1.5 : undefined} />
               <text x={leftX + colW / 2} y={by + blockH / 2 - 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
                 {act.title}
@@ -75,7 +75,7 @@ export function ValueChain2Template({ data }: { data: ValueChainData }): ReactEl
 
         return (
           <g key={`s-${i}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={rightX} y={by} width={colW} height={blockH} rx={8} fill={color} opacity={isSelected ? 0.9 : 0.7} stroke={isSelected ? '#333' : color} strokeWidth={isSelected ? 1.5 : 1} />
               <text x={rightX + colW / 2} y={by + blockH / 2 - 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
                 {act.title}

@@ -40,10 +40,11 @@ function gridPath(x: number, y: number, t: Tab): string {
 
 export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const { title, pieces } = data
   const W = 700
@@ -75,24 +76,40 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
         const color = tplColors[elementId] ?? defaultColor
         const stroke = tplStrokeColors[elementId] || 'white'
         const isSelected = selectedIds.has(elementId)
-        const visualRect = { x: px, y: py, width: CELL_W, height: CELL_H }
+        const trueWidth = CELL_W + (tabOpts.right ? TAB_D : 0)
+        const trueHeight = CELL_H + (tabOpts.bottom ? TAB_D : 0)
+        const defaultRect = { x: px, y: py, width: trueWidth, height: trueHeight }
+        const customPos = templateElementPositions[elementId]
+        const visualRect = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+        const scaleX = visualRect.width / defaultRect.width
+        const scaleY = visualRect.height / defaultRect.height
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3.5 : 3} strokeLinejoin="round" />
-              <circle cx={cx} cy={cy - 14} r={13} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
-              <text x={cx} y={cy - 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
-                {piece.number}
-              </text>
-              <text x={cx} y={cy + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
-                {piece.title}
-              </text>
-              {piece.subtitle && (
-                <text x={cx} y={cy + 32} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="rgba(255,255,255,0.85)">
-                  {piece.subtitle}
+            <g
+              data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)}
+              style={{ cursor: 'pointer' }}
+            >
+              <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}>
+                <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3.5 : 3} strokeLinejoin="round" />
+                <circle cx={cx} cy={cy - 14} r={13} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
+                <text x={cx} y={cy - 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
+                  {piece.number}
                 </text>
-              )}
+                <text x={cx} y={cy + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
+                  {piece.title}
+                </text>
+                {piece.subtitle && (
+                  <text x={cx} y={cy + 32} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="rgba(255,255,255,0.85)">
+                    {piece.subtitle}
+                  </text>
+                )}
+              </g>
               {isSelected && renderHandles(visualRect, elementId)}
             </g>
           </g>

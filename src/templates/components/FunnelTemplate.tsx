@@ -1,11 +1,8 @@
-import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { FunnelData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { renderMultiLineText } from '../shared/primitives'
-
-const DEFAULT_COLORS = ['#4a90d9', '#3a7bc8', '#2a6bb7', '#1a5ca6', '#0d4d95', '#083d7a']
+import { MIGSO_PALETTE } from '../../lib/theme'
 
 function percentageToWidth(percentage: number, minW: number, maxW: number): number {
   return minW + (maxW - minW) * (percentage / 100)
@@ -13,92 +10,93 @@ function percentageToWidth(percentage: number, minW: number, maxW: number): numb
 
 export function FunnelTemplate({ data }: { data: FunnelData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
-  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
-  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, levels } = data
+  const { levels } = data
   const W = 900
 
-  const funnelTop = 100
-  const funnelBottom = 560
+  const funnelTop = 40
+  const funnelBottom = 460
   const maxW = 560
   const minW = 100
   const cx = W / 2
   const count = levels.length
   const totalSpace = funnelBottom - funnelTop
   const levelH = count > 0 ? totalSpace / count : 0
-  const labelX = cx - maxW / 2 - 28
-  const percentX = cx + maxW / 2 + 28
 
   const percentages = levels.map((level, i) => {
     if (level.percentage !== undefined) return level.percentage
     return 100 - ((100 - 20) / (count - 1 || 1)) * i
   })
 
-  const paths = levels.map((level, i) => {
-    const color = level.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length]!
-    const topPct = percentages[i]!
-    const bottomPct = i + 1 < count ? percentages[i + 1]! : topPct * 0.4
-    const topHW = percentageToWidth(topPct, minW, maxW) / 2
-    const bottomHW = percentageToWidth(bottomPct, minW, maxW) / 2
-
-    const tl = cx - topHW
-    const tr = cx + topHW
-    const bl = cx - bottomHW
-    const br = cx + bottomHW
-    const y = funnelTop + i * levelH
-    const by = y + levelH
-
-    const d = 'M ' + tl + ' ' + y + ' L ' + tr + ' ' + y + ' L ' + br + ' ' + by + ' L ' + bl + ' ' + by + ' Z'
-
-    return { y, color, topPct, topHW, bottomHW, d, tl, tr, bl, br, by }
-  })
-
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={cx} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
-          {title}
-        </text>
-      )}
-
       {levels.map((level, i) => {
-        const p = paths[i]!
         const elementId = `level-${i}`
-        const color = tplColors[elementId] ?? p.color
-        const stroke = tplStrokeColors[elementId] || color
+        const defaultColor = MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
+        const color = tplColors[elementId] ?? level.color ?? defaultColor
+
+        const topPct = percentages[i]!
+        const bottomPct = i + 1 < count ? percentages[i + 1]! : topPct * 0.4
+        const topHW = percentageToWidth(topPct, minW, maxW) / 2
+        const bottomHW = percentageToWidth(bottomPct, minW, maxW) / 2
+
+        const defaultY = funnelTop + i * levelH
+        const maxHalf = Math.max(topHW, bottomHW)
+        const defaultBbox = { x: cx - maxHalf, y: defaultY, width: maxHalf * 2, height: levelH }
+
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos?.x ?? defaultBbox.x,
+          y: customPos?.y ?? defaultBbox.y,
+          width: customPos?.width ?? defaultBbox.width,
+          height: customPos?.height ?? defaultBbox.height,
+        }
         const isSelected = selectedIds.has(elementId)
-        const maxHalf = Math.max(p.topHW, p.bottomHW)
-        const visualRect = { x: cx - maxHalf, y: p.y, width: maxHalf * 2, height: levelH }
+
+        const centerBx = bbox.x + bbox.width / 2
+        const tl = centerBx - topHW
+        const tr = centerBx + topHW
+        const bl = centerBx - bottomHW
+        const br = centerBx + bottomHW
+        const y = bbox.y
+        const by = y + bbox.height
+
+        const d = `M ${tl} ${y} L ${tr} ${y} L ${br} ${by} L ${bl} ${by} Z`
+        const labelX = centerBx - maxW / 2 - 28
+        const percentX = centerBx + maxW / 2 + 28
 
         return (
-          <g key={i}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <path d={p.d} fill={color} opacity={0.82} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={1.5} />
+          <g
+            key={elementId}
+            onMouseDown={e => startDrag(e, elementId, bbox)}
+            transform={getTransform(elementId, bbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <path d={d} fill={color} opacity={0.85} stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 1.5} />
 
-              <text x={labelX} y={p.y + levelH / 2 + 5} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={600} fill="#1a202c">
-                {level.title}
+            <text x={labelX} y={bbox.y + bbox.height / 2 + 5} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={600} fill="#1a202c">
+              {level.title}
+            </text>
+
+            {level.subtitle && (
+              <text x={labelX} y={bbox.y + bbox.height / 2 + 20} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={11} fill="#718096">
+                {level.subtitle}
               </text>
+            )}
 
-              {level.subtitle && (
-                <text x={labelX} y={p.y + levelH / 2 + 22} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={11} fill="#718096">
-                  {level.subtitle}
-                </text>
-              )}
+            <text x={percentX} y={bbox.y + bbox.height / 2 + 5} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={700} fill={color}>
+              {Math.round(topPct)}%
+            </text>
 
-              <text x={percentX} y={p.y + levelH / 2 + 5} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={700} fill={color}>
-                {Math.round(p.topPct)}%
-              </text>
-
-              {isSelected && renderHandles(visualRect, elementId)}
-            </g>
+            {isSelected && renderHandles(bbox, elementId)}
           </g>
         )
       })}
     </g>
   )
 }
+

@@ -19,7 +19,7 @@ function wavePath(W: number, waterY: number, H?: number): string {
 
 export function Iceberg2Template({ data }: { data: IcebergData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
@@ -61,7 +61,7 @@ export function Iceberg2Template({ data }: { data: IcebergData }): ReactElement 
         const py = 60 + i * 80
         const vr = { x: aboveX, y: py, width: aboveW, height: aboveH }
         return (
-          <g key={'above-' + i} onMouseDown={e => startDrag(e, elementId, vr)} style={{ cursor: 'pointer' }}>
+          <g key={'above-' + i} data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, vr)} transform={getTransform(elementId, vr)} style={{ cursor: 'pointer' }}>
             <rect x={aboveX} y={py} width={aboveW} height={aboveH} rx={8} fill={color} opacity={0.85} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3 : 0} />
             <text x={aboveX + 20} y={py + aboveH / 2 + 6} fontFamily="Arial, sans-serif" fontSize={16} fontWeight={700} fill="white">{section.title}</text>
             {section.subtitle && (
@@ -84,7 +84,7 @@ export function Iceberg2Template({ data }: { data: IcebergData }): ReactElement 
         const px = (W - baseW) / 2, py = waterY + 30 + i * 70
         const vr = { x: px, y: py, width: baseW, height: baseH }
         return (
-          <g key={'below-' + i} onMouseDown={e => startDrag(e, elementId, vr)} style={{ cursor: 'pointer' }}>
+          <g key={'below-' + i} data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, vr)} transform={getTransform(elementId, vr)} style={{ cursor: 'pointer' }}>
             <rect x={px} y={py} width={baseW} height={baseH} rx={7} fill={color} opacity={0.88} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3 : 0} />
             <text x={px + 16} y={py + baseH / 2 + 5} fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">{section.title}</text>
             {section.subtitle && (

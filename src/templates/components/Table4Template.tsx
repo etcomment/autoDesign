@@ -8,7 +8,7 @@ const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '
 
 export function Table4Template({ data }: { data: TableData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
 
   const { title, columns, rows } = data
@@ -57,7 +57,7 @@ export function Table4Template({ data }: { data: TableData }): ReactElement {
 
         return (
           <g key={`r-${ri}`}>
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={tableX} y={rowY} width={tableW} height={rowH} fill={hoverFill} />
               <rect x={tableX} y={rowY} width={labelW} height={rowH} fill={hoverFill} />
 

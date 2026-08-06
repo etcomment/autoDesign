@@ -1,84 +1,161 @@
-import { useRef, type ReactElement } from 'react'
+import { useRef, useId, type ReactElement } from 'react'
 import type { BrainData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { HEAD_PATH } from '../shared/headPath'
 import { MIGSO_PALETTE } from '../../lib/theme'
-
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c']
 
 export function Brain3Template({ data }: { data: BrainData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const uid = useId().replace(/:/g, '')
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, centerLabel, branches } = data
-  const W = 900
-  const H = 600
-  const cx = W / 2
-  const cy = H / 2 + 20
-  const centerR = 44
-  const orbitR = 200
-  const nodeW = 130
-  const nodeH = 46
-  const count = Math.min(branches.length, 8)
+  const clipId = `clip-${uid}-head`
+
+  const headId = 'head'
+  const headDef = { x: 350, y: 50, width: 280, height: 460 }
+  const headPos = positions[headId]
+  const headBbox = {
+    x: headPos?.x ?? headDef.x,
+    y: headPos?.y ?? headDef.y,
+    width: headPos?.width ?? headDef.width,
+    height: headPos?.height ?? headDef.height,
+  }
+  const isHeadSelected = selectedIds.has(headId)
+
+  const branches = data.branches.length > 0 ? data.branches : [
+    { title: 'Idea', subtitle: 'Define the concept' },
+    { title: 'Planning', subtitle: 'Structure the roadmap' },
+    { title: 'Design', subtitle: 'Visual identity' },
+    { title: 'Marketing', subtitle: 'Launch strategy' },
+  ]
+  const count = Math.max(1, branches.length)
+  const sliceH = headBbox.height / count
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
-          {title}
-        </text>
-      )}
+      <defs>
+        <clipPath id={clipId}>
+          <path
+            d={HEAD_PATH}
+            transform={`translate(${headBbox.x},${headBbox.y}) scale(${headBbox.width / 300},${headBbox.height / 420})`}
+          />
+        </clipPath>
+      </defs>
 
-      <circle cx={cx} cy={cy} r={centerR} fill="#1a1a2e" />
-      <text x={cx} y={cy + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
-        {centerLabel.length > 10 ? centerLabel.slice(0, 8) + '..' : centerLabel}
-      </text>
+      {/* Head silhouette container — Interactive */}
+      <g transform={getTransform(headId, headBbox)}>
+        {/* Render dynamic colored zones clipped to head shape */}
+        {branches.map((branch, i) => {
+          const zoneId = `zone-${i}`
+          const defaultY = headBbox.y + i * sliceH
+          const pos = positions[zoneId]
+          const bbox = {
+            x: pos?.x ?? headBbox.x,
+            y: pos?.y ?? defaultY,
+            width: pos?.width ?? headBbox.width,
+            height: pos?.height ?? sliceH,
+          }
+          const color = tplColors[zoneId] ?? branch.color ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
+          const isZoneSel = selectedIds.has(zoneId)
 
-      {branches.slice(0, count).map((branch, i) => {
-        const elementId = `branch-${i}`
-        const color = tplColors[elementId] ?? branch.color ?? PALETTE[i % PALETTE.length]!
-        const isSelected = selectedIds.has(elementId)
-        const angle = (i / count) * 2 * Math.PI - Math.PI / 2
-        const nx = cx + orbitR * Math.cos(angle)
-        const ny = cy + orbitR * Math.sin(angle)
-        const boxX = nx - nodeW / 2
-        const boxY = ny - nodeH / 2
-        const visualRect = { x: boxX, y: boxY, width: nodeW, height: nodeH }
+          return (
+            <g key={zoneId} onMouseDown={e => startDrag(e, zoneId, bbox)}
+               transform={getTransform(zoneId, bbox)} style={{ cursor: 'pointer' }}>
+              <rect
+                x={bbox.x - 1}
+                y={bbox.y - 1}
+                width={bbox.width + 2}
+                height={bbox.height + 2}
+                fill={color}
+                opacity={isZoneSel ? 0.85 : 1}
+                clipPath={`url(#${clipId})`}
+              />
+              {i > 0 && (
+                <line x1={bbox.x} y1={bbox.y} x2={bbox.x + bbox.width} y2={bbox.y}
+                  stroke="white" strokeWidth={2} opacity={0.7} clipPath={`url(#${clipId})`} />
+              )}
+              {isZoneSel && renderHandles(bbox, zoneId)}
+            </g>
+          )
+        })}
 
-        const dx = nx - cx
-        const dy = ny - cy
-        const dist = Math.sqrt(dx * dx + dy * dy)
-        const edgeX = cx + (dx / dist) * centerR
-        const edgeY = cy + (dy / dist) * centerR
+        {/* Outer head outline */}
+        <path
+          d={HEAD_PATH}
+          transform={`translate(${headBbox.x},${headBbox.y}) scale(${headBbox.width / 300},${headBbox.height / 420})`}
+          fill="none"
+          stroke={isHeadSelected ? '#4a90d9' : 'white'}
+          strokeWidth={isHeadSelected ? 3.5 : 1.5}
+          opacity={0.8}
+          style={{ cursor: 'pointer' }}
+          onMouseDown={e => startDrag(e, headId, headBbox)}
+        />
+        {isHeadSelected && renderHandles(headBbox, headId)}
+      </g>
+
+      {/* Callouts with Dynamic Connectors to zone centers */}
+      {branches.map((branch, i) => {
+        const id = `callout-${i}`
+        const zoneId = `zone-${i}`
+        const color = tplColors[id] ?? branch.color ?? tplColors[zoneId] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
+        
+        const isLeft = i % 2 === 0
+        const cW = 230, cH = 74
+        
+        const zonePos = positions[zoneId]
+        const zX = zonePos?.x ?? headBbox.x
+        const zY = zonePos?.y ?? (headBbox.y + i * sliceH)
+        const zW = zonePos?.width ?? headBbox.width
+        const zH = zonePos?.height ?? sliceH
+
+        const zoneCX = zX + zW / 2
+        const zoneCY = zY + zH / 2
+
+        const defaultDx = isLeft ? 24 : headBbox.x + headBbox.width + 36
+        const defaultDy = zoneCY - cH / 2
+
+        const pos = positions[id]
+        const bbox = {
+          x: pos?.x ?? defaultDx, y: pos?.y ?? defaultDy,
+          width: pos?.width ?? cW, height: pos?.height ?? cH
+        }
+        const isSel = selectedIds.has(id)
+        
+        const connStartX = isLeft ? bbox.x + bbox.width : bbox.x
+        const connStartY = bbox.y + bbox.height / 2
 
         return (
-          <g key={i}>
-            <line x1={edgeX} y1={edgeY} x2={nx} y2={ny} stroke={color} strokeWidth={1.5} opacity={0.5} />
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={boxX} y={boxY} width={nodeW} height={nodeH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
-              <text x={nx} y={ny + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#333">
-                {branch.title.length > 16 ? branch.title.slice(0, 14) + '..' : branch.title}
+          <g key={id}>
+            {/* Dynamic connector line */}
+            <line x1={connStartX} y1={connStartY}
+              x2={zoneCX} y2={zoneCY}
+              stroke={color} strokeWidth={1.5} strokeDasharray="5 3" opacity={0.85} />
+            <circle cx={zoneCX} cy={zoneCY} r={5} fill={color} />
+
+            <g onMouseDown={e => startDrag(e, id, bbox)}
+              transform={getTransform(id, bbox)} style={{ cursor: 'pointer' }}>
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8}
+                fill="#ffffff" stroke={isSel ? '#4a90d9' : color} strokeWidth={isSel ? 2.5 : 2}
+                filter="drop-shadow(0 2px 8px rgba(0,0,0,0.10))" />
+              <rect x={isLeft ? bbox.x : bbox.x + bbox.width - 6} y={bbox.y}
+                width={6} height={bbox.height} rx={3} fill={color} />
+              <text x={isLeft ? bbox.x + 16 : bbox.x + 12} y={bbox.y + 26}
+                fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#1a1a2e">
+                {branch.title}
               </text>
-              {isSelected && renderHandles(visualRect, elementId)}
+              <text x={isLeft ? bbox.x + 16 : bbox.x + 12} y={bbox.y + 50}
+                fontFamily="Arial, sans-serif" fontSize={11} fill="#666">
+                {branch.subtitle ?? `Description ${i + 1}`}
+              </text>
+              {isSel && renderHandles(bbox, id)}
             </g>
           </g>
         )
       })}
-
-      {branches.slice(0, count).flatMap((_, i) =>
-        branches.slice(i + 1, count).map((_, j) => {
-          const jIdx = i + 1 + j
-          const angle1 = (i / count) * 2 * Math.PI - Math.PI / 2
-          const angle2 = (jIdx / count) * 2 * Math.PI - Math.PI / 2
-          const x1 = cx + orbitR * Math.cos(angle1)
-          const y1 = cy + orbitR * Math.sin(angle1)
-          const x2 = cx + orbitR * Math.cos(angle2)
-          const y2 = cy + orbitR * Math.sin(angle2)
-          return <line key={`web-${i}-${jIdx}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#d0d0d0" strokeWidth={0.8} strokeDasharray="3 4" opacity={0.4} />
-        })
-      )}
     </g>
   )
 }

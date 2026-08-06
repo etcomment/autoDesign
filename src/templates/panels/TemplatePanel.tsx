@@ -50,6 +50,7 @@ export function TemplatePanel() {
               return (
                 <button
                   key={tpl.type}
+                  title={tpl.description || tpl.label}
                   style={{
                     ...styles.templateButton,
                     background: isActive ? '#4a90d9' : '#f7fafc',

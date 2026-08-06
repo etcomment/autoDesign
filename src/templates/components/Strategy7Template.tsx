@@ -2,83 +2,119 @@ import { useRef, type ReactElement } from 'react'
 import type { StrategyData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
-
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c']
+import { MIGSO_PALETTE } from '../../lib/theme'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import { wrapTextByWidth } from '../shared/primitives'
 
 export function Strategy7Template({ data }: { data: StrategyData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, blocks } = data
+  const { blocks } = data
   const W = 800
   const cx = W / 2
-  const cy = title ? 370 : 330
+  const cy = 340
   const rings = [
-    { name: 'Vision', r: 200, w: 180, items: blocks.slice(0, 2) },
-    { name: 'Strategy', r: 140, w: 120, items: blocks.slice(2, 4) },
-    { name: 'Execution', r: 80, w: 60, items: blocks.slice(4, 6) },
+    { r: 210, w: 170, count: 2 },
+    { r: 140, w: 110, count: 2 },
+    { r: 80, w: 55, count: 2 },
   ]
+
+  const ringColor = (ri: number): string => MIGSO_PALETTE[ri % MIGSO_PALETTE.length]!
+  const slots = rings.flatMap((ring, ri) =>
+    Array.from({ length: ring.count }, (_, s) => ({ ri, ring, within: s })),
+  )
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
-          {title}
-        </text>
-      )}
+      {rings.map((ring, ri) => (
+        <g key={`ring-${ri}`}>
+          <circle cx={cx} cy={cy} r={ring.r} fill="none" stroke={ringColor(ri)} strokeWidth={2} opacity={0.3} />
+          <circle cx={cx} cy={cy} r={ring.r - ring.w / 2} fill={ringColor(ri)} opacity={0.06} stroke={ringColor(ri)} strokeWidth={1.5} strokeDasharray="8 4" />
+        </g>
+      ))}
 
-      {rings.map((ring, ri) => {
-        const color = PALETTE[ri % PALETTE.length]!
-        const ringId = `ring-${ri}`
-        const ringFill = tplColors[ringId] ?? color
+      {blocks.map((block, index) => {
+        const slot = slots[index % slots.length]!
+        const ring = slot.ring
+        const elementId = `block-${index}`
+        const color = tplColors[elementId] ?? block.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
+        const isSelected = selectedIds.has(elementId)
+        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2 : 0)
+
+        const rad = ((slot.within / ring.count) * 360 - 90) * (Math.PI / 180)
+        const itemR = ring.r - ring.w / 2
+        const defaultX = cx + Math.cos(rad) * itemR
+        const defaultY = cy + Math.sin(rad) * itemR + 30
+        const defaultBbox = { x: defaultX, y: defaultY, width: 110, height: 46 }
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos?.x ?? defaultBbox.x,
+          y: customPos?.y ?? defaultBbox.y,
+          width: customPos?.width ?? defaultBbox.width,
+          height: customPos?.height ?? defaultBbox.height,
+        }
+
+        const IconFn = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
+        const labelX = IconFn ? bbox.x + 28 : bbox.x + bbox.width / 2
+        const labelAnchor = IconFn ? 'start' : 'middle'
+        const maxChars = Math.max(10, Math.floor(bbox.width / 6.5))
+        const titleLines = wrapTextByWidth(`${block.number}. ${block.title}`, maxChars)
+        const subLines = block.subtitle ? wrapTextByWidth(block.subtitle, maxChars) : []
+        const subY = bbox.y + 15 + titleLines.length * 13 + 4
 
         return (
-          <g key={`ring-${ri}`}>
-            <circle cx={cx} cy={cy} r={ring.r} fill="none" stroke={ringFill} strokeWidth={2} opacity={0.3} />
-            <circle cx={cx} cy={cy} r={ring.r - ring.w / 2} fill={ringFill} opacity={0.06} stroke={ringFill} strokeWidth={1.5} strokeDasharray="8 4" />
-
-            <text x={cx + ring.r - ring.w / 2 + 6} y={cy - 8} fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill={ringFill}>
-              {ring.name}
+          <g
+            key={elementId}
+            data-element-id={elementId}
+            onMouseDown={e => startDrag(e, elementId, bbox)}
+            transform={getTransform(elementId, bbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={color} stroke={strokeColor} strokeWidth={strokeWidth} />
+            {IconFn && (
+              <g transform={`translate(${bbox.x + 8}, ${bbox.y + bbox.height / 2 - 7})`}>
+                <IconFn size={14} color="white" />
+              </g>
+            )}
+            <text x={labelX} y={bbox.y + 15} textAnchor={labelAnchor} fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
+              {titleLines.map((line, li) => (
+                <tspan key={li} x={labelX} dy={li === 0 ? 0 : 13}>
+                  {line}
+                </tspan>
+              ))}
             </text>
-
-            {ring.items.map((item, ii) => {
-              const elementId = `ring-${ri}-item-${ii}`
-              const itemColor = tplColors[elementId] ?? PALETTE[(ri + ii) % PALETTE.length]!
-              const isSelected = selectedIds.has(elementId)
-              const angle = (ii / ring.items.length) * 360 - 90
-              const rad = (angle * Math.PI) / 180
-              const itemR = ring.r - ring.w / 2
-              const itemX = cx + Math.cos(rad) * itemR
-              const itemY = cy + Math.sin(rad) * itemR + 40
-              const itemW = 100
-              const itemH = 46
-              const visualRect = { x: itemX - itemW / 2, y: itemY, width: itemW, height: itemH }
-
-              return (
-                <g key={`ri-${ri}-${ii}`}>
-                  <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
-                    <rect x={itemX - itemW / 2} y={itemY} width={itemW} height={itemH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : itemColor} strokeWidth={isSelected ? 2.5 : 1.5} />
-                    <text x={itemX} y={itemY + 20} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill={itemColor}>
-                      {item.title}
-                    </text>
-                    {item.subtitle && (
-                      <text x={itemX} y={itemY + 36} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#777">
-                        {item.subtitle.length > 15 ? item.subtitle.slice(0, 13) + '..' : item.subtitle}
-                      </text>
-                    )}
-                    {isSelected && renderHandles(visualRect, elementId)}
-                  </g>
-                </g>
-              )
-            })}
+            {subLines.length > 0 && (
+              <text x={bbox.x + 8} y={subY} fontFamily="Arial, sans-serif" fontSize={9} fill="rgba(255,255,255,0.85)">
+                {subLines.map((line, li) => (
+                  <tspan key={li} x={bbox.x + 8} dy={li === 0 ? 0 : 11}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+            )}
+            {block.value && (
+              <text x={bbox.x + bbox.width - 6} y={bbox.y + 18} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill="white">
+                {block.value}
+              </text>
+            )}
+            {block.percent && (
+              <text x={bbox.x + bbox.width - 6} y={bbox.y + bbox.height - 12} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill="white">
+                {block.percent}
+              </text>
+            )}
+            {isSelected && renderHandles(bbox, elementId)}
           </g>
         )
       })}
 
-      <circle cx={cx} cy={cy} r={24} fill={PALETTE[0]} />
+      <circle cx={cx} cy={cy} r={24} fill={ringColor(0)} />
       <text x={cx} y={cy + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
         Core
       </text>

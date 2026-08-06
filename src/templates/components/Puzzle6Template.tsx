@@ -14,7 +14,7 @@ const ROTATIONS = [0, 8, -8, 0]
 
 export function Puzzle6Template({ data }: { data: PuzzleData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
@@ -77,6 +77,9 @@ export function Puzzle6Template({ data }: { data: PuzzleData }): ReactElement {
         }
         const scaleX = visualRect.width / defaultRect.width
         const scaleY = visualRect.height / defaultRect.height
+        
+        const currentCx = visualRect.x + visualRect.width / 2
+        const currentCy = visualRect.y + visualRect.height / 2
 
         const lineX = CX
         const lineY = CY
@@ -84,28 +87,29 @@ export function Puzzle6Template({ data }: { data: PuzzleData }): ReactElement {
         return (
           <g key={i}>
             <g
-              transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}
-              onMouseDown={e => startDrag(e, elementId, visualRect)}
+              data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)}
               style={{ cursor: 'pointer' }}
             >
-              <g transform={`translate(${cx}, ${cy}) rotate(${rot})`}>
-                <rect x={-PIECE_W / 2} y={-PIECE_H / 2} width={PIECE_W} height={PIECE_H} rx={10} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3.5 : 2} />
-                <circle cx={-PIECE_W / 2 + 28} cy={-PIECE_H / 2 + 28} r={14} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
-                <text x={-PIECE_W / 2 + 28} y={-PIECE_H / 2 + 34} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
-                  {piece.number}
-                </text>
-                <text x={0} y={6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={700} fill="white">
-                  {piece.title}
-                </text>
-                {piece.subtitle && (
-                  <text x={0} y={24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="rgba(255,255,255,0.85)">
-                    {piece.subtitle}
+              <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}>
+                <g transform={`translate(${cx}, ${cy}) rotate(${rot})`}>
+                  <rect x={-PIECE_W / 2} y={-PIECE_H / 2} width={PIECE_W} height={PIECE_H} rx={10} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3.5 : 2} />
+                  <circle cx={-PIECE_W / 2 + 28} cy={-PIECE_H / 2 + 28} r={14} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
+                  <text x={-PIECE_W / 2 + 28} y={-PIECE_H / 2 + 34} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
+                    {piece.number}
                   </text>
-                )}
+                  <text x={0} y={6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={700} fill="white">
+                    {piece.title}
+                  </text>
+                  {piece.subtitle && (
+                    <text x={0} y={24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="rgba(255,255,255,0.85)">
+                      {piece.subtitle}
+                    </text>
+                  )}
+                </g>
               </g>
               {isSelected && renderHandles(visualRect, elementId)}
             </g>
-            <line x1={lineX} y1={lineY} x2={cx} y2={cy} stroke={color} strokeWidth={1.5} strokeDasharray="5 3" opacity={0.6} />
+            <line x1={lineX} y1={lineY} x2={currentCx} y2={currentCy} stroke={color} strokeWidth={1.5} strokeDasharray="5 3" opacity={0.6} pointerEvents="none" />
           </g>
         )
       })}

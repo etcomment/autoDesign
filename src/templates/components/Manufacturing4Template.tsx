@@ -11,7 +11,7 @@ const QA_COLOR = '#4caf50'
 
 export function Manufacturing4Template({ data }: { data: ManufacturingData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
 
@@ -52,7 +52,7 @@ export function Manufacturing4Template({ data }: { data: ManufacturingData }): R
         return (
           <g key={`prod-${i}`}>
             {i > 0 && <Arrow from={{ x: sx - gap + 2, y: topY + boxH / 2 }} to={{ x: sx - 2, y: topY + boxH / 2 }} color={color} />}
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={sx} y={topY} width={boxW} height={boxH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 1.5} />
               <g transform={`translate(${sx + boxW / 2 - 12}, ${topY + 8})`}>
                 <GearIcon size={24} color={color} />
@@ -76,7 +76,7 @@ export function Manufacturing4Template({ data }: { data: ManufacturingData }): R
         return (
           <g key={`qa-${i}`}>
             {i > 0 && <Arrow from={{ x: sx - gap + 2, y: bottomY + boxH / 2 }} to={{ x: sx - 2, y: bottomY + boxH / 2 }} color={color} />}
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={sx} y={bottomY} width={boxW} height={boxH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 1.5} strokeDasharray={isSelected ? '4 2' : undefined} />
               <g transform={`translate(${sx + boxW / 2 - 12}, ${bottomY + 8})`}>
                 <GearIcon size={24} color={color} />

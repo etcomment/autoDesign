@@ -12,6 +12,15 @@ interface Rect { x: number; y: number; width: number; height: number }
 function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, any>): Rect {
   const s = pos[id]
   const l = layout.get(id)
+  if (id === 'timeline') {
+    if (s) return s
+    return { x: 50, y: 298, width: 900, height: 4 }
+  }
+  if (id.startsWith('node-')) {
+    if (!l) return s || { x: 0, y: 0, width: 0, height: 0 }
+    if (s) return { ...s, width: s.width || 14, height: s.height || 14 }
+    return { x: l.cx - 7, y: l.cy - 7, width: 14, height: 14 }
+  }
   if (id.startsWith('bubble-')) {
     if (!l) return s || { x: 0, y: 0, width: 0, height: 0 }
     if (s) return { ...s, width: s.width || 80, height: s.height || 80 }
@@ -27,7 +36,7 @@ function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, any>
 
 export function Roadmap13Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const pos = useTemplateStore(s => s.templateElementPositions)
@@ -39,6 +48,7 @@ export function Roadmap13Template({ data }: { data: RoadmapData }): ReactElement
 
   const layoutMap = useMemo(() => {
     const m = new Map<string, { cx: number; cy: number; by: number; isTop: boolean }>()
+    m.set('timeline', { cx: 50, cy: 300, by: 0, isTop: false })
     const startX = N === 1 ? 500 : 150
     const dx = N > 1 ? 700 / (N - 1) : 0
     milestones.forEach((_, i) => {
@@ -48,6 +58,7 @@ export function Roadmap13Template({ data }: { data: RoadmapData }): ReactElement
       const by = isTop ? cy - 80 : cy + 80
       m.set(`bubble-${i}`, { cx, cy, by, isTop })
       m.set(`week-${i}`, { cx, cy, by, isTop })
+      m.set(`node-${i}`, { cx, cy, by, isTop })
     })
     return m
   }, [milestones, N])
@@ -68,7 +79,15 @@ export function Roadmap13Template({ data }: { data: RoadmapData }): ReactElement
 
   return (
     <g ref={svgRef}>
-      <line x1={50} y1={300} x2={950} y2={300} stroke="#dcdcdc" strokeWidth={4} />
+      {(() => {
+        const tr = rects.get('timeline')!
+        return (
+          <g data-element-id="timeline" onMouseDown={e => startDrag(e, 'timeline', tr)} transform={getTransform('timeline', tr)} style={{ cursor: 'pointer' }}>
+            <line x1={tr.x} y1={tr.y + tr.height/2} x2={tr.x + tr.width} y2={tr.y + tr.height/2} stroke={tplColors['timeline'] || "#dcdcdc"} strokeWidth={tr.height} />
+            {selectedIds.has('timeline') && renderHandles(tr, 'timeline')}
+          </g>
+        )
+      })()}
 
       {milestones.map((ms, i) => {
         const bid = `bubble-${i}`
@@ -91,9 +110,18 @@ export function Roadmap13Template({ data }: { data: RoadmapData }): ReactElement
 
         return (
           <g key={i}>
-            <circle cx={l.cx} cy={l.cy} r={7} fill="#dcdcdc" />
+            {(() => {
+              const nid = `node-${i}`
+              const nr = rects.get(nid)!
+              return (
+                <g onMouseDown={e => startDrag(e, nid, nr)} transform={getTransform(nid, nr)} style={{ cursor: 'pointer' }}>
+                  <circle cx={nr.x + nr.width/2} cy={nr.y + nr.height/2} r={Math.min(nr.width, nr.height)/2} fill={tplColors[nid] || "#dcdcdc"} />
+                  {selectedIds.has(nid) && renderHandles(nr, nid)}
+                </g>
+              )
+            })()}
             
-            <g onMouseDown={e => startDrag(e, bid, br)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, bid, br)} transform={getTransform(bid, br)} style={{ cursor: 'pointer' }}>
               <circle cx={bcx} cy={bcy} r={radius} fill={color} />
               <path d={l.isTop ? dTop : dBot} fill={color} />
               <text x={bcx} y={bcy} textAnchor="middle" fill="white" fontSize={14} fontWeight="bold">
@@ -102,7 +130,7 @@ export function Roadmap13Template({ data }: { data: RoadmapData }): ReactElement
               {isSelBubble && renderHandles(br, bid)}
             </g>
 
-            <g onMouseDown={e => startDrag(e, wid, wr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, wid, wr)} transform={getTransform(wid, wr)} style={{ cursor: 'pointer' }}>
               <text x={wr.x + wr.width / 2} y={wr.y + 20} textAnchor="middle" fill="#1e375a" fontSize={16} fontWeight="bold">
                 {ms.date ?? `WEEK ${i + 1}`}
               </text>

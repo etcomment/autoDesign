@@ -10,7 +10,7 @@ const DEFAULT_COLORS = ['#2B2B60', '#3266CC', '#FF4D2D', '#E5A500']
 export function Business11Template({ data }: { data: BusinessData }): ReactElement {
   const W = 900
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
@@ -129,8 +129,8 @@ export function Business11Template({ data }: { data: BusinessData }): ReactEleme
           <g key={i}>
             {/* Interactive Petal */}
             <g
-              transform={`translate(${center.x + dx}, ${center.y + dy}) rotate(${center.angle})`}
-              onMouseDown={e => startDrag(e, elementId, visualRect)}
+              transform={[getTransform(elementId, visualRect), `translate(${center.x + dx}, ${center.y + dy}) rotate(${center.angle})`].filter(Boolean).join(' ')}
+              data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)}
               style={{ cursor: 'pointer' }}
             >
               <g transform={`scale(${scaleX}, ${scaleY})`}>

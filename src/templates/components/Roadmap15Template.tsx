@@ -29,7 +29,7 @@ function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, { cx
 
 export function Roadmap15Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
@@ -49,7 +49,7 @@ export function Roadmap15Template({ data }: { data: RoadmapData }): ReactElement
       m.set(`block-${i}`, { cx })
     })
     return m
-  }, [milestones, availableW])
+  }, [milestones, availableW, N])
 
   const greyMap = useMemo(() => {
     const m = new Map<string, Rect>()
@@ -57,8 +57,12 @@ export function Roadmap15Template({ data }: { data: RoadmapData }): ReactElement
     m.set('track-line', { x: MARGIN_X, y: TOP_Y + 30, width: availableW, height: 2 })
     m.set('start-label', { x: MARGIN_X - 60, y: TOP_Y + 20, width: 50, height: 16 })
     m.set('finish-label', { x: MARGIN_X + availableW + 10, y: TOP_Y + 20, width: 50, height: 16 })
+    milestones.forEach((_, i) => {
+      const cx = MARGIN_X + (N === 1 ? availableW / 2 : (i / (N - 1)) * availableW)
+      m.set(`conn-${i}`, { x: cx - 1, y: TOP_Y, width: 2, height: 32 })
+    })
     return m
-  }, [availableW])
+  }, [availableW, milestones, N])
 
   useEffect(() => {
     for (const id of [...layoutMap.keys(), ...greyMap.keys()]) {
@@ -82,7 +86,7 @@ export function Roadmap15Template({ data }: { data: RoadmapData }): ReactElement
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             <text x={r.x} y={r.y + 30} fontFamily="Arial, sans-serif" fontSize={36} fontWeight={800} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
               {title}
             </text>
@@ -97,7 +101,7 @@ export function Roadmap15Template({ data }: { data: RoadmapData }): ReactElement
         const stroke = tplStrokeColors['track-line'] ?? '#ccc'
         const sW = tplStrokeWidths['track-line'] ?? 2
         return (
-          <g onMouseDown={e => startDrag(e, 'track-line', tr)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="track-line" onMouseDown={e => startDrag(e, 'track-line', tr)} transform={getTransform('track-line', tr)} style={{ cursor: 'pointer' }}>
             <line x1={tr.x} y1={tr.y} x2={tr.x + tr.width} y2={tr.y} stroke={stroke} strokeWidth={sW} strokeDasharray="6 3" />
             {selectedIds.has('track-line') && renderHandles(tr, 'track-line')}
           </g>
@@ -108,7 +112,7 @@ export function Roadmap15Template({ data }: { data: RoadmapData }): ReactElement
         const sr = rects.get('start-label')!
         const fill = tplColors['start-label'] ?? '#888'
         return (
-          <g onMouseDown={e => startDrag(e, 'start-label', sr)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="start-label" onMouseDown={e => startDrag(e, 'start-label', sr)} transform={getTransform('start-label', sr)} style={{ cursor: 'pointer' }}>
             <text x={sr.x + sr.width / 2} y={sr.y + sr.height} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill={fill}>{startLabel}</text>
             {selectedIds.has('start-label') && renderHandles(sr, 'start-label')}
           </g>
@@ -119,7 +123,7 @@ export function Roadmap15Template({ data }: { data: RoadmapData }): ReactElement
         const fr = rects.get('finish-label')!
         const fill = tplColors['finish-label'] ?? '#888'
         return (
-          <g onMouseDown={e => startDrag(e, 'finish-label', fr)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="finish-label" onMouseDown={e => startDrag(e, 'finish-label', fr)} transform={getTransform('finish-label', fr)} style={{ cursor: 'pointer' }}>
             <text x={fr.x + fr.width / 2} y={fr.y + fr.height} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill={fill}>{finishLabel}</text>
             {selectedIds.has('finish-label') && renderHandles(fr, 'finish-label')}
           </g>
@@ -128,12 +132,17 @@ export function Roadmap15Template({ data }: { data: RoadmapData }): ReactElement
 
       {milestones.map((ms, i) => {
         const bid = `block-${i}`
+        const cid = `conn-${i}`
         const br = rects.get(bid)!
+        const cr = rects.get(cid)!
         const color = tplColors[bid] ?? ms.style?.fill ?? PALETTE[i % PALETTE.length]!
+        const cStroke = tplStrokeColors[cid] ?? color
+        const cSW = tplStrokeWidths[cid] ?? 1.5
         const customStroke = tplStrokeColors[bid]
         const customStrokeWidth = tplStrokeWidths[bid] ?? 1
         const styleStroke = ms.style?.stroke
         const isSel = selectedIds.has(bid)
+        const isCSel = selectedIds.has(cid)
         const blockCx = br.x + br.width / 2
         const progress = (i + 1) / N
         const styleFontSize = ms.style?.fontSize ?? 12
@@ -141,23 +150,28 @@ export function Roadmap15Template({ data }: { data: RoadmapData }): ReactElement
         const styleFontColor = ms.style?.fontColor ?? '#333'
 
         return (
-          <g key={i} onMouseDown={e => startDrag(e, bid, br)} style={{ cursor: 'pointer' }}>
-            <line x1={blockCx} y1={TOP_Y + 32} x2={blockCx} y2={br.y} stroke={color} strokeWidth={1.5} opacity={0.5} />
-            <rect x={br.x} y={br.y} width={br.width} height={br.height} rx={12} fill="white" stroke={customStroke || (isSel ? '#4a90d9' : (styleStroke || '#e0e0e0'))} strokeWidth={isSel ? 2.5 : customStrokeWidth} />
-            <rect x={br.x} y={br.y} width={br.width} height={6} rx={3} fill={color} opacity={0.15} />
-            <rect x={br.x} y={br.y} width={br.width * progress} height={6} rx={3} fill={color} />
-            <text x={blockCx} y={br.y + 38} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={28} fontWeight={900} fill={color} opacity={0.15}>
-              {ms.date ?? String(i + 1).padStart(2, '0')}
-            </text>
-            <text x={blockCx} y={br.y + 60} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>{ms.title}</text>
-            {ms.subtitle && (
-              <text x={blockCx} y={br.y + 78} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#888">{ms.subtitle.length > 18 ? ms.subtitle.slice(0, 15) + '...' : ms.subtitle}</text>
-            )}
-            {ms.date && (
-              <text x={blockCx} y={br.y + br.height - 25} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fontWeight={700} fill={color} opacity={0.8}>{ms.date}</text>
-            )}
-            <text x={blockCx} y={br.y + br.height - 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fontWeight={600} fill={color}>{Math.round(progress * 100)}%</text>
-            {isSel && renderHandles(br, bid)}
+          <g key={i}>
+            <g onMouseDown={e => startDrag(e, cid, cr)} transform={getTransform(cid, cr)} style={{ cursor: 'pointer' }}>
+              <line x1={cr.x + cr.width / 2} y1={cr.y + cr.height} x2={cr.x + cr.width / 2} y2={cr.y} stroke={cStroke} strokeWidth={cSW} opacity={0.5} />
+              {isCSel && renderHandles(cr, cid)}
+            </g>
+            <g onMouseDown={e => startDrag(e, bid, br)} transform={getTransform(bid, br)} style={{ cursor: 'pointer' }}>
+              <rect x={br.x} y={br.y} width={br.width} height={br.height} rx={12} fill="white" stroke={customStroke || (isSel ? '#4a90d9' : (styleStroke || '#e0e0e0'))} strokeWidth={isSel ? 2.5 : customStrokeWidth} />
+              <rect x={br.x} y={br.y} width={br.width} height={6} rx={3} fill={color} opacity={0.15} />
+              <rect x={br.x} y={br.y} width={br.width * progress} height={6} rx={3} fill={color} />
+              <text x={blockCx} y={br.y + 38} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={28} fontWeight={900} fill={color} opacity={0.15}>
+                {ms.date ?? String(i + 1).padStart(2, '0')}
+              </text>
+              <text x={blockCx} y={br.y + 60} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>{ms.title}</text>
+              {ms.subtitle && (
+                <text x={blockCx} y={br.y + 78} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#888">{ms.subtitle.length > 18 ? ms.subtitle.slice(0, 15) + '...' : ms.subtitle}</text>
+              )}
+              {ms.date && (
+                <text x={blockCx} y={br.y + br.height - 25} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fontWeight={700} fill={color} opacity={0.8}>{ms.date}</text>
+              )}
+              <text x={blockCx} y={br.y + br.height - 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fontWeight={600} fill={color}>{Math.round(progress * 100)}%</text>
+              {isSel && renderHandles(br, bid)}
+            </g>
           </g>
         )
       })}

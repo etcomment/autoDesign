@@ -16,6 +16,10 @@ interface Rect { x: number; y: number; width: number; height: number }
 function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, any>): Rect {
   const s = pos[id]
   const l = layout.get(id)
+  if (id === 'path') {
+    if (s) return s
+    return { x: 0, y: 0, width: W, height: START_Y + 10 * 2 * R } // Approx
+  }
   if (id.startsWith('node-')) {
     if (!l) return s || { x: 0, y: 0, width: 0, height: 0 }
     if (s) return { ...s, width: s.width || 70, height: s.height || 70 }
@@ -38,7 +42,7 @@ function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, any>
 
 export function Roadmap12Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const pos = useTemplateStore(s => s.templateElementPositions)
@@ -50,6 +54,7 @@ export function Roadmap12Template({ data }: { data: RoadmapData }): ReactElement
 
   const layoutMap = useMemo(() => {
     const m = new Map<string, { cx: number; cy: number; isEven: boolean }>()
+    m.set('path', { cx: 0, cy: 0, isEven: false })
     milestones.forEach((_, i) => {
       const isEven = i % 2 === 0
       const cx = isEven ? LEFT_X - R : RIGHT_X + R
@@ -97,12 +102,16 @@ export function Roadmap12Template({ data }: { data: RoadmapData }): ReactElement
 
   return (
     <g ref={svgRef}>
-      {N > 0 && (
-        <>
-          <path d={pathD} stroke="#e6e6e6" strokeWidth={50} fill="none" />
-          <path d={pathD} stroke="white" strokeWidth={8} strokeDasharray="24 16" fill="none" />
-        </>
-      )}
+      {N > 0 && (() => {
+        const pr = rects.get('path')!
+        return (
+          <g data-element-id="path" onMouseDown={e => startDrag(e, 'path', pr)} transform={[getTransform('path', pr), `translate(${pr.x}, ${pr.y})`].filter(Boolean).join(' ')} style={{ cursor: 'pointer' }}>
+            <path d={pathD} stroke="#e6e6e6" strokeWidth={50} fill="none" />
+            <path d={pathD} stroke="white" strokeWidth={8} strokeDasharray="24 16" fill="none" />
+            {selectedIds.has('path') && renderHandles(pr, 'path')}
+          </g>
+        )
+      })()}
 
       {milestones.map((ms, i) => {
         const nid = `node-${i}`
@@ -120,13 +129,13 @@ export function Roadmap12Template({ data }: { data: RoadmapData }): ReactElement
 
         return (
           <g key={i}>
-            <g onMouseDown={e => startDrag(e, nid, nr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, nid, nr)} transform={getTransform(nid, nr)} style={{ cursor: 'pointer' }}>
               <circle cx={ncx} cy={ncy} r={radius} fill={color} />
               <path d={`M${ncx - 12} ${ncy} L${ncx - 4} ${ncy + 8} L${ncx + 12} ${ncy - 8}`} stroke="white" strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" />
               {isSelNode && renderHandles(nr, nid)}
             </g>
             
-            <g onMouseDown={e => startDrag(e, tid, tr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, tid, tr)} transform={getTransform(tid, tr)} style={{ cursor: 'pointer' }}>
               <text x={l.isEven ? tr.x + tr.width : tr.x} y={tr.y + 20} textAnchor={l.isEven ? 'end' : 'start'} fontSize={18} fontWeight="bold" fill={color}>
                 Step {ms.date ?? String(i + 1).padStart(2, '0')}
               </text>

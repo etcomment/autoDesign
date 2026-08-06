@@ -43,7 +43,7 @@ function wrapText(text: string, maxLen: number): string[] {
 
 export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
@@ -71,6 +71,7 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
       const cy = startY + i * spacing
       m.set(`date-${i}`, { x: DATE_X - 90, y: cy - 18, width: 90, height: 36 })
       m.set(`dot-${i}`, { x: DOT_X - 6, y: cy - 6, width: 12, height: 12 })
+      m.set(`conn-${i}`, { x: DOT_X, y: cy - 14, width: BUBBLE_CX - BUBBLE_R - DOT_X, height: 28 })
       m.set(`bubble-${i}`, { x: BUBBLE_CX - BUBBLE_R, y: cy - BUBBLE_R, width: BUBBLE_R * 2, height: BUBBLE_R * 2 })
       m.set(`desc-${i}`, { x: TEXT_X, y: cy - 22, width: W - TEXT_X - 30, height: 60 })
     })
@@ -99,7 +100,7 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
         const tr = rects.get('timeline')!
         const color = tplColors['timeline'] ?? '#d0d0d0'
         return (
-          <g onMouseDown={e => startDrag(e, 'timeline', tr)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="timeline" onMouseDown={e => startDrag(e, 'timeline', tr)} transform={getTransform('timeline', tr)} style={{ cursor: 'pointer' }}>
             <rect x={tr.x} y={tr.y} width={tr.width} height={tr.height} fill={color} />
             {selectedIds.has('timeline') && renderHandles(tr, 'timeline')}
           </g>
@@ -139,7 +140,7 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
         return (
           <g key={i}>
             {/* Year label */}
-            <g onMouseDown={e => startDrag(e, dateId, dr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, dateId, dr)} transform={getTransform(dateId, dr)} style={{ cursor: 'pointer' }}>
               <text
                 x={dr.x + dr.width}
                 y={dr.y + dr.height / 2 + 7}
@@ -155,7 +156,7 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
             </g>
 
             {/* Small dot on the timeline */}
-            <g onMouseDown={e => startDrag(e, dotId, dotr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, dotId, dotr)} transform={getTransform(dotId, dotr)} style={{ cursor: 'pointer' }}>
               <circle
                 cx={dotr.x + dotr.width / 2}
                 cy={dotr.y + dotr.height / 2}
@@ -166,13 +167,23 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
             </g>
 
             {/* Triangle connector from dot to bubble */}
-            <polygon
-              points={`${dotr.x + dotr.width / 2},${bCy} ${br.x - 2},${bCy - 14} ${br.x - 2},${bCy + 14}`}
-              fill={color}
-            />
+            {(() => {
+              const connId = `conn-${i}`
+              const connr = rects.get(connId)!
+              const isSelConn = selectedIds.has(connId)
+              return (
+                <g onMouseDown={e => startDrag(e, connId, connr)} transform={getTransform(connId, connr)} style={{ cursor: 'pointer' }}>
+                  <polygon
+                    points={`${connr.x},${connr.y + connr.height / 2} ${connr.x + connr.width},${connr.y} ${connr.x + connr.width},${connr.y + connr.height}`}
+                    fill={tplColors[connId] ?? color}
+                  />
+                  {isSelConn && renderHandles(connr, connId)}
+                </g>
+              )
+            })()}
 
             {/* Large colored circle with value */}
-            <g onMouseDown={e => startDrag(e, bubId, br)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, bubId, br)} transform={getTransform(bubId, br)} style={{ cursor: 'pointer' }}>
               <circle
                 cx={bCx}
                 cy={bCy}
@@ -196,7 +207,7 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
             </g>
 
             {/* Description text to the right */}
-            <g onMouseDown={e => startDrag(e, descId, sr)} style={{ cursor: 'pointer' }}>
+            <g onMouseDown={e => startDrag(e, descId, sr)} transform={getTransform(descId, sr)} style={{ cursor: 'pointer' }}>
               {wrapText(description ?? ms.title, 60).map((line, li) => (
                 <text
                   key={li}

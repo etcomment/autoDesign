@@ -8,7 +8,7 @@ const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '
 
 export function ProductRoadmap5Template({ data }: { data: ProductRoadmap5Data }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const pos = useTemplateStore(s => s.templateElementPositions)
@@ -64,7 +64,7 @@ export function ProductRoadmap5Template({ data }: { data: ProductRoadmap5Data })
         const stroke = tplStrokeColors['main-title']
         const sW = tplStrokeWidths['main-title'] ?? 1
         return title ? (
-          <g onMouseDown={e => startDrag(e, 'main-title', r)} style={{ cursor: 'pointer' }}>
+          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
             {title.split('\n').map((line, i) => (
               <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
                 {line}
@@ -89,7 +89,7 @@ export function ProductRoadmap5Template({ data }: { data: ProductRoadmap5Data })
         const isSelected = selectedIds.has(qId)
 
         return (
-          <g key={`qb-${bi}`} onMouseDown={e => startDrag(e, qId, qRect)} style={{ cursor: 'pointer' }}>
+          <g key={`qb-${bi}`} onMouseDown={e => startDrag(e, qId, qRect)} transform={getTransform(qId, qRect)} style={{ cursor: 'pointer' }}>
             <rect x={qRect.x} y={qRect.y} width={qRect.width} height={qRect.height} rx={6} fill={qColor} opacity={0.12} stroke={qStroke} strokeWidth={qStrokeWidth} />
             <text x={qRect.x + qRect.width / 2} y={qRect.y + qRect.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill={qColor}>
               {qb.label}
@@ -99,7 +99,17 @@ export function ProductRoadmap5Template({ data }: { data: ProductRoadmap5Data })
         )
       })}
 
-      <line x1={startX} y1={timelineY} x2={startX + (sorted.length - 1) * spacing} y2={timelineY} stroke={tplStrokeColors['timeline'] ?? '#b0b8c0'} strokeWidth={tplStrokeWidths['timeline'] ?? 3} strokeLinecap="round" />
+      {(() => {
+        const tId = 'timeline'
+        const tr = pos[tId] ?? { x: startX, y: timelineY - 4, width: (sorted.length - 1) * spacing, height: 8 }
+        return (
+          <g onMouseDown={e => startDrag(e, tId, tr)} transform={getTransform(tId, tr)} style={{ cursor: 'pointer' }}>
+            <rect x={tr.x} y={tr.y - 4} width={tr.width} height={tr.height + 8} fill="transparent" />
+            <line x1={tr.x} y1={tr.y + tr.height / 2} x2={tr.x + tr.width} y2={tr.y + tr.height / 2} stroke={tplStrokeColors[tId] ?? '#b0b8c0'} strokeWidth={tplStrokeWidths[tId] ?? 3} strokeLinecap="round" />
+            {selectedIds.has(tId) && renderHandles(tr, tId)}
+          </g>
+        )
+      })()}
 
       {sorted.map((milestone, mi) => {
         const elementId = `milestone-${mi}`
@@ -122,14 +132,24 @@ export function ProductRoadmap5Template({ data }: { data: ProductRoadmap5Data })
 
         return (
           <g key={`m-${mi}`}>
-            <line x1={cx} y1={isAbove ? mRectY + mRectH : timelineY} x2={cx} y2={isAbove ? timelineY - 8 : mRectY} stroke={color} strokeWidth={1.5} strokeDasharray="3 3" />
-            <circle cx={cx} cy={timelineY} r={10} fill={color} />
-            <circle cx={cx} cy={timelineY} r={5} fill="#fff" />
-            <text x={cx} y={timelineY + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={8} fontWeight={700} fill={color}>
-              {mi + 1}
-            </text>
+            {(() => {
+              const pId = `point-${mi}`
+              const pr = pos[pId] ?? { x: cx - 10, y: timelineY - 10, width: 20, height: 20 }
+              const pColor = tplColors[pId] ?? color
+              return (
+                <g onMouseDown={e => startDrag(e, pId, pr)} transform={getTransform(pId, pr)} style={{ cursor: 'pointer' }}>
+                  <line x1={pr.x + pr.width / 2} y1={isAbove ? mRectY + mRectH : pr.y + pr.height / 2} x2={pr.x + pr.width / 2} y2={isAbove ? pr.y + pr.height / 2 - 8 : mRectY} stroke={pColor} strokeWidth={1.5} strokeDasharray="3 3" />
+                  <circle cx={pr.x + pr.width / 2} cy={pr.y + pr.height / 2} r={Math.min(pr.width, pr.height) / 2} fill={pColor} />
+                  <circle cx={pr.x + pr.width / 2} cy={pr.y + pr.height / 2} r={Math.min(pr.width, pr.height) / 4} fill="#fff" />
+                  <text x={pr.x + pr.width / 2} y={pr.y + pr.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={8} fontWeight={700} fill={pColor}>
+                    {mi + 1}
+                  </text>
+                  {selectedIds.has(pId) && renderHandles(pr, pId)}
+                </g>
+              )
+            })()}
 
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
               <rect x={mRectX} y={mRectY} width={mRectW} height={mRectH} rx={8} fill="#fff" stroke={stroke} strokeWidth={strokeWidth} />
               <rect x={mRectX} y={mRectY} width={mRectW} height={28} rx={8} fill={color} />
               <rect x={mRectX} y={mRectY + 20} width={mRectW} height={8} fill={color} />

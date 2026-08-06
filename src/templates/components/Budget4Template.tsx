@@ -2,68 +2,154 @@ import { useRef, type ReactElement } from 'react'
 import type { BudgetData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
 export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
+  const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const tplColors = useTemplateStore(s => s.templateElementColors)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, totalLabel, totalAmount, items } = data
+  const items = data.items && data.items.length > 0 ? data.items : [
+    { label: 'Initial', percentage: 100, amount: '€100,000' },
+    { label: 'R&D', percentage: -30, amount: '-€30,000' },
+    { label: 'Sales', percentage: +20, amount: '+€20,000' },
+    { label: 'Final', percentage: 90, amount: '€90,000' },
+  ]
+
+  const count = Math.max(1, items.length)
   const W = 900
-  const barW = 120
-  const gap = 24
-  const startX = 120
+  const startX = 60
+  const availableW = W - startX * 2
+  const barW = Math.min(80, (availableW - (count - 1) * 16) / count)
+  const gap = count > 1 ? Math.min(32, (availableW - count * barW) / (count - 1)) : 32
   const baselineY = 400
-  const pxPerUnit = 2.5
-  const count = Math.min(items.length, 6)
+  const maxH = 240
 
-  let runningTotal = 0
+  let currentLevel = 0
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
-          {title}
-        </text>
-      )}
+      {/* Baseline */}
+      <line x1={startX - 20} y1={baselineY} x2={W - startX + 20} y2={baselineY} stroke="#e2e8f0" strokeWidth={2} />
 
-      {items.slice(0, count).map((item, i) => {
-        const elementId = `item-${i}`
-        const isSelected = selectedIds.has(elementId)
-        const barH = item.percentage * pxPerUnit
-        const x = startX + i * (barW + gap)
+      {/* Dynamic connector lines connecting waterfall bars */}
+      {items.map((_, i) => {
+        if (i === 0) return null
+        const prevId = `item-${i - 1}`
+        const curId = `item-${i}`
 
-        const positive = item.percentage >= 0
-        const y = positive ? baselineY - runningTotal - barH : baselineY - runningTotal
-        const rectColor = positive ? '#2ecc71' : '#e74c3c'
-        const visualRect = { x, y: Math.min(y, baselineY - runningTotal), width: barW, height: Math.abs(barH) }
+        const prevPos = positions[prevId]
+        const curPos = positions[curId]
 
-        const currentTop = baselineY - runningTotal
-        runningTotal += barH
+        const defaultPrevX = startX + (i - 1) * (barW + gap)
+        const defaultCurX = startX + i * (barW + gap)
+
+        const x1 = (prevPos?.x ?? defaultPrevX) + (prevPos?.width ?? barW)
+        const y1 = (prevPos?.y ?? baselineY - 100) + (prevPos?.height ?? 100) / 2
+
+        const x2 = curPos?.x ?? defaultCurX
+        const y2 = (curPos?.y ?? baselineY - 100) + (curPos?.height ?? 100) / 2
 
         return (
-          <g key={i}>
-            {i > 0 && (
-              <line x1={x - gap / 2} y1={currentTop} x2={x + gap / 2} y2={currentTop} stroke="#aaa" strokeWidth={1} strokeDasharray="3 3" />
-            )}
-            <g onMouseDown={e => startDrag(e, elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={x} y={y} width={barW} height={Math.abs(barH)} rx={4} fill={rectColor} opacity={0.85} stroke={isSelected ? '#4a90d9' : rectColor} strokeWidth={isSelected ? 2.5 : 0} strokeDasharray={isSelected ? '4 2' : undefined} />
-              <text x={x + barW / 2} y={y + Math.abs(barH) / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
-                {item.amount}
-              </text>
-              {isSelected && renderHandles(visualRect, elementId)}
-            </g>
-            <text x={x + barW / 2} y={baselineY + 30} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#333">
-              {item.label}
-            </text>
-          </g>
+          <line
+            key={`conn-${i}`}
+            x1={x1}
+            y1={y1}
+            x2={x2}
+            y2={y2}
+            stroke="#cbd5e0"
+            strokeWidth={1.5}
+            strokeDasharray="4 4"
+          />
         )
       })}
 
-      <rect x={startX - 60} y={baselineY - 100} width={80} height={30} rx={4} fill="#1a1a2e" />
-      <text x={startX - 20} y={baselineY - 80} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
-        {totalLabel}: {totalAmount}
-      </text>
+      {/* Waterfall Bars */}
+      {items.map((item, i) => {
+        const elementId = `item-${i}`
+        const defaultColor = item.percentage >= 0 ? MIGSO_PALETTE[i % MIGSO_PALETTE.length]! : '#e53e3e'
+        const color = tplColors[elementId] ?? item.color ?? defaultColor
+        const isSelected = selectedIds.has(elementId)
+
+        const isTotal = i === 0 || i === items.length - 1
+        const val = item.percentage
+        const h = Math.max(24, (Math.abs(val) / 100) * maxH)
+
+        let barY = baselineY - h
+        if (!isTotal) {
+          if (val >= 0) {
+            barY = baselineY - (currentLevel + val) * (maxH / 100)
+            currentLevel += val
+          } else {
+            barY = baselineY - currentLevel * (maxH / 100)
+            currentLevel += val
+          }
+        } else {
+          currentLevel = val
+        }
+
+        const bx = startX + i * (barW + gap)
+        const defaultBbox = { x: bx, y: barY, width: barW, height: h }
+
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos?.x ?? defaultBbox.x,
+          y: customPos?.y ?? defaultBbox.y,
+          width: customPos?.width ?? defaultBbox.width,
+          height: customPos?.height ?? defaultBbox.height,
+        }
+
+        return (
+          <g
+            key={elementId}
+            onMouseDown={e => startDrag(e, elementId, bbox)}
+            transform={getTransform(elementId, bbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect
+              x={bbox.x}
+              y={bbox.y}
+              width={bbox.width}
+              height={bbox.height}
+              rx={6}
+              fill={color}
+              opacity={0.9}
+              stroke={isSelected ? '#4a90d9' : color}
+              strokeWidth={isSelected ? 2.5 : 0}
+            />
+
+            {/* Amount above bar */}
+            <text
+              x={bbox.x + bbox.width / 2}
+              y={bbox.y - 8}
+              textAnchor="middle"
+              fontFamily="Arial, sans-serif"
+              fontSize={12}
+              fontWeight={700}
+              fill={color}
+            >
+              {item.amount}
+            </text>
+
+            {/* Label below baseline */}
+            <text
+              x={bbox.x + bbox.width / 2}
+              y={baselineY + 24}
+              textAnchor="middle"
+              fontFamily="Arial, sans-serif"
+              fontSize={12}
+              fontWeight={600}
+              fill="#4a5568"
+            >
+              {item.label}
+            </text>
+
+            {isSelected && renderHandles(bbox, elementId)}
+          </g>
+        )
+      })}
     </g>
   )
 }
