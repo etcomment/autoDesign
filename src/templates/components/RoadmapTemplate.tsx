@@ -4,7 +4,8 @@ import type { RoadmapData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 
-const W = 1000
+const W = 1200
+const H = 700
 
 interface Rect {
   x: number
@@ -28,27 +29,34 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
 
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
-    map.set('main-title', { x: 45, y: 40, width: 350, height: 60 })
-    map.set('road-path', { x: 300, y: 220, width: 400, height: 440 })
+    map.set('main-title', { x: 50, y: 50, width: 350, height: 60 })
+    map.set('road-path', { x: 200, y: 150, width: 800, height: 400 })
+    
+    // Road coordinates logic:
+    // Top track: y=200, right to left.
+    // Middle track: y=350, left to right.
+    // Bottom track: y=500, right to left.
     
     milestones.forEach((_, idx) => {
       if (idx === 0) {
-        map.set('card-0', { x: 680, y: 150, width: 215, height: 220 })
-        map.set('banner-0', { x: 560, y: 195, width: 115, height: 70 })
-        map.set('circle-0', { x: 370, y: 335, width: 66, height: 66 })
+        // Milestone 1 (Top right)
+        map.set('card-0', { x: 800, y: 100, width: 260, height: 120 })
+        map.set('banner-0', { x: 650, y: 130, width: 100, height: 40 })
       } else if (idx === 1) {
-        map.set('card-1', { x: 100, y: 260, width: 215, height: 220 })
-        map.set('banner-1', { x: 560, y: 705, width: 115, height: 70 }) // Used originally near bottom
-        map.set('circle-1', { x: 475, y: 505, width: 66, height: 66 })
+        // Milestone 2 (Middle left)
+        map.set('card-1', { x: 150, y: 250, width: 260, height: 120 })
+        map.set('circle-1', { x: 450, y: 260, width: 60, height: 60 })
       } else if (idx === 2) {
-        map.set('card-2', { x: 680, y: 665, width: 215, height: 220 })
+        // Milestone 3 (Bottom right)
+        map.set('card-2', { x: 800, y: 400, width: 260, height: 120 })
+        map.set('circle-2', { x: 550, y: 410, width: 60, height: 60 })
+        map.set('banner-2', { x: 650, y: 420, width: 100, height: 40 })
       } else {
-        // dynamic placement for 4th+ milestone
-        const yOffset = 665 + (idx - 2) * 250
+        // Fallback for extra milestones
+        const yOffset = 550 + (idx - 2) * 150
         const isRight = idx % 2 === 0
-        map.set(`card-${idx}`, { x: isRight ? 680 : 100, y: yOffset, width: 215, height: 220 })
-        map.set(`banner-${idx}`, { x: isRight ? 560 : 320, y: yOffset + 40, width: 115, height: 70 })
-        map.set(`circle-${idx}`, { x: 475, y: yOffset - 50, width: 66, height: 66 })
+        map.set(`card-${idx}`, { x: isRight ? 800 : 150, y: yOffset, width: 260, height: 120 })
+        map.set(`circle-${idx}`, { x: 450, y: yOffset + 10, width: 60, height: 60 })
       }
     })
 
@@ -75,23 +83,25 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
     }
   }
 
-  const roadD = "M 680 270 L 400 270 A 85 85 0 0 0 400 440 L 600 440 A 85 85 0 0 1 600 610 L 680 610"
+  // S-shape road path coordinates based on road-path bounding box
+  // We map the virtual coordinates [0, 1000] x [0, 400] to the road-path Rect
+  const roadD = "M 950 50 L 150 50 A 75 75 0 0 0 150 200 L 850 200 A 75 75 0 0 1 850 350 L 50 350"
   const titleR = getR('main-title')
   const roadPathR = getR('road-path')
 
   return (
     <g ref={svgRef}>
       <g data-element-id="road-path" onMouseDown={e => startDrag(e, 'road-path', roadPathR)} transform={getTransform('road-path', roadPathR)} style={{ cursor: 'pointer' }}>
-        <g transform={`translate(${roadPathR.x - 300}, ${roadPathR.y - 220}) scale(${roadPathR.width / 400}, ${roadPathR.height / 440})`}>
-          <path d={roadD} fill="none" stroke="#e0e0e0" strokeWidth={90} strokeLinecap="square" strokeLinejoin="round" />
-          <path d={roadD} fill="none" stroke="#ffffff" strokeWidth={8} strokeDasharray="24 16" strokeLinecap="butt" strokeLinejoin="round" />
+        <g transform={`translate(${roadPathR.x}, ${roadPathR.y}) scale(${roadPathR.width / 1000}, ${roadPathR.height / 400})`}>
+          <path d={roadD} fill="none" stroke="#D9D1C6" strokeWidth={100} strokeLinecap="round" strokeLinejoin="round" />
+          <path d={roadD} fill="none" stroke="#ffffff" strokeWidth={10} strokeDasharray="30 20" strokeLinecap="butt" strokeLinejoin="round" />
         </g>
         {selectedIds.has('road-path') && renderHandles(roadPathR, 'road-path')}
       </g>
 
       {title && (
         <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', titleR)} transform={getTransform('main-title', titleR)} style={{ cursor: 'pointer' }}>
-          <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={tplColors['main-title'] || TITLE_COLOR}>{title}</text>
+          <text x={titleR.x} y={titleR.y + 40} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={48} fontWeight={700} fill={tplColors['main-title'] || '#C07D66'}>{title}</text>
           {selectedIds.has('main-title') && renderHandles(titleR, 'main-title')}
         </g>
       )}
@@ -105,46 +115,49 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const bannerR = getR(bannerId)
         const circleR = getR(circleId)
 
-        // Only render banner/circle if they have default positions initialized
         const hasBanner = defaultPositions.has(bannerId)
         const hasCircle = defaultPositions.has(circleId)
+
+        // Find nearest point on road for the connecting lines
+        // Top track: y=150+50=200
+        // Middle track: y=150+200=350
+        // Bottom track: y=150+350=500
+        const trackY = idx === 0 ? 200 : (idx === 1 ? 350 : 500)
 
         return (
           <g key={idx} data-element-id={`milestone-${idx}`}>
             {hasBanner && (
               <>
-                <line x1={bannerR.x + bannerR.width * (63/115)} y1={bannerR.y + bannerR.height * (35/70)} x2={bannerR.x + bannerR.width * (63/115)} y2={roadPathR.y + roadPathR.height * (50/440)} stroke={tplColors[bannerId] || '#4cbfa0'} strokeWidth={6} />
+                <line x1={bannerR.x + bannerR.width / 2} y1={bannerR.y + bannerR.height} x2={bannerR.x + bannerR.width / 2} y2={trackY} stroke={tplColors[bannerId] || '#68DA6A'} strokeWidth={6} />
                 <g data-element-id={bannerId} onMouseDown={e => startDrag(e, bannerId, bannerR)} transform={getTransform(bannerId, bannerR)} style={{ cursor: 'pointer' }}>
-                <g transform={`translate(${bannerR.x - 560}, ${bannerR.y - 195}) scale(${bannerR.width / 115}, ${bannerR.height / 70})`}>
-                  
-                  <path d={`M ${560 + 25} ${195} L ${560 + 115} ${195} L ${560 + 115} ${195 + 70} L ${560 + 25} ${195 + 70} L ${560} ${195 + 35} Z`} fill={tplColors[bannerId] || '#4cbfa0'} />
-                  <text x={560 + 65} y={195 + 42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight="bold" fill="#ffffff">Your title</text>
+                  <g transform={`translate(${bannerR.x}, ${bannerR.y}) scale(${bannerR.width / 100}, ${bannerR.height / 40})`}>
+                    <path d={`M 20 0 L 100 0 L 100 40 L 20 40 L 0 20 Z`} fill={tplColors[bannerId] || '#68DA6A'} />
+                    <text x={55} y={25} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fill="#ffffff">Your title</text>
+                  </g>
+                  {selectedIds.has(bannerId) && renderHandles(bannerR, bannerId)}
                 </g>
-                {selectedIds.has(bannerId) && renderHandles(bannerR, bannerId)}
-              </g>
               </>
             )}
 
             {hasCircle && (
               <>
-                <line x1={circleR.x + circleR.width / 2} y1={circleR.y + circleR.height / 2} x2={circleR.x + circleR.width / 2} y2={roadPathR.y + roadPathR.height * (230/440)} stroke={tplColors[circleId] || '#ffbe00'} strokeWidth={6} />
+                <line x1={circleR.x + circleR.width / 2} y1={circleR.y + circleR.height} x2={circleR.x + circleR.width / 2} y2={trackY} stroke={tplColors[circleId] || '#FF9F1D'} strokeWidth={6} />
                 <g data-element-id={circleId} onMouseDown={e => startDrag(e, circleId, circleR)} transform={getTransform(circleId, circleR)} style={{ cursor: 'pointer' }}>
-                <g transform={`translate(${circleR.x - 370}, ${circleR.y - 335}) scale(${circleR.width / 66}, ${circleR.height / 66})`}>
-                  
-                  <circle cx={370 + 33} cy={335 + 33} r={33} fill={tplColors[circleId] || '#ffbe00'} />
-                  <text x={370 + 33} y={335 + 26} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">YOUR</text>
-                  <text x={370 + 33} y={335 + 42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">TITLE</text>
+                  <g transform={`translate(${circleR.x}, ${circleR.y}) scale(${circleR.width / 60}, ${circleR.height / 60})`}>
+                    <circle cx={30} cy={30} r={30} fill={tplColors[circleId] || '#FF9F1D'} />
+                    <text x={30} y={26} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">YOUR</text>
+                    <text x={30} y={40} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">TITLE</text>
+                  </g>
+                  {selectedIds.has(circleId) && renderHandles(circleR, circleId)}
                 </g>
-                {selectedIds.has(circleId) && renderHandles(circleR, circleId)}
-              </g>
               </>
             )}
 
             <g data-element-id={cardId} onMouseDown={e => startDrag(e, cardId, cardR)} transform={getTransform(cardId, cardR)} style={{ cursor: 'pointer' }}>
-              <rect x={cardR.x} y={cardR.y} width={cardR.width} height={cardR.height} fill={tplColors[cardId] || (idx === 0 ? '#23255a' : idx === 1 ? '#2d62ed' : '#ff4a2b')} stroke={tplStrokeColors[cardId]} strokeWidth={tplStrokeWidths[cardId]} />
-              <text x={cardR.x + cardR.width / 2} y={cardR.y + 50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{ms.title}</text>
+              <rect x={cardR.x} y={cardR.y} width={cardR.width} height={cardR.height} fill={tplColors[cardId] || (idx === 0 ? '#282a5d' : idx === 1 ? '#3365cc' : '#ff4d38')} stroke={tplStrokeColors[cardId]} strokeWidth={tplStrokeWidths[cardId]} />
+              <text x={cardR.x + cardR.width / 2} y={cardR.y + 40} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={24} fontWeight="bold" fill="#ffffff">{ms.title}</text>
               {ms.subtitle && ms.subtitle.split('\n').map((line, lIdx) => (
-                <text key={lIdx} x={cardR.x + cardR.width / 2} y={cardR.y + 95 + lIdx * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fill="#ffffff" opacity={0.9}>{line}</text>
+                <text key={lIdx} x={cardR.x + cardR.width / 2} y={cardR.y + 70 + lIdx * 20} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fill="#ffffff" opacity={0.9}>{line}</text>
               ))}
               {selectedIds.has(cardId) && renderHandles(cardR, cardId)}
             </g>
@@ -154,4 +167,3 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
     </g>
   )
 }
-
