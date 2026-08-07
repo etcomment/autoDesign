@@ -218,31 +218,14 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
   }, [defaultPositions, pos, moveEl, resizeEl, count, groupTemplateElements, templateElementGroupIds])
 
   const getR = (id: string): Rect => {
-    const d = defaultPositions.get(id) || { x: 0, y: 0, width: 100, height: 50 }
     const p = pos[id]
-
-    // Si l'élément a une position propre enregistrée dans Zustand
-    let x = p?.x ?? d.x
-    let y = p?.y ?? d.y
-    let width = p?.width || d.width
-    let height = p?.height || d.height
-
-    // Si cet élément appartient à un bloc virtuel (ex: block-1, block-2...) et que le block-X a été déplacé/redimensionné
-    const parts = id.split('-')
-    const idx = parts[parts.length - 1]
-    if (idx && !isNaN(Number(idx))) {
-      const blockId = `block-${idx}`
-      const blockP = pos[blockId]
-      const blockD = defaultPositions.get(blockId)
-      if (blockP && blockD) {
-        const dx = blockP.x - blockD.x
-        const dy = blockP.y - blockD.y
-        x += dx
-        y += dy
-      }
+    const d = defaultPositions.get(id) || { x: 0, y: 0, width: 100, height: 50 }
+    return {
+      x: p?.x ?? d.x,
+      y: p?.y ?? d.y,
+      width: p?.width || d.width,
+      height: p?.height || d.height,
     }
-
-    return { x, y, width, height }
   }
 
   const titleR = getR('main-title')
