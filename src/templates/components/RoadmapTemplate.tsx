@@ -27,24 +27,24 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
     map.set('rdm-title', { x: 50, y: 40, width: 350, height: 60 })
-    map.set('rdm5-path', { x: 150, y: 130, width: 850, height: 580 })
+    map.set('rdm6-path', { x: 150, y: 140, width: 850, height: 480 })
     
     milestones.forEach((_, idx) => {
       if (idx === 0) {
-        map.set('rdm-card-0', { x: 700, y: 50, width: 280, height: 110 })
-        map.set('rdm-banner-0', { x: 540, y: 100, width: 100, height: 40 })
+        map.set('rdm-card-0', { x: 700, y: 60, width: 280, height: 110 })
+        map.set('rdm-banner-0', { x: 540, y: 110, width: 100, height: 40 })
       } else if (idx === 1) {
         map.set('rdm-card-1', { x: 100, y: 180, width: 280, height: 110 })
         map.set('rdm-circle-1', { x: 420, y: 200, width: 60, height: 60 })
       } else if (idx === 2) {
-        map.set('rdm-card-2', { x: 700, y: 340, width: 280, height: 110 })
-        map.set('rdm-circle-2', { x: 460, y: 350, width: 60, height: 60 })
-        map.set('rdm-banner-2', { x: 560, y: 360, width: 100, height: 40 })
+        map.set('rdm-card-2', { x: 700, y: 315, width: 280, height: 110 })
+        map.set('rdm-circle-2', { x: 460, y: 325, width: 60, height: 60 })
+        map.set('rdm-banner-2', { x: 560, y: 335, width: 100, height: 40 })
       } else if (idx === 3) {
-        map.set('rdm-card-3', { x: 100, y: 500, width: 280, height: 110 })
-        map.set('rdm-circle-3', { x: 420, y: 510, width: 60, height: 60 })
+        map.set('rdm-card-3', { x: 100, y: 445, width: 280, height: 110 })
+        map.set('rdm-circle-3', { x: 420, y: 455, width: 60, height: 60 })
       } else {
-        const yOffset = 640 + (idx - 4) * 160
+        const yOffset = 580 + (idx - 4) * 150
         const isRight = idx % 2 === 0
         map.set(`rdm-card-${idx}`, { x: isRight ? 700 : 100, y: yOffset, width: 280, height: 110 })
         map.set(`rdm-circle-${idx}`, { x: 420, y: yOffset + 20, width: 60, height: 60 })
@@ -74,16 +74,16 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
     }
   }
 
-  // 4 horizontal segments in [0, 1000] x [0, 500] virtual box with significantly larger vertical track spacing
-  const roadD = "M 900 40 L 150 40 A 70 70 0 0 0 150 180 L 720 180 A 70 70 0 0 1 720 320 L 150 320 A 70 70 0 0 0 150 460 L 900 460"
+  // 4 horizontal segments in [0, 1000] x [0, 395] virtual box (+5px track spacing, R=52.5)
+  const roadD = "M 900 40 L 150 40 A 52.5 52.5 0 0 0 150 145 L 720 145 A 52.5 52.5 0 0 1 720 250 L 150 250 A 52.5 52.5 0 0 0 150 355 L 900 355"
   
   const titleR = getR('rdm-title')
-  const roadPathR = getR('rdm5-path')
+  const roadPathR = getR('rdm6-path')
 
   return (
     <g ref={svgRef}>
-      <g data-element-id="rdm5-path" onMouseDown={e => startDrag(e, 'rdm5-path', roadPathR)} transform={getTransform('rdm5-path', roadPathR)} style={{ cursor: 'pointer' }}>
-        <g transform={`translate(${roadPathR.x}, ${roadPathR.y}) scale(${roadPathR.width / 1000}, ${roadPathR.height / 500})`}>
+      <g data-element-id="rdm6-path" onMouseDown={e => startDrag(e, 'rdm6-path', roadPathR)} transform={getTransform('rdm6-path', roadPathR)} style={{ cursor: 'pointer' }}>
+        <g transform={`translate(${roadPathR.x}, ${roadPathR.y}) scale(${roadPathR.width / 1000}, ${roadPathR.height / 395})`}>
           <path d={roadD} fill="none" stroke="#D7D7D7" strokeWidth={55} strokeLinecap="round" strokeLinejoin="round" />
           <path d={roadD} fill="none" stroke="#ffffff" strokeWidth={10} strokeDasharray="34 24" strokeLinecap="butt" strokeLinejoin="round" />
         </g>
@@ -110,7 +110,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const hasBanner = defaultPositions.has(bannerId)
         const hasCircle = defaultPositions.has(circleId)
 
-        const trackYFraction = idx === 0 ? (40/500) : idx === 1 ? (180/500) : idx === 2 ? (320/500) : (460/500)
+        const trackYFraction = idx === 0 ? (40/395) : idx === 1 ? (145/395) : idx === 2 ? (250/395) : (355/395)
         const trackY = roadPathR.y + roadPathR.height * trackYFraction
 
         return (
