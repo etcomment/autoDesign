@@ -260,7 +260,14 @@ export function TemplatePropertiesPanel() {
             <input
               type="number"
               value={Math.round(primaryPos.x)}
-              onChange={(e) => moveTemplateElement(primaryId, { x: Number(e.target.value), y: primaryPos.y })}
+              onChange={(e) => {
+                const newX = Number(e.target.value)
+                const dx = newX - primaryPos.x
+                elements.forEach(id => {
+                  const currentP = templateElementPositions[id] ?? primaryPos
+                  moveTemplateElement(id, { x: currentP.x + dx, y: currentP.y })
+                })
+              }}
               style={styles.textInput}
             />
           </div>
@@ -269,7 +276,14 @@ export function TemplatePropertiesPanel() {
             <input
               type="number"
               value={Math.round(primaryPos.y)}
-              onChange={(e) => moveTemplateElement(primaryId, { x: primaryPos.x, y: Number(e.target.value) })}
+              onChange={(e) => {
+                const newY = Number(e.target.value)
+                const dy = newY - primaryPos.y
+                elements.forEach(id => {
+                  const currentP = templateElementPositions[id] ?? primaryPos
+                  moveTemplateElement(id, { x: currentP.x, y: currentP.y + dy })
+                })
+              }}
               style={styles.textInput}
             />
           </div>
@@ -278,7 +292,13 @@ export function TemplatePropertiesPanel() {
             <input
               type="number"
               value={Math.round(primaryPos.width)}
-              onChange={(e) => resizeTemplateElement(primaryId, { width: Number(e.target.value), height: primaryPos.height })}
+              onChange={(e) => {
+                const newW = Number(e.target.value)
+                elements.forEach(id => {
+                  const currentP = templateElementPositions[id] ?? primaryPos
+                  resizeTemplateElement(id, { width: newW, height: currentP.height })
+                })
+              }}
               style={styles.textInput}
             />
           </div>
@@ -287,7 +307,13 @@ export function TemplatePropertiesPanel() {
             <input
               type="number"
               value={Math.round(primaryPos.height)}
-              onChange={(e) => resizeTemplateElement(primaryId, { width: primaryPos.width, height: Number(e.target.value) })}
+              onChange={(e) => {
+                const newH = Number(e.target.value)
+                elements.forEach(id => {
+                  const currentP = templateElementPositions[id] ?? primaryPos
+                  resizeTemplateElement(id, { width: currentP.width, height: newH })
+                })
+              }}
               style={styles.textInput}
             />
           </div>
@@ -301,7 +327,10 @@ export function TemplatePropertiesPanel() {
             max={360}
             step={1}
             value={primaryRot}
-            onChange={(e) => rotateTemplateElement(primaryId, Number(e.target.value))}
+            onChange={(e) => {
+              const newRot = Number(e.target.value)
+              elements.forEach(id => rotateTemplateElement(id, newRot))
+            }}
             style={styles.range}
           />
           <span style={styles.value}>{primaryRot}°</span>

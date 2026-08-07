@@ -310,7 +310,6 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
                 strokeLinecap="butt"
                 strokeLinejoin="round"
               />
-              {selectedIds.has(bodyId) && renderHandles(sR, bodyId)}
             </g>
           </g>
         )
@@ -344,7 +343,6 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
               style={{ cursor: 'pointer' }}
             >
               <path d={arrowPath} fill={stepColor} />
-              {selectedIds.has(arrowId) && renderHandles(aR, arrowId)}
             </g>
           </g>
         )
@@ -394,7 +392,6 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
               >
                 {label}
               </text>
-              {selectedIds.has(stepId) && renderHandles(stR, stepId)}
             </g>
           </g>
         )
@@ -459,10 +456,14 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
                 ))}
               </text>
             )}
-
-            {selectedIds.has(msId) && renderHandles(msR, msId)}
           </g>
         )
+      })}
+
+      {/* COUCHE 5 : POIGNÉES DE SÉLECTION (Toujours au premier plan absolu) */}
+      {Array.from(selectedIds).map(id => {
+        const r = getR(id)
+        return <g key={`handles-${id}`}>{renderHandles(r, id)}</g>
       })}
     </g>
   )
