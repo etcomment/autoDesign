@@ -54,8 +54,8 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
     map.set('main-title', { x: W / 2 - 200, y: 25, width: 400, height: 40 })
 
     const startY = 475
-    // Calcul de l'espacement vertical entre deux segments horizontaux (rowHeight)
-    const rowHeight = Math.min(105, Math.max(65, 380 / Math.max(1, count)))
+    // Espacement vertical fixe de 150px entre les segments horizontaux
+    const rowHeight = 150
 
     // Largeur du segment (28px)
     const strokeW = 28
@@ -214,7 +214,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         const defaultColor = ORIGINAL_COLORS[i % ORIGINAL_COLORS.length] || MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         const stepColor = tplColors[bodyId] || steps[i]?.color || defaultColor
 
-        const rowHeight = Math.min(105, Math.max(65, 380 / Math.max(1, count)))
+        const rowHeight = 150
         const strokeW = 28
         const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
         const hasNext = i < count - 1
