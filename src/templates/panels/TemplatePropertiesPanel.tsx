@@ -328,8 +328,45 @@ export function TemplatePropertiesPanel() {
             step={1}
             value={primaryRot}
             onChange={(e) => {
-              const newRot = Number(e.target.value)
-              elements.forEach(id => rotateTemplateElement(id, newRot))
+              const targetRot = Number(e.target.value)
+              if (elements.length <= 1) {
+                elements.forEach(id => rotateTemplateElement(id, targetRot))
+                return
+              }
+
+              // Calcul du centre de la bounding box collective
+              let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+              elements.forEach(id => {
+                const pos = templateElementPositions[id] ?? primaryPos
+                minX = Math.min(minX, pos.x)
+                minY = Math.min(minY, pos.y)
+                maxX = Math.max(maxX, pos.x + pos.width)
+                maxY = Math.max(maxY, pos.y + pos.height)
+              })
+
+              const centerX = minX + (maxX - minX) / 2
+              const centerY = minY + (maxY - minY) / 2
+              const deltaAngle = targetRot - primaryRot
+              const rad = (deltaAngle * Math.PI) / 180
+              const cos = Math.cos(rad)
+              const sin = Math.sin(rad)
+
+              elements.forEach(id => {
+                const pos = templateElementPositions[id] ?? primaryPos
+                const curRot = templateElementRotations[id] ?? 0
+                const sCenterX = pos.x + pos.width / 2
+                const sCenterY = pos.y + pos.height / 2
+                const relX = sCenterX - centerX
+                const relY = sCenterY - centerY
+
+                const newCenterX = centerX + (relX * cos - relY * sin)
+                const newCenterY = centerY + (relX * sin + relY * cos)
+
+                moveTemplateElement(id, { x: newCenterX - pos.width / 2, y: newCenterY - pos.height / 2 })
+                let newRot = (curRot + deltaAngle) % 360
+                if (newRot < 0) newRot += 360
+                rotateTemplateElement(id, Math.round(newRot))
+              })
             }}
             style={styles.range}
           />
