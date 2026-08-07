@@ -38,14 +38,15 @@ function getTemplateSubElements(templateData: any, templateElementPositions: Rec
       const singular = colKey.endsWith('s') ? colKey.slice(0, -1) : colKey
       arr.forEach((item: any, i: number) => {
         const idx = i + 1
-        const bodyId = `${singular}-body-${idx}`
-        const primaryId = singular === 'step' ? bodyId : `${singular}-${idx}`
+        const primaryId = `${singular}-${idx}`
         const rawTitle = typeof item === 'string' ? item : (item?.title || item?.name || item?.text || item?.label)
         const titleStr = rawTitle ? `"${rawTitle}"` : `${idx}`
 
         const children: TemplateSubElement[] = []
+        // Regex stricte : doit se terminer exactement par -idx (ou -i si 0-indexed) et ne pas être l'ID principal
+        const strictSuffixPattern = new RegExp(`-${idx}$`)
         for (const posId of Object.keys(templateElementPositions)) {
-          if ((posId.endsWith(`-${idx}`) || posId.endsWith(`-${i}`)) && posId !== primaryId) {
+          if (strictSuffixPattern.test(posId) && posId !== primaryId && !seenIds.has(posId)) {
             children.push({ id: posId, label: `Sous-élément: ${posId}` })
             seenIds.add(posId)
           }
