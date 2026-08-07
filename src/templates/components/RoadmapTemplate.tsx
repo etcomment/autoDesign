@@ -27,7 +27,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
     map.set('rdm-title', { x: 50, y: 40, width: 350, height: 60 })
-    map.set('rdm7-path', { x: 150, y: 140, width: 850, height: 425 })
+    map.set('rdm8-path', { x: 150, y: 140, width: 850, height: 438 })
     
     milestones.forEach((_, idx) => {
       if (idx === 0) {
@@ -74,16 +74,16 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
     }
   }
 
-  // 4 horizontal segments in [0, 1000] x [0, 500] virtual box with scaleX === scaleY (0.85) to prevent curve flattening
-  const roadD = "M 900 50 L 150 50 A 55 55 0 0 0 150 160 L 720 160 A 55 55 0 0 1 720 270 L 150 270 A 55 55 0 0 0 150 380 L 900 380"
+  // 4 horizontal segments in [0, 1000] x [0, 515] virtual box with R=57.5 (+5px gap) and scaleX === scaleY (0.85)
+  const roadD = "M 900 50 L 150 50 A 57.5 57.5 0 0 0 150 165 L 720 165 A 57.5 57.5 0 0 1 720 280 L 150 280 A 57.5 57.5 0 0 0 150 395 L 900 395"
   
   const titleR = getR('rdm-title')
-  const roadPathR = getR('rdm7-path')
+  const roadPathR = getR('rdm8-path')
 
   return (
     <g ref={svgRef}>
-      <g data-element-id="rdm7-path" onMouseDown={e => startDrag(e, 'rdm7-path', roadPathR)} transform={getTransform('rdm7-path', roadPathR)} style={{ cursor: 'pointer' }}>
-        <g transform={`translate(${roadPathR.x}, ${roadPathR.y}) scale(${roadPathR.width / 1000}, ${roadPathR.height / 500})`}>
+      <g data-element-id="rdm8-path" onMouseDown={e => startDrag(e, 'rdm8-path', roadPathR)} transform={getTransform('rdm8-path', roadPathR)} style={{ cursor: 'pointer' }}>
+        <g transform={`translate(${roadPathR.x}, ${roadPathR.y}) scale(${roadPathR.width / 1000}, ${roadPathR.height / 515})`}>
           <path d={roadD} fill="none" stroke="#D7D7D7" strokeWidth={55} strokeLinecap="round" strokeLinejoin="round" />
           <path d={roadD} fill="none" stroke="#ffffff" strokeWidth={10} strokeDasharray="22 24" strokeLinecap="butt" strokeLinejoin="round" />
         </g>
@@ -110,7 +110,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const hasBanner = defaultPositions.has(bannerId)
         const hasCircle = defaultPositions.has(circleId)
 
-        const trackYFraction = idx === 0 ? (50/500) : idx === 1 ? (160/500) : idx === 2 ? (270/500) : (380/500)
+        const trackYFraction = idx === 0 ? (50/515) : idx === 1 ? (165/515) : idx === 2 ? (280/515) : (395/515)
         const trackY = roadPathR.y + roadPathR.height * trackYFraction
 
         return (
