@@ -273,25 +273,28 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
         const R = 22
 
+        const dSR = defaultPositions.get(bodyId) || sR
+        const dAR = defaultPositions.get(arrowId) || aR
+
         let pathD = ''
         if (i === 0) {
-          const startX = sR.x
-          const startY = sR.y + sR.height / 2
-          pathD = `M ${startX} ${startY} L ${aR.x + 3} ${startY}`
+          const startX = dSR.x
+          const startY = dSR.y + dSR.height / 2
+          pathD = `M ${startX} ${startY} L ${dAR.x + 3} ${startY}`
         } else if (direction === 'left') {
           const prevArrowBaseX = 470
-          const startY = sR.y + rowHeight + sR.height / 2
+          const startY = dSR.y + rowHeight + dSR.height / 2
           const turnX = getTurnRightX(i - 1)
           const targetY = startY - rowHeight
 
-          pathD = `M ${prevArrowBaseX} ${startY} L ${turnX - R} ${startY} A ${R} ${R} 0 0 0 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 0 ${turnX - R} ${targetY} L ${aR.x + aR.width - 3} ${targetY}`
+          pathD = `M ${prevArrowBaseX} ${startY} L ${turnX - R} ${startY} A ${R} ${R} 0 0 0 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 0 ${turnX - R} ${targetY} L ${dAR.x + dAR.width - 3} ${targetY}`
         } else {
           const prevArrowBaseX = 555
-          const startY = sR.y + rowHeight + sR.height / 2
+          const startY = dSR.y + rowHeight + dSR.height / 2
           const turnX = getTurnLeftX(i - 1)
           const targetY = startY - rowHeight
 
-          pathD = `M ${prevArrowBaseX} ${startY} L ${turnX + R} ${startY} A ${R} ${R} 0 0 1 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 1 ${turnX + R} ${targetY} L ${aR.x + 3} ${targetY}`
+          pathD = `M ${prevArrowBaseX} ${startY} L ${turnX + R} ${startY} A ${R} ${R} 0 0 1 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 1 ${turnX + R} ${targetY} L ${dAR.x + 3} ${targetY}`
         }
 
         return (
@@ -327,11 +330,13 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         const stepColor = tplColors[arrowId] || tplColors[bodyId] || steps[i]?.color || defaultColor
         const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
 
+        const dAR = defaultPositions.get(arrowId) || aR
+
         let arrowPath = ''
         if (direction === 'right') {
-          arrowPath = `M ${aR.x} ${aR.y} L ${aR.x} ${aR.y + aR.height} L ${aR.x + aR.width} ${aR.y + aR.height / 2} Z`
+          arrowPath = `M ${dAR.x} ${dAR.y} L ${dAR.x} ${dAR.y + dAR.height} L ${dAR.x + dAR.width} ${dAR.y + dAR.height / 2} Z`
         } else {
-          arrowPath = `M ${aR.x + aR.width} ${aR.y} L ${aR.x + aR.width} ${aR.y + aR.height} L ${aR.x} ${aR.y + aR.height / 2} Z`
+          arrowPath = `M ${dAR.x + dAR.width} ${dAR.y} L ${dAR.x + dAR.width} ${dAR.y + dAR.height} L ${dAR.x} ${dAR.y + dAR.height / 2} Z`
         }
 
         return (
