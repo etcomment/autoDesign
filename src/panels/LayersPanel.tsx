@@ -37,20 +37,21 @@ function getTemplateSubElements(templateData: any, templateElementPositions: Rec
       const arr = templateData[colKey]
       const singular = colKey.endsWith('s') ? colKey.slice(0, -1) : colKey
       arr.forEach((item: any, i: number) => {
-        const id = `${singular}-${i + 1}`
-        const altId = `${singular}-${i}`
+        const idx = i + 1
+        const bodyId = `${singular}-body-${idx}`
+        const primaryId = singular === 'step' ? bodyId : `${singular}-${idx}`
         const rawTitle = typeof item === 'string' ? item : (item?.title || item?.name || item?.text || item?.label)
-        const titleStr = rawTitle ? `"${rawTitle}"` : `${i + 1}`
-        
+        const titleStr = rawTitle ? `"${rawTitle}"` : `${idx}`
+
         const children: TemplateSubElement[] = []
         for (const posId of Object.keys(templateElementPositions)) {
-          if ((posId.endsWith(`-${i + 1}`) || posId.endsWith(`-${i}`)) && posId !== id && posId !== altId) {
+          if ((posId.endsWith(`-${idx}`) || posId.endsWith(`-${i}`)) && posId !== primaryId) {
             children.push({ id: posId, label: `Sous-élément: ${posId}` })
             seenIds.add(posId)
           }
         }
-        
-        add(id, `${singular.charAt(0).toUpperCase() + singular.slice(1)} ${i + 1}: ${titleStr}`, children.length > 0 ? children : undefined)
+
+        add(primaryId, `${singular.charAt(0).toUpperCase() + singular.slice(1)} ${idx}: ${titleStr}`, children.length > 0 ? children : undefined)
       })
     }
   }
