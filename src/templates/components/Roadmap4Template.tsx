@@ -1,9 +1,11 @@
 import { TITLE_COLOR, MIGSO_PALETTE } from '../../lib/theme'
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
-import type { RoadmapData } from '../types'
+import type { RoadmapData, TemplateMilestone } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
 
 interface Rect {
   x: number
@@ -13,6 +15,26 @@ interface Rect {
 }
 
 const ORIGINAL_COLORS = ['#4cbfa0', '#ffbe00', '#ff4a2b', '#2d62ed', '#23255a']
+
+function getDynamicIcon(iconName?: string, size = 22, color = '#333333') {
+  if (!iconName) return null
+  const clean = iconName.trim()
+
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn({ size, color })
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const LucideFn =
+    (LucideIcons as Record<string, any>)[pascalName] ||
+    (LucideIcons as Record<string, any>)[clean] ||
+    (LucideIcons as Record<string, any>)[clean.toUpperCase()]
+
+  if (LucideFn) {
+    return <LucideFn size={size} color={color} />
+  }
+
+  return null
+}
 
 export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -25,8 +47,8 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
   const { title, milestones = [], steps = [] } = data as {
     title?: string
-    milestones?: Array<{ title: string; subtitle?: string; color?: string }>
-    steps?: Array<{ title: string; color?: string }>
+    milestones?: TemplateMilestone[]
+    steps?: Array<{ title: string; color?: string; icon?: string }>
   }
 
   const W = 1000
@@ -48,9 +70,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
   const count = Math.max(1, stepTitles.length)
 
   // 2. Fonctions d'alternance cyclique vraie des virages (indépendamment du nombre d'étapes N)
-  // Virages Droite : alternent dynamiquement entre 660px (court) et 710px (long) -> décalage constant de +50px
   const getTurnRightX = (index: number) => (Math.floor(index / 2) % 2 === 0 ? 660 : 710)
-  // Virages Gauche : alternent dynamiquement entre 310px (court) et 260px (long) -> décalage constant de -50px
   const getTurnLeftX = (index: number) => (Math.floor((index - 1) / 2) % 2 === 0 ? 310 : 260)
 
   const defaultPositions = useMemo(() => {
@@ -224,12 +244,10 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         let pathD = ''
 
         if (i === 0) {
-          // Étape 1 (en bas)
           const startX = sR.x
           const startY = sR.y + sR.height / 2
           pathD = `M ${startX} ${startY} L ${aR.x + 3} ${startY}`
         } else if (direction === 'left') {
-          // Virage vers la droite (en bout de segment allant vers la droite)
           const prevArrowBaseX = 470
           const startY = sR.y + rowHeight + sR.height / 2
           const turnX = getTurnRightX(i - 1)
@@ -237,7 +255,6 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
           pathD = `M ${prevArrowBaseX} ${startY} L ${turnX - R} ${startY} A ${R} ${R} 0 0 0 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 0 ${turnX - R} ${targetY} L ${aR.x + aR.width - 3} ${targetY}`
         } else {
-          // Virage vers la gauche (en bout de segment allant vers la gauche)
           const prevArrowBaseX = 555
           const startY = sR.y + rowHeight + sR.height / 2
           const turnX = getTurnLeftX(i - 1)
@@ -332,20 +349,31 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })}
 
-      {/* COUCHE 4 : ANNOTATIONS ET JALONS (Milestones) */}
+      {/* COUCHE 4 : ANNOTATIONS ET JALONS (Milestones) AVEC SUPPORT ICÔNES */}
       {displayMilestones.map((ms, idx) => {
         const msId = `milestone-${idx + 1}`
         const bodyId = `step-body-${idx + 1}`
         const msR = getR(msId)
 
         const isLeftHalf = msR.x < W / 2
-        const textX = isLeftHalf ? msR.x : msR.x + msR.width
         const textAnchor = isLeftHalf ? 'start' : 'end'
 
         const defaultColor = ORIGINAL_COLORS[idx % ORIGINAL_COLORS.length] || MIGSO_PALETTE[idx % MIGSO_PALETTE.length]!
         const msColor = tplColors[msId] || ms.color || tplColors[bodyId] || defaultColor
 
-        const maxChars = Math.max(10, Math.floor(msR.width / 7.5))
+        // Nom d'icône fourni dans le jalon ou dans l'étape
+        const rawIconName = ms.icon || steps[idx]?.icon
+        const iconElement = getDynamicIcon(rawIconName, 22, msColor)
+
+        // Si une icône est présente, décaler le texte en X pour laisser place à l'icône
+        const iconSize = 22
+        const iconGap = 8
+        const iconX = isLeftHalf ? msR.x : msR.x + msR.width - iconSize
+        const textX = rawIconName && iconElement
+          ? (isLeftHalf ? msR.x + iconSize + iconGap : msR.x + msR.width - iconSize - iconGap)
+          : (isLeftHalf ? msR.x : msR.x + msR.width)
+
+        const maxChars = Math.max(8, Math.floor((msR.width - (iconElement ? 30 : 0)) / 7.5))
         const titleLines = wrapTextByWidth(ms.title, maxChars)
         const subtitleLines = ms.subtitle ? wrapTextByWidth(ms.subtitle, maxChars + 5) : []
 
@@ -357,6 +385,13 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
             transform={getTransform(msId, msR)}
             style={{ cursor: 'pointer' }}
           >
+            {/* Rendu de l'icône SVG si présente dans les données DSL */}
+            {rawIconName && iconElement && (
+              <g transform={`translate(${iconX}, ${msR.y + 2})`}>
+                {iconElement}
+              </g>
+            )}
+
             <text
               x={textX}
               y={msR.y + 20}
