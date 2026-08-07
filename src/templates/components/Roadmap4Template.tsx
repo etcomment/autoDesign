@@ -47,7 +47,12 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
   const count = Math.max(1, stepTitles.length)
 
-  // 2. Disposition géométrique : Virages alternés légèrement en longueur (décalage de 45px)
+  // 2. Fonctions d'alternance nette et dynamique des virages à gauche et à droite
+  // Virages Droite alternent entre 680 (long) et 600 (court) -> différence visible de 80px
+  // Virages Gauche alternent entre 280 (long) et 360 (court) -> différence visible de 80px
+  const getTurnRightX = (index: number) => (index % 4 === 0 ? 685 : 605)
+  const getTurnLeftX = (index: number) => (index % 4 === 1 ? 275 : 355)
+
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
     map.set('main-title', { x: W / 2 - 200, y: 25, width: 400, height: 40 })
@@ -59,10 +64,6 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
     const extensionLength = 160
     const arrowHeadW = 40
     const arrowHeadH = 66
-
-    // Alternance des virages : décalage léger de +- 35px
-    const getTurnLeftX = (idx: number) => (idx % 2 === 0 ? 300 : 340)
-    const getTurnRightX = (idx: number) => (idx % 2 === 0 ? 670 : 635)
 
     for (let i = 0; i < count; i++) {
       const stepId = `step-${i + 1}`
@@ -127,9 +128,9 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
       let msX: number
       if (direction === 'right') {
-        msX = isLast ? segRightX + 15 : turnRightX + 50
+        msX = isLast ? segRightX + 15 : turnRightX + 45
       } else {
-        msX = isLast ? segLeftX - 250 : turnLeftX - 230
+        msX = isLast ? segLeftX - 250 : turnLeftX - 245
       }
 
       const msRect: Rect = {
@@ -149,7 +150,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
       const msId = `milestone-${i + 1}`
       const isLeft = i % 2 === 1
       const yPos = Math.max(30, 420 - Math.floor(i / 2) * 80)
-      map.set(msId, { x: isLeft ? 50 : 720, y: yPos, width: 230, height: 70 })
+      map.set(msId, { x: isLeft ? 70 : 700, y: yPos, width: 230, height: 70 })
     }
 
     return map
@@ -203,7 +204,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         </g>
       )}
 
-      {/* COUCHE 1 : RENDU DES SEGMENTS AVEC VIRAGES ALTERNÉS (COURBE -> LIGNE DROITE VERTICALE -> COURBE) */}
+      {/* COUCHE 1 : RENDU DES SEGMENTS AVEC VIRAGES CLAIREMENT ALTERNÉS EN LONGUEUR */}
       {Array.from({ length: count }).map((_, i) => {
         const bodyId = `step-body-${i + 1}`
         const arrowId = `step-arrow-${i + 1}`
@@ -228,30 +229,21 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
           const startY = sR.y + sR.height / 2
           pathD = `M ${startX} ${startY} L ${aR.x + 3} ${startY}`
         } else if (direction === 'left') {
-          // Virage vers la droite (ex: virage au bout de l'étape 1)
+          // Virage vers la droite (en bout de segment allant vers la droite)
           const prevArrowBaseX = 470
           const startY = sR.y + rowHeight + sR.height / 2
-          const turnX = 670 // Virage de l'étape 1 à X=670
+          const turnX = getTurnRightX(i - 1)
           const targetY = startY - rowHeight
 
-          if (hasNext) {
-            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX - R} ${startY} A ${R} ${R} 0 0 0 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 0 ${turnX - R} ${targetY} L ${aR.x + aR.width - 3} ${targetY}`
-          } else {
-            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX - R} ${startY} A ${R} ${R} 0 0 0 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 0 ${turnX - R} ${targetY} L ${aR.x + aR.width - 3} ${targetY}`
-          }
+          pathD = `M ${prevArrowBaseX} ${startY} L ${turnX - R} ${startY} A ${R} ${R} 0 0 0 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 0 ${turnX - R} ${targetY} L ${aR.x + aR.width - 3} ${targetY}`
         } else {
-          // Virage vers la gauche (ex: virage au bout de l'étape 2)
-          // Alternance : virage Étape 2 à X=340 au lieu de 300 pour créer l'effet "un peu plus court/long"
+          // Virage vers la gauche (en bout de segment allant vers la gauche)
           const prevArrowBaseX = 555
           const startY = sR.y + rowHeight + sR.height / 2
-          const turnX = i % 2 === 0 ? 300 : 340
+          const turnX = getTurnLeftX(i - 1)
           const targetY = startY - rowHeight
 
-          if (hasNext) {
-            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX + R} ${startY} A ${R} ${R} 0 0 1 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 1 ${turnX + R} ${targetY} L ${aR.x + 3} ${targetY}`
-          } else {
-            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX + R} ${startY} A ${R} ${R} 0 0 1 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 1 ${turnX + R} ${targetY} L ${aR.x + 3} ${targetY}`
-          }
+          pathD = `M ${prevArrowBaseX} ${startY} L ${turnX + R} ${startY} A ${R} ${R} 0 0 1 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 1 ${turnX + R} ${targetY} L ${aR.x + 3} ${targetY}`
         }
 
         return (
