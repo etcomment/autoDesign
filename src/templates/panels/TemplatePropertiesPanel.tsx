@@ -48,21 +48,6 @@ function ColorGrid({ currentColor, onPick, prefix }: { currentColor: string; onP
   )
 }
 
-function elementLabel(elementId: string): string {
-  const dash = elementId.indexOf('-')
-  if (dash < 0) return elementId
-  const prefix = elementId.slice(0, dash)
-  const name = elementId.slice(dash + 1)
-  const labels: Record<string, string> = {
-    milestone: 'Milestone', circle: 'Circle', block: 'Block', step: 'Step', piece: 'Piece',
-    level: 'Level', section: 'Section', metric: 'Metric', row: 'Row',
-    item: 'Item', node: 'Node', station: 'Station', branch: 'Branch',
-    primary: 'Activity', support: 'Support',
-    timeline: 'Timeline', start: 'Start', finish: 'Finish', chevron: 'Chevron',
-  }
-  return `${labels[prefix] ?? prefix}: ${name}`
-}
-
 const collectionKeys: Record<string, string> = {
   milestone: 'milestones',
   circle: 'milestones',
@@ -94,31 +79,76 @@ const collectionKeys: Record<string, string> = {
   quadrant: 'quadrants',
 }
 
-const numericFields = new Set(['percentage', 'width', 'height', 'x', 'y'])
-
-function updateElementField(
-  elementId: string,
-  field: string,
-  value: string,
-  templateData: Record<string, unknown>,
-): Record<string, unknown> {
-  const parts = elementId.split('-')
-  const rawIdx = parseInt(parts[parts.length - 1]!, 10)
-  if (isNaN(rawIdx)) return templateData
-  const index = rawIdx > 0 && (parts[0] === 'milestone' || parts[0] === 'step' || parts[0] === 'block' || parts[0] === 'item' || parts[0] === 'card' || parts[0] === 'node' || parts[0] === 'branch') ? rawIdx - 1 : rawIdx
-  const prefix = parts[0] === 'block' ? 'milestone' : parts[0]!
-  const collectionKey = collectionKeys[prefix]
-  if (!collectionKey) return templateData
-  const items = templateData[collectionKey] as Record<string, unknown>[] | undefined
-  if (!items || !items[index]) return templateData
-  const coerced = numericFields.has(field) ? (value === '' ? '' : Number(value)) : value
-  const targetField = (field === 'title' && collectionKey === 'milestones') ? 'title' : field
-  const newItems = items.map((item, i) => {
-    if (i !== index) return item
-    return { ...item, [targetField]: coerced }
-  })
-  return { ...templateData, [collectionKey]: newItems }
+interface ParsedElement {
+  prefix: string
+  collectionKey?: string
+  index: number
+  isStartBanner?: boolean
+  isFinishBanner?: boolean
+  isMainTitle?: boolean
 }
+
+function parseTemplateElementId(elementId: string): ParsedElement {
+  const parts = elementId.split('-')
+  
+  if (parts.includes('start')) {
+    return { prefix: 'banner', isStartBanner: true, index: NaN }
+  }
+  if (parts.includes('finish')) {
+    return { prefix: 'banner', isFinishBanner: true, index: NaN }
+  }
+  if (parts.length === 1 && parts[0] === 'title') {
+    return { prefix: 'title', isMainTitle: true, index: NaN }
+  }
+  if (parts.includes('title') && !parts.includes('card') && !parts.includes('item') && !parts.includes('ms')) {
+    return { prefix: 'title', isMainTitle: true, index: NaN }
+  }
+
+  // Find numeric index from parts
+  let rawIdx = NaN
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const parsed = parseInt(parts[i]!, 10)
+    if (!isNaN(parsed)) {
+      rawIdx = parsed
+      break
+    }
+  }
+
+  // Find prefix matching collectionKeys
+  let prefix = ''
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const part = parts[i]!
+    if (collectionKeys[part]) {
+      prefix = part
+      break
+    }
+  }
+
+  if (!prefix && parts.length > 0) {
+    prefix = parts[0]!
+  }
+
+  const collectionKey = collectionKeys[prefix]
+  return { prefix, collectionKey, index: rawIdx }
+}
+
+function elementLabel(elementId: string): string {
+  const parsed = parseTemplateElementId(elementId)
+  if (parsed.isMainTitle) return 'Titre Principal'
+  if (parsed.isStartBanner) return 'Bannière Début (Start)'
+  if (parsed.isFinishBanner) return 'Bannière Fin (Finish)'
+  const labels: Record<string, string> = {
+    milestone: 'Jalon', circle: 'Cercle', block: 'Bloc', step: 'Étape', piece: 'Pièce',
+    level: 'Niveau', section: 'Section', metric: 'Métrique', row: 'Ligne',
+    item: 'Élément', node: 'Nœud', station: 'Station', branch: 'Branche',
+    primary: 'Activité', support: 'Support', card: 'Carte Jalon',
+    timeline: 'Chronologie', start: 'Début', finish: 'Fin', chevron: 'Chevron',
+  }
+  const label = labels[parsed.prefix] ?? parsed.prefix
+  return !isNaN(parsed.index) ? `${label} ${parsed.index + 1}` : label
+}
+
+const numericFields = new Set(['percentage', 'width', 'height', 'x', 'y'])
 
 export function TemplatePropertiesPanel() {
   const activeTemplate = useTemplateStore(s => s.activeTemplate)
@@ -169,38 +199,71 @@ export function TemplatePropertiesPanel() {
     }
   }
 
-  const parts = primaryId.split('-')
-  const rawIdx = parseInt(parts[parts.length - 1]!, 10)
-  const paramIndex = !isNaN(rawIdx) ? (rawIdx > 0 && (parts[0] === 'milestone' || parts[0] === 'step' || parts[0] === 'block' || parts[0] === 'item' || parts[0] === 'card' || parts[0] === 'node' || parts[0] === 'branch') ? rawIdx - 1 : rawIdx) : NaN
-  const prefix = parts[0] === 'block' ? 'milestone' : parts[0]!
-  const collKey = collectionKeys[prefix]
+  const parsed = parseTemplateElementId(primaryId)
   let currentTitle = ''
   let currentSubtitle = ''
   let currentAmount = ''
   let currentPercentage = ''
 
   if (templateData) {
-    if (primaryId === 'title' && typeof templateData.title === 'string') {
+    if (parsed.isMainTitle && typeof templateData.title === 'string') {
       currentTitle = templateData.title
-    } else if (collKey && !isNaN(paramIndex)) {
-      const items = (templateData as unknown as Record<string, unknown>)[collKey] as Record<string, string>[] | undefined
-      if (items && items[paramIndex]) {
-        currentTitle = items[paramIndex].label ?? items[paramIndex].title ?? items[paramIndex].name ?? items[paramIndex].text ?? ''
-        currentSubtitle = items[paramIndex].subtitle ?? items[paramIndex].description ?? ''
-        currentAmount = items[paramIndex].amount ?? ''
-        currentPercentage = items[paramIndex].percentage != null ? String(items[paramIndex].percentage) : ''
+    } else if (parsed.isStartBanner && typeof (templateData as Record<string, unknown>).startLabel === 'string') {
+      currentTitle = (templateData as Record<string, unknown>).startLabel as string
+    } else if (parsed.isFinishBanner && typeof (templateData as Record<string, unknown>).finishLabel === 'string') {
+      currentTitle = (templateData as Record<string, unknown>).finishLabel as string
+    } else if (parsed.collectionKey && !isNaN(parsed.index)) {
+      const items = (templateData as unknown as Record<string, unknown>)[parsed.collectionKey] as Record<string, unknown>[] | undefined
+      if (items) {
+        const item = items[parsed.index] ?? (parsed.index > 0 ? items[parsed.index - 1] : undefined)
+        if (item) {
+          currentTitle = String(item.label ?? item.title ?? item.name ?? item.text ?? '')
+          currentSubtitle = String(item.subtitle ?? item.description ?? '')
+          currentAmount = String(item.amount ?? '')
+          currentPercentage = item.percentage != null ? String(item.percentage) : ''
+        }
       }
     }
   }
 
   const handleFieldChange = (field: string, value: string) => {
     if (!templateData) return
-    if (primaryId === 'title' && field === 'title') {
+
+    if (parsed.isMainTitle && field === 'title') {
       updateTemplateData({ ...templateData, title: value })
       return
     }
-    const updated = updateElementField(primaryId, field, value, templateData as unknown as Record<string, unknown>)
-    updateTemplateData(updated as never)
+    if (parsed.isStartBanner && field === 'title') {
+      updateTemplateData({ ...templateData, startLabel: value } as never)
+      return
+    }
+    if (parsed.isFinishBanner && field === 'title') {
+      updateTemplateData({ ...templateData, finishLabel: value } as never)
+      return
+    }
+
+    if (parsed.collectionKey && !isNaN(parsed.index)) {
+      const items = (templateData as unknown as Record<string, unknown>)[parsed.collectionKey] as Record<string, unknown>[] | undefined
+      if (!items) return
+
+      let targetIndex = parsed.index
+      if (!items[targetIndex] && targetIndex > 0 && items[targetIndex - 1]) {
+        targetIndex = targetIndex - 1
+      }
+      if (!items[targetIndex]) return
+
+      const coerced = numericFields.has(field) ? (value === '' ? '' : Number(value)) : value
+      
+      const newItems = items.map((item, i) => {
+        if (i !== targetIndex) return item
+        return { ...item, [field]: coerced }
+      })
+
+      updateTemplateData({
+        ...templateData,
+        [parsed.collectionKey]: newItems,
+      } as never)
+    }
   }
 
   return (
@@ -226,7 +289,7 @@ export function TemplatePropertiesPanel() {
         </div>
       )}
 
-      {!isMulti && (primaryId !== 'title') && (
+      {!isMulti && !parsed.isMainTitle && !parsed.isStartBanner && !parsed.isFinishBanner && (
         <div style={styles.section}>
           <label style={styles.sectionLabel}>Sous-titre / Description</label>
           <textarea
@@ -239,7 +302,7 @@ export function TemplatePropertiesPanel() {
         </div>
       )}
 
-      {!isMulti && prefix === 'item' && currentAmount !== '' && (
+      {!isMulti && parsed.prefix === 'item' && currentAmount !== '' && (
         <div style={styles.section}>
           <label style={styles.sectionLabel}>Montant / Tarif</label>
           <input
@@ -252,7 +315,7 @@ export function TemplatePropertiesPanel() {
         </div>
       )}
 
-      {!isMulti && prefix === 'item' && currentPercentage !== '' && (
+      {!isMulti && parsed.prefix === 'item' && currentPercentage !== '' && (
         <div style={styles.section}>
           <label style={styles.sectionLabel}>Pourcentage</label>
           <input
@@ -358,7 +421,6 @@ export function TemplatePropertiesPanel() {
                 return
               }
 
-              // Calcul du centre de la bounding box collective
               let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
               elements.forEach(id => {
                 const pos = templateElementPositions[id] ?? primaryPos
@@ -441,8 +503,6 @@ export function TemplatePropertiesPanel() {
     </div>
   )
 }
-
-const paramsAllowSubtitle = new Set(['milestone', 'block', 'step', 'piece', 'level', 'section', 'item', 'node', 'branch', 'station', 'primary', 'support', 'dot', 'card', 'segment'])
 
 const styles: Record<string, React.CSSProperties> = {
   panel: {
