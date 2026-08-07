@@ -318,33 +318,52 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })}
 
-      {/* COUCHE 3 : LABELS D'ÉTAPES SUR LES RUBANS */}
+      {/* COUCHE 3 : LABELS D'ÉTAPES SUR LES RUBANS & ICÔNES SUR LES POINTES DE FLÈCHE */}
       {Array.from({ length: count }).map((_, i) => {
         const stepId = `step-${i + 1}`
+        const bodyId = `step-body-${i + 1}`
+        const arrowId = `step-arrow-${i + 1}`
         const stR = getR(stepId)
+        const aR = getR(arrowId)
         const label = stepTitles[i] || `Step ${i + 1}`
         const textColor = tplColors[stepId] || '#ffffff'
 
+        const rawIconName = steps[i]?.icon || displayMilestones[i]?.icon
+        const iconElement = getDynamicIcon(rawIconName, 22, '#ffffff')
+
+        // Positionnement de l'icône directement sur la pointe de la flèche triangulaire
+        const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
+        const iconX = direction === 'right' ? aR.x + aR.width - 26 : aR.x + 4
+        const iconY = aR.y + aR.height / 2 - 11
+
         return (
-          <g
-            key={stepId}
-            data-element-id={stepId}
-            onMouseDown={e => startDrag(e, stepId, stR)}
-            transform={getTransform(stepId, stR)}
-            style={{ cursor: 'pointer' }}
-          >
-            <text
-              x={stR.x + stR.width / 2}
-              y={stR.y + stR.height / 2 + 5}
-              textAnchor="middle"
-              fontFamily="Arial, sans-serif"
-              fontSize={18}
-              fontWeight="bold"
-              fill={textColor}
+          <g key={stepId}>
+            {/* Icône affichée directement sur la pointe de la flèche */}
+            {rawIconName && iconElement && (
+              <g transform={`translate(${iconX}, ${iconY})`}>
+                {iconElement}
+              </g>
+            )}
+
+            <g
+              data-element-id={stepId}
+              onMouseDown={e => startDrag(e, stepId, stR)}
+              transform={getTransform(stepId, stR)}
+              style={{ cursor: 'pointer' }}
             >
-              {label}
-            </text>
-            {selectedIds.has(stepId) && renderHandles(stR, stepId)}
+              <text
+                x={stR.x + stR.width / 2}
+                y={stR.y + stR.height / 2 + 5}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={18}
+                fontWeight="bold"
+                fill={textColor}
+              >
+                {label}
+              </text>
+              {selectedIds.has(stepId) && renderHandles(stR, stepId)}
+            </g>
           </g>
         )
       })}
