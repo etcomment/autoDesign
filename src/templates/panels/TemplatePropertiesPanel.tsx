@@ -102,17 +102,20 @@ function updateElementField(
   value: string,
   templateData: Record<string, unknown>,
 ): Record<string, unknown> {
-  const prefix = elementId.split('-')[0]!
-  const index = parseInt(elementId.split('-')[1]!, 10)
-  if (isNaN(index)) return templateData
+  const parts = elementId.split('-')
+  const rawIdx = parseInt(parts[parts.length - 1]!, 10)
+  if (isNaN(rawIdx)) return templateData
+  const index = rawIdx > 0 && (parts[0] === 'milestone' || parts[0] === 'step' || parts[0] === 'block' || parts[0] === 'item' || parts[0] === 'card' || parts[0] === 'node' || parts[0] === 'branch') ? rawIdx - 1 : rawIdx
+  const prefix = parts[0] === 'block' ? 'milestone' : parts[0]!
   const collectionKey = collectionKeys[prefix]
   if (!collectionKey) return templateData
   const items = templateData[collectionKey] as Record<string, unknown>[] | undefined
   if (!items || !items[index]) return templateData
   const coerced = numericFields.has(field) ? (value === '' ? '' : Number(value)) : value
+  const targetField = (field === 'title' && collectionKey === 'milestones') ? 'title' : field
   const newItems = items.map((item, i) => {
     if (i !== index) return item
-    return { ...item, [field]: coerced }
+    return { ...item, [targetField]: coerced }
   })
   return { ...templateData, [collectionKey]: newItems }
 }
@@ -150,8 +153,10 @@ export function TemplatePropertiesPanel() {
   const primaryPos = templateElementPositions[primaryId] ?? { x: 0, y: 0, width: 100, height: 100 }
   const primaryRot = templateElementRotations[primaryId] ?? 0
 
-  const prefix = primaryId.split('-')[0]!
-  const paramIndex = parseInt(primaryId.split('-')[1]!, 10)
+  const parts = primaryId.split('-')
+  const rawIdx = parseInt(parts[parts.length - 1]!, 10)
+  const paramIndex = !isNaN(rawIdx) ? (rawIdx > 0 && (parts[0] === 'milestone' || parts[0] === 'step' || parts[0] === 'block' || parts[0] === 'item' || parts[0] === 'card' || parts[0] === 'node' || parts[0] === 'branch') ? rawIdx - 1 : rawIdx) : NaN
+  const prefix = parts[0] === 'block' ? 'milestone' : parts[0]!
   const collKey = collectionKeys[prefix]
   let currentTitle = ''
   let currentSubtitle = ''
