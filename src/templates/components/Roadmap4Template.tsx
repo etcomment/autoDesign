@@ -206,20 +206,13 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
     // Initialisation des groupes natifs de template s'ils ne sont pas encore définis
     for (let i = 0; i < count; i++) {
       const idx = i + 1
-      const msId = `milestone-${idx}`
       const bodyId = `step-body-${idx}`
       const arrowId = `step-arrow-${idx}`
       const stepId = `step-${idx}`
-      const stepGroupId = `step-group-${idx}`
-      const blockId = `block-${idx}`
 
-      // Sous-groupe Ruban & Flèche
+      // Sous-groupe Ruban & Flèche uniquement (isolé du Titre/Description Jalon)
       if (!templateElementGroupIds[bodyId]) {
         groupTemplateElements([bodyId, arrowId, stepId])
-      }
-      // Groupe global du Bloc
-      if (!templateElementGroupIds[msId]) {
-        groupTemplateElements([msId, bodyId, arrowId, stepId])
       }
     }
   }, [defaultPositions, pos, moveEl, resizeEl, count, groupTemplateElements, templateElementGroupIds])
