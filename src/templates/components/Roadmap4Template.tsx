@@ -353,8 +353,9 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
             >
               <text
                 x={stR.x + stR.width / 2}
-                y={stR.y + stR.height / 2 + 5}
+                y={stR.y + stR.height / 2}
                 textAnchor="middle"
+                dominantBaseline="central"
                 fontFamily="Arial, sans-serif"
                 fontSize={18}
                 fontWeight="bold"
