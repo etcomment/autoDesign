@@ -289,14 +289,14 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
           const prevArrowBaseX = 470 + dx
           const startY = defaultSR.y + rowHeight + defaultSR.height / 2 + dy
           const turnX = getTurnRightX(i - 1) + dx
-          const targetY = startY - rowHeight
+          const targetY = aR.y + aR.height / 2
 
           pathD = `M ${prevArrowBaseX} ${startY} L ${turnX - R} ${startY} A ${R} ${R} 0 0 0 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 0 ${turnX - R} ${targetY} L ${aR.x + aR.width - 3} ${targetY}`
         } else {
           const prevArrowBaseX = 555 + dx
           const startY = defaultSR.y + rowHeight + defaultSR.height / 2 + dy
           const turnX = getTurnLeftX(i - 1) + dx
-          const targetY = startY - rowHeight
+          const targetY = aR.y + aR.height / 2
 
           pathD = `M ${prevArrowBaseX} ${startY} L ${turnX + R} ${startY} A ${R} ${R} 0 0 1 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 1 ${turnX + R} ${targetY} L ${aR.x + 3} ${targetY}`
         }
