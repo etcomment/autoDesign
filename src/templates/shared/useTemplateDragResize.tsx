@@ -302,10 +302,8 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
     const allStartRotations: Record<string, number> = {}
     let groupStartRect = rect
 
-    const groupId = templateElementGroupIds[id]
-    const groupMembers = groupId && templateGroups[groupId] ? templateGroups[groupId] : null
-    const isMulti = (selectedIds.size > 1 && selectedIds.has(id)) || (groupMembers && groupMembers.length > 1)
-    const targetIds = groupMembers ? groupMembers : (selectedIds.size > 1 && selectedIds.has(id) ? Array.from(selectedIds) : [id])
+    const isMulti = selectedIds.size > 1 && selectedIds.has(id)
+    const targetIds = isMulti ? Array.from(selectedIds) : [id]
 
     let minX = Infinity
     let minY = Infinity
