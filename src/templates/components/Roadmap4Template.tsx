@@ -224,25 +224,27 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         </g>
       )}
 
-      {/* COUCHE 1 : RENDU DES SEGMENTS AVEC VIRAGES CLAIREMENT ALTERNÉS EN LONGUEUR */}
+      {/* COUCHE 1 & 2 & 3 : RENDU DES ÉTAPES COMPLÈTES (BODY, FLÈCHE, LABEL, ICÔNE) DANS LEUR GROUPE DE TRANSFORMATION ET DE MASQUAGE */}
       {Array.from({ length: count }).map((_, i) => {
+        const stepId = `step-${i + 1}`
         const bodyId = `step-body-${i + 1}`
         const arrowId = `step-arrow-${i + 1}`
+        
+        const stR = getR(stepId)
         const sR = getR(bodyId)
         const aR = getR(arrowId)
 
         const defaultColor = ORIGINAL_COLORS[i % ORIGINAL_COLORS.length] || MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         const stepColor = tplColors[bodyId] || steps[i]?.color || defaultColor
+        const textColor = tplColors[stepId] || '#ffffff'
 
         const rowHeight = 115
         const strokeW = 33
         const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
-        const hasNext = i < count - 1
 
         const R = 22
 
         let pathD = ''
-
         if (i === 0) {
           const startX = sR.x
           const startY = sR.y + sR.height / 2
@@ -263,12 +265,26 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
           pathD = `M ${prevArrowBaseX} ${startY} L ${turnX + R} ${startY} A ${R} ${R} 0 0 1 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 1 ${turnX + R} ${targetY} L ${aR.x + 3} ${targetY}`
         }
 
+        let arrowPath = ''
+        if (direction === 'right') {
+          arrowPath = `M ${aR.x} ${aR.y} L ${aR.x} ${aR.y + aR.height} L ${aR.x + aR.width} ${aR.y + aR.height / 2} Z`
+        } else {
+          arrowPath = `M ${aR.x + aR.width} ${aR.y} L ${aR.x + aR.width} ${aR.y + aR.height} L ${aR.x} ${aR.y + aR.height / 2} Z`
+        }
+
+        const label = stepTitles[i] || `Step ${i + 1}`
+        const rawIconName = steps[i]?.icon || displayMilestones[i]?.icon
+        const iconElement = getDynamicIcon(rawIconName, 22, '#ffffff')
+
+        const iconX = direction === 'right' ? aR.x - 30 : aR.x + aR.width + 8
+        const iconY = aR.y + aR.height / 2 - 11
+
         return (
-          <g key={`body-${bodyId}`}>
+          <g key={stepId} data-element-id={stepId} transform={getTransform(stepId, stR)}>
+            {/* Ruban principal */}
             <g
               data-element-id={bodyId}
-              onMouseDown={e => startDrag(e, bodyId, sR)}
-              transform={getTransform(bodyId, sR)}
+              onMouseDown={e => startDrag(e, stepId, stR)}
               style={{ cursor: 'pointer' }}
             >
               <path
@@ -279,76 +295,27 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
                 strokeLinecap="butt"
                 strokeLinejoin="round"
               />
-              {selectedIds.has(bodyId) && renderHandles(sR, bodyId)}
             </g>
-          </g>
-        )
-      })}
 
-      {/* COUCHE 2 : FLÈCHES TRIANGULAIRES */}
-      {Array.from({ length: count }).map((_, i) => {
-        const bodyId = `step-body-${i + 1}`
-        const arrowId = `step-arrow-${i + 1}`
-        const aR = getR(arrowId)
-
-        const defaultColor = ORIGINAL_COLORS[i % ORIGINAL_COLORS.length] || MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
-        const stepColor = tplColors[arrowId] || tplColors[bodyId] || steps[i]?.color || defaultColor
-
-        const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
-
-        let arrowPath = ''
-        if (direction === 'right') {
-          arrowPath = `M ${aR.x} ${aR.y} L ${aR.x} ${aR.y + aR.height} L ${aR.x + aR.width} ${aR.y + aR.height / 2} Z`
-        } else {
-          arrowPath = `M ${aR.x + aR.width} ${aR.y} L ${aR.x + aR.width} ${aR.y + aR.height} L ${aR.x} ${aR.y + aR.height / 2} Z`
-        }
-
-        return (
-          <g key={`arrow-${arrowId}`}>
+            {/* Pointe de la flèche triangulaire */}
             <g
               data-element-id={arrowId}
-              onMouseDown={e => startDrag(e, arrowId, aR)}
-              transform={getTransform(arrowId, aR)}
+              onMouseDown={e => startDrag(e, stepId, stR)}
               style={{ cursor: 'pointer' }}
             >
-              <path d={arrowPath} fill={stepColor} />
-              {selectedIds.has(arrowId) && renderHandles(aR, arrowId)}
+              <path d={arrowPath} fill={tplColors[arrowId] || stepColor} />
             </g>
-          </g>
-        )
-      })}
 
-      {/* COUCHE 3 : LABELS D'ÉTAPES SUR LES RUBANS & ICÔNES SUR LES POINTES DE FLÈCHE */}
-      {Array.from({ length: count }).map((_, i) => {
-        const stepId = `step-${i + 1}`
-        const bodyId = `step-body-${i + 1}`
-        const arrowId = `step-arrow-${i + 1}`
-        const stR = getR(stepId)
-        const aR = getR(arrowId)
-        const label = stepTitles[i] || `Step ${i + 1}`
-        const textColor = tplColors[stepId] || '#ffffff'
-
-        const rawIconName = steps[i]?.icon || displayMilestones[i]?.icon
-        const iconElement = getDynamicIcon(rawIconName, 22, '#ffffff')
-
-        // Positionnement de l'icône dans le segment juste avant la base de la flèche
-        const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
-        const iconX = direction === 'right' ? aR.x - 30 : aR.x + aR.width + 8
-        const iconY = aR.y + aR.height / 2 - 11
-
-        return (
-          <g key={stepId}>
-            {/* Icône affichée directement sur la pointe de la flèche */}
+            {/* Icône sur le ruban */}
             {rawIconName && iconElement && (
               <g transform={`translate(${iconX}, ${iconY})`}>
                 {iconElement}
               </g>
             )}
 
+            {/* Libellé texte de l'étape */}
             <g
-              data-element-id={stepId}
               onMouseDown={e => startDrag(e, stepId, stR)}
-              transform={getTransform(stepId, stR)}
               style={{ cursor: 'pointer' }}
             >
               <text
@@ -363,8 +330,9 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
               >
                 {label}
               </text>
-              {selectedIds.has(stepId) && renderHandles(stR, stepId)}
             </g>
+
+            {selectedIds.has(stepId) && renderHandles(stR, stepId)}
           </g>
         )
       })}

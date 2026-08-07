@@ -37,14 +37,15 @@ function getTemplateSubElements(templateData: any, templateElementPositions: Rec
       const arr = templateData[colKey]
       const singular = colKey.endsWith('s') ? colKey.slice(0, -1) : colKey
       arr.forEach((item: any, i: number) => {
-        const id = `${singular}-${i}`
+        const id = `${singular}-${i + 1}`
+        const altId = `${singular}-${i}`
         const rawTitle = typeof item === 'string' ? item : (item?.title || item?.name || item?.text || item?.label)
         const titleStr = rawTitle ? `"${rawTitle}"` : `${i + 1}`
         
         const children: TemplateSubElement[] = []
         for (const posId of Object.keys(templateElementPositions)) {
-          if (posId.endsWith(`-${i}`) && posId !== id) {
-            children.push({ id: posId, label: `Élément: ${posId.split('-')[0]}` })
+          if ((posId.endsWith(`-${i + 1}`) || posId.endsWith(`-${i}`)) && posId !== id && posId !== altId) {
+            children.push({ id: posId, label: `Sous-élément: ${posId}` })
             seenIds.add(posId)
           }
         }
@@ -364,12 +365,11 @@ export function LayersPanel() {
 
                 {/* Render Template Child Sub-Elements */}
                 {isTemplate && isTemplateTreeExpanded && templateSubElements.map((subItem) => {
-                  const isSubSelected = selectedTemplateElementIds.has(subItem.id)
-                  const isSubHidden = hiddenTemplateElementIds.has(subItem.id)
+                  const isSubHidden = hiddenTemplateElementIds.has(subItem.id) || isTemplateHidden
 
                   const renderSubItemRow = (item: TemplateSubElement, isChild = false) => {
                     const isSelected = selectedTemplateElementIds.has(item.id)
-                    const isHidden = hiddenTemplateElementIds.has(item.id) || (!isChild && isSubHidden) || isTemplateHidden
+                    const isHidden = hiddenTemplateElementIds.has(item.id) || (!isChild && isSubHidden) || (isChild && isSubHidden) || isTemplateHidden
 
                     return (
                       <div
