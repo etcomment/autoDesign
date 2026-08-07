@@ -147,11 +147,24 @@ export function TemplatePropertiesPanel() {
   const elements = [...selectedIds]
   const primaryId = elements[0]!
   const isMulti = elements.length > 1
-  const primaryFill = templateColors[primaryId] ?? ''
-  const primaryStroke = templateStrokeColors[primaryId] ?? ''
-  const primaryStrokeWidth = templateStrokeWidths[primaryId] ?? 1
   const primaryPos = templateElementPositions[primaryId] ?? { x: 0, y: 0, width: 100, height: 100 }
   const primaryRot = templateElementRotations[primaryId] ?? 0
+  let groupPos = primaryPos
+  if (isMulti) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    elements.forEach(id => {
+      const p = templateElementPositions[id]
+      if (p) {
+        minX = Math.min(minX, p.x)
+        minY = Math.min(minY, p.y)
+        maxX = Math.max(maxX, p.x + p.width)
+        maxY = Math.max(maxY, p.y + p.height)
+      }
+    })
+    if (minX !== Infinity) {
+      groupPos = { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+    }
+  }
 
   const parts = primaryId.split('-')
   const rawIdx = parseInt(parts[parts.length - 1]!, 10)
@@ -259,10 +272,10 @@ export function TemplatePropertiesPanel() {
             <label style={{ fontSize: 10, color: '#666' }}>X (px)</label>
             <input
               type="number"
-              value={Math.round(primaryPos.x)}
+              value={Math.round(groupPos.x)}
               onChange={(e) => {
                 const newX = Number(e.target.value)
-                const dx = newX - primaryPos.x
+                const dx = newX - groupPos.x
                 elements.forEach(id => {
                   const currentP = templateElementPositions[id] ?? primaryPos
                   moveTemplateElement(id, { x: currentP.x + dx, y: currentP.y })
@@ -275,10 +288,10 @@ export function TemplatePropertiesPanel() {
             <label style={{ fontSize: 10, color: '#666' }}>Y (px)</label>
             <input
               type="number"
-              value={Math.round(primaryPos.y)}
+              value={Math.round(groupPos.y)}
               onChange={(e) => {
                 const newY = Number(e.target.value)
-                const dy = newY - primaryPos.y
+                const dy = newY - groupPos.y
                 elements.forEach(id => {
                   const currentP = templateElementPositions[id] ?? primaryPos
                   moveTemplateElement(id, { x: currentP.x, y: currentP.y + dy })
@@ -291,12 +304,16 @@ export function TemplatePropertiesPanel() {
             <label style={{ fontSize: 10, color: '#666' }}>Largeur (px)</label>
             <input
               type="number"
-              value={Math.round(primaryPos.width)}
+              value={Math.round(groupPos.width)}
               onChange={(e) => {
-                const newW = Number(e.target.value)
+                const newW = Math.max(10, Number(e.target.value))
+                if (groupPos.width <= 0) return
+                const scaleX = newW / groupPos.width
                 elements.forEach(id => {
                   const currentP = templateElementPositions[id] ?? primaryPos
-                  resizeTemplateElement(id, { width: newW, height: currentP.height })
+                  const relX = currentP.x - groupPos.x
+                  moveTemplateElement(id, { x: groupPos.x + relX * scaleX, y: currentP.y })
+                  resizeTemplateElement(id, { width: currentP.width * scaleX, height: currentP.height })
                 })
               }}
               style={styles.textInput}
@@ -306,12 +323,16 @@ export function TemplatePropertiesPanel() {
             <label style={{ fontSize: 10, color: '#666' }}>Hauteur (px)</label>
             <input
               type="number"
-              value={Math.round(primaryPos.height)}
+              value={Math.round(groupPos.height)}
               onChange={(e) => {
-                const newH = Number(e.target.value)
+                const newH = Math.max(10, Number(e.target.value))
+                if (groupPos.height <= 0) return
+                const scaleY = newH / groupPos.height
                 elements.forEach(id => {
                   const currentP = templateElementPositions[id] ?? primaryPos
-                  resizeTemplateElement(id, { width: currentP.width, height: newH })
+                  const relY = currentP.y - groupPos.y
+                  moveTemplateElement(id, { x: currentP.x, y: groupPos.y + relY * scaleY })
+                  resizeTemplateElement(id, { width: currentP.width, height: currentP.height * scaleY })
                 })
               }}
               style={styles.textInput}
