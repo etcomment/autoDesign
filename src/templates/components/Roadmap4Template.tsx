@@ -256,14 +256,20 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         </g>
       )}
 
-      {/* COUCHE 1 : RENDU DES SEGMENTS (step-body-X) */}
+      {/* RENDU STRUCTURÉ PAR ÉTAPE (SOUS-GROUPES UNIFIÉS) */}
       {Array.from({ length: count }).map((_, i) => {
         const idx = i + 1
         const bodyId = `step-body-${idx}`
         const arrowId = `step-arrow-${idx}`
+        const stepId = `step-${idx}`
 
         const sR = getR(bodyId)
         const aR = getR(arrowId)
+        const stR = getR(stepId)
+
+        // Récupération de la transformation globale du sous-groupe si déplacé
+        const groupId = templateElementGroupIds[bodyId]
+        const groupTransform = getTransform(bodyId, sR)
 
         const defaultColor = ORIGINAL_COLORS[i % ORIGINAL_COLORS.length] || MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         const stepColor = tplColors[bodyId] || steps[i]?.color || defaultColor
@@ -297,12 +303,28 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
           pathD = `M ${prevArrowBaseX} ${startY} L ${turnX + R} ${startY} A ${R} ${R} 0 0 1 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 1 ${turnX + R} ${targetY} L ${aR.x + 3} ${targetY}`
         }
 
+        let arrowPath = ''
+        if (direction === 'right') {
+          arrowPath = `M ${aR.x} ${aR.y} L ${aR.x} ${aR.y + aR.height} L ${aR.x + aR.width} ${aR.y + aR.height / 2} Z`
+        } else {
+          arrowPath = `M ${aR.x + aR.width} ${aR.y} L ${aR.x + aR.width} ${aR.y + aR.height} L ${aR.x} ${aR.y + aR.height / 2} Z`
+        }
+
+        const label = stepTitles[i] || `Step ${i + 1}`
+        const textColor = tplColors[stepId] || '#ffffff'
+
+        const rawIconName = steps[i]?.icon || displayMilestones[i]?.icon
+        const iconElement = getDynamicIcon(rawIconName, 22, '#ffffff')
+
+        const iconX = direction === 'right' ? aR.x - 30 : aR.x + aR.width + 8
+        const iconY = aR.y + aR.height / 2 - 11
+
         return (
-          <g key={`body-${bodyId}`}>
+          <g key={`step-group-container-${idx}`} transform={groupTransform}>
+            {/* Ruban Serpentin */}
             <g
               data-element-id={bodyId}
               onMouseDown={e => startDrag(e, bodyId, sR)}
-              transform={getTransform(bodyId, sR)}
               style={{ cursor: 'pointer' }}
             >
               <path
@@ -314,67 +336,20 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
                 strokeLinejoin="round"
               />
             </g>
-          </g>
-        )
-      })}
 
-      {/* COUCHE 2 : FLÈCHES TRIANGULAIRES AU-DESSUS DE LA COUCHE 1 */}
-      {Array.from({ length: count }).map((_, i) => {
-        const idx = i + 1
-        const bodyId = `step-body-${idx}`
-        const arrowId = `step-arrow-${idx}`
-
-        const aR = getR(arrowId)
-
-        const defaultColor = ORIGINAL_COLORS[i % ORIGINAL_COLORS.length] || MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
-        const stepColor = tplColors[arrowId] || tplColors[bodyId] || steps[i]?.color || defaultColor
-        const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
-
-        let arrowPath = ''
-        if (direction === 'right') {
-          arrowPath = `M ${aR.x} ${aR.y} L ${aR.x} ${aR.y + aR.height} L ${aR.x + aR.width} ${aR.y + aR.height / 2} Z`
-        } else {
-          arrowPath = `M ${aR.x + aR.width} ${aR.y} L ${aR.x + aR.width} ${aR.y + aR.height} L ${aR.x} ${aR.y + aR.height / 2} Z`
-        }
-
-        return (
-          <g key={`arrow-${arrowId}`}>
+            {/* Flèche Triangulaire */}
             <g
               data-element-id={arrowId}
               onMouseDown={e => startDrag(e, arrowId, aR)}
-              transform={getTransform(arrowId, aR)}
               style={{ cursor: 'pointer' }}
             >
               <path d={arrowPath} fill={stepColor} />
             </g>
-          </g>
-        )
-      })}
 
-      {/* COUCHE 3 : LABELS D'ÉTAPES SUR LES RUBANS & ICÔNES SUR LES POINTES DE FLÈCHE */}
-      {Array.from({ length: count }).map((_, i) => {
-        const idx = i + 1
-        const stepId = `step-${idx}`
-        const arrowId = `step-arrow-${idx}`
-
-        const stR = getR(stepId)
-        const aR = getR(arrowId)
-        const label = stepTitles[i] || `Step ${i + 1}`
-        const textColor = tplColors[stepId] || '#ffffff'
-
-        const rawIconName = steps[i]?.icon || displayMilestones[i]?.icon
-        const iconElement = getDynamicIcon(rawIconName, 22, '#ffffff')
-
-        const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
-        const iconX = direction === 'right' ? aR.x - 30 : aR.x + aR.width + 8
-        const iconY = aR.y + aR.height / 2 - 11
-
-        return (
-          <g key={stepId}>
+            {/* Libellé et Icône d'étape */}
             <g
               data-element-id={stepId}
               onMouseDown={e => startDrag(e, stepId, stR)}
-              transform={getTransform(stepId, stR)}
               style={{ cursor: 'pointer' }}
             >
               {rawIconName && iconElement && (
@@ -382,15 +357,13 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
                   {iconElement}
                 </g>
               )}
-
               <text
                 x={stR.x + stR.width / 2}
-                y={stR.y + stR.height / 2}
+                y={stR.y + stR.height / 2 + 5}
                 textAnchor="middle"
-                dominantBaseline="central"
                 fontFamily="Arial, sans-serif"
-                fontSize={18}
-                fontWeight="bold"
+                fontSize={15}
+                fontWeight={700}
                 fill={textColor}
               >
                 {label}
@@ -400,24 +373,19 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })}
 
-      {/* COUCHE 4 : ANNOTATIONS ET JALONS (Milestones) */}
-      {displayMilestones.map((ms, idx) => {
-        const itemIdx = idx + 1
-        const msId = `milestone-${itemIdx}`
-        const bodyId = `step-body-${itemIdx}`
-
+      {/* ANNOTATIONS / DESCRIPTIONS DE JALONS (milestone-X) */}
+      {displayMilestones.slice(0, count).map((ms, i) => {
+        const idx = i + 1
+        const msId = `milestone-${idx}`
         const msR = getR(msId)
 
-        const isLeftHalf = msR.x < W / 2
-        const textX = isLeftHalf ? msR.x : msR.x + msR.width
-        const textAnchor = isLeftHalf ? 'start' : 'end'
+        const titleText = ms.title || `Milestone ${idx}`
+        const subtitleText = ms.subtitle || ''
+        const subtitleLines = subtitleText ? subtitleText.split('\n') : []
 
-        const defaultColor = ORIGINAL_COLORS[idx % ORIGINAL_COLORS.length] || MIGSO_PALETTE[idx % MIGSO_PALETTE.length]!
-        const msColor = tplColors[msId] || ms.color || tplColors[bodyId] || defaultColor
-
-        const maxChars = Math.max(10, Math.floor(msR.width / 7.5))
-        const titleLines = wrapTextByWidth(ms.title, maxChars)
-        const subtitleLines = ms.subtitle ? wrapTextByWidth(ms.subtitle, maxChars + 5) : []
+        const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
+        const isLeft = direction === 'left'
+        const textX = isLeft ? msR.x + msR.width : msR.x
 
         return (
           <g
@@ -429,25 +397,21 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
           >
             <text
               x={textX}
-              y={msR.y + 20}
-              textAnchor={textAnchor}
+              y={msR.y + 18}
+              textAnchor={isLeft ? 'end' : 'start'}
               fontFamily="Arial, sans-serif"
-              fontSize={18}
-              fontWeight="bold"
-              fill={msColor}
+              fontSize={15}
+              fontWeight={700}
+              fill="#222222"
             >
-              {titleLines.map((line, lIdx) => (
-                <tspan key={lIdx} x={textX} dy={lIdx === 0 ? 0 : 22}>
-                  {line}
-                </tspan>
-              ))}
+              {titleText}
             </text>
 
             {subtitleLines.length > 0 && (
               <text
                 x={textX}
-                y={msR.y + 25 + titleLines.length * 22}
-                textAnchor={textAnchor}
+                y={msR.y + 38}
+                textAnchor={isLeft ? 'end' : 'start'}
                 fontFamily="Arial, sans-serif"
                 fontSize={13}
                 fill="#555555"
