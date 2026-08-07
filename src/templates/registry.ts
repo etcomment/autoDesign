@@ -25,10 +25,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'roadmap',
       milestones: [
-        { title: 'Milestone 1', subtitle: 'Description', value: 'STEP 1' },
+        { title: 'Milestone 1', subtitle: 'Description' },
         { title: 'Milestone 2', subtitle: 'Description', value: 'STEP 2' },
         { title: 'Milestone 3', subtitle: 'Description', value: 'STEP 3' },
-        { title: 'Milestone 4', subtitle: 'Description', value: 'STEP 4' },
+        { title: 'Milestone 4', subtitle: 'Description' },
       ],
       startLabel: 'START',
       finishLabel: 'FINISH',

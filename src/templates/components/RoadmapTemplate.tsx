@@ -174,8 +174,8 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
           height: effectiveHeight,
         }
 
-        // Circle text from DSL value, date, or default
-        const circleRawText = ms.value || ms.date || (ms.quarter ? ms.quarter : 'YOUR\nTITLE')
+        // Circle text from DSL value, date, quarter, or default STEP N
+        const circleRawText = ms.value || ms.date || (ms.quarter ? ms.quarter : `STEP ${idx + 1}`)
         const circleLines = wrapTextByWidth(circleRawText, 8)
 
         return (
