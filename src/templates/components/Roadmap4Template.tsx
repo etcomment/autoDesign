@@ -47,11 +47,11 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
   const count = Math.max(1, stepTitles.length)
 
-  // 2. Fonctions d'alternance nette et dynamique des virages à gauche et à droite
-  // Virages Droite : 1er virage du bas (index=0) à 670, 2ème virage (index=2) à 695 (+25px de dépassement léger)
-  const getTurnRightX = (index: number) => (index % 4 === 0 ? 670 : 695)
-  // Virages Gauche : décalés vers la gauche (1er virage index=1 à 270, 2ème virage index=3 à 315)
-  const getTurnLeftX = (index: number) => (index % 4 === 1 ? 270 : 315)
+  // 2. Fonctions d'alternance cyclique vraie des virages (indépendamment du nombre d'étapes N)
+  // Virages Droite : alternent dynamiquement entre 660px (court) et 710px (long) -> décalage constant de +50px
+  const getTurnRightX = (index: number) => (Math.floor(index / 2) % 2 === 0 ? 660 : 710)
+  // Virages Gauche : alternent dynamiquement entre 310px (court) et 260px (long) -> décalage constant de -50px
+  const getTurnLeftX = (index: number) => (Math.floor((index - 1) / 2) % 2 === 0 ? 310 : 260)
 
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
