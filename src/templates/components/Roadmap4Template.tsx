@@ -242,11 +242,9 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
       {/* COUCHE 1 : RENDU DES SEGMENTS (step-body-X) */}
       {Array.from({ length: count }).map((_, i) => {
         const idx = i + 1
-        const blockId = `block-${idx}`
         const bodyId = `step-body-${idx}`
         const arrowId = `step-arrow-${idx}`
 
-        const blockR = getR(blockId)
         const sR = getR(bodyId)
         const aR = getR(arrowId)
 
@@ -284,8 +282,8 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
           <g key={`body-${bodyId}`}>
             <g
               data-element-id={bodyId}
-              onMouseDown={e => startDrag(e, blockId, blockR)}
-              transform={getTransform(blockId, blockR)}
+              onMouseDown={e => startDrag(e, bodyId, sR)}
+              transform={getTransform(bodyId, sR)}
               style={{ cursor: 'pointer' }}
             >
               <path
@@ -296,7 +294,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
                 strokeLinecap="butt"
                 strokeLinejoin="round"
               />
-              {selectedIds.has(blockId) && renderHandles(blockR, blockId)}
+              {selectedIds.has(bodyId) && renderHandles(sR, bodyId)}
             </g>
           </g>
         )
@@ -305,11 +303,9 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
       {/* COUCHE 2 : FLÈCHES TRIANGULAIRES AU-DESSUS DE LA COUCHE 1 */}
       {Array.from({ length: count }).map((_, i) => {
         const idx = i + 1
-        const blockId = `block-${idx}`
         const bodyId = `step-body-${idx}`
         const arrowId = `step-arrow-${idx}`
 
-        const blockR = getR(blockId)
         const aR = getR(arrowId)
 
         const defaultColor = ORIGINAL_COLORS[i % ORIGINAL_COLORS.length] || MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
@@ -327,11 +323,12 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
           <g key={`arrow-${arrowId}`}>
             <g
               data-element-id={arrowId}
-              onMouseDown={e => startDrag(e, blockId, blockR)}
-              transform={getTransform(blockId, blockR)}
+              onMouseDown={e => startDrag(e, arrowId, aR)}
+              transform={getTransform(arrowId, aR)}
               style={{ cursor: 'pointer' }}
             >
               <path d={arrowPath} fill={stepColor} />
+              {selectedIds.has(arrowId) && renderHandles(aR, arrowId)}
             </g>
           </g>
         )
@@ -340,11 +337,9 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
       {/* COUCHE 3 : LABELS D'ÉTAPES SUR LES RUBANS & ICÔNES SUR LES POINTES DE FLÈCHE */}
       {Array.from({ length: count }).map((_, i) => {
         const idx = i + 1
-        const blockId = `block-${idx}`
         const stepId = `step-${idx}`
         const arrowId = `step-arrow-${idx}`
 
-        const blockR = getR(blockId)
         const stR = getR(stepId)
         const aR = getR(arrowId)
         const label = stepTitles[i] || `Step ${i + 1}`
@@ -361,8 +356,8 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
           <g key={stepId}>
             <g
               data-element-id={stepId}
-              onMouseDown={e => startDrag(e, blockId, blockR)}
-              transform={getTransform(blockId, blockR)}
+              onMouseDown={e => startDrag(e, stepId, stR)}
+              transform={getTransform(stepId, stR)}
               style={{ cursor: 'pointer' }}
             >
               {rawIconName && iconElement && (
@@ -383,6 +378,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
               >
                 {label}
               </text>
+              {selectedIds.has(stepId) && renderHandles(stR, stepId)}
             </g>
           </g>
         )
@@ -391,11 +387,9 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
       {/* COUCHE 4 : ANNOTATIONS ET JALONS (Milestones) */}
       {displayMilestones.map((ms, idx) => {
         const itemIdx = idx + 1
-        const blockId = `block-${itemIdx}`
         const msId = `milestone-${itemIdx}`
         const bodyId = `step-body-${itemIdx}`
 
-        const blockR = getR(blockId)
         const msR = getR(msId)
 
         const isLeftHalf = msR.x < W / 2
@@ -413,8 +407,8 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
           <g
             key={msId}
             data-element-id={msId}
-            onMouseDown={e => startDrag(e, blockId, blockR)}
-            transform={getTransform(blockId, blockR)}
+            onMouseDown={e => startDrag(e, msId, msR)}
+            transform={getTransform(msId, msR)}
             style={{ cursor: 'pointer' }}
           >
             <text
