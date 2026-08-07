@@ -46,9 +46,9 @@ Ce document constitue la **source officielle et unique de la syntaxe DSL** pour 
 @roadmap "Roadmap Stratégique 2026"
   start "DÉBUT"
   finish "LIVRAISON"
-  milestone "Alpha Release" "Tests internes" date:2024 icon:"flask" #3b82f6
-  milestone "Beta Launch" "Accès anticipé" date:2025 icon:"users" #8b5cf6
-  milestone "GA Release" "Disponibilité générale" date:2026 icon:"rocket" #10b981
+  milestone "Alpha Release" "Tests internes" val:"STEP 1" date:2024 icon:"flask" #3b82f6
+  milestone "Beta Launch" "Accès anticipé" val:"STEP 2" date:2025 icon:"users" #8b5cf6
+  milestone "GA Release" "Disponibilité générale" val:"STEP 3" date:2026 icon:"rocket" #10b981
 ```
 
 #### Roadmap 2 — Timeline 10 points (dates par jalon)
