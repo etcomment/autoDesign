@@ -84,7 +84,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
     <g ref={svgRef}>
       <g data-element-id="rdm2-path" onMouseDown={e => startDrag(e, 'rdm2-path', roadPathR)} transform={getTransform('rdm2-path', roadPathR)} style={{ cursor: 'pointer' }}>
         <g transform={`translate(${roadPathR.x}, ${roadPathR.y}) scale(${roadPathR.width / 1000}, ${roadPathR.height / 380})`}>
-          <path d={roadD} fill="none" stroke="#D9D1C6" strokeWidth={55} strokeLinecap="round" strokeLinejoin="round" />
+          <path d={roadD} fill="none" stroke="#D7D7D7" strokeWidth={55} strokeLinecap="round" strokeLinejoin="round" />
           <path d={roadD} fill="none" stroke="#ffffff" strokeWidth={7} strokeDasharray="20 15" strokeLinecap="butt" strokeLinejoin="round" />
         </g>
         {selectedIds.has('rdm-path') && renderHandles(roadPathR, 'rdm-path')}
