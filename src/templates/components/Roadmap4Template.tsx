@@ -47,24 +47,25 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
   const count = Math.max(1, stepTitles.length)
 
-  // 2. Disposition géométrique exacte 1:1 avec la slide Roadmap 4 originale
-  // RÈGLE DE SYMÉTRIE DES EXTENSION DES EXTRÉMITÉS :
-  // Virage gauche = 300, Virage droit = 670.
-  // Segment 1 (en bas) déborde à gauche de 160px (X = 140).
-  // Dernier segment (en haut) déborde à l'opposé de 160px à droite (X = 830) ou à gauche selon sa direction.
+  // 2. Disposition géométrique exacte : seule la largeur du trait (strokeW) est réduite d'un tiers
+  // Taille des pointes de flèches (arrowHeadW, arrowHeadH) et positions inchangées
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
     map.set('main-title', { x: W / 2 - 200, y: 25, width: 400, height: 40 })
 
     const startY = 465
     const rowHeight = Math.min(95, Math.max(55, 360 / Math.max(1, count)))
-    const strokeW = 42
+
+    // Largeur du trait réduite d'un tiers (42 * 2/3 = 28px)
+    const strokeW = 28
 
     const turnLeftX = 300
     const turnRightX = 670
     const extensionLength = 160
+    
+    // Conserver la taille originale des pointes de flèches
     const arrowHeadW = 40
-    const arrowHeadH = strokeW + 24
+    const arrowHeadH = 42 + 24 // 66px
 
     for (let i = 0; i < count; i++) {
       const stepId = `step-${i + 1}`
@@ -79,20 +80,17 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
       const isFirst = i === 0
       const isLast = i === count - 1
 
-      // Bornes du segment horizontal
-      // Le premier segment (0) déborde de 160px du côté opposé au virage.
-      // Le dernier segment (count - 1) déborde de 160px du côté de sa fin.
       let segLeftX = turnLeftX
       let segRightX = turnRightX
 
       if (isFirst) {
-        if (direction === 'right') segLeftX = turnLeftX - extensionLength // 140
-        else segRightX = turnRightX + extensionLength // 830
+        if (direction === 'right') segLeftX = turnLeftX - extensionLength
+        else segRightX = turnRightX + extensionLength
       }
 
       if (isLast) {
-        if (direction === 'right') segRightX = turnRightX + extensionLength // 830
-        else segLeftX = turnLeftX - extensionLength // 140
+        if (direction === 'right') segRightX = turnRightX + extensionLength
+        else segLeftX = turnLeftX - extensionLength
       }
 
       const bodyRect: Rect = {
@@ -102,13 +100,11 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         height: rowHeight,
       }
 
-      // Emplacement de la flèche :
-      // Pour la dernière étape (isLast), la flèche triangulaire pointe tout au bout du segment allongé.
+      // Conservation exacte des positions de flèche (arrowX)
       let arrowX: number
       if (isLast) {
         arrowX = direction === 'right' ? segRightX - arrowHeadW + 3 : segLeftX - 3
       } else {
-        // Pour les étapes intermédiaires : au milieu (X=467 pour droite, X=518 pour gauche)
         arrowX = direction === 'right' ? 467 : 518
       }
 
@@ -119,7 +115,6 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         height: arrowHeadH,
       }
 
-      // Label texte de l'étape sur sa section de couleur
       const stepTextX = isLast
         ? (direction === 'right' ? turnRightX - 30 : turnLeftX - 90)
         : (direction === 'right' ? 330 : 560)
@@ -131,7 +126,6 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         height: 36,
       }
 
-      // Positions des cartes d'annotations ("Milestone" + texte)
       let msX: number
       if (direction === 'right') {
         msX = isLast ? segRightX + 15 : 700
@@ -210,7 +204,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         </g>
       )}
 
-      {/* COUCHE 1 : RENDU DES SEGMENTS DE RUBAN DE COULEUR (DU BAS VERS LE HAUT) */}
+      {/* COUCHE 1 : RENDU DES SEGMENTS DE RUBAN DE COULEUR (LARGEUR DE DU TRAIT REDUITE A 28px) */}
       {Array.from({ length: count }).map((_, i) => {
         const bodyId = `step-body-${i + 1}`
         const arrowId = `step-arrow-${i + 1}`
@@ -221,15 +215,13 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         const stepColor = tplColors[bodyId] || steps[i]?.color || defaultColor
 
         const rowHeight = Math.min(95, Math.max(55, 360 / Math.max(1, count)))
-        const strokeW = 42
+        const strokeW = 28 // Seule la largeur du segment est réduite d'un tiers
         const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
         const hasNext = i < count - 1
-        const isLast = i === count - 1
 
         let pathD = ''
 
         if (i === 0) {
-          // Étape 1 : démarre à sR.x (140) et va jusqu'à la base de sa propre flèche à 467
           const startX = sR.x
           const startY = sR.y + sR.height / 2
           pathD = `M ${startX} ${startY} L ${aR.x + 3} ${startY}`
@@ -241,7 +233,6 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
           if (hasNext) {
             pathD = `M ${prevArrowBaseX} ${startY} L ${turnX} ${startY} A ${rowHeight / 2} ${rowHeight / 2} 0 0 0 ${turnX} ${startY - rowHeight} L ${aR.x + aR.width - 3} ${startY - rowHeight}`
           } else {
-            // Dernière étape vers la gauche : déborde de 160px et s'arrête à la base de la flèche à X=140
             pathD = `M ${prevArrowBaseX} ${startY} L ${turnX} ${startY} A ${rowHeight / 2} ${rowHeight / 2} 0 0 0 ${turnX} ${startY - rowHeight} L ${aR.x + aR.width - 3} ${startY - rowHeight}`
           }
         } else {
@@ -252,14 +243,12 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
           if (hasNext) {
             pathD = `M ${prevArrowBaseX} ${startY} L ${turnX} ${startY} A ${rowHeight / 2} ${rowHeight / 2} 0 0 1 ${turnX} ${startY - rowHeight} L ${aR.x + 3} ${startY - rowHeight}`
           } else {
-            // Dernière étape vers la droite : déborde de 160px et s'arrête à la base de la flèche du bout (830 - arrowHeadW)
             pathD = `M ${prevArrowBaseX} ${startY} L ${turnX} ${startY} A ${rowHeight / 2} ${rowHeight / 2} 0 0 1 ${turnX} ${startY - rowHeight} L ${aR.x + 3} ${startY - rowHeight}`
           }
         }
 
         return (
           <g key={`body-${bodyId}`}>
-            {/* Tracé du corps du segment N */}
             <g
               data-element-id={bodyId}
               onMouseDown={e => startDrag(e, bodyId, sR)}
@@ -280,7 +269,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })}
 
-      {/* COUCHE 2 : FLÈCHES TRIANGULAIRES */}
+      {/* COUCHE 2 : FLÈCHES TRIANGULAIRES (TAILLE ORIGINALE CONSERVÉE : 40x66px) */}
       {Array.from({ length: count }).map((_, i) => {
         const bodyId = `step-body-${i + 1}`
         const arrowId = `step-arrow-${i + 1}`
