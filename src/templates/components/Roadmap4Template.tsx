@@ -55,7 +55,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
     const startY = 475
     // Espacement vertical fixe de 150px entre les segments horizontaux
-    const rowHeight = 125
+    const rowHeight = 115
 
     // Largeur du segment (28px)
     const strokeW = 28
@@ -214,7 +214,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         const defaultColor = ORIGINAL_COLORS[i % ORIGINAL_COLORS.length] || MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         const stepColor = tplColors[bodyId] || steps[i]?.color || defaultColor
 
-        const rowHeight = 125
+        const rowHeight = 115
         const strokeW = 28
         const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
         const hasNext = i < count - 1
