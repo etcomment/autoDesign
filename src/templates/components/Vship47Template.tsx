@@ -12,6 +12,7 @@ export function Vship47Template({ data, scale = 1, isExport = false }: any) {
   ]
   
   return (
+    <foreignObject x="0" y="0" width={960 * scale} height={540 * scale}>
     <div style={{ width: 960 * scale, height: 540 * scale, background: '#052E2B', position: 'relative', color: 'white', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
       <div style={{ display: 'flex', background: 'white', color: '#052E2B', height: 90 * scale }}>
         <div style={{ width: '15%', borderRight: '1px solid #ccc', display: 'flex', alignItems: 'center', padding: '0 20px', fontSize: 14 * scale }}>Add page title</div>
@@ -48,5 +49,6 @@ export function Vship47Template({ data, scale = 1, isExport = false }: any) {
         <span style={{ color: 'white' }}>Navigation 3</span>
       </div>
     </div>
+    </foreignObject>
   )
 }

@@ -693,6 +693,13 @@ const TEMPLATE_MAP: Record<TemplateType, TemplateComponent> = {
   valueChain: ({ data }) => <ValueChainTemplate data={data as ValueChainData} />,
   valueChain2: ({ data }) => <ValueChain2Template data={data as ValueChainData} />,
   circle: ({ data }) => <CircleTemplate data={data as CircleData} />,
+  vship47: ({ data }) => <Vship47Template data={data} />,
+  vship48: ({ data }) => <Vship48Template data={data} />,
+  vship49: ({ data }) => <Vship49Template data={data} />,
+  vship50: ({ data }) => <Vship50Template data={data} />,
+  vship51: ({ data }) => <Vship51Template data={data} />,
+  vship52: ({ data }) => <Vship52Template data={data} />,
+  vship53: ({ data }) => <Vship53Template data={data} />,
 }
 
 export function TemplateRenderer(): ReactElement | null {
