@@ -31,11 +31,11 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
   const W = 1000
 
-  // 1. Étape / Jalons
+  // 1. Extraction dynamique des vrais noms de jalons / étapes depuis les données DSL
   const stepTitles = steps.length > 0
     ? steps.map(s => s.title)
     : (milestones.length > 0
-        ? milestones.map((_, i) => `Étape ${i + 1}`)
+        ? milestones.map((m, i) => m.quarter || m.title || `Étape ${i + 1}`)
         : ['Step One', 'Step Two', 'Step Three', 'Step Four', 'Step Five'])
 
   const displayMilestones = milestones.length > 0
