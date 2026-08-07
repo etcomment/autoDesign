@@ -31,29 +31,33 @@ function getTemplateSubElements(templateData: any, templateElementPositions: Rec
     add('title', `Titre: "${typeof templateData.title === 'string' ? templateData.title : 'Titre'}"`)
   }
 
-  const collections = ['milestones', 'items', 'pieces', 'steps', 'phases', 'branches', 'nodes', 'cards', 'blocks']
-  for (const colKey of collections) {
-    if (Array.isArray(templateData[colKey])) {
-      const arr = templateData[colKey]
-      const singular = colKey.endsWith('s') ? colKey.slice(0, -1) : colKey
-      arr.forEach((item: any, i: number) => {
-        const idx = i + 1
-        const primaryId = `${singular}-${idx}`
-        const rawTitle = typeof item === 'string' ? item : (item?.title || item?.name || item?.text || item?.label)
-        const titleStr = rawTitle ? `"${rawTitle}"` : `${idx}`
+  // Création des Groupes Virtuels par Bloc (ex: Groupe 1, Groupe 2...)
+  const stepsCount = Array.isArray(templateData.steps) ? templateData.steps.length : (Array.isArray(templateData.milestones) ? templateData.milestones.length : 0)
+  if (stepsCount > 0) {
+    for (let i = 0; i < stepsCount; i++) {
+      const idx = i + 1
+      const blockId = `block-${idx}`
+      const msItem = templateData.milestones?.[i]
+      const stepItem = templateData.steps?.[i]
+      const rawTitle = stepItem?.title || msItem?.quarter || msItem?.title || `Jalon ${idx}`
 
-        const children: TemplateSubElement[] = []
-        // Regex stricte : doit se terminer exactement par -idx (ou -i si 0-indexed) et ne pas être l'ID principal
-        const strictSuffixPattern = new RegExp(`-${idx}$`)
-        for (const posId of Object.keys(templateElementPositions)) {
-          if (strictSuffixPattern.test(posId) && posId !== primaryId && !seenIds.has(posId)) {
-            children.push({ id: posId, label: `Sous-élément: ${posId}` })
-            seenIds.add(posId)
-          }
+      const children: TemplateSubElement[] = []
+      const strictSuffixPattern = new RegExp(`-${idx}$`)
+      
+      for (const posId of Object.keys(templateElementPositions)) {
+        if (strictSuffixPattern.test(posId) && posId !== blockId && !seenIds.has(posId)) {
+          let label = posId
+          if (posId.startsWith('milestone-')) label = `Titre/Description Jalon`
+          else if (posId.startsWith('step-body-')) label = `Ruban segment`
+          else if (posId.startsWith('step-arrow-')) label = `Flèche triangulaire`
+          else if (posId.startsWith('step-')) label = `Code/Libellé étape`
+
+          children.push({ id: posId, label })
+          seenIds.add(posId)
         }
+      }
 
-        add(primaryId, `${singular.charAt(0).toUpperCase() + singular.slice(1)} ${idx}: ${titleStr}`, children.length > 0 ? children : undefined)
-      })
+      add(blockId, `Groupe ${idx} : "${rawTitle}"`, children.length > 0 ? children : undefined)
     }
   }
 
