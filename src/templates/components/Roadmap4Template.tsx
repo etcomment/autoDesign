@@ -141,7 +141,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
       const stepTextRect: Rect = {
         x: stepTextX,
-        y: yCenter - 14,
+        y: yCenter - 18,
         width: 120,
         height: 36,
       }
