@@ -41,23 +41,42 @@ function getTemplateSubElements(templateData: any, templateElementPositions: Rec
       const stepItem = templateData.steps?.[i]
       const rawTitle = stepItem?.title || msItem?.quarter || msItem?.title || `Jalon ${idx}`
 
-      const children: TemplateSubElement[] = []
-      const strictSuffixPattern = new RegExp(`-${idx}$`)
-      
-      for (const posId of Object.keys(templateElementPositions)) {
-        if (strictSuffixPattern.test(posId) && posId !== blockId && !seenIds.has(posId)) {
-          let label = posId
-          if (posId.startsWith('milestone-')) label = `Titre/Description Jalon`
-          else if (posId.startsWith('step-body-')) label = `Ruban segment`
-          else if (posId.startsWith('step-arrow-')) label = `Flèche triangulaire`
-          else if (posId.startsWith('step-')) label = `Code/Libellé étape`
+      const groupChildren: TemplateSubElement[] = []
+      const stepSubChildren: TemplateSubElement[] = []
 
-          children.push({ id: posId, label })
-          seenIds.add(posId)
-        }
+      const msId = `milestone-${idx}`
+      const bodyId = `step-body-${idx}`
+      const arrowId = `step-arrow-${idx}`
+      const stepId = `step-${idx}`
+
+      if (templateElementPositions[msId]) {
+        groupChildren.push({ id: msId, label: `Titre / Description Jalon` })
+        seenIds.add(msId)
       }
 
-      add(blockId, `Groupe ${idx} : "${rawTitle}"`, children.length > 0 ? children : undefined)
+      if (templateElementPositions[bodyId]) {
+        stepSubChildren.push({ id: bodyId, label: `Ruban segment` })
+        seenIds.add(bodyId)
+      }
+      if (templateElementPositions[arrowId]) {
+        stepSubChildren.push({ id: arrowId, label: `Flèche triangulaire` })
+        seenIds.add(arrowId)
+      }
+      if (templateElementPositions[stepId]) {
+        stepSubChildren.push({ id: stepId, label: `Code / Libellé étape` })
+        seenIds.add(stepId)
+      }
+
+      if (stepSubChildren.length > 0) {
+        groupChildren.push({
+          id: `step-group-${idx}`,
+          label: `Sous-groupe Ruban & Flèche`,
+          children: stepSubChildren,
+        })
+        seenIds.add(`step-group-${idx}`)
+      }
+
+      add(blockId, `Groupe ${idx} : "${rawTitle}"`, groupChildren.length > 0 ? groupChildren : undefined)
     }
   }
 
@@ -373,55 +392,58 @@ export function LayersPanel() {
                 {isTemplate && isTemplateTreeExpanded && templateSubElements.map((subItem) => {
                   const isSubHidden = hiddenTemplateElementIds.has(subItem.id) || isTemplateHidden
 
-                  const renderSubItemRow = (item: TemplateSubElement, isChild = false) => {
+                  const renderSubItemRow = (item: TemplateSubElement, depth = 1) => {
                     const isSelected = selectedTemplateElementIds.has(item.id)
-                    const isHidden = hiddenTemplateElementIds.has(item.id) || (!isChild && isSubHidden) || (isChild && isSubHidden) || isTemplateHidden
+                    const isHidden = hiddenTemplateElementIds.has(item.id) || isSubHidden
 
                     return (
-                      <div
-                        key={`sub-${item.id}`}
-                        onClick={(e) => handleSelectSubElement(item.id, e)}
-                        style={{
-                          ...styles.item,
-                          paddingLeft: isChild ? 42 : 28,
-                          backgroundColor: isSelected ? '#e3f2fd' : '#fafafa',
-                        }}
-                      >
-                        <div style={styles.itemContent}>
-                          <Square size={10} color={isChild ? "#a0a0a0" : "#757575"} style={{ flexShrink: 0 }} />
-                          <span
-                            style={{
-                              ...styles.itemLabel,
-                              fontSize: 11,
-                              opacity: isHidden ? 0.4 : 1,
-                              textDecoration: isHidden ? 'line-through' : 'none',
-                            }}
-                            title={item.label}
-                          >
-                            {item.label}
-                          </span>
+                      <React.Fragment key={`frag-${item.id}`}>
+                        <div
+                          onClick={(e) => handleSelectSubElement(item.id, e)}
+                          style={{
+                            ...styles.item,
+                            paddingLeft: 14 + depth * 14,
+                            backgroundColor: isSelected ? '#e3f2fd' : '#fafafa',
+                          }}
+                        >
+                          <div style={styles.itemContent}>
+                            <Square size={10} color={depth > 1 ? "#a0a0a0" : "#757575"} style={{ flexShrink: 0 }} />
+                            <span
+                              style={{
+                                ...styles.itemLabel,
+                                fontSize: 11,
+                                fontWeight: item.children ? 600 : 400,
+                                opacity: isHidden ? 0.4 : 1,
+                                textDecoration: isHidden ? 'line-through' : 'none',
+                              }}
+                              title={item.label}
+                            >
+                              {item.label}
+                            </span>
+                          </div>
+                          <div style={styles.actions}>
+                            <button
+                              type="button"
+                              style={styles.actionBtn}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleTemplateElementHidden(item.id)
+                              }}
+                              title={isHidden ? 'Afficher la sous-composante' : 'Masquer la sous-composante'}
+                            >
+                              {isHidden ? <EyeOff size={13} color="#888" /> : <Eye size={13} color="#555" />}
+                            </button>
+                          </div>
                         </div>
-                        <div style={styles.actions}>
-                          <button
-                            type="button"
-                            style={styles.actionBtn}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggleTemplateElementHidden(item.id)
-                            }}
-                            title={isHidden ? 'Afficher la sous-composante' : 'Masquer la sous-composante'}
-                          >
-                            {isHidden ? <EyeOff size={13} color="#888" /> : <Eye size={13} color="#555" />}
-                          </button>
-                        </div>
-                      </div>
+
+                        {item.children?.map(child => renderSubItemRow(child, depth + 1))}
+                      </React.Fragment>
                     )
                   }
 
                   return (
                     <React.Fragment key={`frag-${subItem.id}`}>
-                      {renderSubItemRow(subItem, false)}
-                      {subItem.children?.map(child => renderSubItemRow(child, true))}
+                      {renderSubItemRow(subItem, 1)}
                     </React.Fragment>
                   )
                 })}
