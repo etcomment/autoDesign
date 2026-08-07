@@ -214,6 +214,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
 
   groupTemplateElements: (ids) => {
     const { selectedTemplateElementIds, templateGroups, templateElementGroupIds } = get()
+    const isExplicitCall = !!ids
     const elementsToGroup = ids ?? Array.from(selectedTemplateElementIds)
     if (elementsToGroup.length < 2) return
 
@@ -234,7 +235,7 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     set({
       templateGroups: nextGroups,
       templateElementGroupIds: nextElementGroupIds,
-      selectedTemplateElementIds: new Set(elementsToGroup)
+      selectedTemplateElementIds: isExplicitCall ? selectedTemplateElementIds : new Set(elementsToGroup)
     })
   },
 
