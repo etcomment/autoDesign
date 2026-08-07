@@ -47,25 +47,26 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
   const count = Math.max(1, stepTitles.length)
 
-  // 2. Disposition géométrique exacte : seule la largeur du trait (strokeW) est réduite d'un tiers
-  // Taille des pointes de flèches (arrowHeadW, arrowHeadH) et positions inchangées
+  // 2. Disposition géométrique avec espacement vertical accru des segments horizontaux
+  // Virages composés de : Arc de 90° (R) -> Ligne droite verticale (verticalStraight) -> Arc de 90° (R)
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
     map.set('main-title', { x: W / 2 - 200, y: 25, width: 400, height: 40 })
 
-    const startY = 465
-    const rowHeight = Math.min(95, Math.max(55, 360 / Math.max(1, count)))
+    const startY = 475
+    // Calcul de l'espacement vertical entre deux segments horizontaux (rowHeight)
+    const rowHeight = Math.min(105, Math.max(65, 380 / Math.max(1, count)))
 
-    // Largeur du trait réduite d'un tiers (42 * 2/3 = 28px)
+    // Largeur du segment (28px)
     const strokeW = 28
 
     const turnLeftX = 300
     const turnRightX = 670
     const extensionLength = 160
     
-    // Conserver la taille originale des pointes de flèches
+    // Conservation de la taille des flèches
     const arrowHeadW = 40
-    const arrowHeadH = 42 + 24 // 66px
+    const arrowHeadH = 66
 
     for (let i = 0; i < count; i++) {
       const stepId = `step-${i + 1}`
@@ -100,7 +101,6 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         height: rowHeight,
       }
 
-      // Conservation exacte des positions de flèche (arrowX)
       let arrowX: number
       if (isLast) {
         arrowX = direction === 'right' ? segRightX - arrowHeadW + 3 : segLeftX - 3
@@ -121,16 +121,16 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
       const stepTextRect: Rect = {
         x: stepTextX,
-        y: yCenter - 18,
+        y: yCenter - 14,
         width: 120,
         height: 36,
       }
 
       let msX: number
       if (direction === 'right') {
-        msX = isLast ? segRightX + 15 : 700
+        msX = isLast ? segRightX + 15 : 720
       } else {
-        msX = isLast ? segLeftX - 250 : 70
+        msX = isLast ? segLeftX - 250 : 50
       }
 
       const msRect: Rect = {
@@ -150,7 +150,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
       const msId = `milestone-${i + 1}`
       const isLeft = i % 2 === 1
       const yPos = Math.max(30, 420 - Math.floor(i / 2) * 80)
-      map.set(msId, { x: isLeft ? 70 : 700, y: yPos, width: 230, height: 70 })
+      map.set(msId, { x: isLeft ? 50 : 720, y: yPos, width: 230, height: 70 })
     }
 
     return map
@@ -204,7 +204,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         </g>
       )}
 
-      {/* COUCHE 1 : RENDU DES SEGMENTS DE RUBAN DE COULEUR (LARGEUR DE DU TRAIT REDUITE A 28px) */}
+      {/* COUCHE 1 : RENDU DES SEGMENTS AVEC VIRAGES ESPACÉS (COURBE -> LIGNE DROITE VERTICALE -> COURBE) */}
       {Array.from({ length: count }).map((_, i) => {
         const bodyId = `step-body-${i + 1}`
         const arrowId = `step-arrow-${i + 1}`
@@ -214,36 +214,48 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         const defaultColor = ORIGINAL_COLORS[i % ORIGINAL_COLORS.length] || MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         const stepColor = tplColors[bodyId] || steps[i]?.color || defaultColor
 
-        const rowHeight = Math.min(95, Math.max(55, 360 / Math.max(1, count)))
-        const strokeW = 28 // Seule la largeur du segment est réduite d'un tiers
+        const rowHeight = Math.min(105, Math.max(65, 380 / Math.max(1, count)))
+        const strokeW = 28
         const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
         const hasNext = i < count - 1
+
+        // Rayon de courbure fixe pour un arrondi fluide (R)
+        // La zone droite verticale = rowHeight - 2 * R
+        const R = 22
+        const verticalStraight = Math.max(10, rowHeight - 2 * R)
 
         let pathD = ''
 
         if (i === 0) {
+          // Étape 1 (en bas) : ligne horizontale directe jusqu'à la flèche
           const startX = sR.x
           const startY = sR.y + sR.height / 2
           pathD = `M ${startX} ${startY} L ${aR.x + 3} ${startY}`
         } else if (direction === 'left') {
+          // Virage à droite remontant :
+          // Ligne horizontale jusqu'à (turnX - R) -> Arc 90° vers le haut (R) -> Ligne verticale droite vers le haut -> Arc 90° vers la gauche (R) -> Ligne horizontale vers la gauche jusqu'à la flèche
           const prevArrowBaseX = 470
           const startY = sR.y + rowHeight + sR.height / 2
           const turnX = 670
+          const targetY = startY - rowHeight
 
           if (hasNext) {
-            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX} ${startY} A ${rowHeight / 2} ${rowHeight / 2} 0 0 0 ${turnX} ${startY - rowHeight} L ${aR.x + aR.width - 3} ${startY - rowHeight}`
+            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX - R} ${startY} A ${R} ${R} 0 0 0 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 0 ${turnX - R} ${targetY} L ${aR.x + aR.width - 3} ${targetY}`
           } else {
-            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX} ${startY} A ${rowHeight / 2} ${rowHeight / 2} 0 0 0 ${turnX} ${startY - rowHeight} L ${aR.x + aR.width - 3} ${startY - rowHeight}`
+            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX - R} ${startY} A ${R} ${R} 0 0 0 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 0 ${turnX - R} ${targetY} L ${aR.x + aR.width - 3} ${targetY}`
           }
         } else {
+          // Virage à gauche remontant :
+          // Ligne horizontale vers la gauche jusqu'à (turnX + R) -> Arc 90° vers le haut (R) -> Ligne verticale droite vers le haut -> Arc 90° vers la droite (R) -> Ligne horizontale vers la droite jusqu'à la flèche
           const prevArrowBaseX = 555
           const startY = sR.y + rowHeight + sR.height / 2
           const turnX = 300
+          const targetY = startY - rowHeight
 
           if (hasNext) {
-            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX} ${startY} A ${rowHeight / 2} ${rowHeight / 2} 0 0 1 ${turnX} ${startY - rowHeight} L ${aR.x + 3} ${startY - rowHeight}`
+            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX + R} ${startY} A ${R} ${R} 0 0 1 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 1 ${turnX + R} ${targetY} L ${aR.x + 3} ${targetY}`
           } else {
-            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX} ${startY} A ${rowHeight / 2} ${rowHeight / 2} 0 0 1 ${turnX} ${startY - rowHeight} L ${aR.x + 3} ${startY - rowHeight}`
+            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX + R} ${startY} A ${R} ${R} 0 0 1 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 1 ${turnX + R} ${targetY} L ${aR.x + 3} ${targetY}`
           }
         }
 
@@ -269,7 +281,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })}
 
-      {/* COUCHE 2 : FLÈCHES TRIANGULAIRES (TAILLE ORIGINALE CONSERVÉE : 40x66px) */}
+      {/* COUCHE 2 : FLÈCHES TRIANGULAIRES */}
       {Array.from({ length: count }).map((_, i) => {
         const bodyId = `step-body-${i + 1}`
         const arrowId = `step-arrow-${i + 1}`
@@ -319,10 +331,10 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
           >
             <text
               x={stR.x + stR.width / 2}
-              y={stR.y + stR.height / 2 + 6}
+              y={stR.y + stR.height / 2 + 5}
               textAnchor="middle"
               fontFamily="Arial, sans-serif"
-              fontSize={18}
+              fontSize={15}
               fontWeight="bold"
               fill={textColor}
             >
