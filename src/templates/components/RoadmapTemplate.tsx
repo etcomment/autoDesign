@@ -1,8 +1,9 @@
-import { TITLE_COLOR, MIGSO_PALETTE } from '../../lib/theme'
+import { MIGSO_PALETTE } from '../../lib/theme'
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 import type { RoadmapData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { wrapTextByWidth } from '../shared/primitives'
 
 interface Rect {
   x: number
@@ -22,42 +23,39 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   const moveEl = useTemplateStore(s => s.moveTemplateElement)
   const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
-  const { title, milestones = [], startLabel = 'START', finishLabel = 'FINISH' } = data
+  const { milestones = [], startLabel = 'START', finishLabel = 'FINISH' } = data
   const N = milestones.length
 
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
-    map.set('pos-m19-title', { x: 50, y: 30, width: 350, height: 60 })
     
-    // Original road geometry unchanged
-    map.set('pos-m19-path', { x: 150, y: 140, width: 850, height: 438 })
+    // Pure diagram road path (no slide title, 100% transparent background)
+    map.set('rdm-v20-path', { x: 150, y: 140, width: 850, height: 438 })
 
-    // Green Banners
-    map.set('pos-m19-banner-start', { x: 765, y: 130, width: 110, height: 40 })
-    map.set('pos-m19-banner-finish', { x: 765, y: 423, width: 110, height: 40 })
+    // Green Banners (START & FINISH)
+    map.set('rdm-v20-banner-start', { x: 765, y: 130, width: 110, height: 40 })
+    map.set('rdm-v20-banner-finish', { x: 765, y: 423, width: 110, height: 40 })
     
     milestones.forEach((_, idx) => {
       if (idx === 0) {
         // Milestone 1: x=895, centered vertically on top track
-        map.set('pos-m19-card-0', { x: 895, y: 135, width: 250, height: 95 })
+        map.set('rdm-v20-card-0', { x: 895, y: 135, width: 250, height: 95 })
       } else if (idx === 1) {
         // Milestone 2: Right edge (x=229) touches centerline of Left Curve 1
-        map.set('pos-m19-card-1', { x: 9, y: 180, width: 220, height: 95 })
-        // Yellow circle shifted another 30px to the right away from card-1 (x=270)
-        map.set('pos-m19-circle-1', { x: 270, y: 200, width: 55, height: 55 })
+        map.set('rdm-v20-card-1', { x: 9, y: 180, width: 220, height: 95 })
+        map.set('rdm-v20-circle-1', { x: 270, y: 200, width: 55, height: 55 })
       } else if (idx === 2) {
         // Milestone 3: Left edge (x=811) touches centerline of Right Curve 2
-        map.set('pos-m19-card-2', { x: 811, y: 280, width: 230, height: 95 })
-        // Yellow circle shifted another 30px to the left away from card-2 (x=715)
-        map.set('pos-m19-circle-2', { x: 715, y: 300, width: 55, height: 55 })
+        map.set('rdm-v20-card-2', { x: 811, y: 280, width: 230, height: 95 })
+        map.set('rdm-v20-circle-2', { x: 715, y: 300, width: 55, height: 55 })
       } else if (idx === 3 || idx === N - 1) {
         // Milestone 4: x=895, centered vertically on bottom track
-        map.set(`pos-m19-card-${idx}`, { x: 895, y: 428, width: 250, height: 95 })
+        map.set(`rdm-v20-card-${idx}`, { x: 895, y: 428, width: 250, height: 95 })
       } else {
         const isRight = idx % 2 === 0
         const yPos = 180 + (idx / Math.max(1, N - 1)) * 280
-        map.set(`pos-m19-card-${idx}`, { x: isRight ? 715 : 270, y: yPos, width: 230, height: 95 })
-        map.set(`pos-m19-circle-${idx}`, { x: isRight ? 715 : 270, y: yPos + 20, width: 55, height: 55 })
+        map.set(`rdm-v20-card-${idx}`, { x: isRight ? 811 : 9, y: yPos, width: 230, height: 95 })
+        map.set(`rdm-v20-circle-${idx}`, { x: isRight ? 715 : 270, y: yPos + 20, width: 55, height: 55 })
       }
     })
 
@@ -85,65 +83,68 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
     }
   }
 
-  // 4 horizontal segments in [0, 1000] x [0, 515] virtual box (unchanged road)
+  // 4 horizontal segments in [0, 1000] x [0, 515] virtual box
   const roadD = "M 900 50 L 150 50 A 57.5 57.5 0 0 0 150 165 L 720 165 A 57.5 57.5 0 0 1 720 280 L 150 280 A 57.5 57.5 0 0 0 150 395 L 900 395"
   
-  const titleR = getR('pos-m19-title')
-  const roadPathR = getR('pos-m19-path')
+  const roadPathR = getR('rdm-v20-path')
 
-  const startBannerR = getR('pos-m19-banner-start')
-  const finishBannerR = getR('pos-m19-banner-finish')
+  const startBannerR = getR('rdm-v20-banner-start')
+  const finishBannerR = getR('rdm-v20-banner-finish')
 
   const trackYTop = roadPathR.y + roadPathR.height * (50 / 515)
   const trackYBottom = roadPathR.y + roadPathR.height * (395 / 515)
 
-  // Road thickness on canvas is 55 * (roadPathR.height / 515) / 2 for half width
   const halfRoadThickness = (55 * (roadPathR.height / 515)) / 2
+
+  const startMaxChars = Math.max(6, Math.floor(startBannerR.width / 9))
+  const startLines = wrapTextByWidth(startLabel || 'START', startMaxChars)
+
+  const finishMaxChars = Math.max(6, Math.floor(finishBannerR.width / 9))
+  const finishLines = wrapTextByWidth(finishLabel || 'FINISH', finishMaxChars)
 
   return (
     <g ref={svgRef}>
-      {/* Road path */}
-      <g data-element-id="pos-m19-path" onMouseDown={e => startDrag(e, 'pos-m19-path', roadPathR)} transform={getTransform('pos-m19-path', roadPathR)} style={{ cursor: 'pointer' }}>
+      {/* Road path element */}
+      <g data-element-id="rdm-v20-path" onMouseDown={e => startDrag(e, 'rdm-v20-path', roadPathR)} transform={getTransform('rdm-v20-path', roadPathR)} style={{ cursor: 'pointer' }}>
         <g transform={`translate(${roadPathR.x}, ${roadPathR.y}) scale(${roadPathR.width / 1000}, ${roadPathR.height / 515})`}>
           <path d={roadD} fill="none" stroke="#D7D7D7" strokeWidth={55} strokeLinecap="round" strokeLinejoin="round" />
           <path d={roadD} fill="none" stroke="#ffffff" strokeWidth={10} strokeDasharray="22 24" strokeLinecap="butt" strokeLinejoin="round" />
         </g>
-        {selectedIds.has('pos-m19-path') && renderHandles(roadPathR, 'pos-m19-path')}
+        {selectedIds.has('rdm-v20-path') && renderHandles(roadPathR, 'rdm-v20-path')}
       </g>
 
-      {/* Main Title */}
-      {title && (
-        <g data-element-id="pos-m19-title" onMouseDown={e => startDrag(e, 'pos-m19-title', titleR)} transform={getTransform('pos-m19-title', titleR)} style={{ cursor: 'pointer' }}>
-          <text x={titleR.x} y={titleR.y + 40} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={42} fontWeight={700} fill={tplColors['pos-m19-title'] || '#C07D66'}>{title}</text>
-          <rect x={titleR.x} y={titleR.y + 55} width={60} height={6} fill={tplColors['pos-m19-title'] || '#23255a'} />
-          {selectedIds.has('pos-m19-title') && renderHandles(titleR, 'pos-m19-title')}
-        </g>
-      )}
-
-      {/* Start Banner (Top Green Banner, arrow pointing left) */}
-      <line x1={startBannerR.x + startBannerR.width / 2} y1={startBannerR.y + startBannerR.height} x2={startBannerR.x + startBannerR.width / 2} y2={trackYTop + halfRoadThickness} stroke={tplColors['pos-m19-banner-start'] || MIGSO_PALETTE[4]} strokeWidth={6} />
-      <g data-element-id="pos-m19-banner-start" onMouseDown={e => startDrag(e, 'pos-m19-banner-start', startBannerR)} transform={getTransform('pos-m19-banner-start', startBannerR)} style={{ cursor: 'pointer' }}>
+      {/* Start Banner (Top Green Banner) */}
+      <line x1={startBannerR.x + startBannerR.width / 2} y1={startBannerR.y + startBannerR.height} x2={startBannerR.x + startBannerR.width / 2} y2={trackYTop + halfRoadThickness} stroke={tplColors['rdm-v20-banner-start'] || MIGSO_PALETTE[4]} strokeWidth={6} />
+      <g data-element-id="rdm-v20-banner-start" onMouseDown={e => startDrag(e, 'rdm-v20-banner-start', startBannerR)} transform={getTransform('rdm-v20-banner-start', startBannerR)} style={{ cursor: 'pointer' }}>
         <g transform={`translate(${startBannerR.x}, ${startBannerR.y}) scale(${startBannerR.width / 110}, ${startBannerR.height / 40})`}>
-          <path d={`M 20 0 L 110 0 L 110 40 L 20 40 L 0 20 Z`} fill={tplColors['pos-m19-banner-start'] || MIGSO_PALETTE[4]} />
-          <text x={60} y={25} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight="bold" fill="#ffffff">{startLabel}</text>
+          <path d={`M 20 0 L 110 0 L 110 40 L 20 40 L 0 20 Z`} fill={tplColors['rdm-v20-banner-start'] || MIGSO_PALETTE[4]} />
+          <text x={60} y={25 - (startLines.length - 1) * 7} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight="bold" fill="#ffffff">
+            {startLines.map((line, lIdx) => (
+              <tspan key={lIdx} x={60} dy={lIdx === 0 ? 0 : 16}>{line}</tspan>
+            ))}
+          </text>
         </g>
-        {selectedIds.has('pos-m19-banner-start') && renderHandles(startBannerR, 'pos-m19-banner-start')}
+        {selectedIds.has('rdm-v20-banner-start') && renderHandles(startBannerR, 'rdm-v20-banner-start')}
       </g>
 
-      {/* Finish Banner (Bottom Green Banner, arrow inverted pointing right) */}
-      <line x1={finishBannerR.x + finishBannerR.width / 2} y1={finishBannerR.y + finishBannerR.height} x2={finishBannerR.x + finishBannerR.width / 2} y2={trackYBottom + halfRoadThickness} stroke={tplColors['pos-m19-banner-finish'] || MIGSO_PALETTE[4]} strokeWidth={6} />
-      <g data-element-id="pos-m19-banner-finish" onMouseDown={e => startDrag(e, 'pos-m19-banner-finish', finishBannerR)} transform={getTransform('pos-m19-banner-finish', finishBannerR)} style={{ cursor: 'pointer' }}>
+      {/* Finish Banner (Bottom Green Banner) */}
+      <line x1={finishBannerR.x + finishBannerR.width / 2} y1={finishBannerR.y + finishBannerR.height} x2={finishBannerR.x + finishBannerR.width / 2} y2={trackYBottom + halfRoadThickness} stroke={tplColors['rdm-v20-banner-finish'] || MIGSO_PALETTE[4]} strokeWidth={6} />
+      <g data-element-id="rdm-v20-banner-finish" onMouseDown={e => startDrag(e, 'rdm-v20-banner-finish', finishBannerR)} transform={getTransform('rdm-v20-banner-finish', finishBannerR)} style={{ cursor: 'pointer' }}>
         <g transform={`translate(${finishBannerR.x}, ${finishBannerR.y}) scale(${finishBannerR.width / 110}, ${finishBannerR.height / 40})`}>
-          <path d={`M 0 0 L 90 0 L 110 20 L 90 40 L 0 40 Z`} fill={tplColors['pos-m19-banner-finish'] || MIGSO_PALETTE[4]} />
-          <text x={50} y={25} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight="bold" fill="#ffffff">{finishLabel}</text>
+          <path d={`M 0 0 L 90 0 L 110 20 L 90 40 L 0 40 Z`} fill={tplColors['rdm-v20-banner-finish'] || MIGSO_PALETTE[4]} />
+          <text x={50} y={25 - (finishLines.length - 1) * 7} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight="bold" fill="#ffffff">
+            {finishLines.map((line, lIdx) => (
+              <tspan key={lIdx} x={50} dy={lIdx === 0 ? 0 : 16}>{line}</tspan>
+            ))}
+          </text>
         </g>
-        {selectedIds.has('pos-m19-banner-finish') && renderHandles(finishBannerR, 'pos-m19-banner-finish')}
+        {selectedIds.has('rdm-v20-banner-finish') && renderHandles(finishBannerR, 'rdm-v20-banner-finish')}
       </g>
 
       {/* Milestones rendering */}
       {milestones.map((ms, idx) => {
-        const cardId = `pos-m19-card-${idx}`
-        const circleId = `pos-m19-circle-${idx}`
+        const cardId = `rdm-v20-card-${idx}`
+        const circleId = `rdm-v20-circle-${idx}`
         
         const cardR = getR(cardId)
         const circleR = getR(circleId)
@@ -153,8 +154,14 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const trackYFraction = idx === 0 ? (50 / 515) : idx === N - 1 ? (395 / 515) : ((165 + (idx - 1) * 115) / 515)
         const trackY = roadPathR.y + roadPathR.height * trackYFraction
 
+        const maxTitleChars = Math.max(8, Math.floor(cardR.width / 12))
+        const maxSubtitleChars = Math.max(12, Math.floor(cardR.width / 7.5))
+
+        const titleLines = wrapTextByWidth(ms.title || '', maxTitleChars)
+        const subtitleLines = ms.subtitle ? wrapTextByWidth(ms.subtitle, maxSubtitleChars) : []
+
         return (
-          <g key={idx} data-element-id={`pos-m19-ms-${idx}`}>
+          <g key={idx} data-element-id={`rdm-v20-ms-${idx}`}>
             {hasCircle && (
               <>
                 <line x1={circleR.x + circleR.width / 2} y1={circleR.y + circleR.height / 2} x2={circleR.x + circleR.width / 2} y2={trackY + halfRoadThickness} stroke={tplColors[circleId] || MIGSO_PALETTE[3]} strokeWidth={6} />
@@ -171,11 +178,46 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
 
             {/* Milestone Card */}
             <g data-element-id={cardId} onMouseDown={e => startDrag(e, cardId, cardR)} transform={getTransform(cardId, cardR)} style={{ cursor: 'pointer' }}>
-              <rect x={cardR.x} y={cardR.y} width={cardR.width} height={cardR.height} fill={tplColors[cardId] || MIGSO_PALETTE[idx % MIGSO_PALETTE.length]} stroke={tplStrokeColors[cardId]} strokeWidth={tplStrokeWidths[cardId]} />
-              <text x={cardR.x + cardR.width / 2} y={cardR.y + 38} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{ms.title}</text>
-              {ms.subtitle && ms.subtitle.split('\n').map((line, lIdx) => (
-                <text key={lIdx} x={cardR.x + cardR.width / 2} y={cardR.y + 65 + lIdx * 18} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fill="#ffffff" opacity={0.9}>{line}</text>
-              ))}
+              <rect
+                x={cardR.x}
+                y={cardR.y}
+                width={cardR.width}
+                height={cardR.height}
+                fill={tplColors[cardId] || MIGSO_PALETTE[idx % MIGSO_PALETTE.length]}
+                stroke={tplStrokeColors[cardId]}
+                strokeWidth={tplStrokeWidths[cardId]}
+              />
+              
+              <text
+                x={cardR.x + cardR.width / 2}
+                y={cardR.y + (subtitleLines.length > 0 ? 30 : 42) - (titleLines.length - 1) * 10}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={20}
+                fontWeight="bold"
+                fill="#ffffff"
+              >
+                {titleLines.map((line, lIdx) => (
+                  <tspan key={lIdx} x={cardR.x + cardR.width / 2} dy={lIdx === 0 ? 0 : 22}>{line}</tspan>
+                ))}
+              </text>
+
+              {subtitleLines.length > 0 && (
+                <text
+                  x={cardR.x + cardR.width / 2}
+                  y={cardR.y + 30 + titleLines.length * 22 + 4}
+                  textAnchor="middle"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={12}
+                  fill="#ffffff"
+                  opacity={0.9}
+                >
+                  {subtitleLines.map((line, lIdx) => (
+                    <tspan key={lIdx} x={cardR.x + cardR.width / 2} dy={lIdx === 0 ? 0 : 16}>{line}</tspan>
+                  ))}
+                </text>
+              )}
+
               {selectedIds.has(cardId) && renderHandles(cardR, cardId)}
             </g>
           </g>
