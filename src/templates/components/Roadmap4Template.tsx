@@ -277,21 +277,25 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         const R = 22
 
         let pathD = ''
+        const defaultSR = defaultPositions.get(bodyId) || { x: 0, y: 0, width: 100, height: 115 }
+        const dx = sR.x - defaultSR.x
+        const dy = sR.y - defaultSR.y
+
         if (i === 0) {
           const startX = sR.x
           const startY = sR.y + sR.height / 2
           pathD = `M ${startX} ${startY} L ${aR.x + 3} ${startY}`
         } else if (direction === 'left') {
-          const prevArrowBaseX = 470
-          const startY = sR.y + rowHeight + sR.height / 2
-          const turnX = getTurnRightX(i - 1)
+          const prevArrowBaseX = 470 + dx
+          const startY = defaultSR.y + rowHeight + defaultSR.height / 2 + dy
+          const turnX = getTurnRightX(i - 1) + dx
           const targetY = startY - rowHeight
 
           pathD = `M ${prevArrowBaseX} ${startY} L ${turnX - R} ${startY} A ${R} ${R} 0 0 0 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 0 ${turnX - R} ${targetY} L ${aR.x + aR.width - 3} ${targetY}`
         } else {
-          const prevArrowBaseX = 555
-          const startY = sR.y + rowHeight + sR.height / 2
-          const turnX = getTurnLeftX(i - 1)
+          const prevArrowBaseX = 555 + dx
+          const startY = defaultSR.y + rowHeight + defaultSR.height / 2 + dy
+          const turnX = getTurnLeftX(i - 1) + dx
           const targetY = startY - rowHeight
 
           pathD = `M ${prevArrowBaseX} ${startY} L ${turnX + R} ${startY} A ${R} ${R} 0 0 1 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 1 ${turnX + R} ${targetY} L ${aR.x + 3} ${targetY}`
