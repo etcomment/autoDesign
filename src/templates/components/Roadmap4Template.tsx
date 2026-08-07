@@ -1,8 +1,9 @@
-import { TITLE_COLOR } from '../../lib/theme'
+import { TITLE_COLOR, MIGSO_PALETTE } from '../../lib/theme'
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 import type { RoadmapData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { wrapTextByWidth } from '../shared/primitives'
 
 interface Rect {
   x: number
@@ -11,15 +12,7 @@ interface Rect {
   height: number
 }
 
-// Design from PDF Page 139:
-// Canvas: 1000 x 562.5
-// Winding 3D overlapping snake ribbon with 5 steps:
-// Each step's body starts right underneath the previous arrow head, and its arrow head sits ON TOP of the next step's body!
-// Step 1 (Teal #4cbfa0): Bottom lane going right (y=475)
-// Step 2 (Yellow #ffbe00): Starts under Step 1 arrow (x=480), U-turns right to y=380 going left
-// Step 3 (Coral Red #ff4a2b): Starts under Step 2 arrow (x=545), U-turns left to y=285 going right
-// Step 4 (Medium Blue #2d62ed): Starts under Step 3 arrow (x=475), U-turns right to y=190 going left
-// Step 5 (Dark Navy #23255a): Starts under Step 4 arrow (x=545), U-turns left to y=100 going right
+const ORIGINAL_COLORS = ['#4cbfa0', '#ffbe00', '#ff4a2b', '#2d62ed', '#23255a']
 
 export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -30,66 +23,146 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
   const moveEl = useTemplateStore(s => s.moveTemplateElement)
   const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
-  const { title, milestones = [], steps = [] } = data as { title?: string; milestones?: Array<{ title: string; subtitle?: string }>; steps?: Array<{ title: string }> }
+  const { title, milestones = [], steps = [] } = data as {
+    title?: string
+    milestones?: Array<{ title: string; subtitle?: string; color?: string }>
+    steps?: Array<{ title: string; color?: string }>
+  }
+
   const W = 1000
 
-  const stepList = [
-    steps[0]?.title || 'Step One',
-    steps[1]?.title || 'Step Two',
-    steps[2]?.title || 'Step Three',
-    steps[3]?.title || 'Step Four',
-    steps[4]?.title || 'Step Five',
-  ]
+  // 1. Étape / Jalons
+  const stepTitles = steps.length > 0
+    ? steps.map(s => s.title)
+    : (milestones.length > 0
+        ? milestones.map((_, i) => `Étape ${i + 1}`)
+        : ['Step One', 'Step Two', 'Step Three', 'Step Four', 'Step Five'])
 
-  const displayMilestones = milestones.length > 0 ? milestones : [
-    { title: 'Milestone', subtitle: 'Content and description to be\nadded here as required' },
-    { title: 'Milestone', subtitle: 'Content and description to be\nadded here as required' },
-    { title: 'Milestone', subtitle: 'Content and description to be\nadded here as required' },
-    { title: 'Milestone', subtitle: 'Content and description to be\nadded here as required' },
-  ]
+  const displayMilestones = milestones.length > 0
+    ? milestones
+    : Array.from({ length: stepTitles.length }, (_, i) => ({
+        title: `Milestone ${i + 1}`,
+        subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
+      }))
 
+  const count = Math.max(1, stepTitles.length)
+
+  // 2. Disposition géométrique exacte 1:1 avec la slide Roadmap 4 originale
+  // RÈGLE DE SYMÉTRIE DES EXTENSION DES EXTRÉMITÉS :
+  // Virage gauche = 300, Virage droit = 670.
+  // Segment 1 (en bas) déborde à gauche de 160px (X = 140).
+  // Dernier segment (en haut) déborde à l'opposé de 160px à droite (X = 830) ou à gauche selon sa direction.
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
-    map.set('main-title', { x: 45, y: 35, width: 350, height: 50 })
+    map.set('main-title', { x: W / 2 - 200, y: 25, width: 400, height: 40 })
 
-    // Step labels on ribbons
-    map.set('step-1', { x: 340, y: 458, width: 120, height: 35 })
-    map.set('step-2', { x: 540, y: 363, width: 120, height: 35 })
-    map.set('step-3', { x: 340, y: 268, width: 120, height: 35 })
-    map.set('step-4', { x: 550, y: 173, width: 120, height: 35 })
-    map.set('step-5', { x: 670, y: 83, width: 120, height: 35 })
+    const startY = 465
+    const rowHeight = Math.min(95, Math.max(55, 360 / Math.max(1, count)))
+    const strokeW = 42
 
-    // Ribbon bodies
-    map.set('step-1-body', { x: 160, y: 452.5, width: 315, height: 45 })
-    map.set('step-2-body', { x: 480, y: 380, width: 207.5, height: 95 })
-    map.set('step-3-body', { x: 342.5, y: 285, width: 202.5, height: 95 })
-    map.set('step-4-body', { x: 475, y: 190, width: 232.5, height: 95 })
-    map.set('step-5-body', { x: 345, y: 100, width: 425, height: 90 })
+    const turnLeftX = 300
+    const turnRightX = 670
+    const extensionLength = 160
+    const arrowHeadW = 40
+    const arrowHeadH = strokeW + 24
 
-    // Arrow heads
-    map.set('step-1-arrow', { x: 470, y: 440, width: 40, height: 70 })
-    map.set('step-2-arrow', { x: 515, y: 345, width: 40, height: 70 })
-    map.set('step-3-arrow', { x: 465, y: 250, width: 40, height: 70 })
-    map.set('step-4-arrow', { x: 515, y: 155, width: 40, height: 70 })
-    map.set('step-5-arrow', { x: 765, y: 65, width: 40, height: 70 })
+    for (let i = 0; i < count; i++) {
+      const stepId = `step-${i + 1}`
+      const bodyId = `step-body-${i + 1}`
+      const arrowId = `step-arrow-${i + 1}`
+      const msId = `milestone-${i + 1}`
 
-    // Milestone descriptions cleanly positioned away from turns
-    map.set('milestone-1', { x: 695, y: 355, width: 240, height: 90 })
-    map.set('milestone-2', { x: 80, y: 260, width: 240, height: 90 })
-    map.set('milestone-3', { x: 730, y: 165, width: 240, height: 90 })
-    map.set('milestone-4', { x: 80, y: 75, width: 240, height: 90 })
-    map.set('milestone-5', { x: 780, y: 35, width: 240, height: 90 })
+      const row = i
+      const direction: 'right' | 'left' = row % 2 === 0 ? 'right' : 'left'
+      const yCenter = startY - row * rowHeight
 
-    for (let i = 5; i < displayMilestones.length; i++) {
-      const id = `milestone-${i + 1}`
+      const isFirst = i === 0
+      const isLast = i === count - 1
+
+      // Bornes du segment horizontal
+      // Le premier segment (0) déborde de 160px du côté opposé au virage.
+      // Le dernier segment (count - 1) déborde de 160px du côté de sa fin.
+      let segLeftX = turnLeftX
+      let segRightX = turnRightX
+
+      if (isFirst) {
+        if (direction === 'right') segLeftX = turnLeftX - extensionLength // 140
+        else segRightX = turnRightX + extensionLength // 830
+      }
+
+      if (isLast) {
+        if (direction === 'right') segRightX = turnRightX + extensionLength // 830
+        else segLeftX = turnLeftX - extensionLength // 140
+      }
+
+      const bodyRect: Rect = {
+        x: Math.min(segLeftX, segRightX),
+        y: yCenter - rowHeight / 2,
+        width: Math.abs(segRightX - segLeftX),
+        height: rowHeight,
+      }
+
+      // Emplacement de la flèche :
+      // Pour la dernière étape (isLast), la flèche triangulaire pointe tout au bout du segment allongé.
+      let arrowX: number
+      if (isLast) {
+        arrowX = direction === 'right' ? segRightX - arrowHeadW + 3 : segLeftX - 3
+      } else {
+        // Pour les étapes intermédiaires : au milieu (X=467 pour droite, X=518 pour gauche)
+        arrowX = direction === 'right' ? 467 : 518
+      }
+
+      const arrowRect: Rect = {
+        x: arrowX,
+        y: yCenter - arrowHeadH / 2,
+        width: arrowHeadW,
+        height: arrowHeadH,
+      }
+
+      // Label texte de l'étape sur sa section de couleur
+      const stepTextX = isLast
+        ? (direction === 'right' ? turnRightX - 30 : turnLeftX - 90)
+        : (direction === 'right' ? 330 : 560)
+
+      const stepTextRect: Rect = {
+        x: stepTextX,
+        y: yCenter - 18,
+        width: 120,
+        height: 36,
+      }
+
+      // Positions des cartes d'annotations ("Milestone" + texte)
+      let msX: number
+      if (direction === 'right') {
+        msX = isLast ? segRightX + 15 : 700
+      } else {
+        msX = isLast ? segLeftX - 250 : 70
+      }
+
+      const msRect: Rect = {
+        x: Math.max(20, Math.min(W - 250, msX)),
+        y: yCenter - 35,
+        width: 230,
+        height: 70,
+      }
+
+      map.set(stepId, stepTextRect)
+      map.set(bodyId, bodyRect)
+      map.set(arrowId, arrowRect)
+      map.set(msId, msRect)
+    }
+
+    for (let i = count; i < displayMilestones.length; i++) {
+      const msId = `milestone-${i + 1}`
       const isLeft = i % 2 === 1
-      const yPos = Math.max(20, 75 - Math.floor((i - 3) / 2) * 70)
-      map.set(id, { x: isLeft ? 80 : 730, y: yPos, width: 240, height: 90 })
+      const yPos = Math.max(30, 420 - Math.floor(i / 2) * 80)
+      map.set(msId, { x: isLeft ? 70 : 700, y: yPos, width: 230, height: 70 })
     }
 
     return map
-  }, [displayMilestones.length])
+  }, [count, displayMilestones.length])
 
+  // Synchronisation avec Zustand
   useEffect(() => {
     for (const [id, rect] of defaultPositions.entries()) {
       if (!pos[id]) {
@@ -111,38 +184,20 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
   }
 
   const titleR = getR('main-title')
-  const step1R = getR('step-1')
-  const step2R = getR('step-2')
-  const step3R = getR('step-3')
-  const step4R = getR('step-4')
-  const step5R = getR('step-5')
-
-  const s1bR = getR('step-1-body')
-  const s2bR = getR('step-2-body')
-  const s3bR = getR('step-3-body')
-  const s4bR = getR('step-4-body')
-  const s5bR = getR('step-5-body')
-
-  const s1aR = getR('step-1-arrow')
-  const s2aR = getR('step-2-arrow')
-  const s3aR = getR('step-3-arrow')
-  const s4aR = getR('step-4-arrow')
-  const s5aR = getR('step-5-arrow')
-
-  const c1 = tplColors['step-1'] || '#4cbfa0' // Teal
-  const c2 = tplColors['step-2'] || '#ffbe00' // Yellow
-  const c3 = tplColors['step-3'] || '#ff4a2b' // Coral Red
-  const c4 = tplColors['step-4'] || '#2d62ed' // Blue
-  const c5 = tplColors['step-5'] || '#23255a' // Navy
 
   return (
     <g ref={svgRef}>
-      {/* Header Title */}
+      {/* Titre principal */}
       {title && (
-        <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', titleR)} transform={getTransform('main-title', titleR)} style={{ cursor: 'pointer' }}>
+        <g
+          data-element-id="main-title"
+          onMouseDown={e => startDrag(e, 'main-title', titleR)}
+          transform={getTransform('main-title', titleR)}
+          style={{ cursor: 'pointer' }}
+        >
           <text
-            x={W / 2}
-            y={42}
+            x={titleR.x + titleR.width / 2}
+            y={titleR.y + 28}
             textAnchor="middle"
             fontFamily="Arial, sans-serif"
             fontSize={22}
@@ -155,142 +210,199 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         </g>
       )}
 
-      {/* LAYER 1: RIBBON BODIES (Underneath layer) */}
-      {/* Step 1 Body: Teal horizontal bar */}
-      <g data-element-id="step-1-body" onMouseDown={e => startDrag(e, 'step-1-body', s1bR)} transform={getTransform('step-1-body', s1bR)} style={{ cursor: 'pointer' }}>
-        <rect x={s1bR.x} y={s1bR.y} width={s1bR.width} height={s1bR.height} fill={c1} />
-        {selectedIds.has('step-1-body') && renderHandles(s1bR, 'step-1-body')}
-      </g>
+      {/* COUCHE 1 : RENDU DES SEGMENTS DE RUBAN DE COULEUR (DU BAS VERS LE HAUT) */}
+      {Array.from({ length: count }).map((_, i) => {
+        const bodyId = `step-body-${i + 1}`
+        const arrowId = `step-arrow-${i + 1}`
+        const sR = getR(bodyId)
+        const aR = getR(arrowId)
 
-      {/* Step 2 Body: Yellow start bar starting UNDER Teal arrow head (x=480), U-turn right to y=380 going left to x=550 */}
-      <g data-element-id="step-2-body" onMouseDown={e => startDrag(e, 'step-2-body', s2bR)} transform={getTransform('step-2-body', s2bR)} style={{ cursor: 'pointer' }}>
-        <path
-          d={`M ${s2bR.x} ${s2bR.y + s2bR.height} L ${s2bR.x + s2bR.width - s2bR.height / 2} ${s2bR.y + s2bR.height} A ${s2bR.height / 2} ${s2bR.height / 2} 0 0 0 ${s2bR.x + s2bR.width - s2bR.height / 2} ${s2bR.y} L ${s2bR.x + 70} ${s2bR.y}`}
-          fill="none"
-          stroke={c2}
-          strokeWidth={45}
-          strokeLinecap="butt"
-          strokeLinejoin="round"
-        />
-        {selectedIds.has('step-2-body') && renderHandles(s2bR, 'step-2-body')}
-      </g>
+        const defaultColor = ORIGINAL_COLORS[i % ORIGINAL_COLORS.length] || MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
+        const stepColor = tplColors[bodyId] || steps[i]?.color || defaultColor
 
-      {/* Step 3 Body: Red start bar starting UNDER Yellow arrow head (x=545), U-turn left to y=285 going right to x=470 */}
-      <g data-element-id="step-3-body" onMouseDown={e => startDrag(e, 'step-3-body', s3bR)} transform={getTransform('step-3-body', s3bR)} style={{ cursor: 'pointer' }}>
-        <path
-          d={`M ${s3bR.x + s3bR.width} ${s3bR.y + s3bR.height} L ${s3bR.x + s3bR.height / 2} ${s3bR.y + s3bR.height} A ${s3bR.height / 2} ${s3bR.height / 2} 0 0 1 ${s3bR.x + s3bR.height / 2} ${s3bR.y} L ${s3bR.x + s3bR.width - 75} ${s3bR.y}`}
-          fill="none"
-          stroke={c3}
-          strokeWidth={45}
-          strokeLinecap="butt"
-          strokeLinejoin="round"
-        />
-        {selectedIds.has('step-3-body') && renderHandles(s3bR, 'step-3-body')}
-      </g>
+        const rowHeight = Math.min(95, Math.max(55, 360 / Math.max(1, count)))
+        const strokeW = 42
+        const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
+        const hasNext = i < count - 1
+        const isLast = i === count - 1
 
-      {/* Step 4 Body: Blue start bar starting UNDER Red arrow head (x=475), U-turn right to y=190 going left to x=550 */}
-      <g data-element-id="step-4-body" onMouseDown={e => startDrag(e, 'step-4-body', s4bR)} transform={getTransform('step-4-body', s4bR)} style={{ cursor: 'pointer' }}>
-        <path
-          d={`M ${s4bR.x} ${s4bR.y + s4bR.height} L ${s4bR.x + s4bR.width - s4bR.height / 2} ${s4bR.y + s4bR.height} A ${s4bR.height / 2} ${s4bR.height / 2} 0 0 0 ${s4bR.x + s4bR.width - s4bR.height / 2} ${s4bR.y} L ${s4bR.x + 75} ${s4bR.y}`}
-          fill="none"
-          stroke={c4}
-          strokeWidth={45}
-          strokeLinecap="butt"
-          strokeLinejoin="round"
-        />
-        {selectedIds.has('step-4-body') && renderHandles(s4bR, 'step-4-body')}
-      </g>
+        let pathD = ''
 
-      {/* Step 5 Body: Navy start bar starting UNDER Blue arrow head (x=545), U-turn left to y=100 going right to x=770 */}
-      <g data-element-id="step-5-body" onMouseDown={e => startDrag(e, 'step-5-body', s5bR)} transform={getTransform('step-5-body', s5bR)} style={{ cursor: 'pointer' }}>
-        <path
-          d={`M ${s5bR.x + 200} ${s5bR.y + s5bR.height} L ${s5bR.x + s5bR.height / 2} ${s5bR.y + s5bR.height} A ${s5bR.height / 2} ${s5bR.height / 2} 0 0 1 ${s5bR.x + s5bR.height / 2} ${s5bR.y} L ${s5bR.x + s5bR.width} ${s5bR.y}`}
-          fill="none"
-          stroke={c5}
-          strokeWidth={45}
-          strokeLinecap="butt"
-          strokeLinejoin="round"
-        />
-        {selectedIds.has('step-5-body') && renderHandles(s5bR, 'step-5-body')}
-      </g>
+        if (i === 0) {
+          // Étape 1 : démarre à sR.x (140) et va jusqu'à la base de sa propre flèche à 467
+          const startX = sR.x
+          const startY = sR.y + sR.height / 2
+          pathD = `M ${startX} ${startY} L ${aR.x + 3} ${startY}`
+        } else if (direction === 'left') {
+          const prevArrowBaseX = 470
+          const startY = sR.y + rowHeight + sR.height / 2
+          const turnX = 670
 
-      {/* LAYER 2: ARROW HEADS (Triangles sitting ON TOP of the next step's body) */}
-      {/* Step 1 Arrow Head (Teal pointing right) -> base x=470, tip x=510 completely covers Yellow start at x=480 */}
-      <g data-element-id="step-1-arrow" onMouseDown={e => startDrag(e, 'step-1-arrow', s1aR)} transform={getTransform('step-1-arrow', s1aR)} style={{ cursor: 'pointer' }}>
-        <path d={`M ${s1aR.x} ${s1aR.y} L ${s1aR.x} ${s1aR.y + s1aR.height} L ${s1aR.x + s1aR.width} ${s1aR.y + s1aR.height / 2} Z`} fill={c1} />
-        {selectedIds.has('step-1-arrow') && renderHandles(s1aR, 'step-1-arrow')}
-      </g>
+          if (hasNext) {
+            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX} ${startY} A ${rowHeight / 2} ${rowHeight / 2} 0 0 0 ${turnX} ${startY - rowHeight} L ${aR.x + aR.width - 3} ${startY - rowHeight}`
+          } else {
+            // Dernière étape vers la gauche : déborde de 160px et s'arrête à la base de la flèche à X=140
+            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX} ${startY} A ${rowHeight / 2} ${rowHeight / 2} 0 0 0 ${turnX} ${startY - rowHeight} L ${aR.x + aR.width - 3} ${startY - rowHeight}`
+          }
+        } else {
+          const prevArrowBaseX = 555
+          const startY = sR.y + rowHeight + sR.height / 2
+          const turnX = 300
 
-      {/* Step 2 Arrow Head (Yellow pointing left) -> base x=555, tip x=515 completely covers Red start at x=545 */}
-      <g data-element-id="step-2-arrow" onMouseDown={e => startDrag(e, 'step-2-arrow', s2aR)} transform={getTransform('step-2-arrow', s2aR)} style={{ cursor: 'pointer' }}>
-        <path d={`M ${s2aR.x + s2aR.width} ${s2aR.y} L ${s2aR.x + s2aR.width} ${s2aR.y + s2aR.height} L ${s2aR.x} ${s2aR.y + s2aR.height / 2} Z`} fill={c2} />
-        {selectedIds.has('step-2-arrow') && renderHandles(s2aR, 'step-2-arrow')}
-      </g>
-
-      {/* Step 3 Arrow Head (Red pointing right) -> base x=465, tip x=505 completely covers Blue start at x=475 */}
-      <g data-element-id="step-3-arrow" onMouseDown={e => startDrag(e, 'step-3-arrow', s3aR)} transform={getTransform('step-3-arrow', s3aR)} style={{ cursor: 'pointer' }}>
-        <path d={`M ${s3aR.x} ${s3aR.y} L ${s3aR.x} ${s3aR.y + s3aR.height} L ${s3aR.x + s3aR.width} ${s3aR.y + s3aR.height / 2} Z`} fill={c3} />
-        {selectedIds.has('step-3-arrow') && renderHandles(s3aR, 'step-3-arrow')}
-      </g>
-
-      {/* Step 4 Arrow Head (Blue pointing left) -> base x=555, tip x=515 completely covers Navy start at x=545 */}
-      <g data-element-id="step-4-arrow" onMouseDown={e => startDrag(e, 'step-4-arrow', s4aR)} transform={getTransform('step-4-arrow', s4aR)} style={{ cursor: 'pointer' }}>
-        <path d={`M ${s4aR.x + s4aR.width} ${s4aR.y} L ${s4aR.x + s4aR.width} ${s4aR.y + s4aR.height} L ${s4aR.x} ${s4aR.y + s4aR.height / 2} Z`} fill={c4} />
-        {selectedIds.has('step-4-arrow') && renderHandles(s4aR, 'step-4-arrow')}
-      </g>
-
-      {/* Step 5 Arrow Head (Navy pointing right) */}
-      <g data-element-id="step-5-arrow" onMouseDown={e => startDrag(e, 'step-5-arrow', s5aR)} transform={getTransform('step-5-arrow', s5aR)} style={{ cursor: 'pointer' }}>
-        <path d={`M ${s5aR.x} ${s5aR.y} L ${s5aR.x} ${s5aR.y + s5aR.height} L ${s5aR.x + s5aR.width} ${s5aR.y + s5aR.height / 2} Z`} fill={c5} />
-        {selectedIds.has('step-5-arrow') && renderHandles(s5aR, 'step-5-arrow')}
-      </g>
-
-      {/* LAYER 3: INTERACTIVE STEP TEXT LABELS */}
-      <g data-element-id="step-1" onMouseDown={e => startDrag(e, 'step-1', step1R)} transform={getTransform('step-1', step1R)} style={{ cursor: 'pointer' }}>
-        <text x={step1R.x + step1R.width / 2} y={step1R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[0]}</text>
-        {selectedIds.has('step-1') && renderHandles(step1R, 'step-1')}
-      </g>
-
-      <g data-element-id="step-2" onMouseDown={e => startDrag(e, 'step-2', step2R)} transform={getTransform('step-2', step2R)} style={{ cursor: 'pointer' }}>
-        <text x={step2R.x + step2R.width / 2} y={step2R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[1]}</text>
-        {selectedIds.has('step-2') && renderHandles(step2R, 'step-2')}
-      </g>
-
-      <g data-element-id="step-3" onMouseDown={e => startDrag(e, 'step-3', step3R)} transform={getTransform('step-3', step3R)} style={{ cursor: 'pointer' }}>
-        <text x={step3R.x + step3R.width / 2} y={step3R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[2]}</text>
-        {selectedIds.has('step-3') && renderHandles(step3R, 'step-3')}
-      </g>
-
-      <g data-element-id="step-4" onMouseDown={e => startDrag(e, 'step-4', step4R)} transform={getTransform('step-4', step4R)} style={{ cursor: 'pointer' }}>
-        <text x={step4R.x + step4R.width / 2} y={step4R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[3]}</text>
-        {selectedIds.has('step-4') && renderHandles(step4R, 'step-4')}
-      </g>
-
-      <g data-element-id="step-5" onMouseDown={e => startDrag(e, 'step-5', step5R)} transform={getTransform('step-5', step5R)} style={{ cursor: 'pointer' }}>
-        <text x={step5R.x + step5R.width / 2} y={step5R.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="#ffffff">{stepList[4]}</text>
-        {selectedIds.has('step-5') && renderHandles(step5R, 'step-5')}
-      </g>
-
-      {/* LAYER 4: MILESTONE TEXT ANNOTATIONS */}
-      {displayMilestones.map((ms, idx) => {
-        const id = `milestone-${idx + 1}`
-        const msR = getR(id)
-        const isLeft = (idx % 2 === 1)
-        const textX = isLeft ? msR.x + msR.width : msR.x
-        const textAnchor = isLeft ? 'end' : 'start'
-        const msColor = (ms as { color?: string }).color || "#23255a"
+          if (hasNext) {
+            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX} ${startY} A ${rowHeight / 2} ${rowHeight / 2} 0 0 1 ${turnX} ${startY - rowHeight} L ${aR.x + 3} ${startY - rowHeight}`
+          } else {
+            // Dernière étape vers la droite : déborde de 160px et s'arrête à la base de la flèche du bout (830 - arrowHeadW)
+            pathD = `M ${prevArrowBaseX} ${startY} L ${turnX} ${startY} A ${rowHeight / 2} ${rowHeight / 2} 0 0 1 ${turnX} ${startY - rowHeight} L ${aR.x + 3} ${startY - rowHeight}`
+          }
+        }
 
         return (
-          <g key={id} onMouseDown={e => startDrag(e, id, msR)} transform={getTransform(id, msR)} style={{ cursor: 'pointer' }}>
-            <text x={textX} y={msR.y + 22} textAnchor={textAnchor} fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill={msColor}>
-              {ms.title}
+          <g key={`body-${bodyId}`}>
+            {/* Tracé du corps du segment N */}
+            <g
+              data-element-id={bodyId}
+              onMouseDown={e => startDrag(e, bodyId, sR)}
+              transform={getTransform(bodyId, sR)}
+              style={{ cursor: 'pointer' }}
+            >
+              <path
+                d={pathD}
+                fill="none"
+                stroke={stepColor}
+                strokeWidth={strokeW}
+                strokeLinecap="butt"
+                strokeLinejoin="round"
+              />
+              {selectedIds.has(bodyId) && renderHandles(sR, bodyId)}
+            </g>
+          </g>
+        )
+      })}
+
+      {/* COUCHE 2 : FLÈCHES TRIANGULAIRES */}
+      {Array.from({ length: count }).map((_, i) => {
+        const bodyId = `step-body-${i + 1}`
+        const arrowId = `step-arrow-${i + 1}`
+        const aR = getR(arrowId)
+
+        const defaultColor = ORIGINAL_COLORS[i % ORIGINAL_COLORS.length] || MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
+        const stepColor = tplColors[arrowId] || tplColors[bodyId] || steps[i]?.color || defaultColor
+
+        const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
+
+        let arrowPath = ''
+        if (direction === 'right') {
+          arrowPath = `M ${aR.x} ${aR.y} L ${aR.x} ${aR.y + aR.height} L ${aR.x + aR.width} ${aR.y + aR.height / 2} Z`
+        } else {
+          arrowPath = `M ${aR.x + aR.width} ${aR.y} L ${aR.x + aR.width} ${aR.y + aR.height} L ${aR.x} ${aR.y + aR.height / 2} Z`
+        }
+
+        return (
+          <g key={`arrow-${arrowId}`}>
+            <g
+              data-element-id={arrowId}
+              onMouseDown={e => startDrag(e, arrowId, aR)}
+              transform={getTransform(arrowId, aR)}
+              style={{ cursor: 'pointer' }}
+            >
+              <path d={arrowPath} fill={stepColor} />
+              {selectedIds.has(arrowId) && renderHandles(aR, arrowId)}
+            </g>
+          </g>
+        )
+      })}
+
+      {/* COUCHE 3 : LABELS D'ÉTAPES SUR LES RUBANS */}
+      {Array.from({ length: count }).map((_, i) => {
+        const stepId = `step-${i + 1}`
+        const stR = getR(stepId)
+        const label = stepTitles[i] || `Step ${i + 1}`
+        const textColor = tplColors[stepId] || '#ffffff'
+
+        return (
+          <g
+            key={stepId}
+            data-element-id={stepId}
+            onMouseDown={e => startDrag(e, stepId, stR)}
+            transform={getTransform(stepId, stR)}
+            style={{ cursor: 'pointer' }}
+          >
+            <text
+              x={stR.x + stR.width / 2}
+              y={stR.y + stR.height / 2 + 6}
+              textAnchor="middle"
+              fontFamily="Arial, sans-serif"
+              fontSize={18}
+              fontWeight="bold"
+              fill={textColor}
+            >
+              {label}
             </text>
-            {ms.subtitle && ms.subtitle.split('\n').map((line, lIdx) => (
-              <text key={lIdx} x={textX} y={msR.y + 48 + lIdx * 20} textAnchor={textAnchor} fontFamily="Arial, sans-serif" fontSize={13} fill="#555555">
-                {line}
+            {selectedIds.has(stepId) && renderHandles(stR, stepId)}
+          </g>
+        )
+      })}
+
+      {/* COUCHE 4 : ANNOTATIONS ET JALONS (Milestones) */}
+      {displayMilestones.map((ms, idx) => {
+        const msId = `milestone-${idx + 1}`
+        const bodyId = `step-body-${idx + 1}`
+        const msR = getR(msId)
+
+        const isLeftHalf = msR.x < W / 2
+        const textX = isLeftHalf ? msR.x : msR.x + msR.width
+        const textAnchor = isLeftHalf ? 'start' : 'end'
+
+        const defaultColor = ORIGINAL_COLORS[idx % ORIGINAL_COLORS.length] || MIGSO_PALETTE[idx % MIGSO_PALETTE.length]!
+        const msColor = tplColors[msId] || ms.color || tplColors[bodyId] || defaultColor
+
+        const maxChars = Math.max(10, Math.floor(msR.width / 7.5))
+        const titleLines = wrapTextByWidth(ms.title, maxChars)
+        const subtitleLines = ms.subtitle ? wrapTextByWidth(ms.subtitle, maxChars + 5) : []
+
+        return (
+          <g
+            key={msId}
+            data-element-id={msId}
+            onMouseDown={e => startDrag(e, msId, msR)}
+            transform={getTransform(msId, msR)}
+            style={{ cursor: 'pointer' }}
+          >
+            <text
+              x={textX}
+              y={msR.y + 20}
+              textAnchor={textAnchor}
+              fontFamily="Arial, sans-serif"
+              fontSize={18}
+              fontWeight="bold"
+              fill={msColor}
+            >
+              {titleLines.map((line, lIdx) => (
+                <tspan key={lIdx} x={textX} dy={lIdx === 0 ? 0 : 22}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
+
+            {subtitleLines.length > 0 && (
+              <text
+                x={textX}
+                y={msR.y + 25 + titleLines.length * 22}
+                textAnchor={textAnchor}
+                fontFamily="Arial, sans-serif"
+                fontSize={13}
+                fill="#555555"
+              >
+                {subtitleLines.map((line, lIdx) => (
+                  <tspan key={lIdx} x={textX} dy={lIdx === 0 ? 0 : 16}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
-            ))}
-            {selectedIds.has(id) && renderHandles(msR, id)}
+            )}
+
+            {selectedIds.has(msId) && renderHandles(msR, msId)}
           </g>
         )
       })}
