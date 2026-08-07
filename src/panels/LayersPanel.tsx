@@ -153,6 +153,39 @@ export function LayersPanel() {
   }
 
   const handleSelectSubElement = (subId: string, e: React.MouseEvent) => {
+    const templateSubElementsMap = new Map<string, TemplateSubElement>()
+    const findSub = (items: TemplateSubElement[]) => {
+      for (const item of items) {
+        templateSubElementsMap.set(item.id, item)
+        if (item.children) findSub(item.children)
+      }
+    }
+    findSub(templateSubElements)
+
+    const subItem = templateSubElementsMap.get(subId)
+    if (subItem && subItem.children && subItem.children.length > 0) {
+      // Sélection collective de tous les enfants du groupe virtuel
+      const childIds: string[] = []
+      const collectIds = (items: TemplateSubElement[]) => {
+        for (const it of items) {
+          if (!it.children || it.children.length === 0) {
+            childIds.push(it.id)
+          } else {
+            collectIds(it.children)
+          }
+        }
+      }
+      collectIds(subItem.children)
+
+      if (e.ctrlKey || e.metaKey) {
+        for (const cid of childIds) toggleTemplateElement(cid)
+      } else {
+        clearSelection()
+        for (const cid of childIds) toggleTemplateElement(cid)
+      }
+      return
+    }
+
     if (e.ctrlKey || e.metaKey) {
       toggleTemplateElement(subId)
     } else {

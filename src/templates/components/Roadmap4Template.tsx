@@ -191,7 +191,10 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
     return map
   }, [count, displayMilestones.length])
 
-  // Synchronisation avec Zustand
+  // Synchronisation des positions et groupes natifs du store de template
+  const groupTemplateElements = useTemplateStore(s => s.groupTemplateElements)
+  const templateElementGroupIds = useTemplateStore(s => s.templateElementGroupIds)
+
   useEffect(() => {
     for (const [id, rect] of defaultPositions.entries()) {
       if (!pos[id]) {
@@ -199,7 +202,27 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         resizeEl(id, { width: rect.width, height: rect.height })
       }
     }
-  }, [defaultPositions, pos, moveEl, resizeEl])
+
+    // Initialisation des groupes natifs de template s'ils ne sont pas encore définis
+    for (let i = 0; i < count; i++) {
+      const idx = i + 1
+      const msId = `milestone-${idx}`
+      const bodyId = `step-body-${idx}`
+      const arrowId = `step-arrow-${idx}`
+      const stepId = `step-${idx}`
+      const stepGroupId = `step-group-${idx}`
+      const blockId = `block-${idx}`
+
+      // Sous-groupe Ruban & Flèche
+      if (!templateElementGroupIds[bodyId]) {
+        groupTemplateElements([bodyId, arrowId, stepId])
+      }
+      // Groupe global du Bloc
+      if (!templateElementGroupIds[msId]) {
+        groupTemplateElements([msId, bodyId, arrowId, stepId])
+      }
+    }
+  }, [defaultPositions, pos, moveEl, resizeEl, count, groupTemplateElements, templateElementGroupIds])
 
   const getR = (id: string): Rect => {
     const p = pos[id]
