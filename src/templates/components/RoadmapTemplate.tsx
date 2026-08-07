@@ -27,7 +27,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
     map.set('rdm-title', { x: 50, y: 40, width: 350, height: 60 })
-    map.set('rdm-path', { x: 150, y: 140, width: 850, height: 460 })
+    map.set('rdm2-path', { x: 150, y: 140, width: 850, height: 460 })
     
     milestones.forEach((_, idx) => {
       if (idx === 0) {
@@ -74,15 +74,15 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
     }
   }
 
-  // 4 horizontal segments in [0, 1000] x [0, 380] virtual box
-  const roadD = "M 900 40 L 150 40 A 50 50 0 0 0 150 140 L 850 140 A 50 50 0 0 1 850 240 L 150 240 A 50 50 0 0 0 150 340 L 900 340"
+  // 4 horizontal segments in [0, 1000] x [0, 380] virtual box with right curve shifted left
+  const roadD = "M 900 40 L 150 40 A 50 50 0 0 0 150 140 L 720 140 A 50 50 0 0 1 720 240 L 150 240 A 50 50 0 0 0 150 340 L 900 340"
   
   const titleR = getR('rdm-title')
-  const roadPathR = getR('rdm-path')
+  const roadPathR = getR('rdm2-path')
 
   return (
     <g ref={svgRef}>
-      <g data-element-id="rdm-path" onMouseDown={e => startDrag(e, 'rdm-path', roadPathR)} transform={getTransform('rdm-path', roadPathR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="rdm2-path" onMouseDown={e => startDrag(e, 'rdm2-path', roadPathR)} transform={getTransform('rdm2-path', roadPathR)} style={{ cursor: 'pointer' }}>
         <g transform={`translate(${roadPathR.x}, ${roadPathR.y}) scale(${roadPathR.width / 1000}, ${roadPathR.height / 380})`}>
           <path d={roadD} fill="none" stroke="#D9D1C6" strokeWidth={55} strokeLinecap="round" strokeLinejoin="round" />
           <path d={roadD} fill="none" stroke="#ffffff" strokeWidth={7} strokeDasharray="20 15" strokeLinecap="butt" strokeLinejoin="round" />
