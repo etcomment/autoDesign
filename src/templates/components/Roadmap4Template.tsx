@@ -196,6 +196,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
   const templateElementGroupIds = useTemplateStore(s => s.templateElementGroupIds)
 
   useEffect(() => {
+    // Pré-initialisation de tous les rectangles dans le store
     for (const [id, rect] of defaultPositions.entries()) {
       if (!pos[id]) {
         moveEl(id, { x: rect.x, y: rect.y })
@@ -215,7 +216,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         groupTemplateElements([bodyId, arrowId, stepId])
       }
     }
-  }, [defaultPositions, pos, moveEl, resizeEl, count, groupTemplateElements, templateElementGroupIds])
+  }, [defaultPositions, moveEl, resizeEl, count, groupTemplateElements, templateElementGroupIds])
 
   const getR = (id: string): Rect => {
     const p = pos[id]
