@@ -27,35 +27,35 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
 
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
-    map.set('pos-m7-title', { x: 50, y: 30, width: 350, height: 60 })
+    map.set('pos-m8-title', { x: 50, y: 30, width: 350, height: 60 })
     
     // Original road geometry unchanged
-    map.set('pos-m7-path', { x: 150, y: 140, width: 850, height: 438 })
+    map.set('pos-m8-path', { x: 150, y: 140, width: 850, height: 438 })
 
-    // Green Banners
-    map.set('pos-m7-banner-start', { x: 560, y: 120, width: 110, height: 40 })
-    map.set('pos-m7-banner-finish', { x: 560, y: 405, width: 110, height: 40 })
+    // Green Banners (x=765, 20px gap from Block 1 & 4 at x=895)
+    map.set('pos-m8-banner-start', { x: 765, y: 162, width: 110, height: 40 })
+    map.set('pos-m8-banner-finish', { x: 765, y: 455, width: 110, height: 40 })
     
     milestones.forEach((_, idx) => {
       if (idx === 0) {
-        // Milestone 1: Center Y = 182.5 (centered on top road track)
-        map.set('pos-m7-card-0', { x: 895, y: 135, width: 250, height: 95 })
+        // Milestone 1: x=895, centered vertically on top track
+        map.set('pos-m8-card-0', { x: 895, y: 135, width: 250, height: 95 })
       } else if (idx === 1) {
         // Milestone 2: Right edge (x=229) touches centerline of Left Curve 1
-        map.set('pos-m7-card-1', { x: 9, y: 180, width: 220, height: 95 })
-        map.set('pos-m7-circle-1', { x: 210, y: 200, width: 55, height: 55 })
+        map.set('pos-m8-card-1', { x: 9, y: 180, width: 220, height: 95 })
+        map.set('pos-m8-circle-1', { x: 210, y: 200, width: 55, height: 55 })
       } else if (idx === 2) {
         // Milestone 3: Left edge (x=811) touches centerline of Right Curve 2
-        map.set('pos-m7-card-2', { x: 811, y: 280, width: 230, height: 95 })
-        map.set('pos-m7-circle-2', { x: 775, y: 300, width: 55, height: 55 })
+        map.set('pos-m8-card-2', { x: 811, y: 280, width: 230, height: 95 })
+        map.set('pos-m8-circle-2', { x: 775, y: 300, width: 55, height: 55 })
       } else if (idx === 3 || idx === N - 1) {
-        // Milestone 4: Center Y = 476 (centered on bottom road track)
-        map.set(`pos-m7-card-${idx}`, { x: 895, y: 428, width: 250, height: 95 })
+        // Milestone 4: x=895, centered vertically on bottom track
+        map.set(`pos-m8-card-${idx}`, { x: 895, y: 428, width: 250, height: 95 })
       } else {
         const isRight = idx % 2 === 0
         const yPos = 180 + (idx / Math.max(1, N - 1)) * 280
-        map.set(`pos-m7-card-${idx}`, { x: isRight ? 811 : 9, y: yPos, width: 230, height: 95 })
-        map.set(`pos-m7-circle-${idx}`, { x: isRight ? 775 : 210, y: yPos + 20, width: 55, height: 55 })
+        map.set(`pos-m8-card-${idx}`, { x: isRight ? 811 : 9, y: yPos, width: 230, height: 95 })
+        map.set(`pos-m8-circle-${idx}`, { x: isRight ? 775 : 210, y: yPos + 20, width: 55, height: 55 })
       }
     })
 
@@ -86,11 +86,11 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   // 4 horizontal segments in [0, 1000] x [0, 515] virtual box (unchanged road)
   const roadD = "M 900 50 L 150 50 A 57.5 57.5 0 0 0 150 165 L 720 165 A 57.5 57.5 0 0 1 720 280 L 150 280 A 57.5 57.5 0 0 0 150 395 L 900 395"
   
-  const titleR = getR('pos-m7-title')
-  const roadPathR = getR('pos-m7-path')
+  const titleR = getR('pos-m8-title')
+  const roadPathR = getR('pos-m8-path')
 
-  const startBannerR = getR('pos-m7-banner-start')
-  const finishBannerR = getR('pos-m7-banner-finish')
+  const startBannerR = getR('pos-m8-banner-start')
+  const finishBannerR = getR('pos-m8-banner-finish')
 
   const trackYTop = roadPathR.y + roadPathR.height * (50 / 515)
   const trackYBottom = roadPathR.y + roadPathR.height * (395 / 515)
@@ -98,47 +98,47 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   return (
     <g ref={svgRef}>
       {/* Road path */}
-      <g data-element-id="pos-m7-path" onMouseDown={e => startDrag(e, 'pos-m7-path', roadPathR)} transform={getTransform('pos-m7-path', roadPathR)} style={{ cursor: 'pointer' }}>
+      <g data-element-id="pos-m8-path" onMouseDown={e => startDrag(e, 'pos-m8-path', roadPathR)} transform={getTransform('pos-m8-path', roadPathR)} style={{ cursor: 'pointer' }}>
         <g transform={`translate(${roadPathR.x}, ${roadPathR.y}) scale(${roadPathR.width / 1000}, ${roadPathR.height / 515})`}>
           <path d={roadD} fill="none" stroke="#D7D7D7" strokeWidth={55} strokeLinecap="round" strokeLinejoin="round" />
           <path d={roadD} fill="none" stroke="#ffffff" strokeWidth={10} strokeDasharray="22 24" strokeLinecap="butt" strokeLinejoin="round" />
         </g>
-        {selectedIds.has('pos-m7-path') && renderHandles(roadPathR, 'pos-m7-path')}
+        {selectedIds.has('pos-m8-path') && renderHandles(roadPathR, 'pos-m8-path')}
       </g>
 
       {/* Main Title */}
       {title && (
-        <g data-element-id="pos-m7-title" onMouseDown={e => startDrag(e, 'pos-m7-title', titleR)} transform={getTransform('pos-m7-title', titleR)} style={{ cursor: 'pointer' }}>
-          <text x={titleR.x} y={titleR.y + 40} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={42} fontWeight={700} fill={tplColors['pos-m7-title'] || '#C07D66'}>{title}</text>
-          <rect x={titleR.x} y={titleR.y + 55} width={60} height={6} fill={tplColors['pos-m7-title'] || '#23255a'} />
-          {selectedIds.has('pos-m7-title') && renderHandles(titleR, 'pos-m7-title')}
+        <g data-element-id="pos-m8-title" onMouseDown={e => startDrag(e, 'pos-m8-title', titleR)} transform={getTransform('pos-m8-title', titleR)} style={{ cursor: 'pointer' }}>
+          <text x={titleR.x} y={titleR.y + 40} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={42} fontWeight={700} fill={tplColors['pos-m8-title'] || '#C07D66'}>{title}</text>
+          <rect x={titleR.x} y={titleR.y + 55} width={60} height={6} fill={tplColors['pos-m8-title'] || '#23255a'} />
+          {selectedIds.has('pos-m8-title') && renderHandles(titleR, 'pos-m8-title')}
         </g>
       )}
 
       {/* Start Banner (Top Green Banner) */}
-      <line x1={startBannerR.x + startBannerR.width / 2} y1={startBannerR.y + startBannerR.height / 2} x2={startBannerR.x + startBannerR.width / 2} y2={trackYTop} stroke={tplColors['pos-m7-banner-start'] || MIGSO_PALETTE[4]} strokeWidth={4} />
-      <g data-element-id="pos-m7-banner-start" onMouseDown={e => startDrag(e, 'pos-m7-banner-start', startBannerR)} transform={getTransform('pos-m7-banner-start', startBannerR)} style={{ cursor: 'pointer' }}>
+      <line x1={startBannerR.x + startBannerR.width / 2} y1={startBannerR.y + startBannerR.height / 2} x2={startBannerR.x + startBannerR.width / 2} y2={trackYTop} stroke={tplColors['pos-m8-banner-start'] || MIGSO_PALETTE[4]} strokeWidth={4} />
+      <g data-element-id="pos-m8-banner-start" onMouseDown={e => startDrag(e, 'pos-m8-banner-start', startBannerR)} transform={getTransform('pos-m8-banner-start', startBannerR)} style={{ cursor: 'pointer' }}>
         <g transform={`translate(${startBannerR.x}, ${startBannerR.y}) scale(${startBannerR.width / 110}, ${startBannerR.height / 40})`}>
-          <path d={`M 20 0 L 110 0 L 110 40 L 20 40 L 0 20 Z`} fill={tplColors['pos-m7-banner-start'] || MIGSO_PALETTE[4]} />
+          <path d={`M 20 0 L 110 0 L 110 40 L 20 40 L 0 20 Z`} fill={tplColors['pos-m8-banner-start'] || MIGSO_PALETTE[4]} />
           <text x={60} y={25} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight="bold" fill="#ffffff">{startLabel}</text>
         </g>
-        {selectedIds.has('pos-m7-banner-start') && renderHandles(startBannerR, 'pos-m7-banner-start')}
+        {selectedIds.has('pos-m8-banner-start') && renderHandles(startBannerR, 'pos-m8-banner-start')}
       </g>
 
       {/* Finish Banner (Bottom Green Banner) */}
-      <line x1={finishBannerR.x + finishBannerR.width / 2} y1={finishBannerR.y + finishBannerR.height / 2} x2={finishBannerR.x + finishBannerR.width / 2} y2={trackYBottom} stroke={tplColors['pos-m7-banner-finish'] || MIGSO_PALETTE[4]} strokeWidth={4} />
-      <g data-element-id="pos-m7-banner-finish" onMouseDown={e => startDrag(e, 'pos-m7-banner-finish', finishBannerR)} transform={getTransform('pos-m7-banner-finish', finishBannerR)} style={{ cursor: 'pointer' }}>
+      <line x1={finishBannerR.x + finishBannerR.width / 2} y1={finishBannerR.y + finishBannerR.height / 2} x2={finishBannerR.x + finishBannerR.width / 2} y2={trackYBottom} stroke={tplColors['pos-m8-banner-finish'] || MIGSO_PALETTE[4]} strokeWidth={4} />
+      <g data-element-id="pos-m8-banner-finish" onMouseDown={e => startDrag(e, 'pos-m8-banner-finish', finishBannerR)} transform={getTransform('pos-m8-banner-finish', finishBannerR)} style={{ cursor: 'pointer' }}>
         <g transform={`translate(${finishBannerR.x}, ${finishBannerR.y}) scale(${finishBannerR.width / 110}, ${finishBannerR.height / 40})`}>
-          <path d={`M 20 0 L 110 0 L 110 40 L 20 40 L 0 20 Z`} fill={tplColors['pos-m7-banner-finish'] || MIGSO_PALETTE[4]} />
+          <path d={`M 20 0 L 110 0 L 110 40 L 20 40 L 0 20 Z`} fill={tplColors['pos-m8-banner-finish'] || MIGSO_PALETTE[4]} />
           <text x={60} y={25} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight="bold" fill="#ffffff">{finishLabel}</text>
         </g>
-        {selectedIds.has('pos-m7-banner-finish') && renderHandles(finishBannerR, 'pos-m7-banner-finish')}
+        {selectedIds.has('pos-m8-banner-finish') && renderHandles(finishBannerR, 'pos-m8-banner-finish')}
       </g>
 
       {/* Milestones rendering */}
       {milestones.map((ms, idx) => {
-        const cardId = `pos-m7-card-${idx}`
-        const circleId = `pos-m7-circle-${idx}`
+        const cardId = `pos-m8-card-${idx}`
+        const circleId = `pos-m8-circle-${idx}`
         
         const cardR = getR(cardId)
         const circleR = getR(circleId)
@@ -149,7 +149,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const trackY = roadPathR.y + roadPathR.height * trackYFraction
 
         return (
-          <g key={idx} data-element-id={`pos-m7-ms-${idx}`}>
+          <g key={idx} data-element-id={`pos-m8-ms-${idx}`}>
             {hasCircle && (
               <>
                 <line x1={circleR.x + circleR.width / 2} y1={circleR.y + circleR.height / 2} x2={circleR.x + circleR.width / 2} y2={trackY} stroke={tplColors[circleId] || MIGSO_PALETTE[3]} strokeWidth={4} />
