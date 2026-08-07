@@ -138,7 +138,7 @@ function elementLabel(elementId: string): string {
   if (parsed.isStartBanner) return 'Bannière Début (Start)'
   if (parsed.isFinishBanner) return 'Bannière Fin (Finish)'
   const labels: Record<string, string> = {
-    milestone: 'Jalon', circle: 'Cercle', block: 'Bloc', step: 'Étape', piece: 'Pièce',
+    milestone: 'Jalon', circle: 'Cercle Jaune', block: 'Bloc', step: 'Étape', piece: 'Pièce',
     level: 'Niveau', section: 'Section', metric: 'Métrique', row: 'Ligne',
     item: 'Élément', node: 'Nœud', station: 'Station', branch: 'Branche',
     primary: 'Activité', support: 'Support', card: 'Carte Jalon',
@@ -217,10 +217,14 @@ export function TemplatePropertiesPanel() {
       if (items) {
         const item = items[parsed.index] ?? (parsed.index > 0 ? items[parsed.index - 1] : undefined)
         if (item) {
-          currentTitle = String(item.label ?? item.title ?? item.name ?? item.text ?? '')
-          currentSubtitle = String(item.subtitle ?? item.description ?? '')
-          currentAmount = String(item.amount ?? '')
-          currentPercentage = item.percentage != null ? String(item.percentage) : ''
+          if (parsed.prefix === 'circle') {
+            currentTitle = String(item.value ?? item.date ?? item.quarter ?? item.label ?? item.title ?? 'YOUR\nTITLE')
+          } else {
+            currentTitle = String(item.label ?? item.title ?? item.name ?? item.text ?? '')
+            currentSubtitle = String(item.subtitle ?? item.description ?? '')
+            currentAmount = String(item.amount ?? '')
+            currentPercentage = item.percentage != null ? String(item.percentage) : ''
+          }
         }
       }
     }
@@ -256,6 +260,9 @@ export function TemplatePropertiesPanel() {
       
       const newItems = items.map((item, i) => {
         if (i !== targetIndex) return item
+        if (parsed.prefix === 'circle' && field === 'title') {
+          return { ...item, value: coerced }
+        }
         return { ...item, [field]: coerced }
       })
 
@@ -289,7 +296,7 @@ export function TemplatePropertiesPanel() {
         </div>
       )}
 
-      {!isMulti && !parsed.isMainTitle && !parsed.isStartBanner && !parsed.isFinishBanner && (
+      {!isMulti && !parsed.isMainTitle && !parsed.isStartBanner && !parsed.isFinishBanner && parsed.prefix !== 'circle' && (
         <div style={styles.section}>
           <label style={styles.sectionLabel}>Sous-titre / Description</label>
           <textarea
