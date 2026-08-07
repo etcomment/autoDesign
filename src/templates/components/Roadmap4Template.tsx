@@ -368,31 +368,20 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })}
 
-      {/* COUCHE 4 : ANNOTATIONS ET JALONS (Milestones) AVEC SUPPORT ICÔNES */}
+      {/* COUCHE 4 : ANNOTATIONS ET JALONS (Milestones) */}
       {displayMilestones.map((ms, idx) => {
         const msId = `milestone-${idx + 1}`
         const bodyId = `step-body-${idx + 1}`
         const msR = getR(msId)
 
         const isLeftHalf = msR.x < W / 2
+        const textX = isLeftHalf ? msR.x : msR.x + msR.width
         const textAnchor = isLeftHalf ? 'start' : 'end'
 
         const defaultColor = ORIGINAL_COLORS[idx % ORIGINAL_COLORS.length] || MIGSO_PALETTE[idx % MIGSO_PALETTE.length]!
         const msColor = tplColors[msId] || ms.color || tplColors[bodyId] || defaultColor
 
-        // Nom d'icône fourni dans le jalon ou dans l'étape
-        const rawIconName = ms.icon || steps[idx]?.icon
-        const iconElement = getDynamicIcon(rawIconName, 22, msColor)
-
-        // Si une icône est présente, décaler le texte en X pour laisser place à l'icône
-        const iconSize = 22
-        const iconGap = 8
-        const iconX = isLeftHalf ? msR.x : msR.x + msR.width - iconSize
-        const textX = rawIconName && iconElement
-          ? (isLeftHalf ? msR.x + iconSize + iconGap : msR.x + msR.width - iconSize - iconGap)
-          : (isLeftHalf ? msR.x : msR.x + msR.width)
-
-        const maxChars = Math.max(8, Math.floor((msR.width - (iconElement ? 30 : 0)) / 7.5))
+        const maxChars = Math.max(10, Math.floor(msR.width / 7.5))
         const titleLines = wrapTextByWidth(ms.title, maxChars)
         const subtitleLines = ms.subtitle ? wrapTextByWidth(ms.subtitle, maxChars + 5) : []
 
@@ -404,13 +393,6 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
             transform={getTransform(msId, msR)}
             style={{ cursor: 'pointer' }}
           >
-            {/* Rendu de l'icône SVG si présente dans les données DSL */}
-            {rawIconName && iconElement && (
-              <g transform={`translate(${iconX}, ${msR.y + 2})`}>
-                {iconElement}
-              </g>
-            )}
-
             <text
               x={textX}
               y={msR.y + 20}
