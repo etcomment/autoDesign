@@ -331,9 +331,9 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         const rawIconName = steps[i]?.icon || displayMilestones[i]?.icon
         const iconElement = getDynamicIcon(rawIconName, 22, '#ffffff')
 
-        // Positionnement de l'icône directement sur la pointe de la flèche triangulaire
+        // Positionnement de l'icône dans le segment juste avant la base de la flèche
         const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
-        const iconX = direction === 'right' ? aR.x + aR.width - 26 : aR.x + 4
+        const iconX = direction === 'right' ? aR.x - 30 : aR.x + aR.width + 8
         const iconY = aR.y + aR.height / 2 - 11
 
         return (
