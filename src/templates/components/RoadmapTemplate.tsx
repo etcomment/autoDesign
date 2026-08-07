@@ -74,8 +74,8 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
     }
   }
 
-  // 4 horizontal segments in [0, 1000] x [0, 380] virtual box with right curve shifted left
-  const roadD = "M 900 40 L 150 40 A 50 50 0 0 0 150 140 L 720 140 A 50 50 0 0 1 720 240 L 150 240 A 50 50 0 0 0 150 340 L 900 340"
+  // 4 horizontal segments in [0, 1000] x [0, 395] virtual box with +5px increased track spacing
+  const roadD = "M 900 40 L 150 40 A 52.5 52.5 0 0 0 150 145 L 720 145 A 52.5 52.5 0 0 1 720 250 L 150 250 A 52.5 52.5 0 0 0 150 355 L 900 355"
   
   const titleR = getR('rdm-title')
   const roadPathR = getR('rdm2-path')
@@ -83,7 +83,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   return (
     <g ref={svgRef}>
       <g data-element-id="rdm2-path" onMouseDown={e => startDrag(e, 'rdm2-path', roadPathR)} transform={getTransform('rdm2-path', roadPathR)} style={{ cursor: 'pointer' }}>
-        <g transform={`translate(${roadPathR.x}, ${roadPathR.y}) scale(${roadPathR.width / 1000}, ${roadPathR.height / 380})`}>
+        <g transform={`translate(${roadPathR.x}, ${roadPathR.y}) scale(${roadPathR.width / 1000}, ${roadPathR.height / 395})`}>
           <path d={roadD} fill="none" stroke="#D7D7D7" strokeWidth={55} strokeLinecap="round" strokeLinejoin="round" />
           <path d={roadD} fill="none" stroke="#ffffff" strokeWidth={10} strokeDasharray="34 24" strokeLinecap="butt" strokeLinejoin="round" />
         </g>
@@ -110,7 +110,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const hasBanner = defaultPositions.has(bannerId)
         const hasCircle = defaultPositions.has(circleId)
 
-        const trackYFraction = idx === 0 ? (40/380) : idx === 1 ? (140/380) : idx === 2 ? (240/380) : (340/380)
+        const trackYFraction = idx === 0 ? (40/395) : idx === 1 ? (145/395) : idx === 2 ? (250/395) : (355/395)
         const trackY = roadPathR.y + roadPathR.height * trackYFraction
 
         return (
