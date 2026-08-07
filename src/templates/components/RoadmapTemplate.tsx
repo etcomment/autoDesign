@@ -1,4 +1,4 @@
-import { TITLE_COLOR } from '../../lib/theme'
+import { TITLE_COLOR, MIGSO_PALETTE } from '../../lib/theme'
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 import type { RoadmapData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
@@ -117,10 +117,10 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
           <g key={idx} data-element-id={`rdm-ms-${idx}`}>
             {hasBanner && (
               <>
-                <line x1={bannerR.x + bannerR.width / 2} y1={bannerR.y + bannerR.height / 2} x2={bannerR.x + bannerR.width / 2} y2={trackY} stroke={tplColors[bannerId] || '#68DA6A'} strokeWidth={5} />
+                <line x1={bannerR.x + bannerR.width / 2} y1={bannerR.y + bannerR.height / 2} x2={bannerR.x + bannerR.width / 2} y2={trackY} stroke={tplColors[bannerId] || MIGSO_PALETTE[4]} strokeWidth={5} />
                 <g data-element-id={bannerId} onMouseDown={e => startDrag(e, bannerId, bannerR)} transform={getTransform(bannerId, bannerR)} style={{ cursor: 'pointer' }}>
                   <g transform={`translate(${bannerR.x}, ${bannerR.y}) scale(${bannerR.width / 100}, ${bannerR.height / 40})`}>
-                    <path d={`M 20 0 L 100 0 L 100 40 L 20 40 L 0 20 Z`} fill={tplColors[bannerId] || '#68DA6A'} />
+                    <path d={`M 20 0 L 100 0 L 100 40 L 20 40 L 0 20 Z`} fill={tplColors[bannerId] || MIGSO_PALETTE[4]} />
                     <text x={55} y={25} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fill="#ffffff">Your title</text>
                   </g>
                   {selectedIds.has(bannerId) && renderHandles(bannerR, bannerId)}
@@ -130,10 +130,10 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
 
             {hasCircle && (
               <>
-                <line x1={circleR.x + circleR.width / 2} y1={circleR.y + circleR.height / 2} x2={circleR.x + circleR.width / 2} y2={trackY} stroke={tplColors[circleId] || '#FF9F1D'} strokeWidth={5} />
+                <line x1={circleR.x + circleR.width / 2} y1={circleR.y + circleR.height / 2} x2={circleR.x + circleR.width / 2} y2={trackY} stroke={tplColors[circleId] || MIGSO_PALETTE[3]} strokeWidth={5} />
                 <g data-element-id={circleId} onMouseDown={e => startDrag(e, circleId, circleR)} transform={getTransform(circleId, circleR)} style={{ cursor: 'pointer' }}>
                   <g transform={`translate(${circleR.x}, ${circleR.y}) scale(${circleR.width / 60}, ${circleR.height / 60})`}>
-                    <circle cx={30} cy={30} r={30} fill={tplColors[circleId] || '#FF9F1D'} />
+                    <circle cx={30} cy={30} r={30} fill={tplColors[circleId] || MIGSO_PALETTE[3]} />
                     <text x={30} y={26} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">YOUR</text>
                     <text x={30} y={40} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight="bold" fill="#ffffff">TITLE</text>
                   </g>
@@ -143,7 +143,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
             )}
 
             <g data-element-id={cardId} onMouseDown={e => startDrag(e, cardId, cardR)} transform={getTransform(cardId, cardR)} style={{ cursor: 'pointer' }}>
-              <rect x={cardR.x} y={cardR.y} width={cardR.width} height={cardR.height} fill={tplColors[cardId] || (idx === 0 ? '#23255a' : idx === 1 ? '#2d62ed' : '#ff4a2b')} stroke={tplStrokeColors[cardId]} strokeWidth={tplStrokeWidths[cardId]} />
+              <rect x={cardR.x} y={cardR.y} width={cardR.width} height={cardR.height} fill={tplColors[cardId] || MIGSO_PALETTE[idx % MIGSO_PALETTE.length]} stroke={tplStrokeColors[cardId]} strokeWidth={tplStrokeWidths[cardId]} />
               <text x={cardR.x + cardR.width / 2} y={cardR.y + 45} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight="bold" fill="#ffffff">{ms.title}</text>
               {ms.subtitle && ms.subtitle.split('\n').map((line, lIdx) => (
                 <text key={lIdx} x={cardR.x + cardR.width / 2} y={cardR.y + 75 + lIdx * 20} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fill="#ffffff" opacity={0.9}>{line}</text>
