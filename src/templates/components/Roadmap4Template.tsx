@@ -59,7 +59,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
     const startY = 475
     const rowHeight = 115
-    const strokeW = 28
+    const strokeW = 33
 
     const extensionLength = 160
     const arrowHeadW = 40
@@ -215,7 +215,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         const stepColor = tplColors[bodyId] || steps[i]?.color || defaultColor
 
         const rowHeight = 115
-        const strokeW = 28
+        const strokeW = 33
         const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
         const hasNext = i < count - 1
 
