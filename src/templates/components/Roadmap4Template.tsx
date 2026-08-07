@@ -282,23 +282,19 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
           const startY = sR.y + sR.height / 2
           pathD = `M ${startX} ${startY} L ${aR.x + 3} ${startY}`
         } else if (direction === 'left') {
-          const prevArrowId = `step-arrow-${i}`
-          const prevAR = getR(prevArrowId)
-          const startX = prevAR.x
-          const startY = sR.y + sR.height / 2
+          const prevArrowBaseX = 470
+          const startY = sR.y + rowHeight + sR.height / 2
           const turnX = getTurnRightX(i - 1)
-          const targetY = sR.y + sR.height / 2
+          const targetY = startY - rowHeight
 
-          pathD = `M ${startX} ${startY} L ${turnX - R} ${startY} A ${R} ${R} 0 0 0 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 0 ${turnX - R} ${targetY} L ${aR.x + aR.width - 3} ${targetY}`
+          pathD = `M ${prevArrowBaseX} ${startY} L ${turnX - R} ${startY} A ${R} ${R} 0 0 0 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 0 ${turnX - R} ${targetY} L ${aR.x + aR.width - 3} ${targetY}`
         } else {
-          const prevArrowId = `step-arrow-${i}`
-          const prevAR = getR(prevArrowId)
-          const startX = prevAR.x + prevAR.width
-          const startY = sR.y + sR.height / 2
+          const prevArrowBaseX = 555
+          const startY = sR.y + rowHeight + sR.height / 2
           const turnX = getTurnLeftX(i - 1)
-          const targetY = sR.y + sR.height / 2
+          const targetY = startY - rowHeight
 
-          pathD = `M ${startX} ${startY} L ${turnX + R} ${startY} A ${R} ${R} 0 0 1 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 1 ${turnX + R} ${targetY} L ${aR.x + 3} ${targetY}`
+          pathD = `M ${prevArrowBaseX} ${startY} L ${turnX + R} ${startY} A ${R} ${R} 0 0 1 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 1 ${turnX + R} ${targetY} L ${aR.x + 3} ${targetY}`
         }
 
         return (
