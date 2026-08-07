@@ -149,6 +149,9 @@ export function TemplatePropertiesPanel() {
   const isMulti = elements.length > 1
   const primaryPos = templateElementPositions[primaryId] ?? { x: 0, y: 0, width: 100, height: 100 }
   const primaryRot = templateElementRotations[primaryId] ?? 0
+  const primaryFill = templateColors[primaryId] ?? ''
+  const primaryStroke = templateStrokeColors[primaryId] ?? ''
+  const primaryStrokeWidth = templateStrokeWidths[primaryId] ?? 1
   let groupPos = primaryPos
   if (isMulti) {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
