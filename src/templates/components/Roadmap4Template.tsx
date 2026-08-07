@@ -47,26 +47,22 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
   const count = Math.max(1, stepTitles.length)
 
-  // 2. Disposition géométrique avec espacement vertical accru des segments horizontaux
-  // Virages composés de : Arc de 90° (R) -> Ligne droite verticale (verticalStraight) -> Arc de 90° (R)
+  // 2. Disposition géométrique : Virages alternés légèrement en longueur (décalage de 45px)
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
     map.set('main-title', { x: W / 2 - 200, y: 25, width: 400, height: 40 })
 
     const startY = 475
-    // Espacement vertical fixe de 150px entre les segments horizontaux
     const rowHeight = 115
-
-    // Largeur du segment (28px)
     const strokeW = 28
 
-    const turnLeftX = 300
-    const turnRightX = 670
     const extensionLength = 160
-    
-    // Conservation de la taille des flèches
     const arrowHeadW = 40
     const arrowHeadH = 66
+
+    // Alternance des virages : décalage léger de +- 35px
+    const getTurnLeftX = (idx: number) => (idx % 2 === 0 ? 300 : 340)
+    const getTurnRightX = (idx: number) => (idx % 2 === 0 ? 670 : 635)
 
     for (let i = 0; i < count; i++) {
       const stepId = `step-${i + 1}`
@@ -80,6 +76,9 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
       const isFirst = i === 0
       const isLast = i === count - 1
+
+      const turnLeftX = getTurnLeftX(i)
+      const turnRightX = getTurnRightX(i)
 
       let segLeftX = turnLeftX
       let segRightX = turnRightX
@@ -128,9 +127,9 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
       let msX: number
       if (direction === 'right') {
-        msX = isLast ? segRightX + 15 : 720
+        msX = isLast ? segRightX + 15 : turnRightX + 50
       } else {
-        msX = isLast ? segLeftX - 250 : 50
+        msX = isLast ? segLeftX - 250 : turnLeftX - 230
       }
 
       const msRect: Rect = {
@@ -204,7 +203,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         </g>
       )}
 
-      {/* COUCHE 1 : RENDU DES SEGMENTS AVEC VIRAGES ESPACÉS (COURBE -> LIGNE DROITE VERTICALE -> COURBE) */}
+      {/* COUCHE 1 : RENDU DES SEGMENTS AVEC VIRAGES ALTERNÉS (COURBE -> LIGNE DROITE VERTICALE -> COURBE) */}
       {Array.from({ length: count }).map((_, i) => {
         const bodyId = `step-body-${i + 1}`
         const arrowId = `step-arrow-${i + 1}`
@@ -219,24 +218,20 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         const direction: 'right' | 'left' = i % 2 === 0 ? 'right' : 'left'
         const hasNext = i < count - 1
 
-        // Rayon de courbure fixe pour un arrondi fluide (R)
-        // La zone droite verticale = rowHeight - 2 * R
         const R = 22
-        const verticalStraight = Math.max(10, rowHeight - 2 * R)
 
         let pathD = ''
 
         if (i === 0) {
-          // Étape 1 (en bas) : ligne horizontale directe jusqu'à la flèche
+          // Étape 1 (en bas)
           const startX = sR.x
           const startY = sR.y + sR.height / 2
           pathD = `M ${startX} ${startY} L ${aR.x + 3} ${startY}`
         } else if (direction === 'left') {
-          // Virage à droite remontant :
-          // Ligne horizontale jusqu'à (turnX - R) -> Arc 90° vers le haut (R) -> Ligne verticale droite vers le haut -> Arc 90° vers la gauche (R) -> Ligne horizontale vers la gauche jusqu'à la flèche
+          // Virage vers la droite (ex: virage au bout de l'étape 1)
           const prevArrowBaseX = 470
           const startY = sR.y + rowHeight + sR.height / 2
-          const turnX = 670
+          const turnX = 670 // Virage de l'étape 1 à X=670
           const targetY = startY - rowHeight
 
           if (hasNext) {
@@ -245,11 +240,11 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
             pathD = `M ${prevArrowBaseX} ${startY} L ${turnX - R} ${startY} A ${R} ${R} 0 0 0 ${turnX} ${startY - R} L ${turnX} ${targetY + R} A ${R} ${R} 0 0 0 ${turnX - R} ${targetY} L ${aR.x + aR.width - 3} ${targetY}`
           }
         } else {
-          // Virage à gauche remontant :
-          // Ligne horizontale vers la gauche jusqu'à (turnX + R) -> Arc 90° vers le haut (R) -> Ligne verticale droite vers le haut -> Arc 90° vers la droite (R) -> Ligne horizontale vers la droite jusqu'à la flèche
+          // Virage vers la gauche (ex: virage au bout de l'étape 2)
+          // Alternance : virage Étape 2 à X=340 au lieu de 300 pour créer l'effet "un peu plus court/long"
           const prevArrowBaseX = 555
           const startY = sR.y + rowHeight + sR.height / 2
-          const turnX = 300
+          const turnX = i % 2 === 0 ? 300 : 340
           const targetY = startY - rowHeight
 
           if (hasNext) {
@@ -334,7 +329,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
               y={stR.y + stR.height / 2 + 5}
               textAnchor="middle"
               fontFamily="Arial, sans-serif"
-              fontSize={15}
+              fontSize={18}
               fontWeight="bold"
               fill={textColor}
             >
