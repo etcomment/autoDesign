@@ -74,8 +74,8 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
     }
   }
 
-  // 4 horizontal segments in [0, 1000] x [0, 395] virtual box with +5px increased track spacing
-  const roadD = "M 900 40 L 150 40 A 52.5 52.5 0 0 0 150 145 L 720 145 A 52.5 52.5 0 0 1 720 250 L 150 250 A 52.5 52.5 0 0 0 150 355 L 900 355"
+  // 4 horizontal segments in [0, 1000] x [0, 500] virtual box with significantly larger vertical track spacing
+  const roadD = "M 900 40 L 150 40 A 70 70 0 0 0 150 180 L 720 180 A 70 70 0 0 1 720 320 L 150 320 A 70 70 0 0 0 150 460 L 900 460"
   
   const titleR = getR('rdm-title')
   const roadPathR = getR('rdm2-path')
@@ -83,7 +83,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
   return (
     <g ref={svgRef}>
       <g data-element-id="rdm2-path" onMouseDown={e => startDrag(e, 'rdm2-path', roadPathR)} transform={getTransform('rdm2-path', roadPathR)} style={{ cursor: 'pointer' }}>
-        <g transform={`translate(${roadPathR.x}, ${roadPathR.y}) scale(${roadPathR.width / 1000}, ${roadPathR.height / 395})`}>
+        <g transform={`translate(${roadPathR.x}, ${roadPathR.y}) scale(${roadPathR.width / 1000}, ${roadPathR.height / 500})`}>
           <path d={roadD} fill="none" stroke="#D7D7D7" strokeWidth={55} strokeLinecap="round" strokeLinejoin="round" />
           <path d={roadD} fill="none" stroke="#ffffff" strokeWidth={10} strokeDasharray="34 24" strokeLinecap="butt" strokeLinejoin="round" />
         </g>
@@ -110,7 +110,7 @@ export function RoadmapTemplate({ data }: { data: RoadmapData }): ReactElement {
         const hasBanner = defaultPositions.has(bannerId)
         const hasCircle = defaultPositions.has(circleId)
 
-        const trackYFraction = idx === 0 ? (40/395) : idx === 1 ? (145/395) : idx === 2 ? (250/395) : (355/395)
+        const trackYFraction = idx === 0 ? (40/500) : idx === 1 ? (180/500) : idx === 2 ? (320/500) : (460/500)
         const trackY = roadPathR.y + roadPathR.height * trackYFraction
 
         return (
