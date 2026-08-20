@@ -70,4 +70,22 @@ describe('Roadmap5Template', () => {
     expect(container.textContent).toContain('2028')
     expect(container.textContent).toContain('2029') // Terminal dot shows 2029
   })
+
+  it('should support track and progress colors from DSL data', () => {
+    const data: RoadmapData = {
+      type: 'roadmap',
+      trackColor: '#e11d48',
+      trackBgColor: '#f1f5f9',
+      progress: '3',
+      progressColor: '#2563eb',
+      milestones: [
+        { title: 'Step 1', subtitle: 'Desc 1', date: '2024', color: '#10b981' },
+        { title: 'Step 2', subtitle: 'Desc 2', date: '2025', color: '#f59e0b' },
+        { title: 'Step 3', subtitle: 'Desc 3', date: '2026', color: '#8b5cf6' },
+      ],
+    }
+    const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
+    const lines = container.querySelectorAll('line')
+    expect(lines.length).toBeGreaterThanOrEqual(2)
+  })
 })

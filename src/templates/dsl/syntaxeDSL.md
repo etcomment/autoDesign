@@ -91,15 +91,22 @@ Ce document constitue la **source officielle et unique de la syntaxe DSL** pour 
   milestone:Q4 "GA Release" "General availability"
 ```
 
-#### Roadmap 5 — 4 jalons alternés (haut/bas) avec dates
+#### Roadmap 5 — Jalons alternés (haut/bas) avec dates & personnalisation des couleurs
 
 ```dsl
 @roadmap5
-  milestone "Discovery" "Understanding user needs" date:2024
-  milestone "Prototyping" "Building rapid prototypes" date:2025
-  milestone "Development" "Engineering core modules" date:2026
-  milestone "Release" "Production deployment" date:2027
+  start "START"
+  track #23255a #d9dee4
+  progress 2 #23255a
+  milestone "Discovery" "Understanding user needs" date:2024 #4cbfa0
+  milestone "Prototyping" "Building rapid prototypes" date:2025 #23255a
+  milestone "Development" "Engineering core modules" date:2026 #23255a
+  milestone "Release" "Production deployment" date:2027 #2d62ed
 ```
+
+> - `track #couleurActive #couleurFond` : définit les couleurs des segments actif et inactif de la ligne horizontale.
+> - `progress <nombre|pourcentage> [#couleur]` : définit jusqu'où la barre de progression s'étend (ex: `progress 2` ou `progress 60%`).
+> - `#couleur` ou `color:#couleur` sur un jalon : applique la couleur à sa tige, son point, son année et son titre.
 
 #### Roadmap 6 — Ruban de chevrons groupés par période
 

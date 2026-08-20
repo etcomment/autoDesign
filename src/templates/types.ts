@@ -48,6 +48,9 @@ export interface RoadmapData {
   startLabel?: string
   finishLabel?: string
   progress?: string
+  progressColor?: string
+  trackColor?: string
+  trackBgColor?: string
   defaultStyle?: TemplateElementStyle
 }
 

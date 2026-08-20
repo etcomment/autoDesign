@@ -62,7 +62,15 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
   const moveElement = useTemplateStore(state => state.moveTemplateElement)
   const resizeElement = useTemplateStore(state => state.resizeTemplateElement)
 
-  const { milestones = [], startLabel = 'START' } = data
+  const {
+    milestones = [],
+    startLabel = 'START',
+    trackColor,
+    trackBgColor,
+    progress,
+    progressColor,
+  } = data
+
   const N = Math.max(1, milestones.length)
   const totalDots = N // Dots from 1 to N (where dot-N is the terminal dot)
 
@@ -159,13 +167,35 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
   }
 
   const startBadgeRect = getElementRect('start-badge')
-  const startColor = templateColors['start-badge'] || '#4cbfa0'
+  const startColor = templateColors['start-badge'] || milestones[0]?.color || '#4cbfa0'
 
-  // Midpoint pivot for the two-tone horizontal line
-  const pivotIndex = Math.max(1, Math.min(2, Math.floor(totalDots / 2)))
-  const pivotX = getElementRect(`dot-${pivotIndex}`).x + getElementRect(`dot-${pivotIndex}`).width / 2
   const terminalDotRect = getElementRect(`dot-${totalDots}`)
+  const trackStartX = startBadgeRect.x + startBadgeRect.width
   const timelineEndX = terminalDotRect.x + terminalDotRect.width / 2
+
+  // Compute progress pivot X position from DSL (number or percentage)
+  let pivotX: number
+  if (progress && !isNaN(Number(progress))) {
+    const progIdx = Math.max(1, Math.min(totalDots, Number(progress)))
+    pivotX = getElementRect(`dot-${progIdx}`).x + getElementRect(`dot-${progIdx}`).width / 2
+  } else if (progress && progress.includes('%')) {
+    const pct = Math.max(0, Math.min(100, parseFloat(progress))) / 100
+    pivotX = trackStartX + (timelineEndX - trackStartX) * pct
+  } else {
+    const defaultPivotIndex = Math.max(1, Math.min(2, Math.floor(totalDots / 2)))
+    pivotX = getElementRect(`dot-${defaultPivotIndex}`).x + getElementRect(`dot-${defaultPivotIndex}`).width / 2
+  }
+
+  const activeTrackColor =
+    templateColors['timeline-track-dark'] ||
+    progressColor ||
+    trackColor ||
+    '#23255a'
+
+  const inactiveTrackColor =
+    templateColors['timeline-track-light'] ||
+    trackBgColor ||
+    '#d9dee4'
 
   // Computed terminal year for the extra dot
   const lastMilestoneDate = milestones[N - 1]?.date
@@ -173,23 +203,23 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
 
   return (
     <g ref={svgRef}>
-      {/* Horizontal Timeline Track: Dark Navy Section */}
+      {/* Horizontal Timeline Track: Active Progress Section */}
       <line
-        x1={startBadgeRect.x + startBadgeRect.width}
+        x1={trackStartX}
         y1={startBadgeRect.y + startBadgeRect.height / 2}
         x2={pivotX}
         y2={startBadgeRect.y + startBadgeRect.height / 2}
-        stroke={templateColors['timeline-track-dark'] || '#23255a'}
+        stroke={activeTrackColor}
         strokeWidth={templateStrokeWidths['timeline-track'] || 4.5}
       />
 
-      {/* Horizontal Timeline Track: Light Grey Section */}
+      {/* Horizontal Timeline Track: Remaining Track Section */}
       <line
         x1={pivotX}
         y1={startBadgeRect.y + startBadgeRect.height / 2}
         x2={timelineEndX}
         y2={startBadgeRect.y + startBadgeRect.height / 2}
-        stroke={templateColors['timeline-track-light'] || '#d9dee4'}
+        stroke={inactiveTrackColor}
         strokeWidth={templateStrokeWidths['timeline-track'] || 4.5}
       />
 
@@ -236,7 +266,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })}
 
-      {/* START Badge (Green Circle on Timeline) */}
+      {/* START Badge (Circle on Timeline) */}
       <g
         data-element-id="start-badge"
         onMouseDown={event => startDrag(event, 'start-badge', startBadgeRect)}
@@ -340,7 +370,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         const cardRect = getElementRect(cardId)
         const isSelected = selectedIds.has(cardId)
 
-        const titleColor = templateColors[cardId] || '#23255a'
+        const titleColor = templateColors[cardId] || milestone.color || '#23255a'
         const subtitleColor = templateColors[`subtitle-${index}`] || '#23255a'
 
         const maxTitleChars = Math.max(8, Math.floor(cardRect.width / 11))
