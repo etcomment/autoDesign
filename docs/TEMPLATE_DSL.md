@@ -65,26 +65,41 @@ Pour la quasi-totalité des éléments de liste (`milestone`, `step`, `block`, `
 
 **Variantes supportées** : `roadmap`, `roadmap2`, `roadmap3`, `roadmap4`, `roadmap5`, `roadmap6`, `roadmap7`, `roadmap8`, `roadmap9`, `roadmap10`, `roadmap11`, `roadmap12`, `roadmap13`, `roadmap14`, `roadmap15`, `roadmap16`, `productRoadmap`, `productRoadmap2`, `productRoadmap3`, `productRoadmap4`, `productRoadmap5`, `productRoadmap6`.
 
-#### Sintaxe et sous-commandes :
-* `start "Label"` : Marqueur de départ de la timeline.
-* `finish "Label"` : Marqueur de fin de la timeline.
-* `quarters Q1 Q2 Q3 Q4` : Active le mode grille (Trimestres / Timeline).
-* `lanes TeamA TeamB` : Colonnes / Rangées organisationnelles.
-* `milestone [Quarter:Lane] "Titre" ["Subtitle"]` : Milestone de roadmap.
+#### Syntaxe et sous-commandes :
+* `start "Label"` : Marqueur ou badge de départ de la timeline (ex: `start "START"` ou `start "Kickoff"`).
+* `finish "Label"` : Marqueur de fin de la timeline (ex: `finish "RELEASE"`).
+* `quarters 2019 2020 2021 2022` ou `quarters Q1:2026 Q2:2026 ...` : Définit l'axe temporel (années ou trimestres). Si omis, l'axe est déduit automatiquement des dates `date:` des jalons.
+* `lanes TeamA TeamB` ou `lanes "Design":#4cbfa0 "Dev":#23255a` : Couloirs ou catégories organisationnelles avec couleurs optionnelles.
+* `progress <année|index|pourcentage> [#couleur]` : Indique l'avancement / étape actuelle de la timeline (ex: `progress 2020`, `progress 2`, `progress 75% #23255a`).
+* `current <année|index|titre>` : Définit l'étape actuelle (synonyme de `progress`).
+* `track #couleurActive [#couleurFond]` (ou `bar #couleurActive`) : Personnalise la couleur du segment actif et du segment de fond/inactif de la timeline (ex: `track #23255a #d9dee4`).
+* `milestone [Quarter:Lane] "Titre" ["Sous-titre"] [date:ANNÉE] [val:"..."] [pct:"..."] [icon:Nom] [#HEX]` : Déclare un jalon.
+  * `date:2020` : Accroche le jalon au point temporel correspondant sur la timeline.
+  * `#couleur` ou `color:#couleur` : Attribue une couleur spécifique au jalon (sa tige, son point et son segment de progression).
+  * `current` : Marque le jalon comme étant l'étape active/en cours.
 
-#### Exemple 1 : Timeline Simple (`@roadmap`)
+#### Exemple 1 : Timeline Alternée avec Dates & Progression (`@roadmap5`)
 ```
-@roadmap "Roadmap Lancement 2026"
-  start "Kickoff"
-  finish "Lancement Officiel"
-
-  milestone "Audit & Vision" "Étude de marché et cadrage" icon:Search #4a90d9
-  milestone "MVP Architecture" "Conception des APIs" icon:Code #7b68ee
-  milestone "Recette QA" "Validation sécurité et perfs" icon:ShieldCheck #ff9800
-  milestone "Déploiement PROD" "Mise en ligne progressive" icon:Rocket #4caf50
+@roadmap5
+  start "START"
+  quarters 2019 2020 2021 2022
+  progress 2020
+  track #23255a #d9dee4
+  milestone "Milestone 01" "MIGSO-PCUBED content and words to be added here" #4cbfa0
+  milestone "Milestone 02" "MIGSO-PCUBED content and words to be added here" date:2019 #23255a
+  milestone "Milestone 03" "MIGSO-PCUBED content and words to be added here" date:2020 #23255a
+  milestone "Milestone 04" "MIGSO-PCUBED content and words to be added here" date:2021 #2d62ed
 ```
 
-#### Exemple 2 : Product Roadmap Grille (`@productRoadmap3`)
+#### Exemple 2 : Cartes Positionnées sur Timeline Annuelle (`@roadmap3`)
+```
+@roadmap3 "Feuille de Route Stratégique"
+  quarters 2019 2020 2021 2022 2023 2024 2025 2026 2027 2028
+  milestone "Recherche & Cadrage" "Étude de marché et besoins" date:2021 #4a90d9
+  milestone "Déploiement Global" "Mise sur le marché et adoption" date:2026 #4caf50
+```
+
+#### Exemple 3 : Product Roadmap Grille (`@productRoadmap3`)
 ```
 @productRoadmap3 "Plan Produit Annuel"
   quarters Q1:2026 Q2:2026 Q3:2026 Q4:2026
@@ -94,6 +109,18 @@ Pour la quasi-totalité des éléments de liste (`milestone`, `step`, `block`, `
   milestone Q2:Product "Module Analytics" "Rapports exportables PDF" icon:BarChart
   milestone Q3:UX "Design System v2" "Composants accessibles" icon:Palette
   milestone Q4:QA "Tests d'intégration" "Automatisation E2E" icon:CheckSquare
+```
+
+#### Exemple 4 : Ruban de Chevrons Groupés (`@roadmap6`)
+```
+@roadmap6 "Plan de Déploiement"
+  quarters 2024 2025 2026
+  milestone "Setup Infra" "Configuration cloud" date:2024
+  milestone "Auth Module" "SSO & Sécurité" date:2024
+  milestone "Dashboard" "Interface principale" date:2025
+  milestone "API v2" "Endpoints REST" date:2025
+  milestone "Tests & QA" "Validation globale" date:2026
+  milestone "Go Live" "Lancement officiel" date:2026
 ```
 
 ---
