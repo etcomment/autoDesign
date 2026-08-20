@@ -264,9 +264,8 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
           ? templateColors['seg-start'] ||
             trackColor ||
             progressColor ||
-            milestones[1]?.color ||
             milestones[0]?.color ||
-            '#23255a'
+            '#4cbfa0'
           : inactiveTrackColor
 
         return (
@@ -282,7 +281,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })()}
 
-      {/* Horizontal Timeline Track: Segments between Dots */}
+      {/* Horizontal Timeline Track: Segments between Dots (colored starting from dot-i) */}
       {Array.from({ length: Math.max(0, totalDots - 1) }, (_, i) => {
         const dotFromRect = getElementRect(`dot-${i}`)
         const dotToRect = getElementRect(`dot-${i + 1}`)
@@ -290,8 +289,9 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         const toX = dotToRect.x + dotToRect.width / 2
         const lineY = startBadgeRect.y + startBadgeRect.height / 2
 
-        const isCompleted = (i + 1) <= currentStepIdx
-        const matchedMsIdx = pinIndices.indexOf(i + 1)
+        // Completed starting from dot-i towards dot-(i+1) if origin i < currentStepIdx
+        const isCompleted = i < currentStepIdx
+        const matchedMsIdx = pinIndices.indexOf(i)
         const ms = matchedMsIdx >= 0 ? milestones[matchedMsIdx] : undefined
 
         const activeColor =
@@ -299,7 +299,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
           trackColor ||
           progressColor ||
           ms?.color ||
-          (i + 1 <= currentStepIdx ? '#23255a' : '#2d62ed')
+          (i <= currentStepIdx ? '#23255a' : '#2d62ed')
 
         const segColor = isCompleted ? activeColor : inactiveTrackColor
 
