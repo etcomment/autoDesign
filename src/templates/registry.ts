@@ -113,6 +113,7 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'roadmap',
       startLabel: 'START',
+      progress: '2020',
       quarters: [
         { label: '2019' },
         { label: '2020' },

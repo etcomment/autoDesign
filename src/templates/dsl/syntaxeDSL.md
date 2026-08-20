@@ -91,13 +91,13 @@ Ce document constitue la **source officielle et unique de la syntaxe DSL** pour 
   milestone:Q4 "GA Release" "General availability"
 ```
 
-#### Roadmap 5 — Timeline alternée avec années (`quarters`), étape actuelle (`current`) & jalons positionnés (`date:`)
+#### Roadmap 5 — Timeline alternée avec années (`quarters`), progression (`progress`) & jalons positionnés (`date:`)
 
 ```dsl
 @roadmap5
   start "START"
   quarters 2019 2020 2021 2022
-  current 2020
+  progress 2020
   track #23255a #d9dee4
   milestone "Milestone 01" "MIGSO-PCUBED content and words to be added here as required" #4cbfa0
   milestone "Milestone 02" "MIGSO-PCUBED content and words to be added here as required" date:2019 #23255a
@@ -105,8 +105,7 @@ Ce document constitue la **source officielle et unique de la syntaxe DSL** pour 
   milestone "Milestone 04" "MIGSO-PCUBED content and words to be added here as required" date:2021 #2d62ed
 ```
 
-> - `current <année|index|titre>` : indique l'étape/année **actuelle** de la roadmap (ex: `current 2020` ou `current 2`). La timeline est automatiquement colorée en actif (bleu nuit) jusqu'à cette étape et passe en gris clair au-delà.
-> - On peut aussi marquer un jalon avec le mot-clé `current` (ex: `milestone "Milestone 03" "..." date:2020 current`).
+> - `progress <année|index>` : indique jusqu'où la timeline est avancée / l'étape actuelle (ex: `progress 2020` ou `progress 2`). Le segment actif (bleu nuit) s'étend jusqu'à ce point et bascule en gris clair pour la suite.
 > - `quarters <an1> <an2> ...` : définit l'axe des années sur la timeline.
 > - `date:<année>` : détermine à quelle année/point de la timeline chaque jalon vient **s'accrocher** (comme pour `@roadmap3`).
 > - Le premier jalon sans `date:` s'accroche directement au sommet du cercle `START`.
