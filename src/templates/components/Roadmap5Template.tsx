@@ -248,20 +248,6 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
   const startBadgeRect = getElementRect('start-badge')
   const startColor = templateColors['start-badge'] || milestones[0]?.color || '#4cbfa0'
 
-  const terminalDotRect = getElementRect(`dot-${totalDots - 1}`)
-  const trackStartX = startBadgeRect.x + startBadgeRect.width
-  const timelineEndX = terminalDotRect.x + terminalDotRect.width / 2
-
-  // The active track covers from START up to the currentStepIdx dot
-  const currentDotRect = getElementRect(`dot-${currentStepIdx}`)
-  const pivotX = currentDotRect.x + currentDotRect.width / 2
-
-  const activeTrackColor =
-    templateColors['timeline-track-dark'] ||
-    progressColor ||
-    trackColor ||
-    '#23255a'
-
   const inactiveTrackColor =
     templateColors['timeline-track-light'] ||
     trackBgColor ||
@@ -269,25 +255,66 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
 
   return (
     <g ref={svgRef}>
-      {/* Horizontal Timeline Track: Active Progress Section up to Current Step */}
-      <line
-        x1={trackStartX}
-        y1={startBadgeRect.y + startBadgeRect.height / 2}
-        x2={pivotX}
-        y2={startBadgeRect.y + startBadgeRect.height / 2}
-        stroke={activeTrackColor}
-        strokeWidth={templateStrokeWidths['timeline-track'] || 4.5}
-      />
+      {/* Horizontal Timeline Track: Segment 0 from START to first Dot */}
+      {totalDots > 0 && (() => {
+        const firstDotRect = getElementRect('dot-0')
+        const firstDotCenterX = firstDotRect.x + firstDotRect.width / 2
+        const isCompleted = currentStepIdx >= 0
+        const seg0Color = isCompleted
+          ? templateColors['seg-start'] ||
+            trackColor ||
+            progressColor ||
+            milestones[1]?.color ||
+            milestones[0]?.color ||
+            '#23255a'
+          : inactiveTrackColor
 
-      {/* Horizontal Timeline Track: Future / Remaining Track Section */}
-      <line
-        x1={pivotX}
-        y1={startBadgeRect.y + startBadgeRect.height / 2}
-        x2={timelineEndX}
-        y2={startBadgeRect.y + startBadgeRect.height / 2}
-        stroke={inactiveTrackColor}
-        strokeWidth={templateStrokeWidths['timeline-track'] || 4.5}
-      />
+        return (
+          <line
+            key="seg-start"
+            x1={startBadgeRect.x + startBadgeRect.width}
+            y1={startBadgeRect.y + startBadgeRect.height / 2}
+            x2={firstDotCenterX}
+            y2={startBadgeRect.y + startBadgeRect.height / 2}
+            stroke={seg0Color}
+            strokeWidth={templateStrokeWidths['timeline-track'] || 4.5}
+          />
+        )
+      })()}
+
+      {/* Horizontal Timeline Track: Segments between Dots */}
+      {Array.from({ length: Math.max(0, totalDots - 1) }, (_, i) => {
+        const dotFromRect = getElementRect(`dot-${i}`)
+        const dotToRect = getElementRect(`dot-${i + 1}`)
+        const fromX = dotFromRect.x + dotFromRect.width / 2
+        const toX = dotToRect.x + dotToRect.width / 2
+        const lineY = startBadgeRect.y + startBadgeRect.height / 2
+
+        const isCompleted = (i + 1) <= currentStepIdx
+        const matchedMsIdx = pinIndices.indexOf(i + 1)
+        const ms = matchedMsIdx >= 0 ? milestones[matchedMsIdx] : undefined
+
+        const activeColor =
+          templateColors[`seg-${i}`] ||
+          trackColor ||
+          progressColor ||
+          ms?.color ||
+          (i + 1 <= currentStepIdx ? '#23255a' : '#2d62ed')
+
+        const segColor = isCompleted ? activeColor : inactiveTrackColor
+
+        return (
+          <line
+            key={`seg-${i}`}
+            x1={fromX}
+            y1={lineY}
+            x2={toX}
+            y2={lineY}
+            stroke={segColor}
+            strokeWidth={templateStrokeWidths['timeline-track'] || 4.5}
+          />
+        )
+      })}
 
       {/* Vertical Stems for Milestones */}
       {milestones.map((milestone, index) => {
