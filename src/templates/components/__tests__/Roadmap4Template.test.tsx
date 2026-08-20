@@ -6,6 +6,7 @@ import type { RoadmapData } from '../../types'
 describe('Roadmap4Template', () => {
   it('should render without crashing with default data', () => {
     const data: RoadmapData = {
+      type: 'roadmap',
       title: 'Roadmap Test',
       milestones: [
         { title: 'Milestone 1', subtitle: 'Desc 1' },
@@ -18,11 +19,12 @@ describe('Roadmap4Template', () => {
 
   it('should adapt dynamically to N steps and milestones', () => {
     const data: RoadmapData = {
+      type: 'roadmap',
       title: 'Dynamic Roadmap',
       steps: [
-        { title: 'Etape 1' },
-        { title: 'Etape 2' },
-        { title: 'Etape 3' },
+        { number: 1, title: 'Etape 1' },
+        { number: 2, title: 'Etape 2' },
+        { number: 3, title: 'Etape 3' },
       ],
       milestones: [
         { title: 'Milestone 1', subtitle: 'Subtitle 1' },

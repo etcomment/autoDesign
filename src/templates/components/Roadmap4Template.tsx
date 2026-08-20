@@ -60,7 +60,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         ? milestones.map((m, i) => m.quarter || m.title || `Étape ${i + 1}`)
         : ['Step One', 'Step Two', 'Step Three', 'Step Four', 'Step Five'])
 
-  const displayMilestones = milestones.length > 0
+  const displayMilestones: TemplateMilestone[] = milestones.length > 0
     ? milestones
     : Array.from({ length: stepTitles.length }, (_, i) => ({
         title: `Milestone ${i + 1}`,
