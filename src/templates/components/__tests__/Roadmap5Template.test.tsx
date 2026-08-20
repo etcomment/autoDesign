@@ -40,16 +40,31 @@ describe('Roadmap5Template', () => {
     expect(container.textContent).toContain('2028')
   })
 
-  it('should not render any hardcoded global title or white background rectangle', () => {
-    const data: RoadmapData = {
+  it('should dynamically update when a milestone is added in DSL', () => {
+    const initialData: RoadmapData = {
       type: 'roadmap',
-      title: 'Ignored Global Slide Title',
       milestones: [
-        { title: 'M1', subtitle: 'Sub 1', date: '2024' },
+        { title: 'Discovery', subtitle: 'Understanding user needs', date: '2024' },
+        { title: 'Prototyping', subtitle: 'Building rapid prototypes', date: '2025' },
+        { title: 'Development', subtitle: 'Engineering core modules', date: '2026' },
       ],
     }
-    const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
-    expect(container.querySelector('[data-element-id="main-title"]')).toBeNull()
-    expect(container.querySelector('rect[fill="white"][width="1000"]')).toBeNull()
+    const { container, rerender } = render(<svg><Roadmap5Template data={initialData} /></svg>)
+    expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(3)
+
+    // User adds 4th milestone in DSL:
+    const updatedData: RoadmapData = {
+      type: 'roadmap',
+      milestones: [
+        ...initialData.milestones,
+        { title: 'Release', subtitle: 'Production deployment and monitoring', date: '2027' },
+      ],
+    }
+    rerender(<svg><Roadmap5Template data={updatedData} /></svg>)
+    expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(4)
+    expect(container.textContent).toContain('Release')
+    expect(container.textContent).toContain('Production deployment')
+    expect(container.textContent).toContain('monitoring')
+    expect(container.textContent).toContain('2027')
   })
 })

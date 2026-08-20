@@ -37,13 +37,13 @@ function getDynamicIcon(iconName?: string, size = 18, color = '#23255a'): ReactE
 export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
-  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const tplColors = useTemplateStore(s => s.templateElementColors)
-  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
-  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
-  const pos = useTemplateStore(s => s.templateElementPositions)
-  const moveEl = useTemplateStore(s => s.moveTemplateElement)
-  const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
+  const selectedIds = useTemplateStore(state => state.selectedTemplateElementIds)
+  const templateColors = useTemplateStore(state => state.templateElementColors)
+  const templateStrokeColors = useTemplateStore(state => state.templateStrokeColors)
+  const templateStrokeWidths = useTemplateStore(state => state.templateStrokeWidths)
+  const positions = useTemplateStore(state => state.templateElementPositions)
+  const moveElement = useTemplateStore(state => state.moveTemplateElement)
+  const resizeElement = useTemplateStore(state => state.resizeTemplateElement)
 
   const { milestones = [], startLabel = 'START' } = data
   const N = Math.max(1, milestones.length)
@@ -123,31 +123,36 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
     return map
   }, [N, startCircleX, startCircleR, timelineY])
 
+  // Synchronisation avec le store Zustand (avec détection du changement de N)
+  const prevNRef = useRef(N)
   useEffect(() => {
+    const countChanged = prevNRef.current !== N
+    prevNRef.current = N
+
     for (const [id, rect] of defaultPositions.entries()) {
-      if (!pos[id]) {
-        moveEl(id, { x: rect.x, y: rect.y })
-        resizeEl(id, { width: rect.width, height: rect.height })
+      if (countChanged || !positions[id]) {
+        moveElement(id, { x: rect.x, y: rect.y })
+        resizeElement(id, { width: rect.width, height: rect.height })
       }
     }
-  }, [defaultPositions, pos, moveEl, resizeEl])
+  }, [N, defaultPositions, positions, moveElement, resizeElement])
 
-  const getR = (id: string): Rect => {
-    const p = pos[id]
-    const d = defaultPositions.get(id) || { x: 0, y: 0, width: 100, height: 50 }
+  const getElementRect = (id: string): Rect => {
+    const stored = positions[id]
+    const defaultRect = defaultPositions.get(id) || { x: 0, y: 0, width: 100, height: 50 }
     return {
-      x: p?.x ?? d.x,
-      y: p?.y ?? d.y,
-      width: p?.width || d.width,
-      height: p?.height || d.height,
+      x: stored?.x ?? defaultRect.x,
+      y: stored?.y ?? defaultRect.y,
+      width: stored?.width || defaultRect.width,
+      height: stored?.height || defaultRect.height,
     }
   }
 
-  const startR = getR('start-badge')
-  const startColor = tplColors['start-badge'] || MIGSO_PALETTE[4] // Vert MIGSO
+  const startR = getElementRect('start-badge')
+  const startColor = templateColors['start-badge'] || MIGSO_PALETTE[4] // Vert MIGSO
 
   // Timeline track
-  const lastDotX = N > 1 ? getR(`dot-${N - 1}`).x + getR(`dot-${N - 1}`).width / 2 : startR.x + startR.width + 120
+  const lastDotX = N > 1 ? getElementRect(`dot-${N - 1}`).x + getElementRect(`dot-${N - 1}`).width / 2 : startR.x + startR.width + 120
   const timelineEndX = Math.max(startR.x + startR.width + 150, lastDotX + 60)
 
   return (
@@ -158,15 +163,15 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         y1={startR.y + startR.height / 2}
         x2={timelineEndX}
         y2={startR.y + startR.height / 2}
-        stroke={tplColors['timeline-track'] || '#23255a'}
-        strokeWidth={tplStrokeWidths['timeline-track'] || 5}
+        stroke={templateColors['timeline-track'] || '#23255a'}
+        strokeWidth={templateStrokeWidths['timeline-track'] || 5}
         strokeLinecap="round"
       />
 
       {/* Vertical Stems */}
       {milestones.map((_, i) => {
-        const cardR = getR(`card-${i}`)
-        const color = tplColors[`stem-${i}`] || tplColors[`card-${i}`] || milestones[i]?.color || MIGSO_PALETTE[i % MIGSO_PALETTE.length]
+        const cardR = getElementRect(`card-${i}`)
+        const color = templateColors[`stem-${i}`] || templateColors[`card-${i}`] || milestones[i]?.color || MIGSO_PALETTE[i % MIGSO_PALETTE.length]
 
         if (i === 0) {
           // Stem from card-0 bottom to START badge top
@@ -184,7 +189,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
           )
         }
 
-        const dotR = getR(`dot-${i}`)
+        const dotR = getElementRect(`dot-${i}`)
         const dotCenterX = dotR.x + dotR.width / 2
         const dotCenterY = dotR.y + dotR.height / 2
         const isAbove = i % 2 === 0
@@ -207,8 +212,8 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
       {/* Year Dots for i > 0 */}
       {milestones.map((ms, i) => {
         if (i === 0) return null
-        const dotR = getR(`dot-${i}`)
-        const dotColor = tplColors[`dot-${i}`] || ms.color || MIGSO_PALETTE[i % MIGSO_PALETTE.length]
+        const dotR = getElementRect(`dot-${i}`)
+        const dotColor = templateColors[`dot-${i}`] || ms.color || MIGSO_PALETTE[i % MIGSO_PALETTE.length]
         const dotRadius = Math.min(dotR.width, dotR.height) / 2
 
         return (
@@ -240,8 +245,8 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
 
       {/* Year Text Labels */}
       {milestones.map((ms, i) => {
-        const yrR = getR(`year-${i}`)
-        const yrColor = tplColors[`year-${i}`] || ms.color || MIGSO_PALETTE[i % MIGSO_PALETTE.length]
+        const yrR = getElementRect(`year-${i}`)
+        const yrColor = templateColors[`year-${i}`] || ms.color || MIGSO_PALETTE[i % MIGSO_PALETTE.length]
         const dateText = ms.date || String(2024 + i)
 
         return (
@@ -280,8 +285,8 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
           cy={startR.y + startR.height / 2}
           r={Math.min(startR.width, startR.height) / 2}
           fill={startColor}
-          stroke={tplStrokeColors['start-badge'] || '#ffffff'}
-          strokeWidth={tplStrokeWidths['start-badge'] || 3}
+          stroke={templateStrokeColors['start-badge'] || '#ffffff'}
+          strokeWidth={templateStrokeWidths['start-badge'] || 3}
         />
         <text
           x={startR.x + startR.width / 2}
@@ -300,9 +305,9 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
       {/* Milestone Cards */}
       {milestones.map((ms, i) => {
         const cardId = `card-${i}`
-        const cardR = getR(cardId)
+        const cardR = getElementRect(cardId)
         const isSelected = selectedIds.has(cardId)
-        const msColor = tplColors[cardId] || ms.color || MIGSO_PALETTE[i % MIGSO_PALETTE.length]
+        const msColor = templateColors[cardId] || ms.color || MIGSO_PALETTE[i % MIGSO_PALETTE.length]
 
         const maxTitleChars = Math.max(8, Math.floor(cardR.width / 11))
         const titleLines = wrapTextByWidth(ms.title || `Milestone 0${i + 1}`, maxTitleChars)

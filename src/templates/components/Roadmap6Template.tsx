@@ -199,15 +199,19 @@ export function Roadmap6Template({ data }: { data: RoadmapData }): ReactElement 
     return map
   }, [groupData.groups, milestones, chevronW])
 
-  // Synchronisation avec le store Zustand
+  // Synchronisation avec le store Zustand (avec détection du changement de N)
+  const prevNRef = useRef(N)
   useEffect(() => {
+    const countChanged = prevNRef.current !== N
+    prevNRef.current = N
+
     for (const [id, rect] of defaultPositions.entries()) {
-      if (!pos[id]) {
+      if (countChanged || !pos[id]) {
         moveEl(id, { x: rect.x, y: rect.y })
         resizeEl(id, { width: rect.width, height: rect.height })
       }
     }
-  }, [defaultPositions, pos, moveEl, resizeEl])
+  }, [N, defaultPositions, pos, moveEl, resizeEl])
 
   const getR = (id: string): Rect => {
     const p = pos[id]

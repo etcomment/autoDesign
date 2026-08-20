@@ -156,14 +156,19 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
     return layoutMap
   }, [milestones, milestoneCount, verticalSpacing, topVerticalPosition, timelineX, dateLabelRightEdgeX, dateLabelWidth, bubbleCenterX, bubbleRadius, textStartX, textWidth])
 
+  // Synchronisation avec le store Zustand (avec détection du changement de N)
+  const prevNRef = useRef(milestoneCount)
   useEffect(() => {
+    const countChanged = prevNRef.current !== milestoneCount
+    prevNRef.current = milestoneCount
+
     for (const [elementId, defaultRect] of defaultLayoutMap.entries()) {
-      if (!customPositions[elementId]) {
+      if (countChanged || !customPositions[elementId]) {
         moveElement(elementId, { x: defaultRect.x, y: defaultRect.y })
         resizeElement(elementId, { width: defaultRect.width, height: defaultRect.height })
       }
     }
-  }, [defaultLayoutMap, customPositions, moveElement, resizeElement])
+  }, [milestoneCount, defaultLayoutMap, customPositions, moveElement, resizeElement])
 
   const calculatedRects = useMemo(() => {
     const rects = new Map<string, Rect>()
