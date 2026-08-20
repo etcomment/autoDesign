@@ -15,8 +15,8 @@ describe('Roadmap5Template', () => {
     const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
     expect(container.querySelector('[data-element-id="start-badge"]')).not.toBeNull()
     expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(2)
-    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(2)
-    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(2)
+    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(1)
+    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(1)
   })
 
   it('should adapt dynamically to N milestones with dates, icons and values', () => {
@@ -33,8 +33,8 @@ describe('Roadmap5Template', () => {
     }
     const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
     expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(5)
-    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(5)
-    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(5)
+    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(4)
+    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(4)
     expect(container.textContent).toContain('GO')
     expect(container.textContent).toContain('Discovery Phase')
     expect(container.textContent).toContain('2028')

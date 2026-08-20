@@ -34,6 +34,8 @@ function getDynamicIcon(iconName?: string, size = 18, color = '#23255a'): ReactE
   return null
 }
 
+const DEFAULT_PALETTE = ['#4cbfa0', '#23255a', '#23255a', '#2d62ed', '#2d62ed', ...MIGSO_PALETTE]
+
 export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
@@ -48,66 +50,71 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
   const { milestones = [], startLabel = 'START' } = data
   const N = Math.max(1, milestones.length)
 
-  const timelineY = 380
-  const startBadgeX = 45
-  const startBadgeWidth = 90
-  const startBadgeHeight = 90
-  const startBadgeY = timelineY - startBadgeHeight / 2
+  const timelineY = 290
+  const startCircleX = 100
+  const startCircleR = 52
 
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
 
+    // START Badge
     map.set('start-badge', {
-      x: startBadgeX,
-      y: startBadgeY,
-      width: startBadgeWidth,
-      height: startBadgeHeight,
+      x: startCircleX - startCircleR,
+      y: timelineY - startCircleR,
+      width: startCircleR * 2,
+      height: startCircleR * 2,
     })
 
-    const startX = 200
-    const endX = 940
-    const availableWidth = endX - startX
-    const stepSpacing = N > 1 ? availableWidth / (N - 1) : availableWidth / 2
-    const cardWidth = Math.min(230, Math.max(140, stepSpacing - 20))
-    const cardHeight = 140
+    const cardWidth = 230
+    const cardHeight = 120
 
-    map.set('timeline-track', {
-      x: startBadgeX + startBadgeWidth,
-      y: timelineY - 3,
-      width: Math.max(260, (N - 1) * stepSpacing + 120),
-      height: 6,
+    // Milestone 0 (text to the right of green stem above START badge)
+    map.set('card-0', {
+      x: startCircleX + 16,
+      y: 35,
+      width: cardWidth,
+      height: cardHeight,
     })
 
-    milestones.forEach((_, index) => {
-      const isAboveTimeline = index % 2 === 0
-      const centerX = N === 1 ? startX + availableWidth / 2 : startX + index * stepSpacing
+    // Intermediate and subsequent milestones
+    if (N > 1) {
+      const remainingCount = N - 1
+      const startX = 310
+      const endX = 920
+      const stepX = remainingCount > 1 ? (endX - startX) / remainingCount : (endX - startX)
 
-      const cardY = isAboveTimeline ? timelineY - 65 - cardHeight : timelineY + 65
-      map.set(`card-${index}`, {
-        x: centerX - cardWidth / 2,
-        y: cardY,
-        width: cardWidth,
-        height: cardHeight,
-      })
+      for (let i = 1; i < N; i++) {
+        const slotX = startX + (i - 1) * stepX
+        const isAbove = i % 2 === 0
 
-      map.set(`dot-${index}`, {
-        x: centerX - 10,
-        y: timelineY - 10,
-        width: 20,
-        height: 20,
-      })
+        const cardY = isAbove ? 35 : timelineY + 50
 
-      const yearY = isAboveTimeline ? timelineY - 38 : timelineY + 16
-      map.set(`year-${index}`, {
-        x: centerX - 35,
-        y: yearY,
-        width: 70,
-        height: 24,
-      })
-    })
+        map.set(`card-${i}`, {
+          x: slotX + 16,
+          y: cardY,
+          width: cardWidth,
+          height: cardHeight,
+        })
+
+        map.set(`dot-${i}`, {
+          x: slotX - 9,
+          y: timelineY - 9,
+          width: 18,
+          height: 18,
+        })
+
+        const yearY = isAbove ? timelineY + 16 : timelineY - 42
+        map.set(`year-${i}`, {
+          x: slotX - 45,
+          y: yearY,
+          width: 90,
+          height: 28,
+        })
+      }
+    }
 
     return map
-  }, [milestones, N, startBadgeX, startBadgeY, startBadgeWidth, startBadgeHeight, timelineY])
+  }, [milestones, N, startCircleX, startCircleR, timelineY])
 
   // Synchronisation avec le store Zustand (avec détection du changement de N)
   const prevNRef = useRef(N)
@@ -135,59 +142,80 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
   }
 
   const startBadgeRect = getElementRect('start-badge')
-  const startBadgeColor = templateColors['start-badge'] || MIGSO_PALETTE[4]
+  const startColor = templateColors['start-badge'] || '#4cbfa0'
 
-  const lastDotRect = getElementRect(`dot-${N - 1}`)
-  const trackStartX = startBadgeRect.x + startBadgeRect.width
-  const trackEndX = Math.max(trackStartX + 120, lastDotRect.x + lastDotRect.width + 50)
-  const trackY = startBadgeRect.y + startBadgeRect.height / 2
+  // Midpoint pivot for the two-tone horizontal line
+  const pivotIndex = Math.min(2, N - 1)
+  const pivotX = N > 1 ? getElementRect(`dot-${pivotIndex}`).x + getElementRect(`dot-${pivotIndex}`).width / 2 : startBadgeRect.x + startBadgeRect.width + 250
+  const lastDotX = N > 1 ? getElementRect(`dot-${N - 1}`).x + getElementRect(`dot-${N - 1}`).width / 2 : startBadgeRect.x + startBadgeRect.width + 120
+  const timelineEndX = Math.max(startBadgeRect.x + startBadgeRect.width + 200, lastDotX + 60)
 
   return (
     <g ref={svgRef}>
-      {/* Dynamic Main Timeline Track */}
+      {/* Horizontal Timeline Track: Dark Navy Section */}
       <line
-        x1={trackStartX}
-        y1={trackY}
-        x2={trackEndX}
-        y2={trackY}
-        stroke={templateColors['timeline-track'] || '#23255a'}
-        strokeWidth={templateStrokeWidths['timeline-track'] || 5}
-        strokeLinecap="round"
+        x1={startBadgeRect.x + startBadgeRect.width}
+        y1={startBadgeRect.y + startBadgeRect.height / 2}
+        x2={pivotX}
+        y2={startBadgeRect.y + startBadgeRect.height / 2}
+        stroke={templateColors['timeline-track-dark'] || '#23255a'}
+        strokeWidth={templateStrokeWidths['timeline-track'] || 4.5}
       />
 
-      {/* Dynamic Stems connecting cards and timeline dots */}
-      {milestones.map((milestone, index) => {
-        const isAboveTimeline = index % 2 === 0
-        const cardRect = getElementRect(`card-${index}`)
-        const dotRect = getElementRect(`dot-${index}`)
+      {/* Horizontal Timeline Track: Light Grey Section */}
+      <line
+        x1={pivotX}
+        y1={startBadgeRect.y + startBadgeRect.height / 2}
+        x2={timelineEndX}
+        y2={startBadgeRect.y + startBadgeRect.height / 2}
+        stroke={templateColors['timeline-track-light'] || '#d9dee4'}
+        strokeWidth={templateStrokeWidths['timeline-track'] || 4.5}
+      />
 
-        const milestoneColor =
+      {/* Vertical Stems */}
+      {milestones.map((milestone, index) => {
+        const stemColor =
+          templateColors[`stem-${index}`] ||
           templateColors[`card-${index}`] ||
           milestone.color ||
-          milestone.style?.fill ||
-          MIGSO_PALETTE[index % MIGSO_PALETTE.length]
+          DEFAULT_PALETTE[index % DEFAULT_PALETTE.length]
 
-        const stemColor = templateColors[`stem-${index}`] || milestoneColor
+        if (index === 0) {
+          // Green stem going straight up from top of START circle
+          const stemX = startBadgeRect.x + startBadgeRect.width / 2
+          return (
+            <line
+              key={`stem-${index}`}
+              x1={stemX}
+              y1={startBadgeRect.y}
+              x2={stemX}
+              y2={0}
+              stroke={stemColor}
+              strokeWidth={4}
+            />
+          )
+        }
+
+        const isAbove = index % 2 === 0
+        const dotRect = getElementRect(`dot-${index}`)
         const dotCenterX = dotRect.x + dotRect.width / 2
         const dotCenterY = dotRect.y + dotRect.height / 2
-        const cardCenterX = cardRect.x + cardRect.width / 2
-        const cardEdgeY = isAboveTimeline ? cardRect.y + cardRect.height : cardRect.y
+        const stemEndY = isAbove ? 0 : 580
 
         return (
           <line
             key={`stem-${index}`}
             x1={dotCenterX}
             y1={dotCenterY}
-            x2={cardCenterX}
-            y2={cardEdgeY}
+            x2={dotCenterX}
+            y2={stemEndY}
             stroke={stemColor}
-            strokeWidth={3}
-            strokeDasharray="none"
+            strokeWidth={4}
           />
         )
       })}
 
-      {/* START Badge */}
+      {/* START Badge (Green Circle on Timeline) */}
       <g
         data-element-id="start-badge"
         onMouseDown={event => startDrag(event, 'start-badge', startBadgeRect)}
@@ -198,16 +226,16 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
           cx={startBadgeRect.x + startBadgeRect.width / 2}
           cy={startBadgeRect.y + startBadgeRect.height / 2}
           r={Math.min(startBadgeRect.width, startBadgeRect.height) / 2}
-          fill={startBadgeColor}
+          fill={startColor}
           stroke={templateStrokeColors['start-badge'] || '#ffffff'}
-          strokeWidth={templateStrokeWidths['start-badge'] || 3}
+          strokeWidth={templateStrokeWidths['start-badge'] || 0}
         />
         <text
           x={startBadgeRect.x + startBadgeRect.width / 2}
           y={startBadgeRect.y + startBadgeRect.height / 2 + 7}
           textAnchor="middle"
           fontFamily="Arial, sans-serif"
-          fontSize={Math.max(12, Math.floor(startBadgeRect.width / 4.5))}
+          fontSize={20}
           fontWeight="bold"
           fill="#ffffff"
         >
@@ -216,15 +244,15 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         {selectedIds.has('start-badge') && renderHandles(startBadgeRect, 'start-badge')}
       </g>
 
-      {/* Timeline Dots */}
+      {/* Timeline Dots for milestones i >= 1 */}
       {milestones.map((milestone, index) => {
+        if (index === 0) return null
         const dotRect = getElementRect(`dot-${index}`)
-        const milestoneColor =
+        const dotColor =
+          templateColors[`dot-${index}`] ||
           templateColors[`card-${index}`] ||
           milestone.color ||
-          milestone.style?.fill ||
-          MIGSO_PALETTE[index % MIGSO_PALETTE.length]
-        const dotColor = templateColors[`dot-${index}`] || milestoneColor
+          DEFAULT_PALETTE[index % DEFAULT_PALETTE.length]
         const dotRadius = Math.min(dotRect.width, dotRect.height) / 2
 
         return (
@@ -239,14 +267,6 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
               cx={dotRect.x + dotRect.width / 2}
               cy={dotRect.y + dotRect.height / 2}
               r={dotRadius}
-              fill="#ffffff"
-              stroke={dotColor}
-              strokeWidth={4}
-            />
-            <circle
-              cx={dotRect.x + dotRect.width / 2}
-              cy={dotRect.y + dotRect.height / 2}
-              r={Math.max(2, dotRadius - 4)}
               fill={dotColor}
             />
             {selectedIds.has(`dot-${index}`) && renderHandles(dotRect, `dot-${index}`)}
@@ -254,16 +274,16 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })}
 
-      {/* Year Badges */}
+      {/* Year / Date Text Labels */}
       {milestones.map((milestone, index) => {
+        if (index === 0) return null
         const yearRect = getElementRect(`year-${index}`)
-        const milestoneColor =
+        const dateColor =
+          templateColors[`year-${index}`] ||
           templateColors[`card-${index}`] ||
           milestone.color ||
-          milestone.style?.fill ||
-          MIGSO_PALETTE[index % MIGSO_PALETTE.length]
-        const yearColor = templateColors[`year-${index}`] || milestoneColor
-        const dateText = milestone.date ?? String(2024 + index)
+          DEFAULT_PALETTE[index % DEFAULT_PALETTE.length]
+        const dateText = milestone.date ?? String(2018 + index)
 
         return (
           <g
@@ -273,24 +293,14 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
             transform={getTransform(`year-${index}`, yearRect)}
             style={{ cursor: 'pointer' }}
           >
-            <rect
-              x={yearRect.x}
-              y={yearRect.y}
-              width={yearRect.width}
-              height={yearRect.height}
-              rx={6}
-              fill={templateColors[`year-bg-${index}`] || '#ffffff'}
-              stroke={yearColor}
-              strokeWidth={1.5}
-            />
             <text
               x={yearRect.x + yearRect.width / 2}
-              y={yearRect.y + yearRect.height / 2 + 5}
+              y={yearRect.y + yearRect.height / 2 + 7}
               textAnchor="middle"
               fontFamily="Arial, sans-serif"
-              fontSize={14}
+              fontSize={22}
               fontWeight="bold"
-              fill={yearColor}
+              fill={dateColor}
             >
               {dateText}
             </text>
@@ -299,120 +309,87 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })}
 
-      {/* Milestone Cards */}
+      {/* Milestone Texts (Title & Subtitle directly next to stems) */}
       {milestones.map((milestone, index) => {
-        const cardRect = getElementRect(`card-${index}`)
-        const milestoneColor =
-          templateColors[`card-${index}`] ||
-          milestone.color ||
-          milestone.style?.fill ||
-          MIGSO_PALETTE[index % MIGSO_PALETTE.length]
-        const isSelected = selectedIds.has(`card-${index}`)
+        const cardId = `card-${index}`
+        const cardRect = getElementRect(cardId)
+        const isSelected = selectedIds.has(cardId)
 
-        const milestoneValue =
-          milestone.value ??
-          milestone.percent ??
-          (milestone as unknown as Record<string, string>).val ??
-          (milestone as unknown as Record<string, string>).pct
+        const titleColor = templateColors[cardId] || '#23255a'
+        const subtitleColor = templateColors[`subtitle-${index}`] || '#23255a'
 
-        const maxTitleChars = Math.max(8, Math.floor((cardRect.width - 30) / 9))
+        const maxTitleChars = Math.max(8, Math.floor(cardRect.width / 11))
         const titleLines = wrapTextByWidth(milestone.title || `Milestone 0${index + 1}`, maxTitleChars)
 
-        const maxSubtitleChars = Math.max(10, Math.floor((cardRect.width - 30) / 7))
-        const subtitleLines = milestone.subtitle ? wrapTextByWidth(milestone.subtitle, maxSubtitleChars) : []
+        const maxSubtitleChars = Math.max(10, Math.floor(cardRect.width / 7.2))
+        const subtitleLines = milestone.subtitle
+          ? wrapTextByWidth(milestone.subtitle, maxSubtitleChars)
+          : ['MIGSO-PCUBED content and words to', 'be added here as required']
 
-        const iconElement = getDynamicIcon(milestone.icon, 18, milestoneColor)
-        const hasIconOrValue = Boolean(iconElement || milestoneValue)
+        const iconElement = getDynamicIcon(milestone.icon, 20, titleColor)
+        const iconOffset = iconElement ? 24 : 0
 
-        const contentStartX = cardRect.x + 14
-        const headerY = cardRect.y + 22
-        const titleStartY = hasIconOrValue ? headerY + 22 : headerY + 4
-        const titleLineHeight = 18
-        const subtitleStartY = titleStartY + (titleLines.length > 0 ? (titleLines.length - 1) * titleLineHeight + 20 : 20)
-        const subtitleLineHeight = 15
+        const titleLineHeight = 24
+        const subtitleLineHeight = 18
+        const titleTotalHeight = titleLines.length * titleLineHeight
+        const subtitleTotalHeight = subtitleLines.length * subtitleLineHeight
+        const neededHeight = Math.max(cardRect.height, titleTotalHeight + subtitleTotalHeight + 20)
+
+        const effectiveCardRect: Rect = {
+          ...cardRect,
+          height: neededHeight,
+        }
 
         return (
           <g
-            key={`card-${index}`}
-            data-element-id={`card-${index}`}
-            onMouseDown={event => startDrag(event, `card-${index}`, cardRect)}
-            transform={getTransform(`card-${index}`, cardRect)}
+            key={cardId}
+            data-element-id={cardId}
+            onMouseDown={event => startDrag(event, cardId, effectiveCardRect)}
+            transform={getTransform(cardId, effectiveCardRect)}
             style={{ cursor: 'pointer' }}
           >
-            <rect
-              x={cardRect.x}
-              y={cardRect.y}
-              width={cardRect.width}
-              height={cardRect.height}
-              rx={10}
-              fill={templateColors[`card-bg-${index}`] || '#ffffff'}
-              stroke={isSelected ? '#2563eb' : milestoneColor}
-              strokeWidth={isSelected ? 2.5 : 1.5}
-            />
+            {/* Title */}
+            <g transform={`translate(${effectiveCardRect.x}, ${effectiveCardRect.y + 20})`}>
+              {iconElement && (
+                <g transform="translate(0, -16)">
+                  {iconElement}
+                </g>
+              )}
+              <text
+                x={iconOffset}
+                y={0}
+                fontFamily="Arial, sans-serif"
+                fontSize={20}
+                fontWeight="bold"
+                fill={titleColor}
+              >
+                {titleLines.map((line, lIdx) => (
+                  <tspan key={lIdx} x={iconOffset} dy={lIdx === 0 ? 0 : titleLineHeight}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+            </g>
 
-            <rect
-              x={cardRect.x}
-              y={cardRect.y}
-              width={cardRect.width}
-              height={5}
-              rx={2}
-              fill={milestoneColor}
-            />
-
-            {hasIconOrValue && (
-              <g transform={`translate(${contentStartX}, ${headerY - 14})`}>
-                {iconElement && <g>{iconElement}</g>}
-                {milestoneValue && (
-                  <g transform={`translate(${iconElement ? 24 : 0}, 0)`}>
-                    <rect x={0} y={-2} width={Math.max(28, milestoneValue.length * 8 + 12)} height={18} rx={9} fill={milestoneColor} />
-                    <text
-                      x={Math.max(28, milestoneValue.length * 8 + 12) / 2}
-                      y={11}
-                      textAnchor="middle"
-                      fontFamily="Arial, sans-serif"
-                      fontSize={11}
-                      fontWeight="bold"
-                      fill="#ffffff"
-                    >
-                      {milestoneValue}
-                    </text>
-                  </g>
-                )}
-              </g>
-            )}
-
-            <text
-              x={contentStartX}
-              y={titleStartY}
-              fontFamily="Arial, sans-serif"
-              fontSize={15}
-              fontWeight="bold"
-              fill={milestoneColor}
-            >
-              {titleLines.map((line, lineIndex) => (
-                <tspan key={lineIndex} x={contentStartX} dy={lineIndex === 0 ? 0 : titleLineHeight}>
-                  {line}
-                </tspan>
-              ))}
-            </text>
-
+            {/* Subtitle */}
             {subtitleLines.length > 0 && (
               <text
-                x={contentStartX}
-                y={subtitleStartY}
+                x={effectiveCardRect.x}
+                y={effectiveCardRect.y + 20 + titleTotalHeight + 8}
                 fontFamily="Arial, sans-serif"
-                fontSize={12}
-                fill="#555555"
+                fontSize={13.5}
+                fill={subtitleColor}
+                opacity={0.88}
               >
-                {subtitleLines.map((line, lineIndex) => (
-                  <tspan key={lineIndex} x={contentStartX} dy={lineIndex === 0 ? 0 : subtitleLineHeight}>
+                {subtitleLines.map((line, lIdx) => (
+                  <tspan key={lIdx} x={effectiveCardRect.x} dy={lIdx === 0 ? 0 : subtitleLineHeight}>
                     {line}
                   </tspan>
                 ))}
               </text>
             )}
 
-            {isSelected && renderHandles(cardRect, `card-${index}`)}
+            {isSelected && renderHandles(effectiveCardRect, cardId)}
           </g>
         )
       })}
