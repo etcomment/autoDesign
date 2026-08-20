@@ -34,6 +34,21 @@ function getDynamicIcon(iconName?: string, size = 18, color = '#23255a'): ReactE
   return null
 }
 
+function getNextDate(dateStr?: string, fallbackYear = 2022): string {
+  if (!dateStr) return String(fallbackYear)
+  const trimmed = dateStr.trim()
+  const num = Number(trimmed)
+  if (!isNaN(num)) {
+    return String(num + 1)
+  }
+  const match = /(\d+)$/.exec(trimmed)
+  if (match && match[1]) {
+    const nextNum = Number(match[1]) + 1
+    return trimmed.slice(0, match.index) + String(nextNum)
+  }
+  return String(fallbackYear)
+}
+
 const DEFAULT_PALETTE = ['#4cbfa0', '#23255a', '#23255a', '#2d62ed', '#2d62ed', ...MIGSO_PALETTE]
 
 export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement {
@@ -49,6 +64,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
 
   const { milestones = [], startLabel = 'START' } = data
   const N = Math.max(1, milestones.length)
+  const totalDots = N // Dots from 1 to N (where dot-N is the terminal dot)
 
   const timelineY = 290
   const startCircleX = 100
@@ -76,45 +92,46 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
       height: cardHeight,
     })
 
-    // Intermediate and subsequent milestones
-    if (N > 1) {
-      const remainingCount = N - 1
-      const startX = 310
-      const endX = 920
-      const stepX = remainingCount > 1 ? (endX - startX) / remainingCount : (endX - startX)
+    // Timeline dots: Dot 1 to Dot N (with Dot N being the extra terminal dot)
+    const startX = 310
+    const endX = 930
+    const stepX = totalDots > 1 ? (endX - startX) / (totalDots - 1) : 0
 
-      for (let i = 1; i < N; i++) {
-        const slotX = startX + (i - 1) * stepX
-        const isAbove = i % 2 === 0
+    for (let dotIdx = 1; dotIdx <= totalDots; dotIdx++) {
+      const slotX = totalDots > 1 ? startX + (dotIdx - 1) * stepX : (startX + endX) / 2
+      const isOdd = dotIdx % 2 !== 0
 
+      map.set(`dot-${dotIdx}`, {
+        x: slotX - 9,
+        y: timelineY - 9,
+        width: 18,
+        height: 18,
+      })
+
+      const yearY = isOdd ? timelineY - 42 : timelineY + 16
+      map.set(`year-${dotIdx}`, {
+        x: slotX - 45,
+        y: yearY,
+        width: 90,
+        height: 28,
+      })
+
+      // If there is an associated milestone card (milestones 1 to N-1)
+      if (dotIdx < N) {
+        const isAbove = dotIdx % 2 === 0
         const cardY = isAbove ? 35 : timelineY + 50
 
-        map.set(`card-${i}`, {
+        map.set(`card-${dotIdx}`, {
           x: slotX + 16,
           y: cardY,
           width: cardWidth,
           height: cardHeight,
         })
-
-        map.set(`dot-${i}`, {
-          x: slotX - 9,
-          y: timelineY - 9,
-          width: 18,
-          height: 18,
-        })
-
-        const yearY = isAbove ? timelineY + 16 : timelineY - 42
-        map.set(`year-${i}`, {
-          x: slotX - 45,
-          y: yearY,
-          width: 90,
-          height: 28,
-        })
       }
     }
 
     return map
-  }, [milestones, N, startCircleX, startCircleR, timelineY])
+  }, [milestones, N, totalDots, startCircleX, startCircleR, timelineY])
 
   // Synchronisation avec le store Zustand (avec détection du changement de N)
   const prevNRef = useRef(N)
@@ -145,10 +162,14 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
   const startColor = templateColors['start-badge'] || '#4cbfa0'
 
   // Midpoint pivot for the two-tone horizontal line
-  const pivotIndex = Math.min(2, N - 1)
-  const pivotX = N > 1 ? getElementRect(`dot-${pivotIndex}`).x + getElementRect(`dot-${pivotIndex}`).width / 2 : startBadgeRect.x + startBadgeRect.width + 250
-  const lastDotX = N > 1 ? getElementRect(`dot-${N - 1}`).x + getElementRect(`dot-${N - 1}`).width / 2 : startBadgeRect.x + startBadgeRect.width + 120
-  const timelineEndX = Math.max(startBadgeRect.x + startBadgeRect.width + 200, lastDotX + 60)
+  const pivotIndex = Math.max(1, Math.min(2, Math.floor(totalDots / 2)))
+  const pivotX = getElementRect(`dot-${pivotIndex}`).x + getElementRect(`dot-${pivotIndex}`).width / 2
+  const terminalDotRect = getElementRect(`dot-${totalDots}`)
+  const timelineEndX = terminalDotRect.x + terminalDotRect.width / 2
+
+  // Computed terminal year for the extra dot
+  const lastMilestoneDate = milestones[N - 1]?.date
+  const terminalYearText = getNextDate(lastMilestoneDate, 2018 + totalDots)
 
   return (
     <g ref={svgRef}>
@@ -172,7 +193,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         strokeWidth={templateStrokeWidths['timeline-track'] || 4.5}
       />
 
-      {/* Vertical Stems */}
+      {/* Vertical Stems for Milestones */}
       {milestones.map((milestone, index) => {
         const stemColor =
           templateColors[`stem-${index}`] ||
@@ -244,23 +265,23 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         {selectedIds.has('start-badge') && renderHandles(startBadgeRect, 'start-badge')}
       </g>
 
-      {/* Timeline Dots for milestones i >= 1 */}
-      {milestones.map((milestone, index) => {
-        if (index === 0) return null
-        const dotRect = getElementRect(`dot-${index}`)
+      {/* Timeline Dots: 1 to N (including the terminal extra dot) */}
+      {Array.from({ length: totalDots }, (_, i) => i + 1).map(dotIdx => {
+        const dotRect = getElementRect(`dot-${dotIdx}`)
+        const ms = milestones[dotIdx] || (dotIdx === totalDots ? milestones[N - 1] : undefined)
         const dotColor =
-          templateColors[`dot-${index}`] ||
-          templateColors[`card-${index}`] ||
-          milestone.color ||
-          DEFAULT_PALETTE[index % DEFAULT_PALETTE.length]
+          templateColors[`dot-${dotIdx}`] ||
+          templateColors[`card-${dotIdx}`] ||
+          ms?.color ||
+          DEFAULT_PALETTE[dotIdx % DEFAULT_PALETTE.length]
         const dotRadius = Math.min(dotRect.width, dotRect.height) / 2
 
         return (
           <g
-            key={`dot-${index}`}
-            data-element-id={`dot-${index}`}
-            onMouseDown={event => startDrag(event, `dot-${index}`, dotRect)}
-            transform={getTransform(`dot-${index}`, dotRect)}
+            key={`dot-${dotIdx}`}
+            data-element-id={`dot-${dotIdx}`}
+            onMouseDown={event => startDrag(event, `dot-${dotIdx}`, dotRect)}
+            transform={getTransform(`dot-${dotIdx}`, dotRect)}
             style={{ cursor: 'pointer' }}
           >
             <circle
@@ -269,28 +290,32 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
               r={dotRadius}
               fill={dotColor}
             />
-            {selectedIds.has(`dot-${index}`) && renderHandles(dotRect, `dot-${index}`)}
+            {selectedIds.has(`dot-${dotIdx}`) && renderHandles(dotRect, `dot-${dotIdx}`)}
           </g>
         )
       })}
 
-      {/* Year / Date Text Labels */}
-      {milestones.map((milestone, index) => {
-        if (index === 0) return null
-        const yearRect = getElementRect(`year-${index}`)
+      {/* Year / Date Text Labels: 1 to N (including terminal extra year) */}
+      {Array.from({ length: totalDots }, (_, i) => i + 1).map(dotIdx => {
+        const yearRect = getElementRect(`year-${dotIdx}`)
+        const ms = milestones[dotIdx]
         const dateColor =
-          templateColors[`year-${index}`] ||
-          templateColors[`card-${index}`] ||
-          milestone.color ||
-          DEFAULT_PALETTE[index % DEFAULT_PALETTE.length]
-        const dateText = milestone.date ?? String(2018 + index)
+          templateColors[`year-${dotIdx}`] ||
+          templateColors[`card-${dotIdx}`] ||
+          ms?.color ||
+          DEFAULT_PALETTE[dotIdx % DEFAULT_PALETTE.length]
+
+        const dateText =
+          dotIdx === totalDots
+            ? terminalYearText
+            : (ms?.date ?? String(2018 + dotIdx))
 
         return (
           <g
-            key={`year-${index}`}
-            data-element-id={`year-${index}`}
-            onMouseDown={event => startDrag(event, `year-${index}`, yearRect)}
-            transform={getTransform(`year-${index}`, yearRect)}
+            key={`year-${dotIdx}`}
+            data-element-id={`year-${dotIdx}`}
+            onMouseDown={event => startDrag(event, `year-${dotIdx}`, yearRect)}
+            transform={getTransform(`year-${dotIdx}`, yearRect)}
             style={{ cursor: 'pointer' }}
           >
             <text
@@ -304,7 +329,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
             >
               {dateText}
             </text>
-            {selectedIds.has(`year-${index}`) && renderHandles(yearRect, `year-${index}`)}
+            {selectedIds.has(`year-${dotIdx}`) && renderHandles(yearRect, `year-${dotIdx}`)}
           </g>
         )
       })}

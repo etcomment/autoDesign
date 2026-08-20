@@ -15,8 +15,8 @@ describe('Roadmap5Template', () => {
     const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
     expect(container.querySelector('[data-element-id="start-badge"]')).not.toBeNull()
     expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(2)
-    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(1)
-    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(1)
+    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(2)
+    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(2)
   })
 
   it('should adapt dynamically to N milestones with dates, icons and values', () => {
@@ -33,14 +33,15 @@ describe('Roadmap5Template', () => {
     }
     const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
     expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(5)
-    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(4)
-    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(4)
+    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(5)
+    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(5)
     expect(container.textContent).toContain('GO')
     expect(container.textContent).toContain('Discovery Phase')
     expect(container.textContent).toContain('2028')
+    expect(container.textContent).toContain('2029') // Extra terminal dot with next year
   })
 
-  it('should dynamically update when a milestone is added in DSL', () => {
+  it('should dynamically update when a milestone is added in DSL and increment terminal year', () => {
     const initialData: RoadmapData = {
       type: 'roadmap',
       milestones: [
@@ -51,13 +52,14 @@ describe('Roadmap5Template', () => {
     }
     const { container, rerender } = render(<svg><Roadmap5Template data={initialData} /></svg>)
     expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(3)
+    expect(container.textContent).toContain('2027') // Terminal year for initial
 
     // User adds 4th milestone in DSL:
     const updatedData: RoadmapData = {
       type: 'roadmap',
       milestones: [
         ...initialData.milestones,
-        { title: 'Release', subtitle: 'Production deployment and monitoring', date: '2027' },
+        { title: 'Release', subtitle: 'Production deployment and monitoring', date: '2028' },
       ],
     }
     rerender(<svg><Roadmap5Template data={updatedData} /></svg>)
@@ -65,6 +67,7 @@ describe('Roadmap5Template', () => {
     expect(container.textContent).toContain('Release')
     expect(container.textContent).toContain('Production deployment')
     expect(container.textContent).toContain('monitoring')
-    expect(container.textContent).toContain('2027')
+    expect(container.textContent).toContain('2028')
+    expect(container.textContent).toContain('2029') // Terminal dot shows 2029
   })
 })
