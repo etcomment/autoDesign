@@ -43,16 +43,24 @@ function resolveDynamicIcon(iconName?: string, size = 20, color = '#ffffff'): Re
 }
 
 function extractMilestonePresentation(milestone: TemplateMilestone, index: number): MilestonePresentation {
-  const hasExplicitValue = milestone.value !== undefined || milestone.percent !== undefined
-  const explicitValue = milestone.value ?? milestone.percent
-  const isSubtitleNumeric = Boolean(
-    milestone.subtitle && (/^\d+([.,]\d+)?%?$/.test(milestone.subtitle.trim()) || milestone.subtitle.trim().length <= 5)
-  )
+  const dateLabel = milestone.date ?? milestone.quarter ?? String(2023 + index)
+  
+  let bubbleValue = milestone.value ?? milestone.percent
+  let cardTitle = milestone.title || `Étape ${index + 1}`
+  let cardDescription = milestone.subtitle || ''
 
-  const dateLabel = milestone.date ?? milestone.quarter ?? (isSubtitleNumeric ? milestone.title : (milestone.date ?? `0${index + 1}`))
-  const bubbleValue = explicitValue ?? (isSubtitleNumeric ? milestone.subtitle! : (milestone.subtitle && !milestone.date ? milestone.subtitle : String(index + 1)))
-  const cardTitle = isSubtitleNumeric && milestone.title === dateLabel && !hasExplicitValue ? `Étape ${index + 1}` : milestone.title
-  const cardDescription = milestone.subtitle && milestone.subtitle !== bubbleValue ? milestone.subtitle : (cardTitle !== milestone.title ? milestone.title : '')
+  if (!bubbleValue) {
+    if (milestone.subtitle && (/^[\d.,%€$kKM+-]+$/.test(milestone.subtitle.trim()) || milestone.subtitle.trim().length <= 5)) {
+      bubbleValue = milestone.subtitle.trim()
+      cardDescription = milestone.title !== dateLabel ? milestone.title : ''
+      if (cardDescription) {
+        cardTitle = `Étape ${index + 1}`
+      }
+    } else {
+      bubbleValue = String(index + 1)
+    }
+  }
+
   const color = milestone.color ?? milestone.style?.fill ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
 
   return {
