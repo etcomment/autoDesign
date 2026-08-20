@@ -151,6 +151,37 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
     return Math.max(0, Math.min(1, totalDots - 2))
   }, [current, progress, milestones, pinIndices, years, totalDots])
 
+  // Helper to get the color for an empty quarter (inherits from the milestone just before)
+  const getMilestoneColorForDot = (dotIdx: number): string => {
+    // Direct match at dotIdx
+    const matchedMsIdx = pinIndices.indexOf(dotIdx)
+    if (matchedMsIdx >= 0) {
+      const ms = milestones[matchedMsIdx]
+      return (
+        ms?.color ||
+        (dotIdx <= currentStepIdx ? '#23255a' : '#2d62ed')
+      )
+    }
+
+    // Empty quarter: look for previous milestone on the timeline
+    for (let prev = dotIdx - 1; prev >= 0; prev--) {
+      const prevMsIdx = pinIndices.indexOf(prev)
+      if (prevMsIdx >= 0) {
+        const ms = milestones[prevMsIdx]
+        return (
+          ms?.color ||
+          (dotIdx <= currentStepIdx ? '#23255a' : '#2d62ed')
+        )
+      }
+    }
+
+    // Fallback to Milestone 0 (START badge)
+    return (
+      milestones[0]?.color ||
+      (dotIdx <= currentStepIdx ? '#23255a' : '#2d62ed')
+    )
+  }
+
   const timelineY = 290
   const startCircleX = 100
   const startCircleR = 52
@@ -291,15 +322,13 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
 
         // Completed starting from dot-i towards dot-(i+1) if origin i < currentStepIdx
         const isCompleted = i < currentStepIdx
-        const matchedMsIdx = pinIndices.indexOf(i)
-        const ms = matchedMsIdx >= 0 ? milestones[matchedMsIdx] : undefined
+        const dotIColor = getMilestoneColorForDot(i)
 
         const activeColor =
           templateColors[`seg-${i}`] ||
           trackColor ||
           progressColor ||
-          ms?.color ||
-          (i <= currentStepIdx ? '#23255a' : '#2d62ed')
+          dotIColor
 
         const segColor = isCompleted ? activeColor : inactiveTrackColor
 
@@ -396,15 +425,10 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
       {years.map((_, dotIdx) => {
         const dotRect = getElementRect(`dot-${dotIdx}`)
         const matchedMsIdx = pinIndices.indexOf(dotIdx)
-        const ms = matchedMsIdx >= 0 ? milestones[matchedMsIdx] : undefined
-        const isPastOrCurrent = dotIdx <= currentStepIdx
-        const defaultDotColor = isPastOrCurrent ? '#23255a' : '#2d62ed'
-
         const dotColor =
           templateColors[`dot-${dotIdx}`] ||
           (matchedMsIdx >= 0 ? templateColors[`card-${matchedMsIdx}`] : undefined) ||
-          ms?.color ||
-          defaultDotColor
+          getMilestoneColorForDot(dotIdx)
 
         const dotRadius = Math.min(dotRect.width, dotRect.height) / 2
 
@@ -431,15 +455,10 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
       {years.map((yearLabel, dotIdx) => {
         const yearRect = getElementRect(`year-${dotIdx}`)
         const matchedMsIdx = pinIndices.indexOf(dotIdx)
-        const ms = matchedMsIdx >= 0 ? milestones[matchedMsIdx] : undefined
-        const isPastOrCurrent = dotIdx <= currentStepIdx
-        const defaultDateColor = isPastOrCurrent ? '#23255a' : '#2d62ed'
-
         const dateColor =
           templateColors[`year-${dotIdx}`] ||
           (matchedMsIdx >= 0 ? templateColors[`card-${matchedMsIdx}`] : undefined) ||
-          ms?.color ||
-          defaultDateColor
+          getMilestoneColorForDot(dotIdx)
 
         return (
           <g

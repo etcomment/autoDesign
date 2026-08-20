@@ -136,4 +136,25 @@ describe('Roadmap5Template', () => {
     const lines = container.querySelectorAll('line')
     expect(lines.length).toBeGreaterThanOrEqual(2)
   })
+
+  it('should inherit previous milestone color for empty quarters/dots', () => {
+    const data: RoadmapData = {
+      type: 'roadmap',
+      quarters: [
+        { label: '2019' },
+        { label: '2020' },
+        { label: '2021' },
+        { label: '2022' },
+      ],
+      milestones: [
+        { title: 'Milestone 01', subtitle: 'Desc 1', color: '#4cbfa0' },
+        { title: 'Milestone 02', subtitle: 'Desc 2', date: '2019', color: '#23255a' },
+        { title: 'Milestone 03', subtitle: 'Desc 3', date: '2020', color: '#23255a' },
+        { title: 'Milestone 04', subtitle: 'Desc 4', date: '2021', color: '#2d62ed' },
+      ],
+    }
+    const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
+    const terminalDot = container.querySelector('[data-element-id="dot-3"] circle')
+    expect(terminalDot?.getAttribute('fill')).toBe('#2d62ed')
+  })
 })
