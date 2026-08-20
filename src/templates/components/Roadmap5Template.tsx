@@ -64,6 +64,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
 
   const {
     milestones = [],
+    quarters,
     startLabel = 'START',
     trackColor,
     trackBgColor,
@@ -71,8 +72,39 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
     progressColor,
   } = data
 
+  // Timeline years / quarters (same logic as Roadmap 3)
+  const years = useMemo(() => {
+    if (quarters && quarters.length > 0) {
+      return quarters.map(q => q.label.trim())
+    }
+    const dates = milestones
+      .map(m => m.date?.trim())
+      .filter((d): d is string => Boolean(d))
+
+    if (dates.length > 0) {
+      const last = dates[dates.length - 1]!
+      const next = getNextDate(last, 2022)
+      return [...dates, next]
+    }
+    return ['2019', '2020', '2021', '2022']
+  }, [quarters, milestones])
+
+  const totalDots = Math.max(1, years.length)
   const N = Math.max(1, milestones.length)
-  const totalDots = N // Dots from 1 to N (where dot-N is the terminal dot)
+
+  // Pinning milestones to year dots (like Roadmap 3)
+  const findYearIdx = (dateStr: string | undefined, fallbackIdx: number): number => {
+    if (!dateStr) return fallbackIdx
+    const idx = years.indexOf(dateStr.trim())
+    return idx >= 0 ? idx : fallbackIdx
+  }
+
+  const pinIndices = useMemo(() => {
+    return milestones.map((ms, i) => {
+      if (i === 0 && !ms.date) return -1 // -1 means attached to START badge
+      return findYearIdx(ms.date, Math.min(i - 1, totalDots - 1))
+    })
+  }, [milestones, years, totalDots])
 
   const timelineY = 290
   const startCircleX = 100
@@ -91,25 +123,16 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
 
     const cardWidth = 230
     const cardHeight = 120
-
-    // Milestone 0 (text to the right of green stem above START badge)
-    map.set('card-0', {
-      x: startCircleX + 16,
-      y: 35,
-      width: cardWidth,
-      height: cardHeight,
-    })
-
-    // Timeline dots: Dot 1 to Dot N (with Dot N being the extra terminal dot)
     const startX = 310
     const endX = 930
     const stepX = totalDots > 1 ? (endX - startX) / (totalDots - 1) : 0
 
-    for (let dotIdx = 1; dotIdx <= totalDots; dotIdx++) {
-      const slotX = totalDots > 1 ? startX + (dotIdx - 1) * stepX : (startX + endX) / 2
-      const isOdd = dotIdx % 2 !== 0
+    // Year Dots on the timeline
+    years.forEach((_, idx) => {
+      const slotX = totalDots > 1 ? startX + idx * stepX : (startX + endX) / 2
+      const isOdd = (idx + 1) % 2 !== 0
 
-      map.set(`dot-${dotIdx}`, {
+      map.set(`dot-${idx}`, {
         x: slotX - 9,
         y: timelineY - 9,
         width: 18,
@@ -117,35 +140,46 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
       })
 
       const yearY = isOdd ? timelineY - 42 : timelineY + 16
-      map.set(`year-${dotIdx}`, {
+      map.set(`year-${idx}`, {
         x: slotX - 45,
         y: yearY,
         width: 90,
         height: 28,
       })
+    })
 
-      // If there is an associated milestone card (milestones 1 to N-1)
-      if (dotIdx < N) {
-        const isAbove = dotIdx % 2 === 0
+    // Milestone Cards
+    milestones.forEach((_, i) => {
+      const pinIdx = pinIndices[i]!
+      if (pinIdx === -1) {
+        map.set(`card-${i}`, {
+          x: startCircleX + 16,
+          y: 35,
+          width: cardWidth,
+          height: cardHeight,
+        })
+      } else {
+        const slotX = totalDots > 1 ? startX + pinIdx * stepX : (startX + endX) / 2
+        const isAbove = i % 2 === 0
         const cardY = isAbove ? 35 : timelineY + 50
 
-        map.set(`card-${dotIdx}`, {
+        map.set(`card-${i}`, {
           x: slotX + 16,
           y: cardY,
           width: cardWidth,
           height: cardHeight,
         })
       }
-    }
+    })
 
     return map
-  }, [milestones, N, totalDots, startCircleX, startCircleR, timelineY])
+  }, [milestones, years, pinIndices, totalDots, startCircleX, startCircleR, timelineY])
 
-  // Synchronisation avec le store Zustand (avec détection du changement de N)
-  const prevNRef = useRef(N)
+  // Synchronisation avec le store Zustand (avec détection du changement de N ou totalDots)
+  const prevCountRef = useRef({ N, totalDots })
   useEffect(() => {
-    const countChanged = prevNRef.current !== N
-    prevNRef.current = N
+    const countChanged = prevCountRef.current.N !== N || prevCountRef.current.totalDots !== totalDots
+    prevCountRef.current = { N, totalDots }
 
     for (const [id, rect] of defaultPositions.entries()) {
       if (countChanged || !positions[id]) {
@@ -153,7 +187,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         resizeElement(id, { width: rect.width, height: rect.height })
       }
     }
-  }, [N, defaultPositions, positions, moveElement, resizeElement])
+  }, [N, totalDots, defaultPositions, positions, moveElement, resizeElement])
 
   const getElementRect = (id: string): Rect => {
     const stored = positions[id]
@@ -169,21 +203,25 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
   const startBadgeRect = getElementRect('start-badge')
   const startColor = templateColors['start-badge'] || milestones[0]?.color || '#4cbfa0'
 
-  const terminalDotRect = getElementRect(`dot-${totalDots}`)
+  const terminalDotRect = getElementRect(`dot-${totalDots - 1}`)
   const trackStartX = startBadgeRect.x + startBadgeRect.width
   const timelineEndX = terminalDotRect.x + terminalDotRect.width / 2
 
-  // Compute progress pivot X position from DSL (number or percentage)
+  // Progress Pivot calculation
   let pivotX: number
   if (progress && !isNaN(Number(progress))) {
-    const progIdx = Math.max(1, Math.min(totalDots, Number(progress)))
+    const progIdx = Math.max(0, Math.min(totalDots - 1, Number(progress) - 1))
     pivotX = getElementRect(`dot-${progIdx}`).x + getElementRect(`dot-${progIdx}`).width / 2
   } else if (progress && progress.includes('%')) {
     const pct = Math.max(0, Math.min(100, parseFloat(progress))) / 100
     pivotX = trackStartX + (timelineEndX - trackStartX) * pct
   } else {
-    const defaultPivotIndex = Math.max(1, Math.min(2, Math.floor(totalDots / 2)))
-    pivotX = getElementRect(`dot-${defaultPivotIndex}`).x + getElementRect(`dot-${defaultPivotIndex}`).width / 2
+    // Default pivot: active up to the middle or pinned dot
+    const validPins = pinIndices.filter(idx => idx >= 0)
+    const pivotIdx = validPins.length > 1
+      ? validPins[Math.min(1, validPins.length - 1)]!
+      : Math.max(0, Math.min(1, totalDots - 2))
+    pivotX = getElementRect(`dot-${pivotIdx}`).x + getElementRect(`dot-${pivotIdx}`).width / 2
   }
 
   const activeTrackColor =
@@ -196,10 +234,6 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
     templateColors['timeline-track-light'] ||
     trackBgColor ||
     '#d9dee4'
-
-  // Computed terminal year for the extra dot
-  const lastMilestoneDate = milestones[N - 1]?.date
-  const terminalYearText = getNextDate(lastMilestoneDate, 2018 + totalDots)
 
   return (
     <g ref={svgRef}>
@@ -225,13 +259,14 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
 
       {/* Vertical Stems for Milestones */}
       {milestones.map((milestone, index) => {
+        const pinIdx = pinIndices[index]!
         const stemColor =
           templateColors[`stem-${index}`] ||
           templateColors[`card-${index}`] ||
           milestone.color ||
           DEFAULT_PALETTE[index % DEFAULT_PALETTE.length]
 
-        if (index === 0) {
+        if (pinIdx === -1) {
           // Green stem going straight up from top of START circle
           const stemX = startBadgeRect.x + startBadgeRect.width / 2
           return (
@@ -248,7 +283,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         }
 
         const isAbove = index % 2 === 0
-        const dotRect = getElementRect(`dot-${index}`)
+        const dotRect = getElementRect(`dot-${pinIdx}`)
         const dotCenterX = dotRect.x + dotRect.width / 2
         const dotCenterY = dotRect.y + dotRect.height / 2
         const stemEndY = isAbove ? 0 : 580
@@ -295,13 +330,14 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         {selectedIds.has('start-badge') && renderHandles(startBadgeRect, 'start-badge')}
       </g>
 
-      {/* Timeline Dots: 1 to N (including the terminal extra dot) */}
-      {Array.from({ length: totalDots }, (_, i) => i + 1).map(dotIdx => {
+      {/* Timeline Dots */}
+      {years.map((_, dotIdx) => {
         const dotRect = getElementRect(`dot-${dotIdx}`)
-        const ms = milestones[dotIdx] || (dotIdx === totalDots ? milestones[N - 1] : undefined)
+        const matchedMsIdx = pinIndices.indexOf(dotIdx)
+        const ms = matchedMsIdx >= 0 ? milestones[matchedMsIdx] : undefined
         const dotColor =
           templateColors[`dot-${dotIdx}`] ||
-          templateColors[`card-${dotIdx}`] ||
+          (matchedMsIdx >= 0 ? templateColors[`card-${matchedMsIdx}`] : undefined) ||
           ms?.color ||
           DEFAULT_PALETTE[dotIdx % DEFAULT_PALETTE.length]
         const dotRadius = Math.min(dotRect.width, dotRect.height) / 2
@@ -325,20 +361,16 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })}
 
-      {/* Year / Date Text Labels: 1 to N (including terminal extra year) */}
-      {Array.from({ length: totalDots }, (_, i) => i + 1).map(dotIdx => {
+      {/* Year / Date Text Labels */}
+      {years.map((yearLabel, dotIdx) => {
         const yearRect = getElementRect(`year-${dotIdx}`)
-        const ms = milestones[dotIdx]
+        const matchedMsIdx = pinIndices.indexOf(dotIdx)
+        const ms = matchedMsIdx >= 0 ? milestones[matchedMsIdx] : undefined
         const dateColor =
           templateColors[`year-${dotIdx}`] ||
-          templateColors[`card-${dotIdx}`] ||
+          (matchedMsIdx >= 0 ? templateColors[`card-${matchedMsIdx}`] : undefined) ||
           ms?.color ||
           DEFAULT_PALETTE[dotIdx % DEFAULT_PALETTE.length]
-
-        const dateText =
-          dotIdx === totalDots
-            ? terminalYearText
-            : (ms?.date ?? String(2018 + dotIdx))
 
         return (
           <g
@@ -357,7 +389,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
               fontWeight="bold"
               fill={dateColor}
             >
-              {dateText}
+              {yearLabel}
             </text>
             {selectedIds.has(`year-${dotIdx}`) && renderHandles(yearRect, `year-${dotIdx}`)}
           </g>

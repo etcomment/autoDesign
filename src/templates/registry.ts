@@ -112,11 +112,18 @@ export const TEMPLATES: TemplateDefinition[] = [
     category: 'Roadmaps',
     defaultData: {
       type: 'roadmap',
+      startLabel: 'START',
+      quarters: [
+        { label: '2019' },
+        { label: '2020' },
+        { label: '2021' },
+        { label: '2022' },
+      ],
       milestones: [
-        { title: 'Discovery', subtitle: 'Understanding user needs and market fit', date: '2024' },
-        { title: 'Prototyping', subtitle: 'Building rapid prototypes for feedback', date: '2025' },
-        { title: 'Development', subtitle: 'Engineering the core modules', date: '2026' },
-        { title: 'Release', subtitle: 'Production deployment and monitoring', date: '2027' },
+        { title: 'Milestone 01', subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required', color: '#4cbfa0' },
+        { title: 'Milestone 02', subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required', date: '2019', color: '#23255a' },
+        { title: 'Milestone 03', subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required', date: '2020', color: '#23255a' },
+        { title: 'Milestone 04', subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required', date: '2021', color: '#2d62ed' },
       ],
     },
   },

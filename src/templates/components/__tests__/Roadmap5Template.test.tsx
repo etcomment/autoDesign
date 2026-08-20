@@ -15,8 +15,8 @@ describe('Roadmap5Template', () => {
     const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
     expect(container.querySelector('[data-element-id="start-badge"]')).not.toBeNull()
     expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(2)
-    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(2)
-    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(2)
+    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(3) // 2 milestones + 1 terminal
+    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(3)
   })
 
   it('should adapt dynamically to N milestones with dates, icons and values', () => {
@@ -33,8 +33,8 @@ describe('Roadmap5Template', () => {
     }
     const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
     expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(5)
-    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(5)
-    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(5)
+    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(6) // 5 milestones + 1 terminal
+    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(6)
     expect(container.textContent).toContain('GO')
     expect(container.textContent).toContain('Discovery Phase')
     expect(container.textContent).toContain('2028')
@@ -87,5 +87,31 @@ describe('Roadmap5Template', () => {
     const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
     const lines = container.querySelectorAll('line')
     expect(lines.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('should support quarters axis and pinning by date like Roadmap 3', () => {
+    const data: RoadmapData = {
+      type: 'roadmap',
+      quarters: [
+        { label: '2019' },
+        { label: '2020' },
+        { label: '2021' },
+        { label: '2022' },
+      ],
+      milestones: [
+        { title: 'Milestone 01', subtitle: 'Desc 1', color: '#4cbfa0' },
+        { title: 'Milestone 02', subtitle: 'Desc 2', date: '2019', color: '#23255a' },
+        { title: 'Milestone 03', subtitle: 'Desc 3', date: '2020', color: '#23255a' },
+        { title: 'Milestone 04', subtitle: 'Desc 4', date: '2021', color: '#2d62ed' },
+      ],
+    }
+    const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
+    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(4)
+    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(4)
+    expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(4)
+    expect(container.textContent).toContain('2019')
+    expect(container.textContent).toContain('2022')
+    expect(container.textContent).toContain('Milestone 01')
+    expect(container.textContent).toContain('Milestone 04')
   })
 })
