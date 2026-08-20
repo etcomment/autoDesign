@@ -66,6 +66,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
     milestones = [],
     quarters,
     startLabel = 'START',
+    current,
     trackColor,
     trackBgColor,
     progress,
@@ -105,6 +106,50 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
       return findYearIdx(ms.date, Math.min(i - 1, totalDots - 1))
     })
   }, [milestones, years, totalDots])
+
+  // Current Step calculation: determines which stage is active/current
+  const currentStepIdx = useMemo(() => {
+    // 1. Explicit current in data: e.g. "current 2020" or "current 2" or "current Milestone 03"
+    if (current) {
+      const trimmed = current.trim()
+      const yrIdx = years.indexOf(trimmed)
+      if (yrIdx >= 0) return yrIdx
+
+      const num = Number(trimmed)
+      if (!isNaN(num) && num >= 1 && num <= totalDots) {
+        return num - 1
+      }
+
+      const msMatch = milestones.findIndex(m => m.title.toLowerCase() === trimmed.toLowerCase())
+      if (msMatch >= 0 && pinIndices[msMatch] !== undefined && pinIndices[msMatch]! >= 0) {
+        return pinIndices[msMatch]!
+      }
+    }
+
+    // 2. Explicit milestone marked with current: true or status: 'current'
+    const currentMsIdx = milestones.findIndex(m => m.current || m.status === 'current')
+    if (currentMsIdx >= 0 && pinIndices[currentMsIdx] !== undefined && pinIndices[currentMsIdx]! >= 0) {
+      return pinIndices[currentMsIdx]!
+    }
+
+    // 3. Explicit progress e.g. "progress 2020" or "progress 2"
+    if (progress) {
+      const yrIdx = years.indexOf(progress.trim())
+      if (yrIdx >= 0) return yrIdx
+      const num = Number(progress.trim())
+      if (!isNaN(num) && num >= 1 && num <= totalDots) return num - 1
+    }
+
+    // 4. Default: active up to 2020 or the 2nd dot (index 1)
+    const default2020Idx = years.indexOf('2020')
+    if (default2020Idx >= 0) return default2020Idx
+
+    const validPins = pinIndices.filter(idx => idx >= 0)
+    if (validPins.length > 1) {
+      return validPins[Math.min(1, validPins.length - 1)]!
+    }
+    return Math.max(0, Math.min(1, totalDots - 2))
+  }, [current, progress, milestones, pinIndices, years, totalDots])
 
   const timelineY = 290
   const startCircleX = 100
@@ -175,7 +220,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
     return map
   }, [milestones, years, pinIndices, totalDots, startCircleX, startCircleR, timelineY])
 
-  // Synchronisation avec le store Zustand (avec détection du changement de N ou totalDots)
+  // Synchronisation avec le store Zustand
   const prevCountRef = useRef({ N, totalDots })
   useEffect(() => {
     const countChanged = prevCountRef.current.N !== N || prevCountRef.current.totalDots !== totalDots
@@ -207,22 +252,9 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
   const trackStartX = startBadgeRect.x + startBadgeRect.width
   const timelineEndX = terminalDotRect.x + terminalDotRect.width / 2
 
-  // Progress Pivot calculation
-  let pivotX: number
-  if (progress && !isNaN(Number(progress))) {
-    const progIdx = Math.max(0, Math.min(totalDots - 1, Number(progress) - 1))
-    pivotX = getElementRect(`dot-${progIdx}`).x + getElementRect(`dot-${progIdx}`).width / 2
-  } else if (progress && progress.includes('%')) {
-    const pct = Math.max(0, Math.min(100, parseFloat(progress))) / 100
-    pivotX = trackStartX + (timelineEndX - trackStartX) * pct
-  } else {
-    // Default pivot: active up to the middle or pinned dot
-    const validPins = pinIndices.filter(idx => idx >= 0)
-    const pivotIdx = validPins.length > 1
-      ? validPins[Math.min(1, validPins.length - 1)]!
-      : Math.max(0, Math.min(1, totalDots - 2))
-    pivotX = getElementRect(`dot-${pivotIdx}`).x + getElementRect(`dot-${pivotIdx}`).width / 2
-  }
+  // The active track covers from START up to the currentStepIdx dot
+  const currentDotRect = getElementRect(`dot-${currentStepIdx}`)
+  const pivotX = currentDotRect.x + currentDotRect.width / 2
 
   const activeTrackColor =
     templateColors['timeline-track-dark'] ||
@@ -237,7 +269,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
 
   return (
     <g ref={svgRef}>
-      {/* Horizontal Timeline Track: Active Progress Section */}
+      {/* Horizontal Timeline Track: Active Progress Section up to Current Step */}
       <line
         x1={trackStartX}
         y1={startBadgeRect.y + startBadgeRect.height / 2}
@@ -247,7 +279,7 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         strokeWidth={templateStrokeWidths['timeline-track'] || 4.5}
       />
 
-      {/* Horizontal Timeline Track: Remaining Track Section */}
+      {/* Horizontal Timeline Track: Future / Remaining Track Section */}
       <line
         x1={pivotX}
         y1={startBadgeRect.y + startBadgeRect.height / 2}
@@ -260,11 +292,14 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
       {/* Vertical Stems for Milestones */}
       {milestones.map((milestone, index) => {
         const pinIdx = pinIndices[index]!
+        const isPastOrCurrent = pinIdx <= currentStepIdx
+        const defaultColor = isPastOrCurrent ? '#23255a' : '#2d62ed'
+
         const stemColor =
           templateColors[`stem-${index}`] ||
           templateColors[`card-${index}`] ||
           milestone.color ||
-          DEFAULT_PALETTE[index % DEFAULT_PALETTE.length]
+          (index === 0 ? '#4cbfa0' : defaultColor)
 
         if (pinIdx === -1) {
           // Green stem going straight up from top of START circle
@@ -335,11 +370,15 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         const dotRect = getElementRect(`dot-${dotIdx}`)
         const matchedMsIdx = pinIndices.indexOf(dotIdx)
         const ms = matchedMsIdx >= 0 ? milestones[matchedMsIdx] : undefined
+        const isPastOrCurrent = dotIdx <= currentStepIdx
+        const defaultDotColor = isPastOrCurrent ? '#23255a' : '#2d62ed'
+
         const dotColor =
           templateColors[`dot-${dotIdx}`] ||
           (matchedMsIdx >= 0 ? templateColors[`card-${matchedMsIdx}`] : undefined) ||
           ms?.color ||
-          DEFAULT_PALETTE[dotIdx % DEFAULT_PALETTE.length]
+          defaultDotColor
+
         const dotRadius = Math.min(dotRect.width, dotRect.height) / 2
 
         return (
@@ -366,11 +405,14 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         const yearRect = getElementRect(`year-${dotIdx}`)
         const matchedMsIdx = pinIndices.indexOf(dotIdx)
         const ms = matchedMsIdx >= 0 ? milestones[matchedMsIdx] : undefined
+        const isPastOrCurrent = dotIdx <= currentStepIdx
+        const defaultDateColor = isPastOrCurrent ? '#23255a' : '#2d62ed'
+
         const dateColor =
           templateColors[`year-${dotIdx}`] ||
           (matchedMsIdx >= 0 ? templateColors[`card-${matchedMsIdx}`] : undefined) ||
           ms?.color ||
-          DEFAULT_PALETTE[dotIdx % DEFAULT_PALETTE.length]
+          defaultDateColor
 
         return (
           <g
@@ -402,7 +444,11 @@ export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement 
         const cardRect = getElementRect(cardId)
         const isSelected = selectedIds.has(cardId)
 
-        const titleColor = templateColors[cardId] || milestone.color || '#23255a'
+        const pinIdx = pinIndices[index]!
+        const isPastOrCurrent = pinIdx <= currentStepIdx
+        const defaultTitleColor = isPastOrCurrent ? '#23255a' : '#23255a'
+
+        const titleColor = templateColors[cardId] || milestone.color || defaultTitleColor
         const subtitleColor = templateColors[`subtitle-${index}`] || '#23255a'
 
         const maxTitleChars = Math.max(8, Math.floor(cardRect.width / 11))

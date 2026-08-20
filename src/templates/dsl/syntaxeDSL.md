@@ -91,25 +91,26 @@ Ce document constitue la **source officielle et unique de la syntaxe DSL** pour 
   milestone:Q4 "GA Release" "General availability"
 ```
 
-#### Roadmap 5 — Timeline alternée avec années (`quarters`) & jalons positionnés (`date:`)
+#### Roadmap 5 — Timeline alternée avec années (`quarters`), étape actuelle (`current`) & jalons positionnés (`date:`)
 
 ```dsl
 @roadmap5
   start "START"
   quarters 2019 2020 2021 2022
+  current 2020
   track #23255a #d9dee4
-  progress 2 #23255a
   milestone "Milestone 01" "MIGSO-PCUBED content and words to be added here as required" #4cbfa0
   milestone "Milestone 02" "MIGSO-PCUBED content and words to be added here as required" date:2019 #23255a
   milestone "Milestone 03" "MIGSO-PCUBED content and words to be added here as required" date:2020 #23255a
   milestone "Milestone 04" "MIGSO-PCUBED content and words to be added here as required" date:2021 #2d62ed
 ```
 
-> - `quarters <an1> <an2> ...` : définit l'axe des années sur la timeline (si omis, les années sont déduites automatiquement des `date:`).
+> - `current <année|index|titre>` : indique l'étape/année **actuelle** de la roadmap (ex: `current 2020` ou `current 2`). La timeline est automatiquement colorée en actif (bleu nuit) jusqu'à cette étape et passe en gris clair au-delà.
+> - On peut aussi marquer un jalon avec le mot-clé `current` (ex: `milestone "Milestone 03" "..." date:2020 current`).
+> - `quarters <an1> <an2> ...` : définit l'axe des années sur la timeline.
 > - `date:<année>` : détermine à quelle année/point de la timeline chaque jalon vient **s'accrocher** (comme pour `@roadmap3`).
 > - Le premier jalon sans `date:` s'accroche directement au sommet du cercle `START`.
-> - `track #couleurActive #couleurFond` : personnalise la ligne active et inactive.
-> - `progress <index|pourcentage> [#couleur]` : contrôle l'avancement de la timeline.
+> - `track #couleurActive #couleurFond` : personnalise les couleurs des segments actif et inactif.
 
 #### Roadmap 6 — Ruban de chevrons groupés par période
 

@@ -114,4 +114,26 @@ describe('Roadmap5Template', () => {
     expect(container.textContent).toContain('Milestone 01')
     expect(container.textContent).toContain('Milestone 04')
   })
+
+  it('should support defining current step via current keyword in DSL', () => {
+    const data: RoadmapData = {
+      type: 'roadmap',
+      current: '2020',
+      quarters: [
+        { label: '2019' },
+        { label: '2020' },
+        { label: '2021' },
+        { label: '2022' },
+      ],
+      milestones: [
+        { title: 'Milestone 01', subtitle: 'Desc 1' },
+        { title: 'Milestone 02', subtitle: 'Desc 2', date: '2019' },
+        { title: 'Milestone 03', subtitle: 'Desc 3', date: '2020' },
+        { title: 'Milestone 04', subtitle: 'Desc 4', date: '2021' },
+      ],
+    }
+    const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
+    const lines = container.querySelectorAll('line')
+    expect(lines.length).toBeGreaterThanOrEqual(2)
+  })
 })

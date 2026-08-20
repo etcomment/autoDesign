@@ -109,9 +109,10 @@ export function extractTrailingArgs(args: string[], startIndex: number) {
   let percent: string | undefined
   let date: string | undefined
   let lane: string | undefined
+  let status: 'done' | 'current' | 'future' | undefined
 
   let idx = 0
-  if (idx < merged.length && !merged[idx]!.startsWith('#') && !merged[idx]!.startsWith('val:') && !merged[idx]!.startsWith('pct:') && !merged[idx]!.startsWith('icon:') && !merged[idx]!.startsWith('date:') && !merged[idx]!.startsWith('lane:')) {
+  if (idx < merged.length && !merged[idx]!.startsWith('#') && !merged[idx]!.startsWith('val:') && !merged[idx]!.startsWith('pct:') && !merged[idx]!.startsWith('icon:') && !merged[idx]!.startsWith('date:') && !merged[idx]!.startsWith('lane:') && !merged[idx]!.startsWith('status:') && merged[idx] !== 'current' && merged[idx] !== 'active' && merged[idx] !== 'now' && merged[idx] !== 'done') {
     subtitle = stripQuotes(merged[idx]!)
     idx++
   }
@@ -132,11 +133,15 @@ export function extractTrailingArgs(args: string[], startIndex: number) {
       color = stripQuotes(arg.slice(6))
     } else if (arg.startsWith('#')) {
       color = arg
+    } else if (arg === 'current' || arg === 'active' || arg === 'now' || arg.startsWith('status:current') || arg.startsWith('status:active')) {
+      status = 'current'
+    } else if (arg === 'done' || arg === 'completed' || arg.startsWith('status:done')) {
+      status = 'done'
     }
     idx++
   }
 
-  return { subtitle, color, icon, value, percent, date, lane }
+  return { subtitle, color, icon, value, percent, date, lane, status, current: status === 'current' ? true : undefined }
 }
 
 function emitTrailingArgs(n: Record<string, any>): string {
@@ -270,6 +275,7 @@ function parseRoadmap(dsl: string, headerTitle?: string): RoadmapData | ProductR
   let title: string | undefined = headerTitle
   let startLabel: string | undefined
   let finishLabel: string | undefined
+  let current: string | undefined
   let progress: string | undefined
   let progressColor: string | undefined
   let trackColor: string | undefined
@@ -324,6 +330,12 @@ function parseRoadmap(dsl: string, headerTitle?: string): RoadmapData | ProductR
         progress = progressMatch[1]
         if (progressMatch[2]) progressColor = progressMatch[2]
       }
+      continue
+    }
+
+    const currentMatch = /^(?:current|now|active)(?::\s*|\s+)("?[^"]*"?)\s*$/.exec(line)
+    if (currentMatch) {
+      current = stripQuotes(currentMatch[1]!)
       continue
     }
 
@@ -432,6 +444,7 @@ function parseRoadmap(dsl: string, headerTitle?: string): RoadmapData | ProductR
     title,
     startLabel,
     finishLabel,
+    current,
     progress,
     progressColor,
     trackColor,
@@ -1116,6 +1129,7 @@ export function generateDslText(type: string, data: TemplateData): string {
 
   if (d.startLabel) out += `  start "${esc(d.startLabel)}"\n`
   if (d.finishLabel) out += `  finish "${esc(d.finishLabel)}"\n`
+  if (d.current) out += `  current ${/\s/.test(String(d.current)) ? '"' + esc(String(d.current)) + '"' : d.current}\n`
   if (d.trackColor) out += `  track ${d.trackColor}${d.trackBgColor ? ' ' + d.trackBgColor : ''}\n`
   if (d.progress || d.progressColor) out += `  progress ${d.progress || ''}${d.progressColor ? ' ' + d.progressColor : ''}\n`
 
