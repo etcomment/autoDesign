@@ -169,7 +169,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
   const progressLineX = activeDotR.x + activeDotR.width / 2
 
   const activeColor = trackColor || '#23255a'
-  const inactiveColor = trackBgColor || '#e2e8f0'
+  const inactiveColor = trackBgColor || '#d9dee4'
 
   const chevronPath = (r: Rect, idx: number, total: number): string => {
     const { x, y, width: w, height: h } = r
@@ -253,7 +253,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
                 y1={dotCenterY - dotR.height / 2}
                 x2={cardBottomCenterX}
                 y2={cardBottomCenterY}
-                stroke={tplColors[`conn-${i}`] || '#b0b7c3'}
+                stroke={tplColors[`conn-${i}`] || inactiveColor}
                 strokeWidth={tplStrokeWidths[`conn-${i}`] || 2}
               />
             </g>
