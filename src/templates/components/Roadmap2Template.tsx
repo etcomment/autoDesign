@@ -246,15 +246,16 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
 
         return (
           <g key={i}>
-            {/* Dynamic solid grey connector line (30-degree slanted) */}
+            {/* Dynamic solid grey connector line (30-degree slanted, matching middle track thickness) */}
             <g data-element-id={`conn-${i}`}>
               <line
                 x1={dotCenterX}
-                y1={dotCenterY - dotR.height / 2}
+                y1={dotCenterY - dotR.height / 2 - 10}
                 x2={cardBottomCenterX}
                 y2={cardBottomCenterY}
                 stroke={tplColors[`conn-${i}`] || inactiveColor}
-                strokeWidth={tplStrokeWidths[`conn-${i}`] || 2}
+                strokeWidth={tplStrokeWidths[`conn-${i}`] || 4.5}
+                strokeLinecap="round"
               />
             </g>
 
