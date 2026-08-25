@@ -324,14 +324,17 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
         const cardBottomCenterY = txtR.y + txtR.height
 
         const isTextSelected = selectedIds.has(`text-${msIdx}`) || selectedIds.has(`card-${msIdx}`)
+        const isTop = msIdx % 2 === 1
+        const dotRadius = Math.min(dotR.width, dotR.height) / 2
+        const lineY1 = isTop ? dotCenterY - dotRadius - 25 : dotCenterY - dotRadius
 
         return (
           <g key={`ms-${msIdx}`}>
-            {/* Dynamic solid grey connector line (30-degree slanted, 5px MIGSO gray directly attached to dot) */}
+            {/* Dynamic solid grey connector line (30-degree slanted, 5px MIGSO gray) */}
             <g data-element-id={`conn-${msIdx}`}>
               <line
                 x1={dotCenterX}
-                y1={dotCenterY - Math.min(dotR.width, dotR.height) / 2}
+                y1={lineY1}
                 x2={cardBottomCenterX}
                 y2={cardBottomCenterY}
                 stroke={tplColors[`conn-${msIdx}`] || inactiveColor}
