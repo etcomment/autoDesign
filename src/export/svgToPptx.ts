@@ -1,4 +1,4 @@
-import PptxGenJS from 'pptxgenjs'
+import type PptxGenJS from 'pptxgenjs'
 import { getContentSvg } from './generateSvg'
 
 const SLIDE_W = 13.33
@@ -486,6 +486,7 @@ function isWhiteBackground(el: Element, vb: ViewBox): boolean {
 }
 
 export async function generateCanvasPptx(): Promise<Blob> {
+  const { default: PptxGenJS } = await import('pptxgenjs')
   const pres = new PptxGenJS()
   pres.layout = 'LAYOUT_WIDE'
   pres.author = 'autoDesign'

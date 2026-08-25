@@ -1,4 +1,4 @@
-import PptxGenJS from 'pptxgenjs'
+import type PptxGenJS from 'pptxgenjs'
 import type { DiagramModel } from '../core/model/DiagramModel'
 import type { Shape } from '../core/model/Shape'
 import { computeEdgePoints } from '../core/geometry'
@@ -73,6 +73,7 @@ function addConnectionToSlide(
 }
 
 export async function generatePptx(model: DiagramModel): Promise<Blob> {
+  const { default: PptxGenJS } = await import('pptxgenjs')
   const pres = new PptxGenJS()
   pres.layout = 'LAYOUT_WIDE'
   pres.author = 'autoDesign'
