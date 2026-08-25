@@ -14,7 +14,7 @@ interface Rect {
   height: number
 }
 
-function getDynamicIcon(iconName?: string, size = 18, color = '#23255a'): ReactElement | null {
+function getDynamicIcon(iconName?: string, size = 18, color = '#2c2b64'): ReactElement | null {
   if (!iconName) return null
   const clean = iconName.trim()
 
@@ -34,10 +34,26 @@ function getDynamicIcon(iconName?: string, size = 18, color = '#23255a'): ReactE
   return null
 }
 
+function computePriorDate(firstDate: string): string {
+  const numMatch = firstDate.match(/\b(19\d\d|20\d\d)\b/)
+  if (numMatch) {
+    const yr = Number(numMatch[1])
+    return firstDate.replace(numMatch[1], String(yr - 1))
+  }
+  const qMatch = firstDate.match(/^Q([1-4])\s*(\d{4})$/i)
+  if (qMatch) {
+    const q = Number(qMatch[1])
+    const yr = Number(qMatch[2])
+    if (q === 1) return `Q4 ${yr - 1}`
+    return `Q${q - 1} ${yr}`
+  }
+  return 'Start'
+}
+
 const FALLBACK_PHASES: TemplateLane[] = [
-  { label: 'Phase One', color: '#23255a' },
-  { label: 'Phase Two', color: '#2d62ed' },
-  { label: 'Phase Three', color: '#ff4a2b' },
+  { label: 'Phase One', color: '#2c2b64' },
+  { label: 'Phase Two', color: '#3366cc' },
+  { label: 'Phase Three', color: '#ff5338' },
 ]
 
 export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement {
@@ -64,38 +80,49 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
     return FALLBACK_PHASES
   }, [lanes])
 
-  const years = useMemo(() => {
+  const rawYears = useMemo(() => {
     if (milestones.length > 0 && milestones.some(ms => ms.date)) {
-      return milestones.map((ms, i) => ms.date ?? String(2022 + i))
+      return milestones.map((ms, i) => ms.date ?? String(2020 + i))
     }
     if (quarters && quarters.length > 0) {
       return quarters.map(q => q.label)
     }
-    return ['2022', '2023', '2024', '2025', '2026']
+    return ['2020', '2021', '2022', '2023', '2024']
   }, [milestones, quarters])
 
-  const N = Math.max(1, years.length)
-  const startX = N <= 5 ? 140 : 80
-  const spacing = Math.min(170, (W - startX * 2) / Math.max(N - 1, 1))
+  const priorDate = useMemo(() => {
+    const first = rawYears[0] || '2020'
+    return computePriorDate(first)
+  }, [rawYears])
+
+  // Total points on timeline: Point 0 = priorDate, Points 1..N = rawYears
+  const allYears = useMemo(() => [priorDate, ...rawYears], [priorDate, rawYears])
+
+  const totalPoints = allYears.length
+  const startX = 80
+  const spacing = Math.min(150, (W - startX * 2) / Math.max(totalPoints - 1, 1))
   const timelineY = 320
 
   const progressIdx = useMemo(() => {
     const target = current || progress
     if (target) {
       const targetStr = String(target).trim().toLowerCase()
-      const foundYear = years.findIndex(y => y.toLowerCase() === targetStr)
-      if (foundYear >= 0) return foundYear
+      const foundIdx = allYears.findIndex(y => y.toLowerCase() === targetStr)
+      if (foundIdx >= 0) return foundIdx
+
+      const foundRaw = rawYears.findIndex(y => y.toLowerCase() === targetStr)
+      if (foundRaw >= 0) return foundRaw + 1
 
       const foundMs = milestones.findIndex(
         m => m.title?.toLowerCase() === targetStr || m.date?.toLowerCase() === targetStr
       )
-      if (foundMs >= 0) return foundMs
+      if (foundMs >= 0) return foundMs + 1
 
       const asNum = Number(target)
-      if (!isNaN(asNum) && asNum >= 0 && asNum < N) return asNum
+      if (!isNaN(asNum) && asNum >= 0 && asNum < totalPoints) return asNum
     }
-    return Math.floor(N / 2)
-  }, [current, progress, years, milestones, N])
+    return Math.min(3, totalPoints - 1)
+  }, [current, progress, allYears, rawYears, milestones, totalPoints])
 
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
@@ -115,33 +142,37 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
 
     const tan30 = Math.tan((30 * Math.PI) / 180) // ~0.577
 
-    years.forEach((_, i) => {
-      const cx = startX + i * spacing
+    allYears.forEach((_, ptIdx) => {
+      const cx = startX + ptIdx * spacing
       const cy = timelineY
-      map.set(`dot-${i}`, { x: cx - 12, y: cy - 12, width: 24, height: 24 })
-      map.set(`year-${i}`, { x: cx - 40, y: cy + 24, width: 80, height: 30 })
+      map.set(`dot-${ptIdx}`, { x: cx - 12, y: cy - 12, width: 24, height: 24 })
+      map.set(`year-${ptIdx}`, { x: cx - 40, y: cy + 24, width: 80, height: 30 })
 
-      // Alternating heights: first low (i=0), second high (i=1), third low...
-      const isTop = i % 2 === 1
-      const connH = isTop ? 145 : 85
-      const deltaX = Math.round(connH * tan30) // 30-degree offset to the left
-      const cardW = 150
-      const cardH = 80
-      const cardX = cx - deltaX - cardW / 2
-      const cardY = cy - 12 - connH - cardH - 15
+      // Point 0 is origin date anchor without card
+      if (ptIdx > 0) {
+        const msIdx = ptIdx - 1
+        // Alternating heights: first milestone (msIdx=0) low, second (msIdx=1) high...
+        const isTop = msIdx % 2 === 1
+        const connH = isTop ? 145 : 85
+        const deltaX = Math.round(connH * tan30) // 30-degree offset to the left
+        const cardW = 150
+        const cardH = 80
+        const cardX = cx - deltaX - cardW / 2
+        const cardY = cy - 12 - connH - cardH - 15
 
-      map.set(`text-${i}`, { x: cardX, y: cardY, width: cardW, height: cardH })
-      map.set(`card-${i}`, { x: cardX, y: cardY, width: cardW, height: cardH })
-      map.set(`conn-${i}`, {
-        x: cx - deltaX,
-        y: cy - 12 - connH - 15,
-        width: deltaX,
-        height: connH,
-      })
+        map.set(`text-${msIdx}`, { x: cardX, y: cardY, width: cardW, height: cardH })
+        map.set(`card-${msIdx}`, { x: cardX, y: cardY, width: cardW, height: cardH })
+        map.set(`conn-${msIdx}`, {
+          x: cx - deltaX,
+          y: cy - 12 - connH - 15,
+          width: deltaX,
+          height: connH,
+        })
+      }
     })
 
     return map
-  }, [years, spacing, phases, startX, timelineY, N])
+  }, [allYears, spacing, phases, startX, timelineY])
 
   useEffect(() => {
     for (const [id, rect] of defaultPositions.entries()) {
@@ -168,7 +199,9 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
   const activeDotR = getR(`dot-${progressIdx}`)
   const progressLineX = activeDotR.x + activeDotR.width / 2
 
-  const activeColor = trackColor || '#23255a'
+  // MIGSO Red for active progress track
+  const activeColor = trackColor || '#ff5338'
+  // MIGSO Gray for inactive track and connector lines
   const inactiveColor = trackBgColor || '#d9dee4'
 
   const chevronPath = (r: Rect, idx: number, total: number): string => {
@@ -195,7 +228,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
         transform={getTransform('timeline-line', timelineLineR)}
         style={{ cursor: 'pointer' }}
       >
-        {/* Active segment from start up to progress dot */}
+        {/* Active MIGSO red segment from start up to progress dot */}
         <line
           x1={timelineLineR.x}
           y1={timelineY2}
@@ -205,7 +238,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
           strokeWidth={6}
           strokeLinecap="round"
         />
-        {/* Inactive segment from progress dot to end */}
+        {/* Inactive MIGSO gray segment from progress dot to end */}
         <line
           x1={progressLineX}
           y1={timelineY2}
@@ -218,64 +251,113 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
         {selectedIds.has('timeline-line') && renderHandles(timelineLineR, 'timeline-line')}
       </g>
 
-      {/* Years, Dots, Connectors & Cards */}
-      {years.map((yr, i) => {
-        const dotR = getR(`dot-${i}`)
-        const yrR = getR(`year-${i}`)
-        const txtR = getR(`text-${i}`)
-        const ms = milestones[i]
+      {/* Timeline Points: Point 0 (Prior Date) + Milestones */}
+      {allYears.map((yr, ptIdx) => {
+        const dotR = getR(`dot-${ptIdx}`)
+        const yrR = getR(`year-${ptIdx}`)
+        const dotCenterX = dotR.x + dotR.width / 2
+        const dotCenterY = dotR.y + dotR.height / 2
+
+        if (ptIdx === 0) {
+          // Origin / Prior Date Point: Same color as Phase 1
+          const originDotColor = phases[0]?.color || '#2c2b64'
+
+          return (
+            <g key="origin-point">
+              {/* Origin Dot */}
+              <g
+                data-element-id="dot-0"
+                onMouseDown={e => startDrag(e, 'dot-0', dotR)}
+                transform={getTransform('dot-0', dotR)}
+                style={{ cursor: 'pointer' }}
+              >
+                <circle
+                  cx={dotCenterX}
+                  cy={dotCenterY}
+                  r={Math.min(dotR.width, dotR.height) / 2}
+                  fill={tplColors['dot-0'] || originDotColor}
+                  stroke="#ffffff"
+                  strokeWidth={2}
+                />
+                {selectedIds.has('dot-0') && renderHandles(dotR, 'dot-0')}
+              </g>
+
+              {/* Origin Year Label */}
+              <g
+                data-element-id="year-0"
+                onMouseDown={e => startDrag(e, 'year-0', yrR)}
+                transform={getTransform('year-0', yrR)}
+                style={{ cursor: 'pointer' }}
+              >
+                <text
+                  x={yrR.x + yrR.width / 2}
+                  y={yrR.y + yrR.height / 2 + 6}
+                  textAnchor="middle"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={18}
+                  fontWeight="bold"
+                  fill={tplColors['year-0'] || originDotColor}
+                >
+                  {yr}
+                </text>
+                {selectedIds.has('year-0') && renderHandles(yrR, 'year-0')}
+              </g>
+            </g>
+          )
+        }
+
+        // Milestone Point (ptIdx >= 1)
+        const msIdx = ptIdx - 1
+        const txtR = getR(`text-${msIdx}`)
+        const ms = milestones[msIdx]
 
         const laneColor = ms?.lane
           ? (phases.find(p => p.label === ms.lane) || phases.find(p => p.label.startsWith(ms.lane!)))?.color
           : undefined
-        const dotColor = laneColor || ms?.color || (i <= progressIdx ? '#23255a' : '#a0aec0')
+        const dotColor = laneColor || ms?.color || (ptIdx <= progressIdx ? (phases[0]?.color || '#2c2b64') : '#a0aec0')
 
         const maxTitleChars = Math.max(8, Math.floor(txtR.width / 9.5))
         const maxSubChars = Math.max(10, Math.floor(txtR.width / 7.5))
-        const titleLines = wrapTextByWidth(ms?.title || `Step ${i + 1}`, maxTitleChars)
+        const titleLines = wrapTextByWidth(ms?.title || `Step ${msIdx + 1}`, maxTitleChars)
         const subLines = ms?.subtitle ? wrapTextByWidth(ms.subtitle, maxSubChars) : []
 
         const iconEl = getDynamicIcon(ms?.icon, 16, dotColor)
-
-        const dotCenterX = dotR.x + dotR.width / 2
-        const dotCenterY = dotR.y + dotR.height / 2
         const cardBottomCenterX = txtR.x + txtR.width / 2
         const cardBottomCenterY = txtR.y + txtR.height
 
-        const isTextSelected = selectedIds.has(`text-${i}`) || selectedIds.has(`card-${i}`)
+        const isTextSelected = selectedIds.has(`text-${msIdx}`) || selectedIds.has(`card-${msIdx}`)
 
         return (
-          <g key={i}>
-            {/* Dynamic solid grey connector line (30-degree slanted, matching middle track thickness) */}
-            <g data-element-id={`conn-${i}`}>
+          <g key={`ms-${msIdx}`}>
+            {/* Dynamic solid grey connector line (30-degree slanted, 6px MIGSO gray) */}
+            <g data-element-id={`conn-${msIdx}`}>
               <line
                 x1={dotCenterX}
                 y1={dotCenterY - dotR.height / 2 - 25}
                 x2={cardBottomCenterX}
                 y2={cardBottomCenterY}
-                stroke={tplColors[`conn-${i}`] || inactiveColor}
-                strokeWidth={tplStrokeWidths[`conn-${i}`] || 6}
+                stroke={tplColors[`conn-${msIdx}`] || inactiveColor}
+                strokeWidth={tplStrokeWidths[`conn-${msIdx}`] || 6}
                 strokeLinecap="round"
               />
             </g>
 
-            {/* Text Card with transparent background & solid layout */}
+            {/* Text Card with transparent background */}
             <g
-              data-element-id={`text-${i}`}
-              onMouseDown={e => startDrag(e, `text-${i}`, txtR)}
-              transform={getTransform(`text-${i}`, txtR)}
+              data-element-id={`text-${msIdx}`}
+              onMouseDown={e => startDrag(e, `text-${msIdx}`, txtR)}
+              transform={getTransform(`text-${msIdx}`, txtR)}
               style={{ cursor: 'pointer' }}
             >
-              {/* Card Container (Transparent background) */}
               <rect
                 x={txtR.x}
                 y={txtR.y}
                 width={txtR.width}
                 height={txtR.height}
                 rx={6}
-                fill={tplColors[`text-${i}`] || 'none'}
-                stroke={tplStrokeColors[`text-${i}`] || (isTextSelected ? '#2196f3' : 'none')}
-                strokeWidth={isTextSelected ? 2 : (tplStrokeWidths[`text-${i}`] ?? 0)}
+                fill={tplColors[`text-${msIdx}`] || 'none'}
+                stroke={tplStrokeColors[`text-${msIdx}`] || (isTextSelected ? '#2196f3' : 'none')}
+                strokeWidth={isTextSelected ? 2 : (tplStrokeWidths[`text-${msIdx}`] ?? 0)}
               />
               <g transform={`translate(${txtR.x + 4}, ${txtR.y + 14})`}>
                 {iconEl && <g transform="translate(0, -8)">{iconEl}</g>}
@@ -285,7 +367,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
                   fontFamily="Arial, sans-serif"
                   fontSize={14}
                   fontWeight={700}
-                  fill={tplColors[`text-${i}`] ? '#ffffff' : '#23255a'}
+                  fill={tplColors[`text-${msIdx}`] ? '#ffffff' : '#2c2b64'}
                 >
                   {titleLines.map((line, li) => (
                     <tspan key={li} x={iconEl ? 22 : 0} dy={li === 0 ? 0 : 16}>
@@ -309,32 +391,32 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
                   ))}
                 </text>
               )}
-              {isTextSelected && renderHandles(txtR, `text-${i}`)}
+              {isTextSelected && renderHandles(txtR, `text-${msIdx}`)}
             </g>
 
             {/* Timeline Dot */}
             <g
-              data-element-id={`dot-${i}`}
-              onMouseDown={e => startDrag(e, `dot-${i}`, dotR)}
-              transform={getTransform(`dot-${i}`, dotR)}
+              data-element-id={`dot-${ptIdx}`}
+              onMouseDown={e => startDrag(e, `dot-${ptIdx}`, dotR)}
+              transform={getTransform(`dot-${ptIdx}`, dotR)}
               style={{ cursor: 'pointer' }}
             >
               <circle
                 cx={dotCenterX}
                 cy={dotCenterY}
                 r={Math.min(dotR.width, dotR.height) / 2}
-                fill={tplColors[`dot-${i}`] || dotColor}
+                fill={tplColors[`dot-${ptIdx}`] || dotColor}
                 stroke="#ffffff"
                 strokeWidth={2}
               />
-              {selectedIds.has(`dot-${i}`) && renderHandles(dotR, `dot-${i}`)}
+              {selectedIds.has(`dot-${ptIdx}`) && renderHandles(dotR, `dot-${ptIdx}`)}
             </g>
 
             {/* Year Label */}
             <g
-              data-element-id={`year-${i}`}
-              onMouseDown={e => startDrag(e, `year-${i}`, yrR)}
-              transform={getTransform(`year-${i}`, yrR)}
+              data-element-id={`year-${ptIdx}`}
+              onMouseDown={e => startDrag(e, `year-${ptIdx}`, yrR)}
+              transform={getTransform(`year-${ptIdx}`, yrR)}
               style={{ cursor: 'pointer' }}
             >
               <text
@@ -344,11 +426,11 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
                 fontFamily="Arial, sans-serif"
                 fontSize={18}
                 fontWeight="bold"
-                fill={tplColors[`year-${i}`] || (i <= progressIdx ? '#23255a' : '#888888')}
+                fill={tplColors[`year-${ptIdx}`] || (ptIdx <= progressIdx ? (phases[0]?.color || '#2c2b64') : '#888888')}
               >
                 {yr}
               </text>
-              {selectedIds.has(`year-${i}`) && renderHandles(yrR, `year-${i}`)}
+              {selectedIds.has(`year-${ptIdx}`) && renderHandles(yrR, `year-${ptIdx}`)}
             </g>
           </g>
         )
