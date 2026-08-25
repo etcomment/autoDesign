@@ -202,7 +202,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
   // MIGSO Red for active progress track
   const activeColor = trackColor || '#ff5338'
   // MIGSO Gray for inactive track and connector lines
-  const inactiveColor = trackBgColor || '#e8eaed'
+  const inactiveColor = trackBgColor || '#d7d7d7'
 
   const chevronPath = (r: Rect, idx: number, total: number): string => {
     const { x, y, width: w, height: h } = r
@@ -314,7 +314,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
         const laneColor = ms?.lane
           ? (phases.find(p => p.label === ms.lane) || phases.find(p => p.label.startsWith(ms.lane!)))?.color
           : undefined
-        const dotColor = laneColor || ms?.color || (ptIdx <= progressIdx ? (phases[0]?.color || '#2c2b64') : '#a0aec0')
+        const dotColor = laneColor || ms?.color || (ptIdx <= progressIdx ? (phases[0]?.color || '#2c2b64') : '#d7d7d7')
 
         const maxTitleChars = Math.max(8, Math.floor(txtR.width / 9.5))
         const maxSubChars = Math.max(10, Math.floor(txtR.width / 7.5))
