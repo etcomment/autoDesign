@@ -121,20 +121,20 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
       map.set(`dot-${i}`, { x: cx - 12, y: cy - 12, width: 24, height: 24 })
       map.set(`year-${i}`, { x: cx - 40, y: cy + 24, width: 80, height: 30 })
 
-      // Alternating heights to give generous breathing room for 30-degree slanted cards
-      const isTop = i % 2 === 0
-      const connH = isTop ? 140 : 85
+      // Alternating heights: first low (i=0), second high (i=1), third low...
+      const isTop = i % 2 === 1
+      const connH = isTop ? 145 : 85
       const deltaX = Math.round(connH * tan30) // 30-degree offset to the left
       const cardW = 150
       const cardH = 80
       const cardX = cx - deltaX - cardW / 2
-      const cardY = cy - 12 - connH - cardH
+      const cardY = cy - 12 - connH - cardH - 15
 
       map.set(`text-${i}`, { x: cardX, y: cardY, width: cardW, height: cardH })
       map.set(`card-${i}`, { x: cardX, y: cardY, width: cardW, height: cardH })
       map.set(`conn-${i}`, {
         x: cx - deltaX,
-        y: cy - 12 - connH,
+        y: cy - 12 - connH - 15,
         width: deltaX,
         height: connH,
       })
@@ -250,7 +250,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
             <g data-element-id={`conn-${i}`}>
               <line
                 x1={dotCenterX}
-                y1={dotCenterY - dotR.height / 2 - 10}
+                y1={dotCenterY - dotR.height / 2 - 25}
                 x2={cardBottomCenterX}
                 y2={cardBottomCenterY}
                 stroke={tplColors[`conn-${i}`] || inactiveColor}
