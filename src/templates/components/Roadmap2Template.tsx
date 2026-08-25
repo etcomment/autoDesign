@@ -151,9 +151,9 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
       // Point 0 is origin date anchor without card
       if (ptIdx > 0) {
         const msIdx = ptIdx - 1
-        // Alternating heights: first milestone (msIdx=0) low (55px), second (msIdx=1) high (155px)...
+        // Alternating heights: first milestone (msIdx=0) low (35px), second (msIdx=1) high (145px)...
         const isTop = msIdx % 2 === 1
-        const lineH = isTop ? 155 : 55
+        const lineH = isTop ? 145 : 35
         const deltaX = Math.round(lineH * tan20) // Exact 20-degree offset for this height
         const cardW = 150
         const cardH = 50
