@@ -382,7 +382,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
                   y={txtR.y + 16 + titleLines.length * 16 + 4}
                   fontFamily="Arial, sans-serif"
                   fontSize={12}
-                  fill="#3366cc"
+                  fill="#2c2b64"
                 >
                   {subLines.map((line, li) => (
                     <tspan key={li} x={txtR.x + 4} dy={li === 0 ? 0 : 14}>
