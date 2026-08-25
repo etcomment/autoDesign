@@ -167,9 +167,9 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
         const lineY2 = lineY1 - lineH
         const lineX2 = cx - deltaX
 
-        // Card grows UPWARDS from lineY2 so the connector line stays attached to the bottom
+        // Card grows UPWARDS with a clean 5px gap above lineY2
         const cardX = lineX2 - cardW / 2
-        const cardY = lineY2 - cardH
+        const cardY = lineY2 - cardH - 5
 
         map.set(`text-${msIdx}`, { x: cardX, y: cardY, width: cardW, height: cardH })
         map.set(`card-${msIdx}`, { x: cardX, y: cardY, width: cardW, height: cardH })
@@ -346,7 +346,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
                 x1={dotCenterX}
                 y1={lineY1}
                 x2={cardBottomCenterX}
-                y2={cardBottomCenterY}
+                y2={cardBottomCenterY + 5}
                 stroke={tplColors[`conn-${msIdx}`] || inactiveColor}
                 strokeWidth={tplStrokeWidths[`conn-${msIdx}`] || 5}
                 strokeLinecap="round"
