@@ -48,42 +48,6 @@ export function donutSlicePath(
   ].join(' ')
 }
 
-// Part d'anneau à FLANCS PARALLÈLES : les deux bords latéraux de chaque part
-// sont parallèles (direction radiale du milieu de part), ce qui donne un
-// espace de largeur ~constante entre les parts (pas en entonnoir).
-// `gapPx` est écartés depuis la périphérie le long du bord à mi-épaisseur.
-export function donutSegmentPath(
-  cx: number,
-  cy: number,
-  innerRadius: number,
-  outerRadius: number,
-  startAngle: number,
-  endAngle: number,
-  gapPx = 0,
-): string {
-  const mid = (startAngle + endAngle) / 2
-  const rMid = (innerRadius + outerRadius) / 2
-  const half = (endAngle - startAngle) / 2
-  const h = Math.max(0, rMid * Math.sin(half) - gapPx / 2)
-  const aOuter = Math.min(1, h / outerRadius)
-  const aInner = Math.min(1, h / innerRadius)
-  const angleInner = Math.asin(aInner)
-  const angleOuter = Math.asin(aOuter)
-  const innerLeft = polarPoint(cx, cy, innerRadius, mid - angleInner)
-  const outerLeft = polarPoint(cx, cy, outerRadius, mid - angleOuter)
-  const outerRight = polarPoint(cx, cy, outerRadius, mid + angleOuter)
-  const innerRight = polarPoint(cx, cy, innerRadius, mid + angleInner)
-  const largeArc = endAngle - startAngle > Math.PI ? 1 : 0
-  return [
-    `M ${innerLeft.x.toFixed(1)} ${innerLeft.y.toFixed(1)}`,
-    `L ${outerLeft.x.toFixed(1)} ${outerLeft.y.toFixed(1)}`,
-    `A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${outerRight.x.toFixed(1)} ${outerRight.y.toFixed(1)}`,
-    `L ${innerRight.x.toFixed(1)} ${innerRight.y.toFixed(1)}`,
-    `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${innerLeft.x.toFixed(1)} ${innerLeft.y.toFixed(1)}`,
-    'Z',
-  ].join(' ')
-}
-
 // Distribution des angles selon les valeurs (parts égales si pas de valeurs).
 // `gapAngle` (radians) réserve un espace vide entre deux parts consécutives.
 export function sliceBounds(values: Array<number | undefined>, gapAngle = 0): PieSliceArc[] {

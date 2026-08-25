@@ -3,7 +3,7 @@ import type { PieData, PieSlice } from '../types'
 import { MIGSO_PALETTE } from '../../lib/theme'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { donutSegmentPath, sliceBounds, polarPoint } from '../shared/pieGeometry'
+import { donutSlicePath, sliceBounds, polarPoint } from '../shared/pieGeometry'
 
 export function PieChart2Template({ data }: { data: PieData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -21,7 +21,7 @@ export function PieChart2Template({ data }: { data: PieData }): ReactElement {
 
   const slices: PieSlice[] = data.slices.length > 0 ? data.slices : [{ label: 'A' }, { label: 'B' }, { label: 'C' }, { label: 'D' }]
   const values = slices.map(s => s.value)
-  const bounds = sliceBounds(values)
+  const bounds = sliceBounds(values, 10 / outerR)
   const getRect = (id: string) => positions[id] || { x: cx - outerR, y: cy - outerR, width: outerR * 2, height: outerR * 2 }
 
   return (
@@ -37,7 +37,7 @@ export function PieChart2Template({ data }: { data: PieData }): ReactElement {
         return (
           <g key={id}>
             <path
-              d={donutSegmentPath(cx, cy, innerR, outerR, bounds[i]!.start, bounds[i]!.end, 10)}
+              d={donutSlicePath(cx, cy, innerR, outerR, bounds[i]!.start, bounds[i]!.end)}
               fill={color}
               data-element-id={id}
               onMouseDown={e => startDrag(e, id, getRect(id))}
