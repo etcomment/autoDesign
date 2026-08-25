@@ -360,6 +360,7 @@ async function addElementAsImageToSlide(
     const strokePad = isNaN(sw) ? 0 : sw / 2
     const padAbs = (4 + strokePad) * ctmScale
     const padW = padAbs * layout.scaleX
+    const padH = padAbs * layout.scaleY
     const imgOpts: PptxGenJS.ImageProps = {
       data: svgDataUri,
       x: toSlideX(bounds.x, vb, layout) - padW,
@@ -397,34 +398,60 @@ function addTextToSlide(
   let ctmScale = 1
   try {
     const bbox = el.getBBox()
-    if (bbox.width > 0 && bbox.height > 0) {
-      let ctm: DOMMatrix | null = null
-      try { ctm = el.getCTM() } catch { /* skip */ }
-      if (ctm) {
-        ctmScale = Math.hypot(ctm.a, ctm.b)
-        const pt = svgRoot.createSVGPoint()
-        pt.x = bbox.x + bbox.width / 2
-        pt.y = bbox.y + bbox.height / 2
-        const center = pt.matrixTransform(ctm)
+    let ctm: DOMMatrix | null = null
+    try { ctm = el.getCTM() } catch { /* skip */ }
+    ctmScale = ctm ? Math.hypot(ctm.a, ctm.b) : 1
 
-        const unrotatedW = bbox.width * ctmScale
-        const unrotatedH = bbox.height * ctmScale
-        const absX = center.x - unrotatedW / 2
-        const absY = center.y - unrotatedH / 2
+    let lx = bbox.x
+    let ly = bbox.y
+    let lw = bbox.width
+    let lh = bbox.height
 
-        const rawRotation = Math.atan2(ctm.b, ctm.a) * (180 / Math.PI)
-        const rotation = (Math.round(rawRotation * 100) / 100 % 360 + 360) % 360
+    // Fallback if bbox is 0 (e.g. rendered in hidden container)
+    if (lw <= 0 || lh <= 0) {
+      lx = parseFloat(el.getAttribute('x') || '0')
+      ly = parseFloat(el.getAttribute('y') || '0')
+      const tspans = Array.from(el.querySelectorAll('tspan'))
+      const lineCount = Math.max(1, tspans.length)
+      const approxCharWidth = fontSizePx * 0.6
+      lw = Math.max(20, content.length * approxCharWidth / lineCount)
+      lh = fontSizePx * lineCount * 1.3
+      if (textAnchor === 'middle') lx -= lw / 2
+      else if (textAnchor === 'end') lx -= lw
+      ly -= fontSizePx * 0.8
+    }
 
-        bounds = {
-          x: absX,
-          y: absY,
-          w: unrotatedW,
-          h: unrotatedH,
-          rotation,
-        }
+    if (ctm) {
+      const pt = svgRoot.createSVGPoint()
+      pt.x = lx + lw / 2
+      pt.y = ly + lh / 2
+      const center = pt.matrixTransform(ctm)
+
+      const unrotatedW = lw * ctmScale
+      const unrotatedH = lh * ctmScale
+      const absX = center.x - unrotatedW / 2
+      const absY = center.y - unrotatedH / 2
+
+      const rawRotation = Math.atan2(ctm.b, ctm.a) * (180 / Math.PI)
+      const rotation = (Math.round(rawRotation * 100) / 100 % 360 + 360) % 360
+
+      bounds = {
+        x: absX,
+        y: absY,
+        w: unrotatedW,
+        h: unrotatedH,
+        rotation,
+      }
+    } else {
+      bounds = {
+        x: lx,
+        y: ly,
+        w: lw,
+        h: lh,
+        rotation: 0,
       }
     }
-  } catch { /* getBBox failed */ }
+  } catch { /* text bounds calculation fallback */ }
 
   if (!bounds) return
 
