@@ -254,7 +254,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
                 x2={cardBottomCenterX}
                 y2={cardBottomCenterY}
                 stroke={tplColors[`conn-${i}`] || inactiveColor}
-                strokeWidth={tplStrokeWidths[`conn-${i}`] || 4.5}
+                strokeWidth={tplStrokeWidths[`conn-${i}`] || 6}
                 strokeLinecap="round"
               />
             </g>
