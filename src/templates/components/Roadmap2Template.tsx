@@ -140,7 +140,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
       map.set(`phase-${i}`, { x: phaseX, y: phaseY, width: phaseW, height: phaseH })
     })
 
-    const tan30 = Math.tan((30 * Math.PI) / 180) // ~0.577
+    const tan20 = Math.tan((20 * Math.PI) / 180) // ~0.364 (20 degrees)
 
     allYears.forEach((_, ptIdx) => {
       const cx = startX + ptIdx * spacing
@@ -154,7 +154,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
         // Alternating heights: first milestone (msIdx=0) low, second (msIdx=1) high...
         const isTop = msIdx % 2 === 1
         const connH = isTop ? 145 : 85
-        const deltaX = Math.round(connH * tan30) // 30-degree offset to the left
+        const deltaX = Math.round(connH * tan20) // 20-degree offset to the left
         const cardW = 150
         const cardH = 80
         const cardX = cx - deltaX - cardW / 2
