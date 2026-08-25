@@ -324,9 +324,8 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
         const cardBottomCenterY = txtR.y + txtR.height
 
         const isTextSelected = selectedIds.has(`text-${msIdx}`) || selectedIds.has(`card-${msIdx}`)
-        const isTop = msIdx % 2 === 1
         const dotRadius = Math.min(dotR.width, dotR.height) / 2
-        const lineY1 = isTop ? dotCenterY - dotRadius - 25 : dotCenterY - dotRadius
+        const lineY1 = dotCenterY - dotRadius - 25
 
         return (
           <g key={`ms-${msIdx}`}>
