@@ -3,16 +3,44 @@ import type { RoadmapData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
 
 const W = 1000
 const MARGIN_X = 100
-const TOP_Y = 60
+const TOP_Y = 110
 const ARROW_W = 120
 const ARROW_H1 = 80
 const ARROW_H2 = 60
 const ARROW_W2 = 25
 
-interface Rect { x: number; y: number; width: number; height: number }
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+function getDynamicIcon(iconName?: string, size = 20, color = '#ffffff'): ReactElement | null {
+  if (!iconName) return null
+  const clean = iconName.trim()
+
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn({ size, color })
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const lucideRecord = LucideIcons as Record<string, unknown>
+  const LucideFn = (lucideRecord[pascalName] || lucideRecord[clean] || lucideRecord[clean.toUpperCase()]) as
+    | React.ComponentType<{ size?: number; color?: string }>
+    | undefined
+
+  if (LucideFn) {
+    return <LucideFn size={size} color={color} />
+  }
+
+  return null
+}
 
 function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, { cx: number }>, grey: Map<string, Rect>): Rect {
   const s = pos[id]
@@ -30,8 +58,8 @@ function getRect(id: string, pos: Record<string, Rect>, layout: Map<string, { cx
   if (id.startsWith('item-')) {
     const l = layout.get(id)
     if (!l) return s || { x: 0, y: 0, width: 0, height: 0 }
-    if (s) return { ...s, width: s.width || ARROW_W, height: s.height || (ARROW_H1 + ARROW_H2) }
-    return { x: l.cx - ARROW_W / 2, y: TOP_Y, width: ARROW_W, height: ARROW_H1 + ARROW_H2 }
+    if (s) return { ...s, width: s.width || ARROW_W, height: s.height || (ARROW_H1 + ARROW_H2 + 100) }
+    return { x: l.cx - ARROW_W / 2, y: TOP_Y, width: ARROW_W, height: ARROW_H1 + ARROW_H2 + 100 }
   }
   const g = grey.get(id)
   if (g) return s ? { x: s.x, y: s.y, width: s.width || g.width, height: s.height || g.height } : g
@@ -87,55 +115,135 @@ export function Roadmap14Template({ data }: { data: RoadmapData }): ReactElement
   return (
     <g ref={svgRef}>
       <defs>
-        <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+        <marker id="arrowhead-rdm14" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
           <path d="M0,0 L6,3 L0,6 Z" fill="#d0d0d0" />
         </marker>
       </defs>
 
       {milestones.map((ms, i) => {
         const iid = `item-${i}`
+        const aid = `arc-${i}`
         const r = rects.get(iid)!
-        const layout = layoutMap.get(iid)!
-        const color = tplColors[iid] ?? ms.style?.fill ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
+        const ar = rects.get(aid)
+        const color = tplColors[iid] ?? ms.style?.fill ?? ms.color ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
         const customStroke = tplStrokeColors[iid]
         const customStrokeWidth = tplStrokeWidths[iid] ?? 1
         const isSel = selectedIds.has(iid)
-        
+
         const cx = r.x + r.width / 2
-        
-        const nextLayout = i < N - 1 ? layoutMap.get(`item-${i+1}`) : null
+
+        const maxTitleChars = Math.max(8, Math.floor(r.width / 7.5))
+        const maxSubChars = Math.max(10, Math.floor((r.width + 40) / 7))
+
+        const titleLines = wrapTextByWidth(ms.title || `Milestone ${i + 1}`, maxTitleChars)
+        const subLines = ms.subtitle ? wrapTextByWidth(ms.subtitle, maxSubChars) : []
+
+        const iconEl = getDynamicIcon(ms.icon, 20, '#ffffff')
+        const bigVal = ms.value || ms.percent || String(i + 1)
 
         return (
           <g key={i}>
-            {(() => {
-              if (i >= N - 1) return null;
-              const aid = `arc-${i}`
-              const ar = rects.get(aid)!
-              return (
-                <g onMouseDown={e => startDrag(e, aid, ar)} transform={getTransform(aid, ar)} style={{ cursor: 'pointer' }}>
-                  <path 
-                    d={`M ${ar.x} ${ar.y + ar.height} Q ${ar.x + ar.width/2} ${ar.y} ${ar.x + ar.width} ${ar.y + ar.height}`} 
-                    fill="none" stroke={tplColors[aid] || tplStrokeColors[aid] || "#e0e0e0"} strokeWidth={tplStrokeWidths[aid] || 3} markerEnd="url(#arrowhead)" 
-                  />
-                  {selectedIds.has(aid) && renderHandles(ar, aid)}
-                </g>
-              )
-            })()}
-            
-            <g onMouseDown={e => startDrag(e, iid, r)} transform={getTransform(iid, r)} style={{ cursor: 'pointer' }}>
-              <text x={cx} y={r.y - 40} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={18} fontWeight={700} fill="#282c61">
+            {/* Curved Arc between items */}
+            {i < N - 1 && ar && (
+              <g
+                data-element-id={aid}
+                onMouseDown={e => startDrag(e, aid, ar)}
+                transform={getTransform(aid, ar)}
+                style={{ cursor: 'pointer' }}
+              >
+                <path
+                  d={`M ${ar.x} ${ar.y + ar.height} Q ${ar.x + ar.width / 2} ${ar.y} ${ar.x + ar.width} ${ar.y + ar.height}`}
+                  fill="none"
+                  stroke={tplColors[aid] || tplStrokeColors[aid] || '#e0e0e0'}
+                  strokeWidth={tplStrokeWidths[aid] || 3}
+                  markerEnd="url(#arrowhead-rdm14)"
+                />
+                {selectedIds.has(aid) && renderHandles(ar, aid)}
+              </g>
+            )}
+
+            {/* Main Item Group */}
+            <g
+              data-element-id={iid}
+              onMouseDown={e => startDrag(e, iid, r)}
+              transform={getTransform(iid, r)}
+              style={{ cursor: 'pointer' }}
+            >
+              {/* Year Label */}
+              <text
+                x={cx}
+                y={r.y - 35}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={18}
+                fontWeight={700}
+                fill="#282c61"
+              >
                 {years[i]}
               </text>
-              
-              <path d={`M ${r.x} ${r.y} L ${r.x + r.width} ${r.y} L ${r.x + r.width} ${r.y + ARROW_H1} L ${r.x + r.width + ARROW_W2} ${r.y + ARROW_H1} L ${cx} ${r.y + ARROW_H1 + ARROW_H2} L ${r.x - ARROW_W2} ${r.y + ARROW_H1} L ${r.x} ${r.y + ARROW_H1} Z`} fill={color} stroke={customStroke || (isSel ? '#3498db' : 'none')} strokeWidth={isSel ? 3 : customStrokeWidth} />
-              
+
+              {/* Arrow Banner Shape */}
+              <path
+                d={`M ${r.x} ${r.y} L ${r.x + r.width} ${r.y} L ${r.x + r.width} ${r.y + ARROW_H1} L ${r.x + r.width + ARROW_W2} ${r.y + ARROW_H1} L ${cx} ${r.y + ARROW_H1 + ARROW_H2} L ${r.x - ARROW_W2} ${r.y + ARROW_H1} L ${r.x} ${r.y + ARROW_H1} Z`}
+                fill={color}
+                stroke={customStroke || (isSel ? '#3498db' : 'none')}
+                strokeWidth={isSel ? 3 : customStrokeWidth}
+              />
+
+              {/* Circle inside arrow */}
               <circle cx={cx} cy={r.y + ARROW_H1 / 2 + 10} r={25} fill="none" stroke="white" strokeWidth={2} />
-              
-              <text x={cx} y={r.y + r.height + 40} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fill="#555">
-                <tspan x={cx} dy="0">{ms.title}</tspan>
-                {ms.subtitle && <tspan x={cx} dy="18">{ms.subtitle.length > 30 ? ms.subtitle.slice(0, 27) + '...' : ms.subtitle}</tspan>}
+              {iconEl ? (
+                <g transform={`translate(${cx - 10}, ${r.y + ARROW_H1 / 2})`}>
+                  {iconEl}
+                </g>
+              ) : (
+                <text
+                  x={cx}
+                  y={r.y + ARROW_H1 / 2 + 16}
+                  textAnchor="middle"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={16}
+                  fontWeight={700}
+                  fill="#ffffff"
+                >
+                  {bigVal}
+                </text>
+              )}
+
+              {/* Title & Subtitle Below Arrow */}
+              <text
+                x={cx}
+                y={r.y + ARROW_H1 + ARROW_H2 + 25}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={13}
+                fontWeight={700}
+                fill="#222222"
+              >
+                {titleLines.map((line, li) => (
+                  <tspan key={li} x={cx} dy={li === 0 ? 0 : 16}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
-              
+
+              {subLines.length > 0 && (
+                <text
+                  x={cx}
+                  y={r.y + ARROW_H1 + ARROW_H2 + 25 + titleLines.length * 16 + 4}
+                  textAnchor="middle"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={11.5}
+                  fill="#666666"
+                >
+                  {subLines.map((line, li) => (
+                    <tspan key={li} x={cx} dy={li === 0 ? 0 : 14}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              )}
+
               {isSel && renderHandles(r, iid)}
             </g>
           </g>

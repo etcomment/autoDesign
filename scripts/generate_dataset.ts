@@ -2,7 +2,6 @@ import fs from 'fs'
 import path from 'path'
 import { TEMPLATES } from '../src/templates/registry'
 import { parseTemplateDsl } from '../src/templates/dsl/parseTemplate'
-import { TEMPLATE_ICONS } from '../src/templates/shared/icons'
 
 interface DatasetEntry {
   messages: Array<{

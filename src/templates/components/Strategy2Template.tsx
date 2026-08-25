@@ -2,9 +2,24 @@ import { useRef, type ReactElement } from 'react'
 import type { Strategy2Data } from '../types'
 import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
+
+function getDynamicIcon(iconName?: string) {
+  if (!iconName) return null
+  const clean = iconName.trim()
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const LucideFn = (LucideIcons as Record<string, any>)[pascalName] || (LucideIcons as Record<string, any>)[clean] || (LucideIcons as Record<string, any>)[clean.toUpperCase()]
+  if (LucideFn) {
+    return (props: { size?: number; color?: string }) => <LucideFn size={props.size ?? 16} color={props.color ?? 'white'} />
+  }
+  return null
+}
 
 export function Strategy2Template({ data }: { data: Strategy2Data }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -19,9 +34,9 @@ export function Strategy2Template({ data }: { data: Strategy2Data }): ReactEleme
   const W = 940
   const minW = 260
   const maxW = 620
-  const blockH = 48
-  const gap = 6
-  const topBlockY = 100
+  const blockH = 54
+  const gap = 8
+  const topBlockY = 80
 
   const getBlockW = (index: number) =>
     blocks.length > 1
@@ -50,11 +65,12 @@ export function Strategy2Template({ data }: { data: Strategy2Data }): ReactEleme
         const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
         const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2 : 0)
         const bbox = getBbox(elementId, index)
-        const Icon = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
-        const badge = block.value ?? block.percent
-        const titleX = bbox.x + bbox.width / 2 + (Icon ? 10 : 0)
+        const IconFn = getDynamicIcon(block.icon)
+        const badge = [block.value, block.percent].filter(Boolean).join(' · ') || undefined
+        const titleX = bbox.x + bbox.width / 2 + (IconFn ? 10 : 0)
         const maxChars = Math.max(10, Math.floor(bbox.width / 6.5))
-        const titleLines = wrapTextByWidth(`${block.number} ${block.title}`, maxChars)
+        const titleLabel = [block.number, block.title].filter(Boolean).join(' ')
+        const titleLines = wrapTextByWidth(titleLabel, maxChars)
         const subtitleLines = block.subtitle ? wrapTextByWidth(block.subtitle, maxChars) : []
 
         return (
@@ -66,14 +82,14 @@ export function Strategy2Template({ data }: { data: Strategy2Data }): ReactEleme
               style={{ cursor: 'pointer' }}
             >
               <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill={color} stroke={strokeColor} strokeWidth={strokeWidth} />
-              {Icon && (
-                <g transform={`translate(${bbox.x + 14}, ${bbox.y + bbox.height / 2 - 7})`}>
-                  <Icon size={14} color="white" />
+              {IconFn && (
+                <g transform={`translate(${bbox.x + 14}, ${bbox.y + bbox.height / 2 - 8})`}>
+                  <IconFn size={16} color="white" />
                 </g>
               )}
               <text
                 x={titleX}
-                y={bbox.y + 18}
+                y={bbox.y + (subtitleLines.length > 0 ? 18 : bbox.height / 2 + 4)}
                 textAnchor="middle"
                 fontFamily="Arial, sans-serif"
                 fontSize={12}
@@ -86,14 +102,14 @@ export function Strategy2Template({ data }: { data: Strategy2Data }): ReactEleme
                   </tspan>
                 ))}
               </text>
-              {block.subtitle && (
+              {subtitleLines.length > 0 && (
                 <text
                   x={bbox.x + bbox.width / 2}
                   y={bbox.y + 34}
                   textAnchor="middle"
                   fontFamily="Arial, sans-serif"
                   fontSize={10}
-                  fill="rgba(255,255,255,0.8)"
+                  fill="rgba(255,255,255,0.85)"
                 >
                   {subtitleLines.map((line, li) => (
                     <tspan key={li} x={bbox.x + bbox.width / 2} dy={li === 0 ? 0 : 12}>
@@ -103,8 +119,8 @@ export function Strategy2Template({ data }: { data: Strategy2Data }): ReactEleme
                 </text>
               )}
               {badge && (
-                <g transform={`translate(${bbox.x + bbox.width - 26}, ${bbox.y + 12})`}>
-                  <rect x={-14} y={-9} width={28} height={18} rx={9} fill="white" opacity={0.85} />
+                <g transform={`translate(${bbox.x + bbox.width - 32}, ${bbox.y + 12})`}>
+                  <rect x={-18} y={-9} width={36} height={18} rx={9} fill="white" opacity={0.85} />
                   <text x={0} y={3} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fontWeight={700} fill={color}>
                     {badge}
                   </text>

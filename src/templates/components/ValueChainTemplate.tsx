@@ -1,160 +1,211 @@
 import { useRef, type ReactElement } from 'react'
 import type { ValueChainData } from '../types'
-import { Arrow } from '../shared/primitives'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c']
-const SUPPORT_PALETTE = ['#8eacbb', '#9db5c4', '#acbdcb', '#bbc6d2', '#cad0d9']
+const SUPPORT_COLORS = ['#3b82f6', '#2563eb', '#1d4ed8', '#1e40af']
+const PRIMARY_COLORS = [...MIGSO_PALETTE, '#0284c7', '#0369a1', '#075985']
 
 export function ValueChainTemplate({ data }: { data: ValueChainData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
-  const pos = useTemplateStore(s => s.templateElementPositions) // Retrieve positions
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  // Helper function to get current element position or fallback to initial position
-  const getRect = (id: string, fallback: {x: number, y: number, width: number, height: number}) => pos[id] || fallback;
+  const { support = [], primary = [] } = data
+  const W = 900
+  const startX = 40
+  const mainW = 700
+  const marginW = 100
+  const startY = 40
 
-  const { title, primary, support } = data
-  const W = 1000
-  const startX = 60
-  const primaryW = (W - startX * 2) / Math.max(primary.length, 1)
-  const primaryH = 80
-  const primaryY = 120
-  const chevronArrow = 14
+  const supportCount = Math.max(1, support.length)
+  const primaryCount = Math.max(1, primary.length)
 
-  const supportW = (W - startX * 2) / Math.max(support.length, 1)
-  const supportH = 50
-  const supportY = 320
+  const supportH = 42
+  const supportGap = 6
+  const totalSupportH = supportCount * supportH + (supportCount - 1) * supportGap
+
+  const primaryTopY = startY + totalSupportH + 16
+  const primaryH = 180
+  const primaryColW = (mainW - (primaryCount - 1) * 8) / primaryCount
+  const totalH = totalSupportH + 16 + primaryH
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
-          {title}
-        </text>
-      )}
+      {/* Support Activities (Horizontal Rows) */}
+      {support.map((act, index) => {
+        const elementId = `support-${index}`
+        const y = startY + index * (supportH + supportGap)
+        const defaultRect = { x: startX, y, width: mainW, height: supportH }
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
 
-      <text x={startX} y={primaryY - 10} fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="#888">
-        PRIMARY ACTIVITIES
-      </text>
-
-      {primary.map((act, i) => {
-        const elementId = `primary-${i}`
-        const color = tplColors[elementId] ?? PALETTE[i % PALETTE.length]!
+        const defaultColor = act.color || SUPPORT_COLORS[index % SUPPORT_COLORS.length]!
+        const color = tplColors[elementId] ?? defaultColor
+        const strokeColor = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : '#bfdbfe')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1)
         const isSelected = selectedIds.has(elementId)
-        const bx = startX + i * primaryW
-        const aw = primaryW - 4
-        const ah = primaryH
-        // This visualRect is the initial position and size for the draggable element
-        const visualRect = { x: bx, y: primaryY, width: primaryW, height: primaryH }
+        const IconComponent = act.icon ? TEMPLATE_ICONS[act.icon] : undefined
+
+        const maxChars = Math.max(10, Math.floor((bbox.width - 60) / 8))
+        const titleLines = wrapTextByWidth(act.title, maxChars)
 
         return (
-          <g key={`p-${i}`}>
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <path
-                d={`M ${bx + 2} ${primaryY} L ${bx + aw - chevronArrow} ${primaryY} L ${bx + aw} ${primaryY + ah / 2} L ${bx + aw - chevronArrow} ${primaryY + ah} L ${bx + 2} ${primaryY + ah} L ${bx + chevronArrow + 2} ${primaryY + ah / 2} Z`}
-                fill={color}
-                opacity={isSelected ? 1 : 0.85}
-                stroke={isSelected ? '#4a90d9' : undefined}
-                strokeWidth={isSelected ? 2.5 : undefined}
-              />
-              <text x={bx + primaryW / 2} y={primaryY + ah / 2 - 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
-                {act.title}
-              </text>
-              {act.subtitle && (
-                <text x={bx + primaryW / 2} y={primaryY + ah / 2 + 14} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="rgba(255,255,255,0.8)">
-                  {act.subtitle.length > 28 ? act.subtitle.slice(0, 26) + '..' : act.subtitle}
-                </text>
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill="#eff6ff" stroke={strokeColor} strokeWidth={strokeWidth} />
+              <rect x={bbox.x} y={bbox.y} width={6} height={bbox.height} rx={3} fill={color} />
+
+              {IconComponent && (
+                <g transform={`translate(${bbox.x + 16}, ${bbox.y + bbox.height / 2 - 8})`}>
+                  <IconComponent size={16} color={color} />
+                </g>
               )}
-              {isSelected && renderHandles(visualRect, elementId)}
+
+              <text x={bbox.x + (IconComponent ? 40 : 20)} y={bbox.y + bbox.height / 2 + 5} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={600} fill="#1e40af">
+                {titleLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={bbox.x + (IconComponent ? 40 : 20)} dy={lineIndex === 0 ? 0 : 13}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
           </g>
         )
       })}
 
-      <text x={startX} y={supportY - 10} fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="#888">
-        SUPPORT ACTIVITIES
-      </text>
+      {/* Primary Activities (Vertical Columns) */}
+      {primary.map((act, index) => {
+        const elementId = `primary-${index}`
+        const x = startX + index * (primaryColW + 8)
+        const defaultRect = { x, y: primaryTopY, width: primaryColW, height: primaryH }
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
 
-      {support.map((act, i) => {
-        const elementId = `support-${i}`
-        const color = tplColors[elementId] ?? SUPPORT_PALETTE[i % SUPPORT_PALETTE.length]!
+        const defaultColor = act.color || PRIMARY_COLORS[index % PRIMARY_COLORS.length]!
+        const color = tplColors[elementId] ?? defaultColor
+        const strokeColor = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : '#e2e8f0')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1.5)
         const isSelected = selectedIds.has(elementId)
-        const bx = startX + i * supportW
-        const aw = supportW - 4
-        // This visualRect is the initial position and size for the draggable element
-        const visualRect = { x: bx + 2, y: supportY, width: aw, height: supportH }
+        const IconComponent = act.icon ? TEMPLATE_ICONS[act.icon] : undefined
+
+        const centerCx = bbox.x + bbox.width / 2
+        const maxChars = Math.max(6, Math.floor((bbox.width - 20) / 8))
+        const nameLines = wrapTextByWidth(act.title, maxChars)
+        const descLines = act.subtitle ? wrapTextByWidth(act.subtitle, maxChars) : []
 
         return (
-          <g key={`s-${i}`}>
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={bx + 2} y={supportY} width={aw} height={supportH} rx={6} fill={color} opacity={isSelected ? 0.9 : 0.75} stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 1} strokeDasharray={isSelected ? '4 2' : undefined} />
-              <text x={bx + supportW / 2} y={supportY + supportH / 2 - 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
-                {act.title}
-              </text>
-              {act.subtitle && (
-                <text x={bx + supportW / 2} y={supportY + supportH / 2 + 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={8} fill="rgba(255,255,255,0.75)">
-                  {act.subtitle.length > 30 ? act.subtitle.slice(0, 28) + '..' : act.subtitle}
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill="white" stroke={strokeColor} strokeWidth={strokeWidth} />
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={6} rx={3} fill={color} />
+
+              <circle cx={centerCx} cy={bbox.y + 32} r={18} fill={color} opacity={0.15} />
+              {IconComponent ? (
+                <g transform={`translate(${centerCx - 9}, ${bbox.y + 23})`}>
+                  <IconComponent size={18} color={color} />
+                </g>
+              ) : (
+                <text x={centerCx} y={bbox.y + 37} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill={color}>
+                  {index + 1}
                 </text>
               )}
-              {isSelected && renderHandles(visualRect, elementId)}
+
+              <text x={centerCx} y={bbox.y + 74} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#1a202c">
+                {nameLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={centerCx} dy={lineIndex === 0 ? 0 : 13}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+
+              {act.subtitle && (
+                <text x={centerCx} y={bbox.y + 74 + nameLines.length * 13 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#64748b">
+                  {descLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={centerCx} dy={lineIndex === 0 ? 0 : 11}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              )}
+
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
           </g>
         )
       })}
 
-      {/* Arrows aligned with primary activities, connecting the bottom of the support lane to the top of the primary activity */}
-      {primary.map((_, i) => {
-        const primaryElementId = `primary-${i}`
-        // Initial visual rect for primary activity (used as fallback)
-        const primaryInitialRect = { x: startX + i * primaryW, y: primaryY, width: primaryW, height: primaryH }
-        const currentPrimaryRect = getRect(primaryElementId, primaryInitialRect)
+      {/* Margin Right Wedge */}
+      {(() => {
+        const marginId = 'margin-wedge'
+        const mx = startX + mainW + 12
+        const defaultRect = { x: mx, y: startY, width: marginW, height: totalH }
+        const customPos = positions[marginId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+        const isSelected = selectedIds.has(marginId)
+        const wedgeColor = tplColors[marginId] || '#f59e0b'
+        const strokeColor = tplStrokeColors[marginId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[marginId] ?? (isSelected ? 2.5 : 0)
 
-        const fromX = currentPrimaryRect.x + currentPrimaryRect.width / 2
-        const fromY = supportY + supportH // Bottom of the fixed support lane
-        const toX = currentPrimaryRect.x + currentPrimaryRect.width / 2
-        const toY = currentPrimaryRect.y // Top of the primary activity element
+        const topX = bbox.x
+        const topY = bbox.y
+        const tipX = bbox.x + bbox.width
+        const tipY = bbox.y + bbox.height / 2
+        const botX = bbox.x
+        const botY = bbox.y + bbox.height
 
-        return (
-          <g key={`v-${i}`}>
-            <Arrow
-              from={{ x: fromX, y: fromY }}
-              to={{ x: toX, y: toY }}
-              color="#888"
-              dashed
-            />
-          </g>
-        )
-      })}
-
-      {/* Arrows aligned with support activities, connecting the bottom of the support activity to the top of the primary lane */}
-      {support.map((_, i) => {
-        const supportElementId = `support-${i}`
-        // Initial visual rect for support activity (used as fallback)
-        // Note: x is bx + 2, width is aw (supportW - 4) as per the rect definition
-        const supportInitialRect = { x: startX + i * supportW + 2, y: supportY, width: supportW - 4, height: supportH }
-        const currentSupportRect = getRect(supportElementId, supportInitialRect)
-
-        const fromX = currentSupportRect.x + currentSupportRect.width / 2
-        const fromY = currentSupportRect.y + currentSupportRect.height // Bottom of the support activity element
-        const toX = currentSupportRect.x + currentSupportRect.width / 2
-        const toY = primaryY // Top of the fixed primary lane
+        const pathD = `M ${topX} ${topY} L ${tipX} ${tipY} L ${botX} ${botY} Z`
 
         return (
-          <g key={`v2-${i}`}>
-            <Arrow
-              from={{ x: fromX, y: fromY }}
-              to={{ x: toX, y: toY }}
-              color="#888"
-              dashed
-            />
+          <g
+            key={marginId}
+            data-element-id={marginId}
+            onMouseDown={e => startDrag(e, marginId, bbox)}
+            transform={getTransform(marginId, bbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <path d={pathD} fill={wedgeColor} opacity={0.9} stroke={strokeColor} strokeWidth={strokeWidth} />
+            <text x={bbox.x + bbox.width * 0.35} y={bbox.y + bbox.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={800} fill="white" transform={`rotate(90, ${bbox.x + bbox.width * 0.35}, ${bbox.y + bbox.height / 2 + 5})`}>
+              MARGIN
+            </text>
+            {isSelected && renderHandles(bbox, marginId)}
           </g>
         )
-      })}
+      })()}
     </g>
   )
 }

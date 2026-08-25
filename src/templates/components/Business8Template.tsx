@@ -1,124 +1,102 @@
-import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { BusinessData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
-import { Newspaper, Printer, Award, Home, Crown, Wrench, FileText } from 'lucide-react'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
 
-// Colors for the 7 slices matching page 34:
-// 0 (top): Dark Navy #1F2456
-// 1 (top-right/middle-right): Bright Blue #2F66CE
-// 2 (bottom-right): Coral Red #FF5232
-// 3 (bottom-center): Yellow / Amber #FFB800
-// 4 (bottom-left): Teal / Greenish #4ECB99
-// 5 (top-left): Crimson / Magenta Red #9E0B36
-// 6 (center slice): Dark Indigo/Navy #28285C (or center piece if pie)
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+function renderDynamicIcon(iconName?: string, size = 20, color = '#FFFFFF'): ReactElement | null {
+  if (!iconName) return null
+  const clean = iconName.trim()
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn({ size, color })
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const lucideRecord = LucideIcons as Record<string, unknown>
+  const LucideFn = (lucideRecord[pascalName] || lucideRecord[clean] || lucideRecord[clean.toUpperCase()]) as
+    | React.ComponentType<{ size?: number; color?: string }>
+    | undefined
+
+  if (LucideFn) {
+    return <LucideFn size={size} color={color} />
+  }
+  return null
+}
+
 const SLICE_COLORS = [
-  '#1F2456', // 0: Top Navy
-  '#2F66CE', // 1: Blue
-  '#FF5232', // 2: Coral
-  '#FFB800', // 3: Yellow
-  '#4ECB99', // 4: Mint/Teal
-  '#9E0B36', // 5: Crimson Red
-  '#1F2456'  // Backup/extra
+  '#1F2456',
+  '#2F66CE',
+  '#FF5232',
+  '#FFB800',
+  '#4ECB99',
+  '#9E0B36',
+  '#1F2456',
 ]
 
-const ICONS = [Newspaper, Printer, Award, Home, Crown, Wrench, FileText]
+const DEFAULT_ICONS = ['newspaper', 'printer', 'award', 'home', 'crown', 'wrench', 'file-text']
 
 export function Business8Template({ data }: { data: BusinessData }): ReactElement {
-  const W = 1000
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
-  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const tplColors = useTemplateStore(s => s.templateElementColors)
-  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
-  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
-  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
+  const selectedIds = useTemplateStore(state => state.selectedTemplateElementIds)
+  const templateColors = useTemplateStore(state => state.templateElementColors)
+  const templateStrokeColors = useTemplateStore(state => state.templateStrokeColors)
+  const templateStrokeWidths = useTemplateStore(state => state.templateStrokeWidths)
+  const positions = useTemplateStore(state => state.templateElementPositions)
 
-  const { title, nodes } = data
+  const nodes = data.nodes ?? []
+  const displayNodes =
+    nodes.length > 0
+      ? nodes
+      : Array(6).fill({
+          title: 'Your title',
+          subtitle: 'Content and description to be added here as required',
+        })
 
-  // Center of pie chart
   const cx = 500
-  const cy = 300
-  const radius = 150
+  const cy = 280
+  const radius = 140
 
-  // 7 Items configuration around the pie chart matching page 34 layout
-  // Page 34 layout has 7 slices formed by curved/wavy dividing lines, and 7 surrounding icons with text.
-  // 1: Top (Newspaper icon) -> (x: 535, y: 140)
-  // 2: Top Left (Printer icon) -> (x: 270, y: 245)
-  // 3: Bottom Left (Award icon) -> (x: 300, y: 430)
-  // 4: Bottom Center (Home icon) -> (x: 545, y: 560)
-  // 5: Bottom Right (Crown icon) -> (x: 618, y: 500)
-  // 6: Middle Right (Wrench icon) -> (x: 706, y: 290)
-  // [Note: 7 items total - 7th can be placed or styled seamlessly]
-
-  const itemsConfig = [
-    // 0: Top
-    {
-      sliceAngleStart: -85, sliceAngleEnd: -25,
-      iconPos: { x: 535, y: 140 },
-      textPos: { x: 585, y: 125, align: 'start' as const }
-    },
-    // 1: Middle Right
-    {
-      sliceAngleStart: -25, sliceAngleEnd: 45,
-      iconPos: { x: 706, y: 290 },
-      textPos: { x: 755, y: 275, align: 'start' as const }
-    },
-    // 2: Bottom Right
-    {
-      sliceAngleStart: 45, sliceAngleEnd: 95,
-      iconPos: { x: 618, y: 500 },
-      textPos: { x: 665, y: 485, align: 'start' as const }
-    },
-    // 3: Bottom Center
-    {
-      sliceAngleStart: 95, sliceAngleEnd: 155,
-      iconPos: { x: 545, y: 560 },
-      textPos: { x: 495, y: 535, align: 'end' as const }
-    },
-    // 4: Bottom Left
-    {
-      sliceAngleStart: 155, sliceAngleEnd: 205,
-      iconPos: { x: 300, y: 430 },
-      textPos: { x: 250, y: 410, align: 'end' as const }
-    },
-    // 5: Top Left
-    {
-      sliceAngleStart: 205, sliceAngleEnd: 275,
-      iconPos: { x: 271, y: 245 },
-      textPos: { x: 225, y: 230, align: 'end' as const }
-    },
-    // 6: Extra / Center
-    {
-      sliceAngleStart: 275, sliceAngleEnd: 275,
-      iconPos: { x: 670, y: 170 },
-      textPos: { x: 720, y: 155, align: 'start' as const }
+  const getElementRect = (elementId: string, defaultRect: Rect): Rect => {
+    const stored = positions[elementId]
+    return {
+      x: stored?.x ?? defaultRect.x,
+      y: stored?.y ?? defaultRect.y,
+      width: stored?.width ?? defaultRect.width,
+      height: stored?.height ?? defaultRect.height,
     }
-  ]
+  }
 
-  const displayNodes = nodes.length > 0 ? nodes : Array(7).fill({ title: 'Your title', subtitle: 'Content and description to be added here as required' });
   const getConfig = (i: number, total: number) => {
-    if (total === 7 && i < itemsConfig.length) return itemsConfig[i]!;
-    const angleStep = 360 / total;
-    const startDeg = -90 + i * angleStep;
-    const endDeg = -90 + (i + 1) * angleStep;
-    const midRad = ((startDeg + endDeg) / 2 * Math.PI) / 180;
-    
-    const iconR = 210;
-    const iconX = cx + iconR * Math.cos(midRad);
-    const iconY = cy + iconR * Math.sin(midRad);
-    
+    const angleStep = 360 / total
+    const startDeg = -90 + i * angleStep
+    const endDeg = -90 + (i + 1) * angleStep
+    const midRad = (((startDeg + endDeg) / 2) * Math.PI) / 180
+
+    const iconR = 210
+    const iconX = cx + iconR * Math.cos(midRad)
+    const iconY = cy + iconR * Math.sin(midRad)
+
     return {
       sliceAngleStart: startDeg,
       sliceAngleEnd: endDeg,
       iconPos: { x: iconX, y: iconY },
-      textPos: { x: iconX + (Math.cos(midRad) > 0 ? 50 : -50), y: iconY - 15, align: Math.cos(midRad) > 0 ? 'start' : 'end' }
-    };
-  };
+      textPos: {
+        x: iconX + (Math.cos(midRad) > 0 ? 45 : -45),
+        y: iconY - 15,
+        align: Math.cos(midRad) > 0 ? ('start' as const) : ('end' as const),
+      },
+    }
+  }
 
-  // Helper function to create standard pie slice SVG path
   const getSlicePath = (startDeg: number, endDeg: number, r: number) => {
     const startRad = (startDeg * Math.PI) / 180
     const endRad = (endDeg * Math.PI) / 180
@@ -130,148 +108,182 @@ export function Business8Template({ data }: { data: BusinessData }): ReactElemen
     return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`
   }
 
+  const centerDefaultRect: Rect = { x: cx - 45, y: cy - 45, width: 90, height: 90 }
+  const centerVisualRect = getElementRect('center-badge', centerDefaultRect)
+  const centerLabel = data.centerLabel ?? 'CORE'
+
   return (
     <g ref={svgRef}>
-      {/* Page Title & Subtitle */}
-      {title && (
-        <text
-          x={W / 2}
-          y={48}
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={22}
-          fontWeight={700}
-          fill={TITLE_COLOR}
-        >
-          {title}
-        </text>
-      )}
-
-      {/* Central Pie Graphic (7 slices) */}
       <g>
         {displayNodes.map((_, i) => {
-          const config = getConfig(i, displayNodes.length);
-          // removed itemsConfig[i]
-          if (config.sliceAngleStart === config.sliceAngleEnd) return null
-          const color = tplColors[`slice-${i}`] ?? SLICE_COLORS[i % SLICE_COLORS.length]!
+          const config = getConfig(i, displayNodes.length)
+          const sliceId = `slice-${i}`
+          const isSliceSelected = selectedIds.has(sliceId)
+          const color = templateColors[sliceId] ?? SLICE_COLORS[i % SLICE_COLORS.length]!
+          const stroke = templateStrokeColors[sliceId] ?? (isSliceSelected ? '#4a90d9' : '#ffffff')
+          const strokeWidth = templateStrokeWidths[sliceId] ?? (isSliceSelected ? 3 : 2)
+
           return (
             <path
-              key={`slice-${i}`}
+              key={sliceId}
               d={getSlicePath(config.sliceAngleStart, config.sliceAngleEnd, radius)}
               fill={color}
-              stroke={tplStrokeColors[`slice-${i}`] || '#ffffff'}
-              strokeWidth={tplStrokeWidths[`slice-${i}`] !== undefined ? tplStrokeWidths[`slice-${i}`] : 2}
+              stroke={stroke}
+              strokeWidth={strokeWidth}
             />
           )
         })}
 
-        {/* Dynamic organic curve lines running through pie chart (as seen in Page 34 template) */}
-        <path d={`M ${cx - 120} ${cy - 80} Q ${cx - 20} ${cy - 10} ${cx + 145} ${cy - 40}`} fill="none" stroke="#ffffff" strokeWidth={3} opacity={0.7} />
-        <path d={`M ${cx - 145} ${cy + 30} Q ${cx} ${cy + 10} ${cx + 90} ${cy + 120}`} fill="none" stroke="#ffffff" strokeWidth={3} opacity={0.7} />
+        <path
+          d={`M ${cx - 110} ${cy - 75} Q ${cx - 20} ${cy - 10} ${cx + 130} ${cy - 35}`}
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth={3}
+          opacity={0.7}
+        />
+        <path
+          d={`M ${cx - 130} ${cy + 25} Q ${cx} ${cy + 10} ${cx + 80} ${cy + 110}`}
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth={3}
+          opacity={0.7}
+        />
       </g>
 
-      {/* Connecting lines & nodes */}
+      <g
+        data-element-id="center-badge"
+        onMouseDown={event => startDrag(event, 'center-badge', centerVisualRect)}
+        transform={getTransform('center-badge', centerVisualRect)}
+        style={{ cursor: 'pointer' }}
+      >
+        <circle
+          cx={centerVisualRect.x + centerVisualRect.width / 2}
+          cy={centerVisualRect.y + centerVisualRect.height / 2}
+          r={centerVisualRect.width / 2}
+          fill={templateColors['center-badge'] ?? '#FFFFFF'}
+          stroke={templateStrokeColors['center-badge'] ?? '#28285C'}
+          strokeWidth={templateStrokeWidths['center-badge'] ?? 3}
+        />
+        <text
+          x={centerVisualRect.x + centerVisualRect.width / 2}
+          y={centerVisualRect.y + centerVisualRect.height / 2 + 5}
+          textAnchor="middle"
+          fontFamily="Arial, sans-serif"
+          fontSize={13}
+          fontWeight={700}
+          fill="#28285C"
+        >
+          {centerLabel}
+        </text>
+        {selectedIds.has('center-badge') && renderHandles(centerVisualRect, 'center-badge')}
+      </g>
+
       {displayNodes.map((node, i) => {
-        const config = getConfig(i, displayNodes.length);
-        // removed itemsConfig[i]
+        const itemObject = typeof node === 'object' && node !== null ? node : {}
+        const config = getConfig(i, displayNodes.length)
         const elementId = `node-${i}`
-        const color = tplColors[elementId] ?? SLICE_COLORS[i % SLICE_COLORS.length]!
+        const color = templateColors[elementId] ?? SLICE_COLORS[i % SLICE_COLORS.length]!
         const isSelected = selectedIds.has(elementId)
-        const IconComponent = ICONS[i % ICONS.length]!
+
+        const defaultIcon = DEFAULT_ICONS[i % DEFAULT_ICONS.length]!
+        const iconName = 'icon' in itemObject && typeof itemObject.icon === 'string' ? itemObject.icon : defaultIcon
 
         const { iconPos, textPos } = config
         const isRight = textPos.align === 'start'
 
-        // Calculate connecting curve from pie edge to icon circle center
-        const midAngle = ((config.sliceAngleStart + config.sliceAngleEnd) / 2 * Math.PI) / 180
-        const pieEdgeX = cx + (radius - 20) * Math.cos(midAngle)
-        const pieEdgeY = cy + (radius - 20) * Math.sin(midAngle)
-
-        const linePath = `M ${pieEdgeX} ${pieEdgeY} Q ${(pieEdgeX + iconPos.x) / 2} ${(pieEdgeY + iconPos.y) / 2} ${iconPos.x} ${iconPos.y}`
-
-        const defaultRectW = 240
+        const defaultRectW = 230
         const defaultRectH = 65
         const defaultRectX = isRight ? textPos.x - 10 : textPos.x - defaultRectW + 10
         const defaultRectY = textPos.y - 20
-        
-        const customPos = templateElementPositions[elementId]
-        const visualRect = {
-          x: customPos ? customPos.x : defaultRectX,
-          y: customPos ? customPos.y : defaultRectY,
-          width: customPos?.width || defaultRectW,
-          height: customPos?.height || defaultRectH,
-        }
-        
+        const defaultRect: Rect = { x: defaultRectX, y: defaultRectY, width: defaultRectW, height: defaultRectH }
+
+        const visualRect = getElementRect(elementId, defaultRect)
         const dx = visualRect.x - defaultRectX
         const dy = visualRect.y - defaultRectY
 
-        const scaleX = visualRect.width / defaultRectW;
-        const scaleY = visualRect.height / defaultRectH;
+        const currentIconX = iconPos.x + dx
+        const currentIconY = iconPos.y + dy
 
-        const titleVal = node.title || (node as any).percent || (node as any).value || 'Your title'
-        const textVal = node.subtitle || (node as any).text || (node as any).description || 'Content and description to be added here as required'
+        const midAngle = (((config.sliceAngleStart + config.sliceAngleEnd) / 2) * Math.PI) / 180
+        const pieEdgeX = cx + (radius - 20) * Math.cos(midAngle)
+        const pieEdgeY = cy + (radius - 20) * Math.sin(midAngle)
+        const linePath = `M ${pieEdgeX} ${pieEdgeY} Q ${(pieEdgeX + currentIconX) / 2} ${(pieEdgeY + currentIconY) / 2} ${currentIconX} ${currentIconY}`
 
-        const titleLines = titleVal.split('\n').filter(Boolean)
-        const dynamicMaxChars = Math.max(15, Math.floor(visualRect.width / 7))
+        const titleVal =
+          'title' in itemObject && typeof itemObject.title === 'string' && itemObject.title
+            ? itemObject.title
+            : 'percent' in itemObject && typeof itemObject.percent === 'string'
+              ? itemObject.percent
+              : 'value' in itemObject && typeof itemObject.value === 'string'
+                ? itemObject.value
+                : 'Your title'
+
+        const textVal =
+          'subtitle' in itemObject && typeof itemObject.subtitle === 'string' && itemObject.subtitle
+            ? itemObject.subtitle
+            : 'text' in itemObject && typeof itemObject.text === 'string' && itemObject.text
+              ? itemObject.text
+              : 'Content and description to be added here as required'
+
+        const dynamicMaxChars = Math.max(12, Math.floor(visualRect.width / 7))
+        const titleLines = wrapTextByWidth(titleVal, dynamicMaxChars)
         const textLines = wrapTextByWidth(textVal, dynamicMaxChars)
 
+        const iconElement = renderDynamicIcon(iconName, 20, '#FFFFFF')
+
         return (
-          <g key={i}>
-            {/* Connecting silver stroke line */}
+          <g key={elementId}>
             <path d={linePath} fill="none" stroke="#D1D5DB" strokeWidth={3.5} strokeLinecap="round" />
 
-            {/* Circular Icon badge */}
-            <circle cx={iconPos.x + dx} cy={iconPos.y + dy} r={30} fill={color} />
-            <foreignObject x={iconPos.x + dx - 16} y={iconPos.y + dy - 16} width={32} height={32} style={{ pointerEvents: 'none' }}>
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF' }}>
-                <IconComponent size={22} strokeWidth={1.8} />
-              </div>
-            </foreignObject>
+            <circle cx={currentIconX} cy={currentIconY} r={26} fill={color} />
+            <g transform={`translate(${currentIconX - 10}, ${currentIconY - 10})`}>
+              {iconElement ?? <circle cx="10" cy="10" r="5" fill="#FFFFFF" />}
+            </g>
 
-            {/* Interactive Text Box & Selection */}
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRectX}, ${-defaultRectY})`}>
-                <rect
-                  x={defaultRectX}
-                  y={defaultRectY}
-                  width={defaultRectW}
-                  height={defaultRectH}
-                  fill={tplColors[`bg-${elementId}`] ?? 'transparent'}
-                  stroke={tplStrokeColors[elementId] || (isSelected ? '#2F66CE' : 'transparent')}
-                  strokeWidth={tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : 1.5}
-                  strokeDasharray={isSelected ? '4 2' : undefined}
-                  rx={4}
-                />
-              </g>
+            <g
+              data-element-id={elementId}
+              onMouseDown={event => startDrag(event, elementId, visualRect)}
+              transform={getTransform(elementId, visualRect)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect
+                x={visualRect.x}
+                y={visualRect.y}
+                width={visualRect.width}
+                height={visualRect.height}
+                fill={templateColors[`bg-${elementId}`] ?? 'transparent'}
+                stroke={templateStrokeColors[elementId] ?? (isSelected ? '#2F66CE' : 'transparent')}
+                strokeWidth={templateStrokeWidths[elementId] ?? 1.5}
+                strokeDasharray={isSelected ? '4 2' : undefined}
+                rx={4}
+              />
 
-              {/* Title */}
               <text
                 x={textPos.x + dx}
                 y={textPos.y + dy}
-                textAnchor={textPos.align as 'start' | 'middle' | 'end'}
-                fontFamily="sans-serif"
-                fontSize={17}
-                fontWeight="bold"
+                textAnchor={textPos.align}
+                fontFamily="Arial, sans-serif"
+                fontSize={16}
+                fontWeight={700}
                 fill="#252B42"
               >
-                {titleLines.map((line: string, lIdx: number) => (
-                  <tspan key={lIdx} x={textPos.x + dx} dy={lIdx === 0 ? 0 : 20}>
+                {titleLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={textPos.x + dx} dy={lineIndex === 0 ? 0 : 18}>
                     {line}
                   </tspan>
                 ))}
               </text>
 
-              {/* Description body lines */}
               <text
                 x={textPos.x + dx}
-                y={textPos.y + dy + 20}
-                textAnchor={textPos.align as 'start' | 'middle' | 'end'}
-                fontFamily="sans-serif"
+                y={textPos.y + dy + titleLines.length * 18 + 4}
+                textAnchor={textPos.align}
+                fontFamily="Arial, sans-serif"
                 fontSize={11.5}
                 fill="#555555"
               >
-                {textLines.map((line: string, lIdx: number) => (
-                  <tspan key={lIdx} x={textPos.x + dx} dy={lIdx === 0 ? 0 : 15}>
+                {textLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={textPos.x + dx} dy={lineIndex === 0 ? 0 : 14}>
                     {line}
                   </tspan>
                 ))}
@@ -282,8 +294,6 @@ export function Business8Template({ data }: { data: BusinessData }): ReactElemen
           </g>
         )
       })}
-
-
     </g>
   )
 }

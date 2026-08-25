@@ -5,6 +5,7 @@ import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
 import { TEMPLATE_ICONS } from '../shared/icons'
 import * as LucideIcons from 'lucide-react'
+import { wrapTextByWidth } from '../shared/primitives'
 
 function getDynamicIcon(iconName?: string) {
   if (!iconName) return null
@@ -48,70 +49,30 @@ const PIECE_2_PATH =
 const PIECE_3_PATH =
   "m 121.88326,162.41545 c 0.0888,-10.07732 0.15476,-19.00708 0.14667,-19.84392 -0.0162,-1.67819 -0.81632,-3.79429 -3.15811,-8.35269 -1.39802,-2.7213 -4.33269,-7.33691 -5.91517,-9.30329 l -0.95432,-1.18583 1.81835,-0.30638 c 2.33291,-0.39309 4.14806,-1.39196 5.93629,-3.26673 2.55593,-2.67963 3.85462,-6.12569 3.86204,-10.24793 0.005,-2.76084 -0.36192,-4.48732 -1.46534,-6.89528 -1.15872,-2.52866 -3.32383,-4.811527 -5.6489,-5.956156 -1.5578,-0.766903 -1.96365,-0.851946 -3.98878,-0.835825 -1.63197,0.01299 -2.63809,0.170358 -3.64359,0.569893 l -1.38906,0.551945 V 86.785344 76.22743 h 10.47935 c 9.8787,0 10.4681,0.02654 10.28831,0.463021 -0.83438,1.968721 -0.96363,2.709256 -0.86585,4.960938 0.0907,2.089619 0.21267,2.585476 0.9956,4.048821 2.18425,4.082497 7.04402,6.666803 12.53686,6.666803 7.16307,0 13.1189,-4.59566 13.56353,-10.465953 0.1298,-1.713663 0.0221,-2.373143 -0.82943,-5.078317 l -0.18738,-0.595313 h 5.80406 5.80407 l 1.08684,0.930298 c 1.89407,1.621251 2.2624,4.470762 0.98924,7.653144 l -0.69538,1.738195 0.68259,1.490979 c 2.48183,5.421029 1.77838,9.944548 -1.96465,12.633644 -1.19342,0.85739 -1.25158,0.96 -1.41155,2.49052 -0.51714,4.94775 -3.38647,6.65879 -9.32996,5.56366 -1.36165,-0.2509 -1.75107,-0.24144 -2.10355,0.0511 -0.47192,0.39166 -0.44302,0.70204 0.31037,3.33246 0.39446,1.37726 0.41484,1.78493 0.13577,2.71637 -0.4026,1.34377 -1.59648,2.74375 -3.08248,3.6146 -1.02103,0.59836 -1.13133,0.76826 -1.27248,1.96004 -0.30433,2.56958 -1.56936,3.86 -4.53791,4.629 -1.89124,0.48992 -6.86456,0.54286 -10.24701,0.10907 l -2.33478,-0.29942 -1.12272,1.20254 c -1.29833,1.39065 -2.20934,1.65749 -4.91682,1.44016 -2.96301,-0.23785 -3.34675,0.42825 -1.68795,2.92994 1.58597,2.39186 2.13423,4.20372 2.81823,9.31371 0.75634,5.65033 0.93879,10.66267 0.94142,25.86302 l 0.003,15.14739 h -2.8026 -2.8026 z"
 
-// Single Unified Solid Head Silhouette (Concatened SVG subpaths into 1 single object)
-const SOLID_HEAD_PATH = `${HEAD_PATH_EXACT} ${PIECE_0_PATH} ${PIECE_1_PATH} ${PIECE_2_PATH} ${PIECE_3_PATH}`
-
 const PIECES_CONFIG = [
   {
     path: PIECE_0_PATH,
     cx: 466,
     cy: 186,
     defaultColor: '#2b2a63',
-    // Wrench & Gear Icon (Centered in Navy piece)
-    icon: (
-      <g transform="translate(450, 170) scale(1.1)" stroke="white" strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx={14} cy={12} r={9} />
-        <path d="M 14 3 L 14 0 M 14 24 L 14 21 M 3 12 L 0 12 M 25 12 L 28 12" />
-        <path d="M 6 4 L 4 2 M 22 20 L 24 22 M 6 20 L 4 22 M 22 4 L 24 2" />
-        <path d="M 5 25 L 14 16" strokeWidth={2.5} />
-        <path d="M 3 27 L 7 31" strokeWidth={2.5} />
-      </g>
-    )
   },
   {
     path: PIECE_1_PATH,
     cx: 636,
     cy: 186,
     defaultColor: '#3365cc',
-    // Blueprint / Grid Icon (Centered in Blue piece)
-    icon: (
-      <g transform="translate(620, 170) scale(1.1)" stroke="white" strokeWidth={1.8} fill="none" strokeLinecap="round" strokeLinejoin="round">
-        <rect x={0} y={0} width={30} height={28} rx={2} />
-        <line x1={0} y1={14} x2={30} y2={14} />
-        <line x1={15} y1={0} x2={15} y2={28} />
-        <path d="M 4 4 L 26 24 M 26 4 L 4 24" strokeWidth={1.2} opacity={0.65} />
-      </g>
-    )
   },
   {
     path: PIECE_2_PATH,
     cx: 466,
     cy: 310,
     defaultColor: '#fdbe03',
-    // Atom / Idea Lightbulb Icon (Centered in Yellow piece)
-    icon: (
-      <g transform="translate(452, 296) scale(1.1)" stroke="white" strokeWidth={1.8} fill="none" strokeLinecap="round">
-        <ellipse cx={14} cy={14} rx={14} ry={6} transform="rotate(-30 14 14)" />
-        <ellipse cx={14} cy={14} rx={14} ry={6} transform="rotate(30 14 14)" />
-        <circle cx={14} cy={14} r={3.5} fill="white" />
-      </g>
-    )
   },
   {
     path: PIECE_3_PATH,
     cx: 636,
     cy: 310,
     defaultColor: '#fd5237',
-    // Sliders / Picture Controls Icon (Centered in Red piece)
-    icon: (
-      <g transform="translate(620, 296) scale(1.1)" stroke="white" strokeWidth={1.8} fill="none" strokeLinecap="round">
-        <rect x={0} y={0} width={28} height={20} rx={2} />
-        <line x1={4} y1={5} x2={24} y2={5} />
-        <circle cx={10} cy={5} r={2.5} fill="white" />
-        <line x1={4} y1={14} x2={24} y2={14} />
-        <circle cx={18} cy={14} r={2.5} fill="white" />
-      </g>
-    )
   }
 ]
 
@@ -127,6 +88,8 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
   const headId = 'head'
@@ -216,7 +179,7 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
       {/* Vector / DSL Icons Centered in Canvas Space */}
       {PIECES_CONFIG.map((piece, i) => {
         const branch = branches[i]
-        const iconKey = branch?.icon
+        const iconKey = branch?.icon || (i === 0 ? 'wrench' : i === 1 ? 'layout' : i === 2 ? 'lightbulb' : 'sliders')
         const IconFn = getDynamicIcon(iconKey)
 
         if (!IconFn) return null
@@ -229,6 +192,39 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
           </g>
         )
       })}
+
+      {/* Center Label (if defined in DSL) — Interactive */}
+      {data.centerLabel && (() => {
+        const centerId = 'center-label'
+        const defaultCenterBbox = { x: headBbox.x + headBbox.width / 2 - 70, y: headBbox.y + headBbox.height - 36, width: 140, height: 34 }
+        const customCenterPos = positions[centerId]
+        const centerBbox = {
+          x: customCenterPos?.x ?? defaultCenterBbox.x,
+          y: customCenterPos?.y ?? defaultCenterBbox.y,
+          width: customCenterPos?.width ?? defaultCenterBbox.width,
+          height: customCenterPos?.height ?? defaultCenterBbox.height,
+        }
+        const isCenterSelected = selectedIds.has(centerId)
+        const centerFill = tplColors[centerId] ?? '#1a1a2e'
+        const centerStroke = tplStrokeColors[centerId] || (isCenterSelected ? '#4a90d9' : 'none')
+        const centerStrokeW = tplStrokeWidths[centerId] !== undefined ? tplStrokeWidths[centerId] : (isCenterSelected ? 2.5 : 0)
+
+        return (
+          <g
+            key={centerId}
+            data-element-id={centerId}
+            onMouseDown={e => startDrag(e, centerId, centerBbox)}
+            transform={getTransform(centerId, centerBbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect x={centerBbox.x} y={centerBbox.y} width={centerBbox.width} height={centerBbox.height} rx={17} fill={centerFill} stroke={centerStroke} strokeWidth={centerStrokeW} />
+            <text x={centerBbox.x + centerBbox.width / 2} y={centerBbox.y + centerBbox.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
+              {data.centerLabel}
+            </text>
+            {isCenterSelected && renderHandles(centerBbox, centerId)}
+          </g>
+        )
+      })()}
 
       {/* Callout Cards & Dynamic Connectors */}
       {branches.slice(0, 4).map((branch, i) => {
@@ -258,6 +254,11 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
         const isSel = selectedIds.has(id)
         const connStartX = isLeft ? bbox.x + bbox.width : bbox.x
         const connStartY = bbox.y + bbox.height / 2
+
+        const maxChars = Math.max(10, Math.floor(bbox.width / 7.5))
+        const titleLines = wrapTextByWidth(branch.title, maxChars)
+        const subtitleLabel = [branch.subtitle ?? `Description ${i + 1}`, branch.val, branch.pct].filter(Boolean).join(' · ')
+        const subtitleLines = wrapTextByWidth(subtitleLabel, maxChars)
 
         return (
           <g key={id}>
@@ -301,23 +302,33 @@ export function Brain4Template({ data }: { data: BrainData }): ReactElement {
               />
               <text
                 x={isLeft ? bbox.x + 16 : bbox.x + 12}
-                y={bbox.y + 26}
+                y={bbox.y + (subtitleLines.length > 0 ? 22 : bbox.height / 2 + 5)}
                 fontFamily="Arial, sans-serif"
                 fontSize={13}
                 fontWeight={700}
                 fill="#1a1a2e"
               >
-                {branch.title}
+                {titleLines.map((line, li) => (
+                  <tspan key={li} x={isLeft ? bbox.x + 16 : bbox.x + 12} dy={li === 0 ? 0 : 14}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
-              <text
-                x={isLeft ? bbox.x + 16 : bbox.x + 12}
-                y={bbox.y + 48}
-                fontFamily="Arial, sans-serif"
-                fontSize={11}
-                fill="#666666"
-              >
-                {branch.subtitle ?? `Description ${i + 1}`}
-              </text>
+              {subtitleLines.length > 0 && (
+                <text
+                  x={isLeft ? bbox.x + 16 : bbox.x + 12}
+                  y={bbox.y + 22 + titleLines.length * 14 + 3}
+                  fontFamily="Arial, sans-serif"
+                  fontSize={11}
+                  fill="#666666"
+                >
+                  {subtitleLines.map((line, li) => (
+                    <tspan key={li} x={isLeft ? bbox.x + 16 : bbox.x + 12} dy={li === 0 ? 0 : 12}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              )}
               {isSel && renderHandles(bbox, id)}
             </g>
           </g>

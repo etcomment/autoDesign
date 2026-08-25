@@ -4,9 +4,24 @@ import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
 import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
 import { wrapTextByWidth } from '../shared/primitives'
 
 const COLUMN_KEYS = ['Vision', 'Execution', 'Growth'] as const
+
+function getDynamicIcon(iconName?: string) {
+  if (!iconName) return null
+  const clean = iconName.trim()
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const LucideFn = (LucideIcons as Record<string, any>)[pascalName] || (LucideIcons as Record<string, any>)[clean] || (LucideIcons as Record<string, any>)[clean.toUpperCase()]
+  if (LucideFn) {
+    return (props: { size?: number; color?: string }) => <LucideFn size={props.size ?? 16} color={props.color ?? 'white'} />
+  }
+  return null
+}
 
 export function Strategy4Template({ data }: { data: Strategy4Data }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -22,7 +37,7 @@ export function Strategy4Template({ data }: { data: Strategy4Data }): ReactEleme
   const colStartX = 42
   const colGap = 20
   const cardW = 270
-  const cardH = 66
+  const cardH = 70
   const cardGap = 12
   const headerH = 40
   const topY = 60
@@ -30,27 +45,48 @@ export function Strategy4Template({ data }: { data: Strategy4Data }): ReactEleme
   return (
     <g ref={svgRef}>
       {COLUMN_KEYS.map((label, colIdx) => {
+        const headerId = `col-header-${colIdx}`
         const colX = colStartX + colIdx * (colW + colGap)
-        const colColor = MIGSO_PALETTE[colIdx % MIGSO_PALETTE.length]!
+        const defaultHeaderBbox = { x: colX, y: topY, width: colW, height: headerH }
+        const customHeaderPos = positions[headerId]
+        const headerBbox = {
+          x: customHeaderPos?.x ?? defaultHeaderBbox.x,
+          y: customHeaderPos?.y ?? defaultHeaderBbox.y,
+          width: customHeaderPos?.width ?? defaultHeaderBbox.width,
+          height: customHeaderPos?.height ?? defaultHeaderBbox.height,
+        }
+        const isHeaderSelected = selectedIds.has(headerId)
+        const colColor = tplColors[headerId] ?? MIGSO_PALETTE[colIdx % MIGSO_PALETTE.length]!
+        const headerStroke = tplStrokeColors[headerId] || (isHeaderSelected ? '#4a90d9' : 'none')
+        const headerStrokeW = tplStrokeWidths[headerId] !== undefined ? tplStrokeWidths[headerId] : (isHeaderSelected ? 2.5 : 0)
 
         return (
-          <g key={colIdx}>
-            <rect x={colX} y={topY} width={colW} height={headerH} rx={6} fill={colColor} />
-            <text x={colX + colW / 2} y={topY + headerH / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
-              {label}
-            </text>
+          <g key={`col-${colIdx}`}>
+            {/* Interactive Column Header */}
+            <g
+              data-element-id={headerId}
+              onMouseDown={e => startDrag(e, headerId, headerBbox)}
+              transform={getTransform(headerId, headerBbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect x={headerBbox.x} y={headerBbox.y} width={headerBbox.width} height={headerBbox.height} rx={6} fill={colColor} stroke={headerStroke} strokeWidth={headerStrokeW} />
+              <text x={headerBbox.x + headerBbox.width / 2} y={headerBbox.y + headerBbox.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
+                {label}
+              </text>
+              {isHeaderSelected && renderHandles(headerBbox, headerId)}
+            </g>
 
             {blocks.map((block, index) => {
               if (index % 3 !== colIdx) return null
               const elementId = `block-${index}`
               const color = tplColors[elementId] ?? block.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
               const isSelected = selectedIds.has(elementId)
-              const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
-              const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2 : 0)
+              const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : color)
+              const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2.5 : 1)
               const cardIndex = Math.floor(index / 3)
               const defaultBbox = {
-                x: colX + (colW - cardW) / 2,
-                y: topY + headerH + 16 + cardIndex * (cardH + cardGap),
+                x: headerBbox.x + (headerBbox.width - cardW) / 2,
+                y: headerBbox.y + headerBbox.height + 16 + cardIndex * (cardH + cardGap),
                 width: cardW,
                 height: cardH,
               }
@@ -61,7 +97,7 @@ export function Strategy4Template({ data }: { data: Strategy4Data }): ReactEleme
                 width: customPos?.width ?? defaultBbox.width,
                 height: customPos?.height ?? defaultBbox.height,
               }
-              const IconFn = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
+              const IconFn = getDynamicIcon(block.icon)
               const maxChars = Math.max(10, Math.floor(bbox.width / 6.5))
               const titleLines = wrapTextByWidth(block.title, maxChars)
               const subtitleLines = block.subtitle ? wrapTextByWidth(block.subtitle, maxChars) : []
@@ -74,29 +110,29 @@ export function Strategy4Template({ data }: { data: Strategy4Data }): ReactEleme
                   transform={getTransform(elementId, bbox)}
                   style={{ cursor: 'pointer' }}
                 >
-                  <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={color} opacity={0.12} stroke={strokeColor} strokeWidth={strokeWidth} strokeDasharray={isSelected ? '4 2' : undefined} />
+                  <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={color} fillOpacity={0.12} stroke={strokeColor} strokeWidth={strokeWidth} strokeDasharray={isSelected ? '4 2' : undefined} />
 
-                  <circle cx={bbox.x + 18} cy={bbox.y + 18} r={14} fill={color} />
+                  <circle cx={bbox.x + 18} cy={bbox.y + 18} r={13} fill={color} />
                   {IconFn ? (
-                    <g transform={`translate(${bbox.x + 11}, ${bbox.y + 11})`}>
-                      <IconFn size={14} color="white" />
+                    <g transform={`translate(${bbox.x + 10}, ${bbox.y + 10})`}>
+                      <IconFn size={16} color="white" />
                     </g>
                   ) : (
                     <text x={bbox.x + 18} y={bbox.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
-                      {block.number}
+                      {block.number || String(index + 1)}
                     </text>
                   )}
 
-                  <text x={bbox.x + 40} y={bbox.y + 22} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#333">
+                  <text x={bbox.x + 40} y={bbox.y + 20} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="#222">
                     {titleLines.map((line, li) => (
-                      <tspan key={li} x={bbox.x + 40} dy={li === 0 ? 0 : 14}>
+                      <tspan key={li} x={bbox.x + 40} dy={li === 0 ? 0 : 13}>
                         {line}
                       </tspan>
                     ))}
                   </text>
 
-                  {block.subtitle && (
-                    <text x={bbox.x + 40} y={bbox.y + 38} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={10} fill="#777">
+                  {subtitleLines.length > 0 && (
+                    <text x={bbox.x + 40} y={bbox.y + 20 + titleLines.length * 13 + 3} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={10} fill="#666">
                       {subtitleLines.map((line, li) => (
                         <tspan key={li} x={bbox.x + 40} dy={li === 0 ? 0 : 12}>
                           {line}
@@ -106,8 +142,8 @@ export function Strategy4Template({ data }: { data: Strategy4Data }): ReactEleme
                   )}
 
                   {(block.value || block.percent) && (
-                    <text x={bbox.x + 40} y={bbox.y + 53} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill={color}>
-                      {block.value ?? block.percent}
+                    <text x={bbox.x + 40} y={bbox.y + bbox.height - 8} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill={color}>
+                      {[block.value, block.percent].filter(Boolean).join(' · ')}
                     </text>
                   )}
 

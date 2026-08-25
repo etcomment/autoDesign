@@ -377,6 +377,8 @@ export interface AgendaItem {
   number: string
   title: string
   subtitle?: string
+  description?: string
+  time?: string
   color?: string
   icon?: string
   value?: string
@@ -468,6 +470,7 @@ export interface GoalsMetric {
   label: string
   value: string
   target: string
+  change?: string
   color?: string
   icon?: string
   percent?: string

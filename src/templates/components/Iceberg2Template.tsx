@@ -2,20 +2,12 @@ import { useRef, type ReactElement } from 'react'
 import type { IcebergData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#3a7bc8', '#1a5ca6', '#0d4d95']
-
-function wavePath(W: number, waterY: number, H?: number): string {
-  const a = 12, f1 = 0.025, f2 = 0.06
-  const pts: string[] = []
-  for (let x = 0; x <= W; x += 4) {
-    const y = waterY + Math.sin(x * f1) * a + Math.sin(x * f2 + 1) * (a * 0.35)
-    pts.push(`${x} ${y.toFixed(1)}`)
-  }
-  const d = `M 0 ${waterY} L ${pts.join(' L ')}`
-  return H !== undefined ? `${d} L ${W} ${H} L 0 ${H} Z` : d
-}
+const VISIBLE_COLOR = MIGSO_PALETTE[0]!
+const SUBMERGED_COLOR = '#0284c7'
 
 export function Iceberg2Template({ data }: { data: IcebergData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -23,74 +15,207 @@ export function Iceberg2Template({ data }: { data: IcebergData }): ReactElement 
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, sections } = data
-  const W = 600
-  const H = 700
-  const waterY = 280
+  const { sections = [] } = data
+  const W = 900
   const cx = W / 2
-  const above = sections.filter(s => s.isAbove)
-  const below = sections.filter(s => !s.isAbove)
-  const aboveW = 300
-  const aboveH = 70
-  const aboveX = (W - aboveW) / 2
+  const waterY = 160
+
+  const visibleItems = sections.filter(s => s.isAbove)
+  const submergedItems = sections.filter(s => !s.isAbove)
 
   return (
     <g ref={svgRef}>
-      <defs>
-        <linearGradient id="waterGrad2" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#5db9e8" stopOpacity={0.6} />
-          <stop offset="100%" stopColor="#083d7a" stopOpacity={0.9} />
-        </linearGradient>
-      </defs>
+      {/* Background Submerged Layer */}
+      <rect x={40} y={waterY} width={W - 80} height={340} rx={12} fill="#e0f2fe" opacity={0.6} />
 
-      <rect width={W} height={waterY} fill="#e3f2fd" />
-      <rect y={waterY} width={W} height={H - waterY} fill="#0f2b46" />
+      {/* Waterline */}
+      <line x1={30} y1={waterY} x2={W - 30} y2={waterY} stroke="#0284c7" strokeWidth={3} strokeDasharray="8 4" />
+      <text x={50} y={waterY - 10} fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="#0284c7">
+        SURFACE / WATERLINE
+      </text>
 
-      <path d={wavePath(W, waterY, H)} fill="url(#waterGrad2)" />
-      <path d={wavePath(W, waterY)} fill="none" stroke="#5db9e8" strokeWidth={3} opacity={0.9} />
-      {title && (
-        <text x={cx} y={44} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>{title}</text>
-      )}
-      {above.length > 0 && above.map((section, i) => {
-        const si = sections.indexOf(section)
-        const elementId = `section-${si}`
-        const color = tplColors[elementId] ?? PALETTE[si % PALETTE.length]!
-        const stroke = tplStrokeColors[elementId] || color
-        const isSelected = selectedIds.has(elementId)
-        const py = 60 + i * 80
-        const vr = { x: aboveX, y: py, width: aboveW, height: aboveH }
+      {/* Central Iceberg Silhouette Path */}
+      <polygon
+        points={`${cx},40 ${cx + 120},${waterY} ${cx + 220},460 ${cx - 220},460 ${cx - 120},${waterY}`}
+        fill="#bae6fd"
+        opacity={0.35}
+        stroke="#7dd3fc"
+        strokeWidth={2}
+      />
+
+      {/* Visible Section Header */}
+      {(() => {
+        const headerId = 'header-visible'
+        const defaultRect = { x: cx - 100, y: 45, width: 200, height: 32 }
+        const customPos = positions[headerId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+        const isSelected = selectedIds.has(headerId)
+        const color = tplColors[headerId] || VISIBLE_COLOR
+
         return (
-          <g key={'above-' + i} data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, vr)} transform={getTransform(elementId, vr)} style={{ cursor: 'pointer' }}>
-            <rect x={aboveX} y={py} width={aboveW} height={aboveH} rx={8} fill={color} opacity={0.85} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3 : 0} />
-            <text x={aboveX + 20} y={py + aboveH / 2 + 6} fontFamily="Arial, sans-serif" fontSize={16} fontWeight={700} fill="white">{section.title}</text>
-            {section.subtitle && (
-              <text x={aboveX + aboveW - 20} y={py + aboveH / 2 + 6} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={11} fill="rgba(255,255,255,0.8)">{section.subtitle}</text>
-            )}
-            {isSelected && renderHandles(vr, elementId)}
+          <g
+            key={headerId}
+            data-element-id={headerId}
+            onMouseDown={e => startDrag(e, headerId, bbox)}
+            transform={getTransform(headerId, bbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill={color} />
+            <text x={bbox.x + bbox.width / 2} y={bbox.y + bbox.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
+              VISIBLE (TOP)
+            </text>
+            {isSelected && renderHandles(bbox, headerId)}
+          </g>
+        )
+      })()}
+
+      {visibleItems.map((item, index) => {
+        const elementId = `visible-${index}`
+        const side = index % 2 === 0 ? -1 : 1
+        const defaultX = cx + side * 220 - 100
+        const defaultY = 85 + Math.floor(index / 2) * 55
+        const defaultRect = { x: defaultX, y: defaultY, width: 200, height: 48 }
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+
+        const color = tplColors[elementId] ?? item.color ?? VISIBLE_COLOR
+        const strokeColor = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : '#e2e8f0')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1.5)
+        const isSelected = selectedIds.has(elementId)
+        const IconComponent = item.icon ? TEMPLATE_ICONS[item.icon] : undefined
+
+        const maxChars = Math.max(8, Math.floor((bbox.width - 40) / 8))
+        const titleLines = wrapTextByWidth(item.title, maxChars)
+
+        return (
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill="white" stroke={strokeColor} strokeWidth={strokeWidth} />
+              <rect x={bbox.x} y={bbox.y} width={4} height={bbox.height} rx={2} fill={color} />
+
+              {IconComponent && (
+                <g transform={`translate(${bbox.x + 10}, ${bbox.y + bbox.height / 2 - 8})`}>
+                  <IconComponent size={16} color={color} />
+                </g>
+              )}
+
+              <text x={bbox.x + (IconComponent ? 32 : 12)} y={bbox.y + bbox.height / 2 + (item.subtitle ? -2 : 5)} fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="#1a202c">
+                {titleLines[0] || ''}
+              </text>
+
+              {item.subtitle && (
+                <text x={bbox.x + (IconComponent ? 32 : 12)} y={bbox.y + bbox.height / 2 + 13} fontFamily="Arial, sans-serif" fontSize={9} fill="#64748b">
+                  {item.subtitle.length > 22 ? item.subtitle.slice(0, 20) + '...' : item.subtitle}
+                </text>
+              )}
+
+              {isSelected && renderHandles(bbox, elementId)}
+            </g>
           </g>
         )
       })}
-      <text x={cx} y={waterY - 14} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="#4a90d9">
-        Surface
-      </text>
-      {below.map((section, i) => {
-        const si = sections.indexOf(section)
-        const elementId = `section-${si}`
-        const color = tplColors[elementId] ?? PALETTE[(si + 1) % PALETTE.length]!
-        const stroke = tplStrokeColors[elementId] || color
-        const isSelected = selectedIds.has(elementId)
-        const baseW = 260 + i * 70, baseH = 56
-        const px = (W - baseW) / 2, py = waterY + 30 + i * 70
-        const vr = { x: px, y: py, width: baseW, height: baseH }
+
+      {/* Submerged Section Header */}
+      {(() => {
+        const headerId = 'header-submerged'
+        const defaultRect = { x: cx - 110, y: waterY + 20, width: 220, height: 32 }
+        const customPos = positions[headerId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+        const isSelected = selectedIds.has(headerId)
+        const color = tplColors[headerId] || SUBMERGED_COLOR
+
         return (
-          <g key={'below-' + i} data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, vr)} transform={getTransform(elementId, vr)} style={{ cursor: 'pointer' }}>
-            <rect x={px} y={py} width={baseW} height={baseH} rx={7} fill={color} opacity={0.88} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3 : 0} />
-            <text x={px + 16} y={py + baseH / 2 + 5} fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">{section.title}</text>
-            {section.subtitle && (
-              <text x={px + baseW - 16} y={py + baseH / 2 + 5} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={11} fill="rgba(255,255,255,0.8)">{section.subtitle}</text>
-            )}
-            {isSelected && renderHandles(vr, elementId)}
+          <g
+            key={headerId}
+            data-element-id={headerId}
+            onMouseDown={e => startDrag(e, headerId, bbox)}
+            transform={getTransform(headerId, bbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill={color} />
+            <text x={bbox.x + bbox.width / 2} y={bbox.y + bbox.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
+              SUBMERGED (HIDDEN)
+            </text>
+            {isSelected && renderHandles(bbox, headerId)}
+          </g>
+        )
+      })()}
+
+      {submergedItems.map((item, index) => {
+        const elementId = `submerged-${index}`
+        const side = index % 2 === 0 ? -1 : 1
+        const defaultX = cx + side * 240 - 110
+        const defaultY = waterY + 65 + Math.floor(index / 2) * 65
+        const defaultRect = { x: defaultX, y: defaultY, width: 220, height: 54 }
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+
+        const color = tplColors[elementId] ?? item.color ?? SUBMERGED_COLOR
+        const strokeColor = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : '#bae6fd')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1.5)
+        const isSelected = selectedIds.has(elementId)
+        const IconComponent = item.icon ? TEMPLATE_ICONS[item.icon] : undefined
+
+        const maxChars = Math.max(8, Math.floor((bbox.width - 40) / 8))
+        const titleLines = wrapTextByWidth(item.title, maxChars)
+
+        return (
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill="white" stroke={strokeColor} strokeWidth={strokeWidth} />
+              <rect x={bbox.x} y={bbox.y} width={4} height={bbox.height} rx={2} fill={color} />
+
+              {IconComponent && (
+                <g transform={`translate(${bbox.x + 10}, ${bbox.y + bbox.height / 2 - 8})`}>
+                  <IconComponent size={16} color={color} />
+                </g>
+              )}
+
+              <text x={bbox.x + (IconComponent ? 32 : 12)} y={bbox.y + bbox.height / 2 + (item.subtitle ? -2 : 5)} fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="#1a202c">
+                {titleLines[0] || ''}
+              </text>
+
+              {item.subtitle && (
+                <text x={bbox.x + (IconComponent ? 32 : 12)} y={bbox.y + bbox.height / 2 + 13} fontFamily="Arial, sans-serif" fontSize={9} fill="#64748b">
+                  {item.subtitle.length > 24 ? item.subtitle.slice(0, 22) + '...' : item.subtitle}
+                </text>
+              )}
+
+              {isSelected && renderHandles(bbox, elementId)}
+            </g>
           </g>
         )
       })}

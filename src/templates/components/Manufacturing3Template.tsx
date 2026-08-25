@@ -1,105 +1,120 @@
 import { useRef, type ReactElement } from 'react'
 import type { ManufacturingData } from '../types'
-import { Arrow } from '../shared/primitives'
-import { GearIcon } from '../shared/icons'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c']
+const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6']
+const ROW_W = 560
+const ROW_H = 68
+const GAP = 16
 
 export function Manufacturing3Template({ data }: { data: ManufacturingData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, stations } = data
+  const { stations = [] } = data
   const W = 900
-  const boxW = 130
-  const boxH = 64
-  const topY = title ? 100 : 60
-  const bottomY = 380
+  const count = Math.max(1, stations.length)
+  const startX = (W - ROW_W) / 2
+  const startY = 40
 
-  const totalPerSide = Math.ceil(stations.length / 2)
-  const topStations = stations.slice(0, totalPerSide)
-  const bottomStations = stations.slice(totalPerSide)
-
-  const topStartX = 40
-  const bottomStartX = W - 40 - bottomStations.length * boxW - (bottomStations.length - 1) * 20
+  const getBbox = (i: number) => {
+    const elementId = `station-${i}`
+    const defaultRect = { x: startX, y: startY + i * (ROW_H + GAP), width: ROW_W, height: ROW_H }
+    const customPos = positions[elementId]
+    return {
+      x: customPos ? customPos.x : defaultRect.x,
+      y: customPos ? customPos.y : defaultRect.y,
+      width: customPos?.width || defaultRect.width,
+      height: customPos?.height || defaultRect.height,
+    }
+  }
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
-          {title}
-        </text>
-      )}
-
-      {topStations.map((station, i) => {
-        const elementId = `station-t-${i}`
-        const color = tplColors[elementId] ?? PALETTE[i % PALETTE.length]!
-        const isSelected = selectedIds.has(elementId)
-        const sx = topStartX + i * (boxW + 20)
-        const visualRect = { x: sx, y: topY, width: boxW, height: boxH }
+      {stations.map((_, index) => {
+        if (index >= count - 1) return null
+        const bbox1 = getBbox(index)
+        const bbox2 = getBbox(index + 1)
+        const cx = bbox1.x + 36
+        const y1 = bbox1.y + bbox1.height
+        const y2 = bbox2.y
 
         return (
-          <g key={`top-${i}`}>
-            {i < topStations.length - 1 && (
-              <Arrow from={{ x: sx + boxW + 2, y: topY + boxH / 2 }} to={{ x: sx + boxW + 18, y: topY + boxH / 2 }} color={color} />
-            )}
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={sx} y={topY} width={boxW} height={boxH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 1.5} />
-              <g transform={`translate(${sx + boxW / 2 - 12}, ${topY + 8})`}>
-                <GearIcon size={24} color={color} />
-              </g>
-              <text x={sx + boxW / 2} y={topY + boxH - 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill={color}>
-                {station.title.length > 14 ? station.title.slice(0, 12) + '..' : station.title}
-              </text>
-              {isSelected && renderHandles(visualRect, elementId)}
-            </g>
+          <g key={`arrow-${index}`}>
+            <line x1={cx} y1={y1 + 2} x2={cx} y2={y2 - 8} stroke="#94a3b8" strokeWidth={2} />
+            <polygon points={`${cx - 4},${y2 - 8} ${cx},${y2 - 2} ${cx + 4},${y2 - 8}`} fill="#94a3b8" />
           </g>
         )
       })}
 
-      {bottomStations.map((station, i) => {
-        const elementId = `station-b-${i}`
-        const color = tplColors[elementId] ?? PALETTE[(totalPerSide + i) % PALETTE.length]!
+      {stations.map((station, index) => {
+        const elementId = `station-${index}`
+        const bbox = getBbox(index)
+        const defaultColor = station.color || PALETTE[index % PALETTE.length]!
+        const color = tplColors[elementId] ?? defaultColor
+        const strokeColor = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : '#e2e8f0')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1.5)
         const isSelected = selectedIds.has(elementId)
-        const sx = bottomStartX + i * (boxW + 20)
-        const visualRect = { x: sx, y: bottomY, width: boxW, height: boxH }
+        const IconComponent = station.icon ? TEMPLATE_ICONS[station.icon] : undefined
+
+        const maxNameChars = Math.max(10, Math.floor((bbox.width - 120) / 8))
+        const nameLines = wrapTextByWidth(station.title, maxNameChars)
+        const descLines = station.subtitle ? wrapTextByWidth(station.subtitle, maxNameChars) : []
 
         return (
-          <g key={`bot-${i}`}>
-            {i < bottomStations.length - 1 && (
-              <Arrow from={{ x: sx + boxW + 2, y: bottomY + boxH / 2 }} to={{ x: sx + boxW + 18, y: bottomY + boxH / 2 }} color={color} />
-            )}
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={sx} y={bottomY} width={boxW} height={boxH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 1.5} />
-              <g transform={`translate(${sx + boxW / 2 - 12}, ${bottomY + 8})`}>
-                <GearIcon size={24} color={color} />
-              </g>
-              <text x={sx + boxW / 2} y={bottomY + boxH - 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill={color}>
-                {station.title.length > 14 ? station.title.slice(0, 12) + '..' : station.title}
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={10} fill="white" stroke={strokeColor} strokeWidth={strokeWidth} />
+              <rect x={bbox.x} y={bbox.y} width={6} height={bbox.height} rx={3} fill={color} />
+
+              <circle cx={bbox.x + 36} cy={bbox.y + bbox.height / 2} r={18} fill={color} />
+              {IconComponent ? (
+                <g transform={`translate(${bbox.x + 27}, ${bbox.y + bbox.height / 2 - 9})`}>
+                  <IconComponent size={18} color="white" />
+                </g>
+              ) : (
+                <text x={bbox.x + 36} y={bbox.y + bbox.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
+                  {index + 1}
+                </text>
+              )}
+
+              <text x={bbox.x + 72} y={bbox.y + bbox.height / 2 + (station.subtitle ? -3 : 5) - (nameLines.length > 1 ? 5 : 0)} fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="#1a202c">
+                {nameLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={bbox.x + 72} dy={lineIndex === 0 ? 0 : 14}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
-              {isSelected && renderHandles(visualRect, elementId)}
+
+              {station.subtitle && (
+                <text x={bbox.x + 72} y={bbox.y + bbox.height / 2 + nameLines.length * 14 + 1} fontFamily="Arial, sans-serif" fontSize={11} fill="#64748b">
+                  {descLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={bbox.x + 72} dy={lineIndex === 0 ? 0 : 12}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              )}
+
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
           </g>
         )
       })}
-
-      {topStations.length > 0 && bottomStations.length > 0 && (() => {
-        const lastTop = topStartX + (topStations.length - 1) * (boxW + 20) + boxW
-        const firstBottom = bottomStartX + bottomStations.length * boxW + (bottomStations.length - 1) * 20
-        const color = PALETTE[topStations.length - 1]!
-        return (
-          <>
-            <Arrow from={{ x: lastTop, y: topY + boxH / 2 }} to={{ x: lastTop + 30, y: topY + boxH / 2 }} color={color} />
-            <Arrow from={{ x: lastTop + 30, y: topY + boxH / 2 }} to={{ x: lastTop + 30, y: bottomY + boxH / 2 }} color={color} />
-            <Arrow from={{ x: lastTop + 30, y: bottomY + boxH / 2 }} to={{ x: firstBottom, y: bottomY + boxH / 2 }} color={color} />
-          </>
-        )
-      })()}
     </g>
   )
 }

@@ -2,42 +2,32 @@ import { useRef, type ReactElement } from 'react'
 import type { PuzzleData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50', '#ff9800']
-const CX = 450
-const CY = 250
-const OUTER_R = 170
-const INNER_R = 60
-const GAP_ANGLE = 4
+const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50', '#ff9800', '#9b59b6', '#00bcd4']
 
-function describeArc(cx: number, cy: number, r: number, startDeg: number, endDeg: number): string {
-  const rad1 = (startDeg * Math.PI) / 180
-  const rad2 = (endDeg * Math.PI) / 180
-  const x1 = cx + r * Math.cos(rad1)
-  const y1 = cy + r * Math.sin(rad1)
-  const x2 = cx + r * Math.cos(rad2)
-  const y2 = cy + r * Math.sin(rad2)
-  const large = (endDeg - startDeg) > 180 ? 1 : 0
-  return 'M ' + x1 + ' ' + y1 + ' A ' + r + ' ' + r + ' 0 ' + large + ' 1 ' + x2 + ' ' + y2
-}
-
-function ringSegmentPath(
+function circularSegmentPath(
   cx: number,
   cy: number,
   innerR: number,
   outerR: number,
-  startDeg: number,
-  endDeg: number,
+  startAngle: number,
+  endAngle: number,
 ): string {
-  const rad1 = (startDeg * Math.PI) / 180
-  const rad2 = (endDeg * Math.PI) / 180
-  return (
-    'M ' + (cx + outerR * Math.cos(rad1)) + ' ' + (cy + outerR * Math.sin(rad1)) + ' ' +
-    describeArc(cx, cy, outerR, startDeg, endDeg).slice(1) + ' ' +
-    'L ' + (cx + innerR * Math.cos(rad2)) + ' ' + (cy + innerR * Math.sin(rad2)) + ' ' +
-    describeArc(cx, cy, innerR, endDeg, startDeg).replace('M', 'L').replace(' 1 ', ' 0 ').slice(1) + ' Z'
-  )
+  const sRad = (startAngle * Math.PI) / 180
+  const eRad = (endAngle * Math.PI) / 180
+  const x1 = cx + outerR * Math.cos(sRad)
+  const y1 = cy + outerR * Math.sin(sRad)
+  const x2 = cx + outerR * Math.cos(eRad)
+  const y2 = cy + outerR * Math.sin(eRad)
+  const x3 = cx + innerR * Math.cos(eRad)
+  const y3 = cy + innerR * Math.sin(eRad)
+  const x4 = cx + innerR * Math.cos(sRad)
+  const y4 = cy + innerR * Math.sin(sRad)
+  const largeArc = endAngle - startAngle > 180 ? 1 : 0
+  return `M ${x1} ${y1} A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerR} ${innerR} 0 ${largeArc} 0 ${x4} ${y4} Z`
 }
 
 export function Puzzle5Template({ data }: { data: PuzzleData }): ReactElement {
@@ -46,67 +36,84 @@ export function Puzzle5Template({ data }: { data: PuzzleData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, pieces } = data
+  const { pieces } = data
+  const W = 600
+  const H = 450
+  const cx = W / 2
+  const cy = H / 2
+  const outerR = 175
+  const innerR = 75
   const count = pieces.length
-  const stepAngle = 360 / count
+  const angleStep = 360 / count
 
   return (
     <g ref={svgRef}>
-      <circle cx={CX} cy={CY} r={INNER_R} fill="#eef2f6" stroke="#cbd5e0" strokeWidth={2} />
-      <text x={CX} y={CY - 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill={TITLE_COLOR}>
-        {title || 'Puzzle'}
-      </text>
-      <text x={CX} y={CY + 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fill="#718096">
-        {count} pièces
-      </text>
-
-      {pieces.map((piece, i) => {
-        const startDeg = i * stepAngle + GAP_ANGLE / 2
-        const endDeg = startDeg + stepAngle - GAP_ANGLE
-        const midDeg = (startDeg + endDeg) / 2
-        const midRad = (midDeg * Math.PI) / 180
-        const labelX = CX + (INNER_R + OUTER_R) / 2 * Math.cos(midRad)
-        const labelY = CY + (INNER_R + OUTER_R) / 2 * Math.sin(midRad)
-        const path = ringSegmentPath(CX, CY, INNER_R + 4, OUTER_R, startDeg, endDeg)
-        const defaultColor = piece.color || PALETTE[i % PALETTE.length]!
-        const elementId = `piece-${i}`
+      {pieces.map((piece, index) => {
+        const startAngle = index * angleStep - 90
+        const endAngle = startAngle + angleStep
+        const path = circularSegmentPath(cx, cy, innerR, outerR, startAngle, endAngle)
+        const defaultColor = piece.color || PALETTE[index % PALETTE.length]!
+        const elementId = `piece-${index}`
         const color = tplColors[elementId] ?? defaultColor
         const stroke = tplStrokeColors[elementId] || 'white'
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3.5 : 2.5)
         const isSelected = selectedIds.has(elementId)
 
-        const defaultRect = { x: CX - OUTER_R, y: CY - OUTER_R, width: OUTER_R * 2, height: OUTER_R * 2 }
+        const midAngle = ((startAngle + endAngle) / 2 * Math.PI) / 180
+        const labelR = (innerR + outerR) / 2
+        const lx = cx + labelR * Math.cos(midAngle)
+        const ly = cy + labelR * Math.sin(midAngle)
+
+        const defaultRect = { x: lx - 45, y: ly - 35, width: 90, height: 70 }
         const customPos = templateElementPositions[elementId]
-        const visualRect = {
+        const bbox = {
           x: customPos ? customPos.x : defaultRect.x,
           y: customPos ? customPos.y : defaultRect.y,
           width: customPos?.width || defaultRect.width,
           height: customPos?.height || defaultRect.height,
         }
-        const scaleX = visualRect.width / defaultRect.width
-        const scaleY = visualRect.height / defaultRect.height
+        const IconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] : undefined
+        const maxChars = Math.max(6, Math.floor(bbox.width / 8))
+        const titleLines = wrapTextByWidth(piece.title, maxChars)
 
         return (
-          <g key={i}>
+          <g key={elementId}>
+            <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={strokeWidth} />
             <g
-              data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)}
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
               style={{ cursor: 'pointer' }}
             >
-              <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}>
-                <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3.5 : 2.5} strokeLinejoin="round" />
-                <text x={labelX} y={labelY - 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
-                  {piece.title}
-                </text>
-                <text x={labelX} y={labelY + 14} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="rgba(255,255,255,0.85)">
+              {IconComponent ? (
+                <g transform={`translate(${bbox.x + bbox.width / 2 - 8}, ${bbox.y + 6})`}>
+                  <IconComponent size={16} color="white" />
+                </g>
+              ) : (
+                <text x={bbox.x + bbox.width / 2} y={bbox.y + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
                   {piece.number}
                 </text>
-              </g>
-              {isSelected && renderHandles(visualRect, elementId)}
+              )}
+              <text x={bbox.x + bbox.width / 2} y={bbox.y + 32} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
+                {titleLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={bbox.x + bbox.width / 2} dy={lineIndex === 0 ? 0 : 12}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
           </g>
         )
       })}
+
+      <circle cx={cx} cy={cy} r={innerR - 4} fill="white" stroke="#e2e8f0" strokeWidth={2} />
+      <text x={cx} y={cy + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#333">
+        PUZZLE
+      </text>
     </g>
   )
 }

@@ -2,11 +2,12 @@ import { useRef, type ReactElement } from 'react'
 import type { Comparison2Data } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { wrapTextByWidth } from '../shared/primitives'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
 const SERIES_A_COLOR = MIGSO_PALETTE[0]!
 const SERIES_B_COLOR = MIGSO_PALETTE[1]!
-const GRID_OPACITY = 0.1
+const GRID_OPACITY = 0.12
 
 export function Comparison2Template({ data }: { data: Comparison2Data }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -14,19 +15,23 @@ export function Comparison2Template({ data }: { data: Comparison2Data }): ReactE
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const positions = useTemplateStore(s => s.templateElementPositions)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
   const { seriesAName, seriesBName, dimensions } = data
-  const W = 700
+  const W = 800
   const H = 500
   const cx = W / 2
-  const cy = 260
+  const cy = 250
   const maxR = 170
   const dimCount = Math.max(dimensions.length, 3)
   const angleStep = (2 * Math.PI) / dimCount
 
   const maxVal = Math.max(...dimensions.map(d => Math.max(d.seriesA, d.seriesB)), 100)
-
   const gridRings = [0.25, 0.5, 0.75, 1]
+
+  const colorA = tplColors['legend-series-a'] || SERIES_A_COLOR
+  const colorB = tplColors['legend-series-b'] || SERIES_B_COLOR
 
   return (
     <g ref={svgRef}>
@@ -36,16 +41,21 @@ export function Comparison2Template({ data }: { data: Comparison2Data }): ReactE
 
       {dimensions.map((dim, di) => {
         const angle = di * angleStep - Math.PI / 2
-        const lx = cx + Math.cos(angle) * (maxR + 20)
-        const ly = cy + Math.sin(angle) * (maxR + 20)
+        const lx = cx + Math.cos(angle) * (maxR + 24)
+        const ly = cy + Math.sin(angle) * (maxR + 24)
         const midX = cx + Math.cos(angle) * (maxR + 10)
         const midY = cy + Math.sin(angle) * (maxR + 10)
+        const labelLines = wrapTextByWidth(dim.label, 14)
 
         return (
           <g key={`axis-${di}`}>
             <line x1={cx} y1={cy} x2={midX} y2={midY} stroke="#e2e8f0" strokeWidth={1} />
             <text x={lx} y={ly + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#555">
-              {dim.label}
+              {labelLines.map((line, lineIndex) => (
+                <tspan key={lineIndex} x={lx} dy={lineIndex === 0 ? 0 : 12}>
+                  {line}
+                </tspan>
+              ))}
             </text>
           </g>
         )
@@ -63,9 +73,6 @@ export function Comparison2Template({ data }: { data: Comparison2Data }): ReactE
           const r = (dim.seriesB / maxVal) * maxR
           return `${cx + Math.cos(angle) * r},${cy + Math.sin(angle) * r}`
         }).join(' ')
-
-        const colorA = tplColors['series-a'] || SERIES_A_COLOR
-        const colorB = tplColors['series-b'] || SERIES_B_COLOR
 
         return (
           <g>
@@ -98,16 +105,21 @@ export function Comparison2Template({ data }: { data: Comparison2Data }): ReactE
           height: customPos?.height ?? defaultBbox.height,
         }
         const isSelected = selectedIds.has(legendId)
-        const color = tplColors['series-a'] || SERIES_A_COLOR
+        const strokeColor = tplStrokeColors[legendId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[legendId] ?? (isSelected ? 2 : 0)
 
         return (
           <g
             key={legendId}
+            data-element-id={legendId}
             onMouseDown={e => startDrag(e, legendId, bbox)}
             transform={getTransform(legendId, bbox)}
             style={{ cursor: 'pointer' }}
           >
-            <rect x={bbox.x} y={bbox.y} width={14} height={14} rx={3} fill={color} opacity={0.9} />
+            {strokeWidth > 0 && (
+              <rect x={bbox.x - 4} y={bbox.y - 4} width={bbox.width + 8} height={bbox.height + 8} rx={4} fill="none" stroke={strokeColor} strokeWidth={strokeWidth} />
+            )}
+            <rect x={bbox.x} y={bbox.y} width={14} height={14} rx={3} fill={colorA} opacity={0.9} />
             <text x={bbox.x + 22} y={bbox.y + 11} fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#333">
               {seriesAName}
             </text>
@@ -128,16 +140,21 @@ export function Comparison2Template({ data }: { data: Comparison2Data }): ReactE
           height: customPos?.height ?? defaultBbox.height,
         }
         const isSelected = selectedIds.has(legendId)
-        const color = tplColors['series-b'] || SERIES_B_COLOR
+        const strokeColor = tplStrokeColors[legendId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[legendId] ?? (isSelected ? 2 : 0)
 
         return (
           <g
             key={legendId}
+            data-element-id={legendId}
             onMouseDown={e => startDrag(e, legendId, bbox)}
             transform={getTransform(legendId, bbox)}
             style={{ cursor: 'pointer' }}
           >
-            <rect x={bbox.x} y={bbox.y} width={14} height={14} rx={3} fill={color} opacity={0.9} />
+            {strokeWidth > 0 && (
+              <rect x={bbox.x - 4} y={bbox.y - 4} width={bbox.width + 8} height={bbox.height + 8} rx={4} fill="none" stroke={strokeColor} strokeWidth={strokeWidth} />
+            )}
+            <rect x={bbox.x} y={bbox.y} width={14} height={14} rx={3} fill={colorB} opacity={0.9} />
             <text x={bbox.x + 22} y={bbox.y + 11} fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#333">
               {seriesBName}
             </text>
@@ -148,4 +165,3 @@ export function Comparison2Template({ data }: { data: Comparison2Data }): ReactE
     </g>
   )
 }
-

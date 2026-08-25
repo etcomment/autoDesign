@@ -284,6 +284,37 @@ export function Brain2Template({ data }: { data: BrainData }): ReactElement {
           {isHeadSelected && renderHandles(headBbox, headId)}
         </g>
       )}
+
+      {/* Center Label (if defined in DSL) — Interactive */}
+      {data.centerLabel && (() => {
+        const centerId = 'center-label'
+        const defaultCenterBbox = { x: headBbox.x + headBbox.width / 2 - 75, y: headBbox.y + headBbox.height - 30, width: 150, height: 34 }
+        const customCenterPos = positions[centerId]
+        const centerBbox = {
+          x: customCenterPos?.x ?? defaultCenterBbox.x,
+          y: customCenterPos?.y ?? defaultCenterBbox.y,
+          width: customCenterPos?.width ?? defaultCenterBbox.width,
+          height: customCenterPos?.height ?? defaultCenterBbox.height,
+        }
+        const isCenterSelected = selectedIds.has(centerId)
+        const centerFill = tplColors[centerId] ?? '#111319'
+        const centerStroke = isCenterSelected ? '#4a90d9' : 'none'
+        return (
+          <g
+            key={centerId}
+            data-element-id={centerId}
+            onMouseDown={e => startDrag(e, centerId, centerBbox)}
+            transform={getTransform(centerId, centerBbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect x={centerBbox.x} y={centerBbox.y} width={centerBbox.width} height={centerBbox.height} rx={17} fill={centerFill} stroke={centerStroke} strokeWidth={isCenterSelected ? 2.5 : 0} />
+            <text x={centerBbox.x + centerBbox.width / 2} y={centerBbox.y + centerBbox.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
+              {data.centerLabel}
+            </text>
+            {isCenterSelected && renderHandles(centerBbox, centerId)}
+          </g>
+        )
+      })()}
     </g>
   )
 }

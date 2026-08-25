@@ -1,75 +1,173 @@
 import { useRef, type ReactElement } from 'react'
 import type { Process4Data } from '../types'
-import { Arrow, CircleBadge } from '../shared/primitives'
+import { Arrow, CircleBadge, wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
+import * as LucideIcons from 'lucide-react'
+
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+function renderDynamicIcon(iconName?: string, size = 16, color = '#FFFFFF'): ReactElement | null {
+  if (!iconName) return null
+  const clean = iconName.trim()
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn({ size, color })
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const lucideRecord = LucideIcons as Record<string, unknown>
+  const LucideFn = (lucideRecord[pascalName] || lucideRecord[clean] || lucideRecord[clean.toUpperCase()]) as
+    | React.ComponentType<{ size?: number; color?: string }>
+    | undefined
+
+  if (LucideFn) {
+    return <LucideFn size={size} color={color} />
+  }
+  return null
+}
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db']
 
 export function Process4Template({ data }: { data: Process4Data }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
-  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const toggleElement = useTemplateStore(s => s.toggleTemplateElement)
-  const tplColors = useTemplateStore(s => s.templateElementColors)
-  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
+  const selectedIds = useTemplateStore(state => state.selectedTemplateElementIds)
+  const templateColors = useTemplateStore(state => state.templateElementColors)
+  const templateStrokeColors = useTemplateStore(state => state.templateStrokeColors)
+  const templateStrokeWidths = useTemplateStore(state => state.templateStrokeWidths)
+  const positions = useTemplateStore(state => state.templateElementPositions)
 
-  const { title, steps, outcome } = data
+  const steps = data.steps ?? []
+  const outcome = data.outcome
   const W = 1000
-  const H = 380
   const cardW = 200
-  const cardH = 95
+  const cardH = 105
   const gap = 18
   const circleR = 16
   const arrowInset = 14
 
   const totalWidth = steps.length * cardW + (steps.length - 1) * gap
-  const startX = (W - totalWidth) / 2
-  const cardY = 150
+  const startX = Math.max(30, (W - totalWidth) / 2)
+  const cardY = 160
+
+  const getElementRect = (elementId: string, defaultRect: Rect): Rect => {
+    const stored = positions[elementId]
+    return {
+      x: stored?.x ?? defaultRect.x,
+      y: stored?.y ?? defaultRect.y,
+      width: stored?.width ?? defaultRect.width,
+      height: stored?.height ?? defaultRect.height,
+    }
+  }
+
+  const outcomeDefaultRect: Rect = { x: W / 2 - 150, y: cardY + cardH + 60, width: 300, height: 40 }
+  const outcomeVisualRect = getElementRect('outcome-badge', outcomeDefaultRect)
 
   return (
     <g ref={svgRef}>
-
-      {title && (
-        <text x={W / 2} y={50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
-          {title}
-        </text>
-      )}
-
       {steps.map((step, index) => {
         const elementId = `step-${index}`
-        const color = tplColors[elementId] ?? PALETTE[index % PALETTE.length]!
+        const defaultColor = PALETTE[index % PALETTE.length]!
+        const color = templateColors[elementId] ?? step.color ?? defaultColor
         const isSelected = selectedIds.has(elementId)
-        const bx = startX + index * (cardW + gap)
-        const by = cardY
-        const customPos = templateElementPositions[elementId]
-        const visualRect = {
-          x: customPos?.x ?? bx,
-          y: customPos?.y ?? by,
-          width: customPos?.width ?? cardW,
-          height: customPos?.height ?? cardH
-        }
+
+        const defaultBx = startX + index * (cardW + gap)
+        const defaultRect: Rect = { x: defaultBx, y: cardY, width: cardW, height: cardH }
+        const visualRect = getElementRect(elementId, defaultRect)
+
+        const titleLines = wrapTextByWidth(step.title, Math.max(10, Math.floor(visualRect.width / 9)))
+        const subtitleLines = step.subtitle
+          ? wrapTextByWidth(step.subtitle, Math.max(12, Math.floor(visualRect.width / 7.5)))
+          : []
+
+        const iconElement = renderDynamicIcon(step.icon, 16, '#FFFFFF')
 
         return (
-          <g key={index}>
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} onClick={e => { e.stopPropagation(); toggleElement(elementId); }} style={{ cursor: 'pointer' }}>
-              <rect x={visualRect.x} y={visualRect.y} width={visualRect.width} height={visualRect.height} rx={8} fill={color} opacity={0.12} stroke={color} strokeWidth={1.5} />
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={event => startDrag(event, elementId, visualRect)}
+              transform={getTransform(elementId, visualRect)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect
+                x={visualRect.x}
+                y={visualRect.y}
+                width={visualRect.width}
+                height={visualRect.height}
+                rx={8}
+                fill={color}
+                opacity={0.12}
+                stroke={templateStrokeColors[elementId] ?? (isSelected ? '#4a90d9' : color)}
+                strokeWidth={templateStrokeWidths[elementId] ?? (isSelected ? 2.5 : 1.5)}
+              />
 
-              <CircleBadge cx={visualRect.x + visualRect.width / 2} cy={visualRect.y + 28} r={circleR} fill={color} label={String(step.number)} fontSize={13} />
+              <CircleBadge
+                cx={visualRect.x + visualRect.width / 2}
+                cy={visualRect.y + 28}
+                r={circleR}
+                fill={color}
+                label={iconElement ? '' : String(step.number)}
+                fontSize={13}
+              />
 
-              <text x={visualRect.x + visualRect.width / 2} y={visualRect.y + 58} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#333">
-                {step.title.length > 20 ? step.title.slice(0, 18) + '...' : step.title}
+              {iconElement && (
+                <g transform={`translate(${visualRect.x + visualRect.width / 2 - 8}, ${visualRect.y + 20})`}>
+                  {iconElement}
+                </g>
+              )}
+
+              <text
+                x={visualRect.x + visualRect.width / 2}
+                y={visualRect.y + 58}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={13}
+                fontWeight={700}
+                fill="#333"
+              >
+                {titleLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={visualRect.x + visualRect.width / 2} dy={lineIndex === 0 ? 0 : 16}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
 
-              {step.subtitle && (
-                <text x={visualRect.x + visualRect.width / 2} y={visualRect.y + 78} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#666">
-                  {step.subtitle.length > 26 ? step.subtitle.slice(0, 24) + '...' : step.subtitle}
+              {subtitleLines.length > 0 && (
+                <text
+                  x={visualRect.x + visualRect.width / 2}
+                  y={visualRect.y + 60 + titleLines.length * 16}
+                  textAnchor="middle"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={10}
+                  fill="#666"
+                >
+                  {subtitleLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={visualRect.x + visualRect.width / 2} dy={lineIndex === 0 ? 0 : 13}>
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
               )}
 
               {isSelected && (
-                <rect x={visualRect.x - 1} y={visualRect.y - 1} width={visualRect.width + 2} height={visualRect.height + 2} rx={8} fill="none" stroke="#4a90d9" strokeWidth={2} strokeDasharray="4 2" />
+                <rect
+                  x={visualRect.x - 1}
+                  y={visualRect.y - 1}
+                  width={visualRect.width + 2}
+                  height={visualRect.height + 2}
+                  rx={8}
+                  fill="none"
+                  stroke="#4a90d9"
+                  strokeWidth={2}
+                  strokeDasharray="4 2"
+                />
               )}
 
               {isSelected && renderHandles(visualRect, elementId)}
@@ -78,14 +176,9 @@ export function Process4Template({ data }: { data: Process4Data }): ReactElement
             {index < steps.length - 1 && (() => {
               const nextId = `step-${index + 1}`
               const nextBx = startX + (index + 1) * (cardW + gap)
-              const nextBy = cardY
-              const nextCustomPos = templateElementPositions[nextId]
-              const nextVisualRect = {
-                x: nextCustomPos?.x ?? nextBx,
-                y: nextCustomPos?.y ?? nextBy,
-                width: nextCustomPos?.width ?? cardW,
-                height: nextCustomPos?.height ?? cardH
-              }
+              const nextDefaultRect: Rect = { x: nextBx, y: cardY, width: cardW, height: cardH }
+              const nextVisualRect = getElementRect(nextId, nextDefaultRect)
+
               return (
                 <Arrow
                   from={{ x: visualRect.x + visualRect.width + arrowInset / 2, y: visualRect.y + visualRect.height / 2 }}
@@ -99,10 +192,27 @@ export function Process4Template({ data }: { data: Process4Data }): ReactElement
       })}
 
       {outcome && (
-        <text x={W / 2} y={H - 40} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={600} fill="#777">
-          Outcome: {outcome}
-        </text>
+        <g
+          data-element-id="outcome-badge"
+          onMouseDown={event => startDrag(event, 'outcome-badge', outcomeVisualRect)}
+          transform={getTransform('outcome-badge', outcomeVisualRect)}
+          style={{ cursor: 'pointer' }}
+        >
+          <text
+            x={outcomeVisualRect.x + outcomeVisualRect.width / 2}
+            y={outcomeVisualRect.y + 24}
+            textAnchor="middle"
+            fontFamily="Arial, sans-serif"
+            fontSize={13}
+            fontWeight={600}
+            fill="#777"
+          >
+            Outcome: {outcome}
+          </text>
+          {selectedIds.has('outcome-badge') && renderHandles(outcomeVisualRect, 'outcome-badge')}
+        </g>
       )}
     </g>
   )
 }
+

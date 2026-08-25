@@ -1,9 +1,12 @@
-import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { PuzzleData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
+const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6']
 const CELL_W = 260
 const CELL_H = 170
 const TAB_W = 50
@@ -52,10 +55,10 @@ function piecePath(
 }
 
 const PIECE_LAYOUTS = [
-  { tabs: { right: true, bottom: true } as const, offsetX: 0, offsetY: 0 },
-  { tabs: { bottom: true, leftIndent: true } as const, offsetX: CELL_W, offsetY: 0 },
-  { tabs: { right: true, topIndent: true } as const, offsetX: 0, offsetY: CELL_H },
-  { tabs: { leftIndent: true, topIndent: true } as const, offsetX: CELL_W, offsetY: CELL_H },
+  { tabs: { right: true, bottom: true } as const },
+  { tabs: { bottom: true, leftIndent: true } as const },
+  { tabs: { right: true, topIndent: true } as const },
+  { tabs: { leftIndent: true, topIndent: true } as const },
 ]
 
 export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
@@ -64,72 +67,83 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, pieces } = data
+  const { pieces } = data
   const W = 900
-
   const gridX = (W - CELL_W * 2) / 2
-  const gridY = title ? 110 : 80
+  const gridY = 40
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
-          {title}
-        </text>
-      )}
-
-      {pieces.map((piece, i) => {
-        const layout = PIECE_LAYOUTS[i % PIECE_LAYOUTS.length]!
-        const col = i % 2
-        const row = Math.floor(i / 2)
+      {pieces.map((piece, index) => {
+        const layout = PIECE_LAYOUTS[index % PIECE_LAYOUTS.length]!
+        const col = index % 2
+        const row = Math.floor(index / 2)
         const px = gridX + col * CELL_W
         const py = gridY + row * CELL_H
-        const cx = px + CELL_W / 2
-        const cy = py + CELL_H / 2
         const path = piecePath(px, py, layout.tabs)
 
-        const elementId = `piece-${i}`
-        const color = tplColors[elementId] ?? piece.color
+        const elementId = `piece-${index}`
+        const color = tplColors[elementId] ?? piece.color ?? PALETTE[index % PALETTE.length]!
         const stroke = tplStrokeColors[elementId] || 'white'
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3.5 : 3)
         const isSelected = selectedIds.has(elementId)
 
         const defaultRect = { x: px, y: py, width: CELL_W, height: CELL_H }
         const customPos = templateElementPositions[elementId]
-        const visualRect = {
+        const bbox = {
           x: customPos ? customPos.x : defaultRect.x,
           y: customPos ? customPos.y : defaultRect.y,
           width: customPos?.width || defaultRect.width,
           height: customPos?.height || defaultRect.height,
         }
-        const scaleX = visualRect.width / defaultRect.width
-        const scaleY = visualRect.height / defaultRect.height
+        const IconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] : undefined
+        const centerCx = bbox.x + bbox.width / 2
+        const centerCy = bbox.y + bbox.height / 2
+        const maxChars = Math.max(10, Math.floor((bbox.width - 60) / 8))
+        const titleLines = wrapTextByWidth(piece.title, maxChars)
+        const subtitleLines = piece.subtitle ? wrapTextByWidth(piece.subtitle, maxChars) : []
 
         return (
-          <g key={i}>
+          <g key={elementId}>
             <g
-              data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)}
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
               style={{ cursor: 'pointer' }}
             >
-              <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}>
-                <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3.5 : 3} strokeLinejoin="round" />
+              <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
 
-                <circle cx={px + 36} cy={py + 50} r={16} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
-                <text x={px + 36} y={py + 56} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
+              <circle cx={bbox.x + 36} cy={bbox.y + 44} r={16} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
+              {IconComponent ? (
+                <g transform={`translate(${bbox.x + 28}, ${bbox.y + 36})`}>
+                  <IconComponent size={16} color="white" />
+                </g>
+              ) : (
+                <text x={bbox.x + 36} y={bbox.y + 50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
                   {piece.number}
                 </text>
+              )}
 
-                <text x={cx + 10} y={cy + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={16} fontWeight={700} fill="white">
-                  {piece.title}
+              <text x={centerCx + 10} y={centerCy + (subtitleLines.length > 0 ? -4 : 4) - (titleLines.length > 1 ? (titleLines.length - 1) * 6 : 0)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={700} fill="white">
+                {titleLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={centerCx + 10} dy={lineIndex === 0 ? 0 : 15}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+              {piece.subtitle && (
+                <text x={centerCx + 10} y={centerCy + titleLines.length * 15 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fill="rgba(255,255,255,0.85)">
+                  {subtitleLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={centerCx + 10} dy={lineIndex === 0 ? 0 : 13}>
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
-                {piece.subtitle && (
-                  <text x={cx + 10} y={cy + 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fill="rgba(255,255,255,0.85)">
-                    {piece.subtitle}
-                  </text>
-                )}
-              </g>
-              {isSelected && renderHandles(visualRect, elementId)}
+              )}
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
           </g>
         )

@@ -2,6 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { TableData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { wrapTextByWidth } from '../shared/primitives'
 import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db']
@@ -11,41 +12,70 @@ export function Table2Template({ data }: { data: TableData }): ReactElement {
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, columns, rows } = data
+  const { columns, rows } = data
   const W = 900
-  const labelW = 100
+  const labelW = 120
   const tableX = 40
   const tableW = W - tableX * 2
   const headerH = 44
-  const rowH = 40
+  const rowH = 44
   const colW = (tableW - labelW) / Math.max(columns.length, 1)
-  const tableH = headerH + rows.length * rowH
-  const tableY = title ? 100 : 70
-  const headerColor = TITLE_COLOR
+  const tableY = 40
   const stripeA = '#ffffff'
   const stripeB = '#f1f5f9'
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
-          {title}
-        </text>
-      )}
+      {(() => {
+        const headerId = 'table-header'
+        const defaultBbox = { x: tableX, y: tableY, width: tableW, height: headerH }
+        const customPos = positions[headerId]
+        const bbox = {
+          x: customPos?.x ?? defaultBbox.x,
+          y: customPos?.y ?? defaultBbox.y,
+          width: customPos?.width ?? defaultBbox.width,
+          height: customPos?.height ?? defaultBbox.height,
+        }
+        const isSelected = selectedIds.has(headerId)
+        const headerColor = tplColors[headerId] || TITLE_COLOR
 
-      <rect x={tableX} y={tableY} width={tableW} height={tableH} rx={8} fill="#f8fafc" stroke="#cbd5e0" strokeWidth={1.5} />
-      <rect x={tableX} y={tableY} width={tableW} height={headerH} rx={8} fill={headerColor} />
-      <rect y={tableY + headerH - 8} width={tableW} height={8} fill={headerColor} />
+        return (
+          <g
+            key={headerId}
+            data-element-id={headerId}
+            onMouseDown={e => startDrag(e, headerId, bbox)}
+            transform={getTransform(headerId, bbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={headerColor} />
+            <rect x={bbox.x} y={bbox.y} width={labelW} height={bbox.height} fill="#2a4365" />
 
-      <rect x={tableX} y={tableY} width={labelW} height={headerH} fill="#2a4365" />
-      <rect y={tableY + headerH - 8} width={labelW} height={8} fill="#2a4365" />
+            <text x={bbox.x + labelW / 2} y={bbox.y + bbox.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
+              #
+            </text>
 
-      {columns.map((col, ci) => (
-        <text key={`h-${ci}`} x={tableX + labelW + ci * colW + colW / 2} y={tableY + headerH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={600} fill="white">
-          {col}
-        </text>
-      ))}
+            {columns.map((col, ci) => {
+              const maxColChars = Math.max(6, Math.floor(colW / 8))
+              const colLines = wrapTextByWidth(col, maxColChars)
+              const colCenterX = bbox.x + labelW + ci * colW + colW / 2
+              return (
+                <text key={`h-${ci}`} x={colCenterX} y={bbox.y + bbox.height / 2 + (colLines.length > 1 ? -3 : 5)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={600} fill="white">
+                  {colLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={colCenterX} dy={lineIndex === 0 ? 0 : 13}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              )
+            })}
+            {isSelected && renderHandles(bbox, headerId)}
+          </g>
+        )
+      })()}
 
       {rows.map((row, ri) => {
         const elementId = `row-${ri}`
@@ -53,36 +83,52 @@ export function Table2Template({ data }: { data: TableData }): ReactElement {
         const isSelected = selectedIds.has(elementId)
         const isEven = ri % 2 === 0
         const rowY = tableY + headerH + ri * rowH
-        const visualRect = { x: tableX, y: rowY, width: tableW, height: rowH }
+        const defaultBbox = { x: tableX, y: rowY, width: tableW, height: rowH }
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos?.x ?? defaultBbox.x,
+          y: customPos?.y ?? defaultBbox.y,
+          width: customPos?.width ?? defaultBbox.width,
+          height: customPos?.height ?? defaultBbox.height,
+        }
+        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (isSelected ? 2 : 0)
+        const labelLines = wrapTextByWidth(row.label, Math.max(6, Math.floor(labelW / 8)))
 
         return (
           <g key={`r-${ri}`}>
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={tableX} y={rowY} width={tableW} height={rowH} fill={isEven ? stripeA : stripeB} />
-              <rect x={tableX} y={rowY} width={labelW} height={rowH} fill={color} />
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} fill={isEven ? stripeA : stripeB} stroke={strokeColor} strokeWidth={strokeWidth} />
+              <rect x={bbox.x} y={bbox.y} width={labelW} height={bbox.height} fill={color} />
 
-              <text x={tableX + labelW / 2} y={rowY + rowH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="white">
-                {row.label}
+              <text x={bbox.x + labelW / 2} y={bbox.y + bbox.height / 2 + (labelLines.length > 1 ? -3 : 5)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="white">
+                {labelLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={bbox.x + labelW / 2} dy={lineIndex === 0 ? 0 : 13}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
 
-              {row.cells.slice(0, columns.length).map((cell, ci) => (
-                <text key={`c-${ri}-${ci}`} x={tableX + labelW + ci * colW + colW / 2} y={rowY + rowH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fill="#1a202c">
-                  {cell}
-                </text>
-              ))}
-              {isSelected && renderHandles(visualRect, elementId)}
+              {row.cells.slice(0, columns.length).map((cell, ci) => {
+                const maxCellChars = Math.max(6, Math.floor(colW / 8))
+                const cellLines = wrapTextByWidth(cell, maxCellChars)
+                const cellCenterX = bbox.x + labelW + ci * colW + colW / 2
+                return (
+                  <text key={`c-${ri}-${ci}`} x={cellCenterX} y={bbox.y + bbox.height / 2 + (cellLines.length > 1 ? -3 : 5)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fill="#1a202c">
+                    {cellLines.map((line, lineIndex) => (
+                      <tspan key={lineIndex} x={cellCenterX} dy={lineIndex === 0 ? 0 : 13}>
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+                )
+              })}
+              <line x1={bbox.x} y1={bbox.y + bbox.height} x2={bbox.x + bbox.width} y2={bbox.y + bbox.height} stroke="#e2e8f0" strokeWidth={1} />
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
           </g>
         )
       })}
-
-      {columns.map((_, ci) => (
-        <line key={`vline-${ci}`} x1={tableX + labelW + ci * colW} y1={tableY} x2={tableX + labelW + ci * colW} y2={tableY + tableH} stroke="rgba(255,255,255,0.3)" strokeWidth={1} />
-      ))}
-
-      {rows.map((_, ri) => (
-        <line key={`hline-${ri}`} x1={tableX} y1={tableY + headerH + (ri + 1) * rowH} x2={tableX + tableW} y2={tableY + headerH + (ri + 1) * rowH} stroke="#e2e8f0" strokeWidth={1} />
-      ))}
     </g>
   )
 }

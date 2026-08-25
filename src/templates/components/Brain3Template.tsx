@@ -4,6 +4,23 @@ import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { HEAD_PATH } from '../shared/headPath'
 import { MIGSO_PALETTE } from '../../lib/theme'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
+import { wrapTextByWidth } from '../shared/primitives'
+
+function getDynamicIcon(iconName?: string) {
+  if (!iconName) return null
+  const clean = iconName.trim()
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const LucideFn = (LucideIcons as Record<string, any>)[pascalName] || (LucideIcons as Record<string, any>)[clean] || (LucideIcons as Record<string, any>)[clean.toUpperCase()]
+  if (LucideFn) {
+    return (props: { size?: number; color?: string }) => <LucideFn size={props.size ?? 20} color={props.color ?? 'white'} />
+  }
+  return null
+}
 
 export function Brain3Template({ data }: { data: BrainData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -11,6 +28,8 @@ export function Brain3Template({ data }: { data: BrainData }): ReactElement {
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
   const clipId = `clip-${uid}-head`
@@ -97,15 +116,49 @@ export function Brain3Template({ data }: { data: BrainData }): ReactElement {
         {isHeadSelected && renderHandles(headBbox, headId)}
       </g>
 
+      {/* Center Label (if defined in DSL) — Interactive */}
+      {data.centerLabel && (() => {
+        const centerId = 'center-label'
+        const defaultCenterBbox = { x: headBbox.x + headBbox.width / 2 - 70, y: headBbox.y + headBbox.height + 12, width: 140, height: 36 }
+        const customCenterPos = positions[centerId]
+        const centerBbox = {
+          x: customCenterPos?.x ?? defaultCenterBbox.x,
+          y: customCenterPos?.y ?? defaultCenterBbox.y,
+          width: customCenterPos?.width ?? defaultCenterBbox.width,
+          height: customCenterPos?.height ?? defaultCenterBbox.height,
+        }
+        const isCenterSelected = selectedIds.has(centerId)
+        const centerFill = tplColors[centerId] ?? '#1a1a2e'
+        const centerStroke = tplStrokeColors[centerId] || (isCenterSelected ? '#4a90d9' : 'none')
+        const centerStrokeW = tplStrokeWidths[centerId] !== undefined ? tplStrokeWidths[centerId] : (isCenterSelected ? 2.5 : 0)
+
+        return (
+          <g
+            key={centerId}
+            data-element-id={centerId}
+            onMouseDown={e => startDrag(e, centerId, centerBbox)}
+            transform={getTransform(centerId, centerBbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect x={centerBbox.x} y={centerBbox.y} width={centerBbox.width} height={centerBbox.height} rx={18} fill={centerFill} stroke={centerStroke} strokeWidth={centerStrokeW} />
+            <text x={centerBbox.x + centerBbox.width / 2} y={centerBbox.y + centerBbox.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
+              {data.centerLabel}
+            </text>
+            {isCenterSelected && renderHandles(centerBbox, centerId)}
+          </g>
+        )
+      })()}
+
       {/* Callouts with Dynamic Connectors to zone centers */}
       {branches.map((branch, i) => {
         const id = `callout-${i}`
         const zoneId = `zone-${i}`
         const color = tplColors[id] ?? branch.color ?? tplColors[zoneId] ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
-        
+
         const isLeft = i % 2 === 0
-        const cW = 230, cH = 74
-        
+        const cW = 240
+        const cH = 74
+
         const zonePos = positions[zoneId]
         const zX = zonePos?.x ?? headBbox.x
         const zY = zonePos?.y ?? (headBbox.y + i * sliceH)
@@ -124,9 +177,15 @@ export function Brain3Template({ data }: { data: BrainData }): ReactElement {
           width: pos?.width ?? cW, height: pos?.height ?? cH
         }
         const isSel = selectedIds.has(id)
-        
+
         const connStartX = isLeft ? bbox.x + bbox.width : bbox.x
         const connStartY = bbox.y + bbox.height / 2
+
+        const maxChars = Math.max(10, Math.floor(bbox.width / 7.5))
+        const titleLines = wrapTextByWidth(branch.title, maxChars)
+        const subtitleLabel = [branch.subtitle ?? `Step ${i + 1}`, branch.val, branch.pct].filter(Boolean).join(' · ')
+        const subtitleLines = wrapTextByWidth(subtitleLabel, maxChars)
+        const IconFn = getDynamicIcon(branch.icon)
 
         return (
           <g key={id}>
@@ -143,14 +202,33 @@ export function Brain3Template({ data }: { data: BrainData }): ReactElement {
                 filter="drop-shadow(0 2px 8px rgba(0,0,0,0.10))" />
               <rect x={isLeft ? bbox.x : bbox.x + bbox.width - 6} y={bbox.y}
                 width={6} height={bbox.height} rx={3} fill={color} />
-              <text x={isLeft ? bbox.x + 16 : bbox.x + 12} y={bbox.y + 26}
+
+              {IconFn && (
+                <g transform={`translate(${isLeft ? bbox.x + bbox.width - 32 : bbox.x + 14}, ${bbox.y + 14})`}>
+                  <IconFn size={20} color={color} />
+                </g>
+              )}
+
+              <text x={isLeft ? bbox.x + 16 : bbox.x + 12 + (IconFn ? 24 : 0)} y={bbox.y + (subtitleLines.length > 0 ? 22 : bbox.height / 2 + 5)}
                 fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#1a1a2e">
-                {branch.title}
+                {titleLines.map((line, li) => (
+                  <tspan key={li} x={isLeft ? bbox.x + 16 : bbox.x + 12 + (IconFn ? 24 : 0)} dy={li === 0 ? 0 : 14}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
-              <text x={isLeft ? bbox.x + 16 : bbox.x + 12} y={bbox.y + 50}
-                fontFamily="Arial, sans-serif" fontSize={11} fill="#666">
-                {branch.subtitle ?? `Description ${i + 1}`}
-              </text>
+
+              {subtitleLines.length > 0 && (
+                <text x={isLeft ? bbox.x + 16 : bbox.x + 12 + (IconFn ? 24 : 0)} y={bbox.y + 22 + titleLines.length * 14 + 3}
+                  fontFamily="Arial, sans-serif" fontSize={11} fill="#666">
+                  {subtitleLines.map((line, li) => (
+                    <tspan key={li} x={isLeft ? bbox.x + 16 : bbox.x + 12 + (IconFn ? 24 : 0)} dy={li === 0 ? 0 : 12}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              )}
+
               {isSel && renderHandles(bbox, id)}
             </g>
           </g>

@@ -2,142 +2,104 @@ import { useRef, type ReactElement } from 'react'
 import type { AgendaData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50', '#ff9800', '#9c27b0', '#00bcd4']
+const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6']
+const CARD_W = 540
+const CARD_H = 74
+const GAP = 14
 
 export function Agenda2Template({ data }: { data: AgendaData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, items } = data
-  const W = 960
-  const cardW = 180
-  const cardH = 90
-  const gap = 24
-  const displayItems = items.slice(0, 4)
-  const totalW = displayItems.length * cardW + (displayItems.length - 1) * gap
-  const startX = (W - totalW) / 2
-  const cardY = title ? 130 : 90
-  const circleR = 20
-  const lineY = cardY + cardH / 2
+  const { items } = data
+  const W = 900
+  const startX = (W - CARD_W) / 2
+  const startY = 40
 
   return (
     <g ref={svgRef}>
-      {title && (() => {
-        const elementId = 'title'
-        const customPos = templateElementPositions[elementId]
-        const isSelected = selectedIds.has(elementId)
-        // Estimate the bounding box for the title text
-        // x: center - half_width, y: baseline - font_size, width: estimated_width, height: estimated_height
-        const defaultBbox = { x: W / 2 - 150, y: 48 - 22, width: 300, height: 30 } // Estimated dimensions for a typical title
-
+      {items.map((item, index) => {
+        const elementId = `item-${index}`
+        const defaultRect = { x: startX, y: startY + index * (CARD_H + GAP), width: CARD_W, height: CARD_H }
+        const customPos = positions[elementId]
         const bbox = {
-          x: customPos?.x ?? defaultBbox.x,
-          y: customPos?.y ?? defaultBbox.y,
-          width: customPos?.width ?? defaultBbox.width,
-          height: customPos?.height ?? defaultBbox.height
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
         }
-        const scaleX = bbox.width / defaultBbox.width
-        const scaleY = bbox.height / defaultBbox.height
+
+        const defaultColor = item.color || PALETTE[index % PALETTE.length]!
+        const color = tplColors[elementId] ?? defaultColor
+        const strokeColor = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : '#e2e8f0')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1.5)
+        const isSelected = selectedIds.has(elementId)
+        const IconComponent = item.icon ? TEMPLATE_ICONS[item.icon] : undefined
+
+        const maxTitleChars = Math.max(8, Math.floor((bbox.width - 140) / 8))
+        const titleLines = wrapTextByWidth(item.title, maxTitleChars)
+        const descLines = item.description ? wrapTextByWidth(item.description, maxTitleChars) : []
 
         return (
-          <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
-            <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
-              <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
-                {title}
-              </text>
-            </g>
-            {isSelected && renderHandles(bbox, elementId)}
-          </g>
-        )
-      })()}
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={12} fill="white" stroke={strokeColor} strokeWidth={strokeWidth} />
+              <rect x={bbox.x} y={bbox.y} width={54} height={bbox.height} rx={12} fill={color} />
+              <rect x={bbox.x + 38} y={bbox.y} width={16} height={bbox.height} fill={color} />
 
-      {(() => {
-        const elementId = 'timeline-line'
-        const customPos = templateElementPositions[elementId]
-        const isSelected = selectedIds.has(elementId)
-        // defaultBbox for the line
-        // x1: startX + circleR, y1: lineY (top edge for bbox is lineY - strokeWidth/2)
-        // width: totalW - 2 * circleR, height: strokeWidth
-        const lineStrokeWidth = 2
-        const defaultBbox = { x: startX + circleR, y: lineY - lineStrokeWidth / 2, width: totalW - 2 * circleR, height: lineStrokeWidth }
-
-        const bbox = {
-          x: customPos?.x ?? defaultBbox.x,
-          y: customPos?.y ?? defaultBbox.y,
-          width: customPos?.width ?? defaultBbox.width,
-          height: customPos?.height ?? defaultBbox.height
-        }
-        const scaleX = bbox.width / defaultBbox.width
-        const scaleY = bbox.height / defaultBbox.height
-
-        return (
-          <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
-            <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
-              <line x1={startX + circleR} y1={lineY} x2={startX + totalW - circleR} y2={lineY} stroke="#cbd5e0" strokeWidth={lineStrokeWidth} />
-            </g>
-            {isSelected && renderHandles(bbox, elementId)}
-          </g>
-        )
-      })()}
-
-      {displayItems.map((item, i) => {
-        const elementId = `item-${i}`
-        const color = tplColors[elementId] ?? PALETTE[i % PALETTE.length]!
-        const cx = startX + i * (cardW + gap) // This `cx` is the start of the *card*
-
-        // Calculate defaultBbox for the entire item (card + circle + number)
-        const circleCenterX = cx + cardW / 2
-        const circleCenterY = lineY
-
-        const minX = Math.min(cx, circleCenterX - circleR)
-        const maxX = Math.max(cx + cardW, circleCenterX + circleR)
-        const minY = Math.min(cardY, circleCenterY - circleR)
-        const maxY = Math.max(cardY + cardH, circleCenterY + circleR)
-
-        const defaultBbox = {
-          x: minX,
-          y: minY,
-          width: maxX - minX,
-          height: maxY - minY
-        }
-
-        const customPos = templateElementPositions[elementId]
-        const isSelected = selectedIds.has(elementId)
-
-        const bbox = {
-          x: customPos?.x ?? defaultBbox.x,
-          y: customPos?.y ?? defaultBbox.y,
-          width: customPos?.width ?? defaultBbox.width,
-          height: customPos?.height ?? defaultBbox.height
-        }
-
-        const scaleX = bbox.width / defaultBbox.width
-        const scaleY = bbox.height / defaultBbox.height
-
-        return (
-          <g key={elementId} data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
-            <g transform={`translate(${bbox.x}, ${bbox.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBbox.x}, ${-defaultBbox.y})`}>
-              <circle cx={circleCenterX} cy={circleCenterY} r={circleR} fill={color} />
-              <text x={circleCenterX} y={lineY + 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
-                {item.number}
-              </text>
-
-              <rect x={cx} y={cardY} width={cardW} height={cardH} rx={10} fill="white" stroke={isSelected ? '#4a90d9' : '#e2e8f0'} strokeWidth={isSelected ? 2.5 : 1.5} />
-              <text x={cx + cardW / 2} y={cardY + 36} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill={color}>
-                {item.title}
-              </text>
-              {item.subtitle && (
-                <text x={cx + cardW / 2} y={cardY + 60} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#777">
-                  {item.subtitle.length > 24 ? item.subtitle.slice(0, 22) + '..' : item.subtitle}
+              {IconComponent ? (
+                <g transform={`translate(${bbox.x + 18}, ${bbox.y + bbox.height / 2 - 9})`}>
+                  <IconComponent size={18} color="white" />
+                </g>
+              ) : (
+                <text x={bbox.x + 27} y={bbox.y + bbox.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={800} fill="white">
+                  {item.number || `0${index + 1}`}
                 </text>
               )}
+
+              {item.time && (
+                <g transform={`translate(${bbox.x + bbox.width - 90}, ${bbox.y + 12})`}>
+                  <rect x={0} y={0} width={76} height={20} rx={10} fill="#f1f5f9" />
+                  <text x={38} y={14} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill="#475569">
+                    {item.time}
+                  </text>
+                </g>
+              )}
+
+              <text x={bbox.x + 70} y={bbox.y + bbox.height / 2 + (item.description ? -3 : 5) - (titleLines.length > 1 ? 5 : 0)} fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="#1a202c">
+                {titleLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={bbox.x + 70} dy={lineIndex === 0 ? 0 : 14}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+
+              {item.description && (
+                <text x={bbox.x + 70} y={bbox.y + bbox.height / 2 + titleLines.length * 14 + 1} fontFamily="Arial, sans-serif" fontSize={11} fill="#64748b">
+                  {descLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={bbox.x + 70} dy={lineIndex === 0 ? 0 : 12}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              )}
+
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
-            {isSelected && renderHandles(bbox, elementId)}
           </g>
         )
       })}

@@ -45,14 +45,15 @@ interface ShapeRendererProps {
 }
 
 export function ShapeRenderer({ shape, isSelected }: ShapeRendererProps) {
-  if (shape.isHidden) {
-    return null
-  }
   const isGroupFullySelected = useDiagramStore(s => {
     if (!shape.groupId) return false
     const groupShapes = s.shapes.filter(sh => sh.groupId === shape.groupId)
     return groupShapes.length > 1 && groupShapes.every(sh => s.selectedShapeIds.has(sh.id))
   })
+
+  if (shape.isHidden) {
+    return null
+  }
   
   const showHandles = isSelected && !isGroupFullySelected
   const { dimensions, position, style, text, type } = shape

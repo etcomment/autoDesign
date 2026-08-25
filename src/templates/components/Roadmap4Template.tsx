@@ -1,4 +1,4 @@
-import { TITLE_COLOR, MIGSO_PALETTE } from '../../lib/theme'
+import { MIGSO_PALETTE } from '../../lib/theme'
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 import type { RoadmapData, TemplateMilestone } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
@@ -45,8 +45,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
   const moveEl = useTemplateStore(s => s.moveTemplateElement)
   const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
-  const { title, milestones = [], steps = [] } = data as {
-    title?: string
+  const { milestones = [], steps = [] } = data as {
     milestones?: TemplateMilestone[]
     steps?: Array<{ title: string; color?: string; icon?: string }>
   }
@@ -69,17 +68,15 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
 
   const count = Math.max(1, stepTitles.length)
 
-  // 2. Fonctions d'alternance cyclique vraie des virages (indépendamment du nombre d'étapes N)
+  // 2. Fonctions d'alternance cyclique vraie des virages
   const getTurnRightX = (index: number) => (Math.floor(index / 2) % 2 === 0 ? 660 : 710)
   const getTurnLeftX = (index: number) => (Math.floor((index - 1) / 2) % 2 === 0 ? 310 : 260)
 
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
-    map.set('main-title', { x: W / 2 - 200, y: 25, width: 400, height: 40 })
 
     const startY = 475
     const rowHeight = 115
-    const strokeW = 33
 
     const extensionLength = 160
     const arrowHeadW = 40
@@ -196,7 +193,6 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
   const templateElementGroupIds = useTemplateStore(s => s.templateElementGroupIds)
 
   useEffect(() => {
-    // Pré-initialisation de tous les rectangles dans le store
     for (const [id, rect] of defaultPositions.entries()) {
       if (!pos[id]) {
         moveEl(id, { x: rect.x, y: rect.y })
@@ -204,19 +200,17 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
       }
     }
 
-    // Initialisation des groupes natifs de template s'ils ne sont pas encore définis
     for (let i = 0; i < count; i++) {
       const idx = i + 1
       const bodyId = `step-body-${idx}`
       const arrowId = `step-arrow-${idx}`
       const stepId = `step-${idx}`
 
-      // Sous-groupe Ruban & Flèche uniquement (isolé du Titre/Description Jalon)
       if (!templateElementGroupIds[bodyId]) {
         groupTemplateElements([bodyId, arrowId, stepId])
       }
     }
-  }, [defaultPositions, moveEl, resizeEl, count, groupTemplateElements, templateElementGroupIds])
+  }, [defaultPositions, moveEl, resizeEl, count, groupTemplateElements, templateElementGroupIds, pos])
 
   const getR = (id: string): Rect => {
     const p = pos[id]
@@ -229,33 +223,8 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
     }
   }
 
-  const titleR = getR('main-title')
-
   return (
     <g ref={svgRef}>
-      {/* Titre principal */}
-      {title && (
-        <g
-          data-element-id="main-title"
-          onMouseDown={e => startDrag(e, 'main-title', titleR)}
-          transform={getTransform('main-title', titleR)}
-          style={{ cursor: 'pointer' }}
-        >
-          <text
-            x={titleR.x + titleR.width / 2}
-            y={titleR.y + 28}
-            textAnchor="middle"
-            fontFamily="Arial, sans-serif"
-            fontSize={22}
-            fontWeight={700}
-            fill={tplColors['main-title'] || TITLE_COLOR}
-          >
-            {title}
-          </text>
-          {selectedIds.has('main-title') && renderHandles(titleR, 'main-title')}
-        </g>
-      )}
-
       {/* COUCHE 1 : RENDU DES SEGMENTS (step-body-X) */}
       {Array.from({ length: count }).map((_, i) => {
         const idx = i + 1
@@ -322,7 +291,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })}
 
-      {/* COUCHE 2 : FLÈCHES TRIANGULAIRES AU-DESSUS DE LA COUCHE 1 */}
+      {/* COUCHE 2 : FLÈCHES TRIANGULAIRES */}
       {Array.from({ length: count }).map((_, i) => {
         const idx = i + 1
         const bodyId = `step-body-${idx}`
@@ -355,7 +324,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })}
 
-      {/* COUCHE 3 : LABELS D'ÉTAPES SUR LES RUBANS & ICÔNES SUR LES POINTES DE FLÈCHE */}
+      {/* COUCHE 3 : LABELS D'ÉTAPES SUR LES RUBANS & ICÔNES */}
       {Array.from({ length: count }).map((_, i) => {
         const idx = i + 1
         const stepId = `step-${idx}`
@@ -467,7 +436,7 @@ export function Roadmap4Template({ data }: { data: RoadmapData }): ReactElement 
         )
       })}
 
-      {/* COUCHE 5 : POIGNÉES DE SÉLECTION (Toujours au premier plan absolu) */}
+      {/* COUCHE 5 : POIGNÉES DE SÉLECTION */}
       {Array.from(selectedIds).map(id => {
         const r = getR(id)
         return <g key={`handles-${id}`}>{renderHandles(r, id)}</g>

@@ -1,13 +1,26 @@
 import { useRef, type ReactElement } from 'react'
 import type { ManufacturingData } from '../types'
-import { Arrow } from '../shared/primitives'
-import { GearIcon, StarIcon } from '../shared/icons'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { renderMultiLineText } from '../shared/primitives'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c']
+const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c']
+
+function chevronPath(x: number, y: number, w: number, h: number, arrow: number): string {
+  const r = x + w
+  const b = y + h
+  const my = y + h / 2
+  return `M ${x} ${y} L ${r - arrow} ${y} L ${r} ${my} L ${r - arrow} ${b} L ${x} ${b} L ${x + arrow} ${my} Z`
+}
+
+function firstChevronPath(x: number, y: number, w: number, h: number, arrow: number): string {
+  const r = x + w
+  const b = y + h
+  const my = y + h / 2
+  return `M ${x} ${y} L ${r - arrow} ${y} L ${r} ${my} L ${r - arrow} ${b} L ${x} ${b} Z`
+}
 
 export function ManufacturingTemplate({ data }: { data: ManufacturingData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -16,116 +29,90 @@ export function ManufacturingTemplate({ data }: { data: ManufacturingData }): Re
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
-  const positions = useTemplateStore(s => s.templateElementPositions)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, stations } = data
-  const W = 1000
-  const startX = 120
-  const boxW = 130
-  const boxH = 80
-  const gap = 20
-  const y = 180
-
-  const totalWidth = stations.length * boxW + (stations.length - 1) * gap
-  const firstBoxX = (W - totalWidth) / 2
+  const { stations = [] } = data
+  const W = 900
+  const count = Math.max(1, stations.length)
+  const arrow = 18
+  const chevronW = Math.min(170, (W - 80) / count)
+  const chevronH = 110
+  const startX = (W - count * chevronW) / 2
+  const startY = 50
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#222">
-          {title}
-        </text>
-      )}
+      {stations.map((station, index) => {
+        const x = startX + index * chevronW
+        const path = index === 0
+          ? firstChevronPath(x, startY, chevronW, chevronH, arrow)
+          : chevronPath(x, startY, chevronW, chevronH, arrow)
 
-      <text x={startX - 40} y={y + boxH / 2 + 4} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#888">
-        INPUT
-      </text>
-      <rect x={startX - 8} y={y + (boxH - 36) / 2} width={36} height={36} rx={8} fill="#f0f4ff" stroke="#4a90d9" strokeWidth={1.5} />
-      <circle cx={startX + 10} cy={y + boxH / 2} r={8} fill="#4a90d9" />
-
-      {stations.map((station, i) => {
-        const elementId = `station-${i}`
-        const color = tplColors[elementId] ?? PALETTE[i % PALETTE.length]!
+        const defaultColor = station.color || PALETTE[index % PALETTE.length]!
+        const elementId = `station-${index}`
+        const color = tplColors[elementId] ?? defaultColor
+        const stroke = tplStrokeColors[elementId] || 'white'
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3 : 2)
         const isSelected = selectedIds.has(elementId)
-        const bx = firstBoxX + i * (boxW + gap)
 
-        if (station.isQuality) {
-          const diamondW = 110
-          const diamondH = 76
-          const dx = bx + (boxW - diamondW) / 2
-          const dy = y + (boxH - diamondH) / 2
-          const dmx = dx + diamondW / 2
-          const dmy = dy + diamondH / 2
-          const visualRect = { x: dx, y: dy, width: diamondW, height: diamondH }
-
-          return (
-            <g key={i}>
-              <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-                <polygon
-                  points={`${dmx},${dy} ${dx + diamondW},${dmy} ${dmx},${dy + diamondH} ${dx},${dmy}`}
-                  fill="#fff3e0"
-                  stroke={isSelected ? '#4a90d9' : '#e67e22'}
-                  strokeWidth={isSelected ? 2.5 : 2}
-                  strokeDasharray={isSelected ? '4 2' : undefined}
-                />
-                <text x={dmx} y={dmy - 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="#e67e22">
-                  {station.title}
-                </text>
-                {station.subtitle && (
-                  <text x={dmx} y={dmy + 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#888">
-                    {station.subtitle}
-                  </text>
-                )}
-                {isSelected && renderHandles(visualRect, elementId)}
-              </g>
-            </g>
-          )
+        const defaultRect = { x, y: startY, width: chevronW, height: chevronH }
+        const customPos = templateElementPositions[elementId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
         }
-
-        const visualRect = { x: bx, y, width: boxW, height: boxH }
+        const IconComponent = station.icon ? TEMPLATE_ICONS[station.icon] : undefined
+        const centerCx = bbox.x + bbox.width / 2
+        const centerCy = bbox.y + bbox.height / 2
+        const maxChars = Math.max(6, Math.floor((bbox.width - 30) / 8))
+        const titleLines = wrapTextByWidth(station.title, maxChars)
+        const subtitleLines = station.subtitle ? wrapTextByWidth(station.subtitle, maxChars) : []
 
         return (
-          <g key={i}>
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={bx} y={y} width={boxW} height={boxH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 2} strokeDasharray={isSelected ? '4 2' : undefined} />
-              <g transform={`translate(${bx + boxW / 2 - 12}, ${y + 10})`}>
-                <GearIcon size={24} color={color} />
-              </g>
-              <text x={bx + boxW / 2} y={y + boxH - 18} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill={color}>
-                {station.title.length > 16 ? station.title.slice(0, 14) + '..' : station.title}
-              </text>
-              {station.subtitle && (
-                <text x={bx + boxW / 2} y={y + boxH + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#777">
-                  {station.subtitle.length > 20 ? station.subtitle.slice(0, 18) + '..' : station.subtitle}
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
+
+              {IconComponent ? (
+                <g transform={`translate(${centerCx - 9}, ${centerCy - 30})`}>
+                  <IconComponent size={18} color="white" />
+                </g>
+              ) : (
+                <circle cx={centerCx} cy={centerCy - 20} r={12} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={1.5} />
+              )}
+              {!IconComponent && (
+                <text x={centerCx} y={centerCy - 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
+                  {index + 1}
                 </text>
               )}
-              {isSelected && renderHandles(visualRect, elementId)}
+
+              <text x={centerCx} y={centerCy + 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
+                {titleLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={centerCx} dy={lineIndex === 0 ? 0 : 12}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+
+              {station.subtitle && (
+                <text x={centerCx} y={centerCy + 8 + titleLines.length * 12 + 2} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="rgba(255,255,255,0.85)">
+                  {subtitleLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={centerCx} dy={lineIndex === 0 ? 0 : 10}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              )}
+
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
-          </g>
-        )
-      })}
-
-      {Array.from({ length: stations.length }).map((_, i) => {
-        const bx = firstBoxX + i * (boxW + gap)
-        const nextBx = firstBoxX + (i + 1) * (boxW + gap)
-
-        const fromX = bx + boxW
-        const fromY = y + boxH / 2
-
-        if (i < stations.length - 1) {
-          const color = PALETTE[i % PALETTE.length]!
-          return <Arrow key={`arr-${i}`} from={{ x: fromX, y: fromY }} to={{ x: nextBx, y: fromY }} color={color} />
-        }
-
-        return (
-          <g key={`out-${i}`}>
-            <Arrow from={{ x: fromX, y: fromY }} to={{ x: fromX + 40, y: fromY }} color="#4a90d9" />
-            <g transform={`translate(${fromX + 48}, ${fromY - 18})`}>
-              <StarIcon size={32} fill="#ffc107" color="#e0a800" />
-            </g>
-            <text x={fromX + 50} y={fromY + 28} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill="#888">
-              OUTPUT
-            </text>
           </g>
         )
       })}

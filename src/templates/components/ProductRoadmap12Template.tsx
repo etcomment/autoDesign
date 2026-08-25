@@ -2,10 +2,33 @@ import { useRef, type ReactElement } from 'react'
 import type { ProductRoadmapData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
+import { MIGSO_PALETTE } from '../../lib/theme'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c']
-const BADGE_H = 28
+const BADGE_H = 34
+
+function getDynamicIcon(iconName?: string, size = 16, color = '#ffffff'): ReactElement | null {
+  if (!iconName) return null
+  const clean = iconName.trim()
+
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn({ size, color })
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const lucideRecord = LucideIcons as Record<string, unknown>
+  const LucideFn = (lucideRecord[pascalName] || lucideRecord[clean] || lucideRecord[clean.toUpperCase()]) as
+    | React.ComponentType<{ size?: number; color?: string }>
+    | undefined
+
+  if (LucideFn) {
+    return <LucideFn size={size} color={color} />
+  }
+
+  return null
+}
 
 export function ProductRoadmap12Template({ data }: { data: ProductRoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -15,36 +38,16 @@ export function ProductRoadmap12Template({ data }: { data: ProductRoadmapData })
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const pos = useTemplateStore(s => s.templateElementPositions)
-  const moveEl = useTemplateStore(s => s.moveTemplateElement)
-  const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
-  const { title, quarters, milestones } = data
+  const { quarters = [], milestones = [] } = data
   const W = 960
   const marginX = 60
-  const topY = title ? 110 : 70
+  const topY = 40
   const circleR = 28
-  const BADGE_H = 28
   const colW = (W - marginX * 2) / Math.max(quarters.length, 1)
 
   return (
     <g ref={svgRef}>
-      {(() => {
-        const r = pos['main-title'] ?? { x: W / 2 - 250, y: 15, width: 500, height: 35 }
-        const fill = tplColors['main-title'] ?? TITLE_COLOR
-        const stroke = tplStrokeColors['main-title']
-        const sW = tplStrokeWidths['main-title'] ?? 1
-        return title ? (
-          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
-            {title.split('\n').map((line, i) => (
-              <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
-                {line}
-              </text>
-            ))}
-            {selectedIds.has('main-title') && renderHandles(r, 'main-title')}
-          </g>
-        ) : null
-      })()}
-
       {quarters.map((q, qi) => {
         const colX = marginX + qi * colW
         const centerX = colX + colW / 2
@@ -62,21 +65,56 @@ export function ProductRoadmap12Template({ data }: { data: ProductRoadmapData })
 
         return (
           <g key={`q-${qi}`}>
-            <g onMouseDown={e => startDrag(e, headerId, headerRect)} transform={getTransform(headerId, headerRect)} style={{ cursor: 'pointer' }}>
-              <circle cx={headerRect.x + headerRect.width / 2} cy={headerRect.y + headerRect.height / 2} r={headerRect.width / 2} fill={headerFill} stroke={headerStroke} strokeWidth={headerStroke ? headerStrokeWidth : undefined} />
-              <text x={headerRect.x + headerRect.width / 2} y={headerRect.y + headerRect.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
+            {/* Quarter Circle Header */}
+            <g
+              data-element-id={headerId}
+              onMouseDown={e => startDrag(e, headerId, headerRect)}
+              transform={getTransform(headerId, headerRect)}
+              style={{ cursor: 'pointer' }}
+            >
+              <circle
+                cx={headerRect.x + headerRect.width / 2}
+                cy={headerRect.y + headerRect.height / 2}
+                r={headerRect.width / 2}
+                fill={headerFill}
+                stroke={headerStroke}
+                strokeWidth={headerStroke ? headerStrokeWidth : undefined}
+              />
+              <text
+                x={headerRect.x + headerRect.width / 2}
+                y={headerRect.y + headerRect.height / 2 + 4}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={12.5}
+                fontWeight={700}
+                fill="#ffffff"
+              >
                 {q.label}
               </text>
               {isHeaderSel && renderHandles(headerRect, headerId)}
             </g>
 
+            {/* Year Label */}
             {q.year && (() => {
               const yearId = `year-${qi}`
-              const defaultYear = { x: centerX - 20, y: topY + circleR * 2 + 16 - 10, width: 40, height: 14 }
+              const defaultYear = { x: centerX - 25, y: topY + circleR * 2 + 10, width: 50, height: 16 }
               const yr = pos[yearId] ?? defaultYear
               return (
-                <g onMouseDown={e => startDrag(e, yearId, yr)} transform={getTransform(yearId, yr)} style={{ cursor: 'pointer' }}>
-                  <text x={yr.x + yr.width/2} y={yr.y + 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill={tplColors[yearId] ?? "#888"}>
+                <g
+                  data-element-id={yearId}
+                  onMouseDown={e => startDrag(e, yearId, yr)}
+                  transform={getTransform(yearId, yr)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <text
+                    x={yr.x + yr.width / 2}
+                    y={yr.y + 12}
+                    textAnchor="middle"
+                    fontFamily="Arial, sans-serif"
+                    fontSize={11}
+                    fontWeight={600}
+                    fill={tplColors[yearId] ?? '#666666'}
+                  >
                     {q.year}
                   </text>
                   {selectedIds.has(yearId) && renderHandles(yr, yearId)}
@@ -84,54 +122,124 @@ export function ProductRoadmap12Template({ data }: { data: ProductRoadmapData })
               )
             })()}
 
+            {/* Vertical connector line */}
             {(() => {
               const lineId = `line-${qi}`
-              const defaultLine = { x: centerX - 1, y: topY + circleR * 2 + 24, width: 2, height: 12 }
+              const defaultLine = { x: centerX - 1, y: topY + circleR * 2 + (q.year ? 28 : 12), width: 2, height: 14 }
               const lr = pos[lineId] ?? defaultLine
               return (
-                <g onMouseDown={e => startDrag(e, lineId, lr)} transform={getTransform(lineId, lr)} style={{ cursor: 'pointer' }}>
-                  <line x1={lr.x + lr.width / 2} y1={lr.y} x2={lr.x + lr.width / 2} y2={lr.y + lr.height} stroke={tplStrokeColors[lineId] ?? '#cbd5e0'} strokeWidth={tplStrokeWidths[lineId] ?? 1} />
+                <g
+                  data-element-id={lineId}
+                  onMouseDown={e => startDrag(e, lineId, lr)}
+                  transform={getTransform(lineId, lr)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <line
+                    x1={lr.x + lr.width / 2}
+                    y1={lr.y}
+                    x2={lr.x + lr.width / 2}
+                    y2={lr.y + lr.height}
+                    stroke={tplStrokeColors[lineId] ?? '#cbd5e0'}
+                    strokeWidth={tplStrokeWidths[lineId] ?? 1.5}
+                  />
                   {selectedIds.has(lineId) && renderHandles(lr, lineId)}
                 </g>
               )
             })()}
 
+            {/* Milestone Badges */}
             {quarterMilestones.map((m, mi) => {
               const elementId = `q-${qi}-m-${mi}`
-              const mColor = tplColors[elementId] ?? m.style?.fill ?? PALETTE[mi % PALETTE.length]!
+              const mColor = tplColors[elementId] ?? m.style?.fill ?? m.color ?? PALETTE[mi % PALETTE.length]!
               const customStroke = tplStrokeColors[elementId]
               const customStrokeWidth = tplStrokeWidths[elementId] ?? 1.5
               const styleStroke = m.style?.stroke
               const isSelected = selectedIds.has(elementId)
-              const badgeY = topY + circleR * 2 + 44 + mi * (BADGE_H + 8)
-              const textW = Math.min((m.subtitle ? m.title.length * 8 + 20 : m.title.length * 8 + 20), colW - 16)
-              const badgeW = m.style?.boxWidth ?? Math.max(textW, 80)
+              const badgeY = topY + circleR * 2 + (q.year ? 46 : 30) + mi * (BADGE_H + 10)
+              const badgeW = m.style?.boxWidth ?? Math.min(colW - 16, 170)
               const badgeH = m.style?.boxHeight ?? BADGE_H
               const badgeX = centerX - badgeW / 2
               const defaultMRect = { x: badgeX, y: badgeY, width: badgeW, height: badgeH }
               const visualRect = pos[elementId] ?? defaultMRect
-              const styleFontSize = m.style?.fontSize ?? 11
+
+              const styleFontSize = m.style?.fontSize ?? 11.5
               const styleFontWeight = m.style?.fontWeight ?? 600
-              const styleFontColor = m.style?.fontColor ?? 'white'
+              const styleFontColor = m.style?.fontColor ?? '#ffffff'
+
+              const maxTitleChars = Math.max(6, Math.floor((visualRect.width - 24) / 7.5))
+              const titleLines = wrapTextByWidth(m.title || '', maxTitleChars)
+
+              const iconEl = getDynamicIcon(m.icon, 14, styleFontColor)
 
               return (
                 <g key={`qm-${qi}-${mi}`}>
+                  {/* Dynamic connection connector */}
                   {(() => {
                     const mLineId = `mline-${qi}-${mi}`
-                    const defaultMLine = { x: centerX - 1, y: visualRect.y - 8, width: 2, height: 8 }
+                    const defaultMLine = { x: centerX - 1, y: visualRect.y - 10, width: 2, height: 10 }
                     const lr = pos[mLineId] ?? defaultMLine
                     return (
-                      <g onMouseDown={e => startDrag(e, mLineId, lr)} transform={getTransform(mLineId, lr)} style={{ cursor: 'pointer' }}>
-                        <line x1={lr.x + lr.width / 2} y1={lr.y} x2={lr.x + lr.width / 2} y2={lr.y + lr.height} stroke={tplStrokeColors[mLineId] ?? '#cbd5e0'} strokeWidth={tplStrokeWidths[mLineId] ?? 1} />
+                      <g
+                        data-element-id={mLineId}
+                        onMouseDown={e => startDrag(e, mLineId, lr)}
+                        transform={getTransform(mLineId, lr)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <line
+                          x1={lr.x + lr.width / 2}
+                          y1={lr.y}
+                          x2={lr.x + lr.width / 2}
+                          y2={lr.y + lr.height}
+                          stroke={tplStrokeColors[mLineId] ?? '#cbd5e0'}
+                          strokeWidth={tplStrokeWidths[mLineId] ?? 1}
+                        />
                         {selectedIds.has(mLineId) && renderHandles(lr, mLineId)}
                       </g>
                     )
                   })()}
-                  <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-                    <rect x={visualRect.x} y={visualRect.y} width={visualRect.width} height={visualRect.height} rx={visualRect.height / 2} fill={mColor} opacity={isSelected ? 1 : 0.85} stroke={customStroke || (isSelected ? '#333' : styleStroke)} strokeWidth={isSelected ? 2.5 : customStrokeWidth} />
-                    <text x={visualRect.x + visualRect.width / 2} y={visualRect.y + visualRect.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>
-                      {m.title}
-                    </text>
+
+                  {/* Pill Badge */}
+                  <g
+                    data-element-id={elementId}
+                    onMouseDown={e => startDrag(e, elementId, visualRect)}
+                    transform={getTransform(elementId, visualRect)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <rect
+                      x={visualRect.x}
+                      y={visualRect.y}
+                      width={visualRect.width}
+                      height={visualRect.height}
+                      rx={visualRect.height / 2}
+                      fill={mColor}
+                      opacity={isSelected ? 1 : 0.88}
+                      stroke={customStroke || (isSelected ? '#4a90d9' : styleStroke)}
+                      strokeWidth={isSelected ? 2.5 : customStrokeWidth}
+                    />
+
+                    <g transform={`translate(${visualRect.x + visualRect.width / 2}, ${visualRect.y + visualRect.height / 2 + 4 - (titleLines.length - 1) * 6})`}>
+                      {iconEl && (
+                        <g transform="translate(-16, -10)">
+                          {iconEl}
+                        </g>
+                      )}
+                      <text
+                        x={iconEl ? 4 : 0}
+                        y={0}
+                        textAnchor="middle"
+                        fontFamily="Arial, sans-serif"
+                        fontSize={styleFontSize}
+                        fontWeight={styleFontWeight}
+                        fill={styleFontColor}
+                      >
+                        {titleLines.map((line, li) => (
+                          <tspan key={li} x={iconEl ? 4 : 0} dy={li === 0 ? 0 : 13}>
+                            {line}
+                          </tspan>
+                        ))}
+                      </text>
+                    </g>
+
                     {isSelected && renderHandles(visualRect, elementId)}
                   </g>
                 </g>

@@ -1133,6 +1133,9 @@ export function generateDslText(type: string, data: TemplateData): string {
   if (d.trackColor) out += `  track ${d.trackColor}${d.trackBgColor ? ' ' + d.trackBgColor : ''}\n`
   if (d.progress || d.progressColor) out += `  progress ${d.progress || ''}${d.progressColor ? ' ' + d.progressColor : ''}\n`
 
+  if (d.leftTitle) out += `  left "${esc(d.leftTitle)}"\n`
+  if (d.rightTitle) out += `  right "${esc(d.rightTitle)}"\n`
+
   const list = (key: string) => (d[key] as Array<Record<string, unknown>> | undefined)
 
   const quarters = list('quarters')
@@ -1161,12 +1164,23 @@ export function generateDslText(type: string, data: TemplateData): string {
   if (levels) for (const l of levels) out += `  level "${esc(l.title)}" ${l.percentage ?? ''}${emitTrailingArgs(l)}\n`
 
   const metrics = list('metrics')
-  if (metrics) for (const m of metrics) out += `  metric "${esc(m.label)}" "${esc(m.value)}"${m.change ? ' "' + esc(m.change) + '"' : ''}${emitTrailingArgs(m)}\n`
+  if (metrics) {
+    for (const m of metrics) {
+      const targetOrChange = m.target ? ` "${esc(m.target)}"` : (m.change ? ` "${esc(m.change)}"` : '')
+      out += `  metric "${esc(m.label)}" "${esc(m.value)}"${targetOrChange}${emitTrailingArgs(m)}\n`
+    }
+  }
 
   const items = list('items')
   if (items) {
     if (d.totalLabel || d.totalAmount) out += `  total "${esc(d.totalLabel || '')}" "${esc(d.totalAmount || '')}"\n`
-    for (const it of items) out += `  item "${esc(it.label)}" "${esc(it.amount)}" "${it.percentage}%"${emitTrailingArgs(it)}\n`
+    for (const it of items) {
+      if ('left' in it || 'right' in it) {
+        out += `  comp "${esc(it.label)}" "${esc(it.left ?? '')}" "${esc(it.right ?? '')}"${emitTrailingArgs(it)}\n`
+      } else {
+        out += `  item "${esc(it.label)}" "${esc(it.amount ?? '')}" "${it.percentage ?? ''}%"${emitTrailingArgs(it)}\n`
+      }
+    }
   }
 
   const segments = list('segments')
@@ -1215,16 +1229,21 @@ export function generateDslText(type: string, data: TemplateData): string {
   }
 
   const nodes = list('nodes')
-  if (nodes) { if (d.centerLabel) out += '  center "' + esc(d.centerLabel) + '"\n'; out += '  nodes ' + nodes.map((n: Record<string,unknown>) => '"' + esc(n.title) + '"').join(' ') + '\n' }
+  if (nodes) {
+    if (d.centerLabel) out += '  center "' + esc(d.centerLabel) + '"\n'
+    for (const n of nodes) {
+      out += '  node "' + esc(n.title) + '"' + (n.subtitle ? ' "' + esc(n.subtitle) + '"' : '') + emitTrailingArgs(n) + '\n'
+    }
+  }
 
   const sections = list('sections')
-  if (sections) for (const s of sections) out += '  ' + (s.isAbove ? 'above' : 'below') + ' "' + esc(s.title) + '"' + (s.subtitle ? ' "' + esc(s.subtitle) + '"' : '' + emitTrailingArgs(s)) + '\n'
+  if (sections) for (const s of sections) out += '  ' + (s.isAbove ? 'above' : 'below') + ' "' + esc(s.title) + '"' + (s.subtitle ? ' "' + esc(s.subtitle) + '"' : '') + emitTrailingArgs(s) + '\n'
 
   const primaries = list('primary')
-  if (primaries) for (const p of primaries) out += '  primary "' + esc(p.title) + '"' + (p.subtitle ? ' "' + esc(p.subtitle) + '"' : '' + emitTrailingArgs(p)) + '\n'
+  if (primaries) for (const p of primaries) out += '  primary "' + esc(p.title) + '"' + (p.subtitle ? ' "' + esc(p.subtitle) + '"' : '') + emitTrailingArgs(p) + '\n'
 
   const supports = list('support')
-  if (supports) for (const s of supports) out += '  support "' + esc(s.title) + '"' + (s.subtitle ? ' "' + esc(s.subtitle) + '"' : '' + emitTrailingArgs(s)) + '\n'
+  if (supports) for (const s of supports) out += '  support "' + esc(s.title) + '"' + (s.subtitle ? ' "' + esc(s.subtitle) + '"' : '') + emitTrailingArgs(s) + '\n'
 
   if (d.rootQuestion) out += '  question "' + esc(d.rootQuestion) + '"\n'
   if (d.centerGoal) out += '  center "' + esc(d.centerGoal) + '"\n'

@@ -5,12 +5,27 @@ import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
 import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
 
-const STEP_W = 180
-const STEP_H = 60
-const STEP_GAP = 30
-const STEP_OFFSET_X = 60
+const STEP_W = 190
+const STEP_H = 64
+const STEP_GAP = 28
+const STEP_OFFSET_X = 65
 const START_Y = 60
+
+function getDynamicIcon(iconName?: string) {
+  if (!iconName) return null
+  const clean = iconName.trim()
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const LucideFn = (LucideIcons as Record<string, any>)[pascalName] || (LucideIcons as Record<string, any>)[clean] || (LucideIcons as Record<string, any>)[clean.toUpperCase()]
+  if (LucideFn) {
+    return (props: { size?: number; color?: string }) => <LucideFn size={props.size ?? 16} color={props.color ?? 'white'} />
+  }
+  return null
+}
 
 export function Strategy8Template({ data }: { data: StrategyData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -22,7 +37,7 @@ export function Strategy8Template({ data }: { data: StrategyData }): ReactElemen
   const positions = useTemplateStore(s => s.templateElementPositions)
 
   const { blocks } = data
-  const count = Math.min(blocks.length, 5)
+  const count = Math.min(blocks.length, 6)
   const visibleBlocks = blocks.slice(0, count)
 
   const rects = visibleBlocks.map((block, index) => {
@@ -52,14 +67,15 @@ export function Strategy8Template({ data }: { data: StrategyData }): ReactElemen
         const isSelected = selectedIds.has(elementId)
         const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
         const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2 : 0)
-        const IconFn = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
-        const labelX = IconFn ? bbox.x + 30 : bbox.x + bbox.width / 2
+        const IconFn = getDynamicIcon(block.icon)
+        const labelX = IconFn ? bbox.x + 32 : bbox.x + bbox.width / 2
         const labelAnchor = IconFn ? 'start' : 'middle'
         const maxChars = Math.max(10, Math.floor(bbox.width / 6.5))
-        const titleLines = wrapTextByWidth(`${block.number}. ${block.title}`, maxChars)
+        const titleLabel = [block.number ? `${block.number}.` : '', block.title].filter(Boolean).join(' ')
+        const titleLines = wrapTextByWidth(titleLabel, maxChars)
         const subLines = block.subtitle ? wrapTextByWidth(block.subtitle, maxChars) : []
-        const titleBaseY = bbox.y + bbox.height / 2 - 10
-        const subY = titleBaseY + 4 + titleLines.length * 14
+        const titleBaseY = bbox.y + (subLines.length > 0 ? 18 : bbox.height / 2 + 4)
+        const subY = titleBaseY + 4 + titleLines.length * 13
 
         return (
           <g
@@ -69,15 +85,15 @@ export function Strategy8Template({ data }: { data: StrategyData }): ReactElemen
             transform={getTransform(elementId, bbox)}
             style={{ cursor: 'pointer' }}
           >
-            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={color} opacity={isSelected ? 1 : 0.85} stroke={strokeColor} strokeWidth={strokeWidth} />
+            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill={color} opacity={isSelected ? 1 : 0.9} stroke={strokeColor} strokeWidth={strokeWidth} />
             {IconFn && (
-              <g transform={`translate(${bbox.x + 8}, ${bbox.y + bbox.height / 2 - 7})`}>
-                <IconFn size={14} color="white" />
+              <g transform={`translate(${bbox.x + 8}, ${bbox.y + bbox.height / 2 - 8})`}>
+                <IconFn size={16} color="white" />
               </g>
             )}
-            <text x={labelX} y={titleBaseY} textAnchor={labelAnchor} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
+            <text x={labelX} y={titleBaseY} textAnchor={labelAnchor} fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
               {titleLines.map((line, li) => (
-                <tspan key={li} x={labelX} dy={li === 0 ? 0 : 14}>
+                <tspan key={li} x={labelX} dy={li === 0 ? 0 : 13}>
                   {line}
                 </tspan>
               ))}

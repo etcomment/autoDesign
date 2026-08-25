@@ -1,38 +1,13 @@
-import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { IcebergData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { renderMultiLineText } from '../shared/primitives'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const ABOVE_COLOR = '#e3f2fd'
-const BELOW_COLOR = '#0f2b46'
-const SECTION_COLORS = ['#4a90d9', '#3a7bc8', '#1a5ca6', '#0d4d95', '#083d7a', '#06244d']
-
-function buildWavePath(W: number, waterY: number, H: number): string {
-  const amplitude = 14
-  const freq1 = 0.022
-  const freq2 = 0.055
-  let d = 'M 0 ' + waterY
-  for (let x = 0; x <= W; x += 4) {
-    const y = waterY + Math.sin(x * freq1) * amplitude + Math.sin(x * freq2 + 1) * (amplitude * 0.4)
-    d += ' L ' + x + ' ' + y
-  }
-  d += ' L ' + W + ' ' + H + ' L 0 ' + H + ' Z'
-  return d
-}
-
-function buildWaveLine(W: number, waterY: number): string {
-  const amplitude = 14
-  const freq1 = 0.022
-  const freq2 = 0.055
-  let d = 'M 0 ' + waterY
-  for (let x = 0; x <= W; x += 4) {
-    const y = waterY + Math.sin(x * freq1) * amplitude + Math.sin(x * freq2 + 1) * (amplitude * 0.4)
-    d += ' L ' + x + ' ' + y
-  }
-  return d
-}
+const VISIBLE_COLOR = MIGSO_PALETTE[0]!
+const SUBMERGED_COLOR = '#0369a1'
 
 export function IcebergTemplate({ data }: { data: IcebergData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -43,109 +18,203 @@ export function IcebergTemplate({ data }: { data: IcebergData }): ReactElement {
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, sections } = data
+  const { sections = [] } = data
   const W = 900
-  const H = 600
-  const waterY = 310
+  const waterY = 170
 
-  const aboveSections = sections.filter((s) => s.isAbove)
-  const belowSections = sections.filter((s) => !s.isAbove)
-
-  const aboveAreaTop = title ? 90 : 60
-  const aboveAreaH = waterY - aboveAreaTop - 14
-  const aboveSectionH = aboveSections.length > 0 ? Math.min(aboveAreaH / aboveSections.length, 60) : 0
-  const aboveSlotH = aboveSectionH + 8
-  const aboveTotalH = aboveSections.length * aboveSlotH
-  const aboveStartY = aboveAreaTop + (aboveAreaH - aboveTotalH + 8) / 2
-
-  const belowAreaTop = waterY + 14
-  const belowAreaH = H - belowAreaTop - 16
-  const belowSectionH = belowSections.length > 0 ? Math.min(belowAreaH / belowSections.length, 60) : 0
-  const belowSlotH = belowSectionH + 8
-  const belowTotalH = belowSections.length * belowSlotH
-  const belowStartY = belowAreaTop + (belowAreaH - belowTotalH + 8) / 2
-
-  const wavePath = buildWavePath(W, waterY, H)
-  const waveLine = buildWaveLine(W, waterY)
+  const visibleItems = sections.filter(s => s.isAbove)
+  const submergedItems = sections.filter(s => !s.isAbove)
 
   return (
     <g ref={svgRef}>
-      <rect width={W} height={waterY} fill={ABOVE_COLOR} />
-      <rect y={waterY} width={W} height={H - waterY} fill={BELOW_COLOR} />
+      {/* Background Submerged Area */}
+      <rect x={40} y={waterY} width={W - 80} height={320} fill="#f0f9ff" rx={12} />
 
-      <path d={wavePath} fill="#1e4d8c" opacity={0.7} />
-      <path d={waveLine} fill="none" stroke="#5db9e8" strokeWidth={3} opacity={0.9} />
+      {/* Waterline */}
+      <line x1={30} y1={waterY} x2={W - 30} y2={waterY} stroke="#0284c7" strokeWidth={2.5} strokeDasharray="8 4" />
+      <text x={50} y={waterY - 8} fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="#0284c7">
+        WATERLINE
+      </text>
 
-      {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
-          {title}
-        </text>
-      )}
-
-      {aboveSections.map((section, i) => {
-        const si = sections.indexOf(section)
-        const elementId = `section-${si}`
-        const color = tplColors[elementId] ?? SECTION_COLORS[si % SECTION_COLORS.length]!
-        const stroke = tplStrokeColors[elementId] || color
-        const isSelected = selectedIds.has(elementId)
-        const y = aboveStartY + i * aboveSlotH
-        const baseW = 160 + i * 30
-        const x = (W - baseW) / 2
-        const visualRect = { x, y, width: baseW, height: aboveSectionH }
+      {/* Visible Section Header */}
+      {(() => {
+        const headerId = 'header-visible'
+        const defaultRect = { x: 50, y: 40, width: 220, height: 32 }
+        const customPos = positions[headerId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+        const isSelected = selectedIds.has(headerId)
+        const color = tplColors[headerId] || VISIBLE_COLOR
 
         return (
-          <g key={'above-' + i}>
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={x} y={y} width={baseW} height={aboveSectionH} rx={6} fill={color} opacity={0.85} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 2.5 : 0} />
-              <text x={x + 16} y={y + aboveSectionH / 2 + 5} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
-                {section.title}
+          <g
+            key={headerId}
+            data-element-id={headerId}
+            onMouseDown={e => startDrag(e, headerId, bbox)}
+            transform={getTransform(headerId, bbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill={color} />
+            <text x={bbox.x + bbox.width / 2} y={bbox.y + bbox.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
+              VISIBLE (TOP)
+            </text>
+            {isSelected && renderHandles(bbox, headerId)}
+          </g>
+        )
+      })()}
+
+      {visibleItems.map((item, index) => {
+        const elementId = `visible-${index}`
+        const defaultRect = { x: 50 + index * 260, y: 86, width: 240, height: 64 }
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+
+        const color = tplColors[elementId] ?? item.color ?? VISIBLE_COLOR
+        const strokeColor = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : '#e2e8f0')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1.5)
+        const isSelected = selectedIds.has(elementId)
+        const IconComponent = item.icon ? TEMPLATE_ICONS[item.icon] : undefined
+
+        const maxChars = Math.max(8, Math.floor((bbox.width - 40) / 8))
+        const titleLines = wrapTextByWidth(item.title, maxChars)
+        const descLines = item.subtitle ? wrapTextByWidth(item.subtitle, maxChars) : []
+
+        return (
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill="white" stroke={strokeColor} strokeWidth={strokeWidth} />
+              <rect x={bbox.x} y={bbox.y} width={4} height={bbox.height} rx={2} fill={color} />
+
+              {IconComponent && (
+                <g transform={`translate(${bbox.x + 12}, ${bbox.y + 12})`}>
+                  <IconComponent size={16} color={color} />
+                </g>
+              )}
+
+              <text x={bbox.x + (IconComponent ? 34 : 14)} y={bbox.y + 20} fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="#1a202c">
+                {titleLines[0] || ''}
               </text>
-              {section.subtitle && (
-                <text x={x + baseW - 16} y={y + aboveSectionH / 2 + 5} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={11} fill="rgba(255,255,255,0.8)">
-                  {section.subtitle}
+
+              {item.subtitle && (
+                <text x={bbox.x + (IconComponent ? 34 : 14)} y={bbox.y + 38} fontFamily="Arial, sans-serif" fontSize={10} fill="#64748b">
+                  {descLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={bbox.x + (IconComponent ? 34 : 14)} dy={lineIndex === 0 ? 0 : 11}>
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
               )}
-              {isSelected && renderHandles(visualRect, elementId)}
+
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
           </g>
         )
       })}
 
-      {belowSections.map((section, i) => {
-        const si = sections.indexOf(section)
-        const elementId = `section-${si}`
-        const color = tplColors[elementId] ?? SECTION_COLORS[si % SECTION_COLORS.length]!
-        const stroke = tplStrokeColors[elementId] || color
-        const isSelected = selectedIds.has(elementId)
-        const y = belowStartY + i * belowSlotH
-        const baseW = 340 + i * 50
-        const x = (W - baseW) / 2
-        const visualRect = { x, y, width: baseW, height: belowSectionH }
+      {/* Submerged Section Header */}
+      {(() => {
+        const headerId = 'header-submerged'
+        const defaultRect = { x: 50, y: waterY + 20, width: 220, height: 32 }
+        const customPos = positions[headerId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+        const isSelected = selectedIds.has(headerId)
+        const color = tplColors[headerId] || SUBMERGED_COLOR
 
         return (
-          <g key={'below-' + i}>
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={x} y={y} width={baseW} height={belowSectionH} rx={6} fill={color} opacity={0.9} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 2.5 : 0} />
-              <text x={x + 16} y={y + belowSectionH / 2 + 5} fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
-                {section.title}
+          <g
+            key={headerId}
+            data-element-id={headerId}
+            onMouseDown={e => startDrag(e, headerId, bbox)}
+            transform={getTransform(headerId, bbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill={color} />
+            <text x={bbox.x + bbox.width / 2} y={bbox.y + bbox.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
+              SUBMERGED (HIDDEN)
+            </text>
+            {isSelected && renderHandles(bbox, headerId)}
+          </g>
+        )
+      })()}
+
+      {submergedItems.map((item, index) => {
+        const elementId = `submerged-${index}`
+        const col = index % 3
+        const row = Math.floor(index / 3)
+        const defaultRect = { x: 50 + col * 265, y: waterY + 68 + row * 76, width: 250, height: 64 }
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+
+        const color = tplColors[elementId] ?? item.color ?? SUBMERGED_COLOR
+        const strokeColor = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : '#bae6fd')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1.5)
+        const isSelected = selectedIds.has(elementId)
+        const IconComponent = item.icon ? TEMPLATE_ICONS[item.icon] : undefined
+
+        const maxChars = Math.max(8, Math.floor((bbox.width - 40) / 8))
+        const titleLines = wrapTextByWidth(item.title, maxChars)
+        const descLines = item.subtitle ? wrapTextByWidth(item.subtitle, maxChars) : []
+
+        return (
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill="white" stroke={strokeColor} strokeWidth={strokeWidth} />
+              <rect x={bbox.x} y={bbox.y} width={4} height={bbox.height} rx={2} fill={color} />
+
+              {IconComponent && (
+                <g transform={`translate(${bbox.x + 12}, ${bbox.y + 12})`}>
+                  <IconComponent size={16} color={color} />
+                </g>
+              )}
+
+              <text x={bbox.x + (IconComponent ? 34 : 14)} y={bbox.y + 20} fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="#1a202c">
+                {titleLines[0] || ''}
               </text>
-              {section.subtitle && (
-                <text x={x + baseW - 16} y={y + belowSectionH / 2 + 5} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={11} fill="rgba(255,255,255,0.8)">
-                  {section.subtitle}
+
+              {item.subtitle && (
+                <text x={bbox.x + (IconComponent ? 34 : 14)} y={bbox.y + 38} fontFamily="Arial, sans-serif" fontSize={10} fill="#64748b">
+                  {descLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={bbox.x + (IconComponent ? 34 : 14)} dy={lineIndex === 0 ? 0 : 11}>
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
               )}
-              {isSelected && renderHandles(visualRect, elementId)}
+
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
           </g>
         )
       })}
-
-      <g transform={'translate(' + (W - 80) + ', ' + (waterY - 8) + ')'}>
-        <path d="M 0 0 C 6 12 10 16 10 20 C 10 24 6 28 0 40" fill="none" stroke="#5db9e8" strokeWidth={3} strokeLinecap="round" />
-        <circle cx={0} cy={44} r={4} fill="#5db9e8" />
-        <path d="M -4 44 L -6 54 L 0 48 Z" fill="#5db9e8" />
-        <path d="M 4 44 L 6 54 L 0 48 Z" fill="#5db9e8" />
-      </g>
     </g>
   )
 }

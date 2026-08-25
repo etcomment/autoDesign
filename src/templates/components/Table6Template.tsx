@@ -1,8 +1,8 @@
-import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { TableData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { wrapTextByWidth } from '../shared/primitives'
 
 const BLUE_HEADER = '#1a56db'
 const BLUE_ACCENT = '#eff6ff'
@@ -12,116 +12,120 @@ export function Table6Template({ data }: { data: TableData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const pos = useTemplateStore(s => s.templateElementPositions) // Retrieve positions
+  const pos = useTemplateStore(s => s.templateElementPositions)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
-  // Helper function to get current element position, falling back to initial position if not dragged yet
-  const getRect = (id: string, fallback: {x: number, y: number, width: number, height: number}) => pos[id] || fallback;
-
-  const { title, columns, rows } = data
+  const { columns, rows } = data
   const W = 900
-  const labelW = 100
+  const labelW = 120
   const tableX = 40
   const tableW = W - tableX * 2
   const headerH = 44
-  const rowH = 40
+  const rowH = 44
   const colW = (tableW - labelW) / Math.max(columns.length, 1)
-  const tableY = title ? 100 : 70
-
-  // Calculate initial positions for rows to use as fallbacks for getRect
-  const initialRowRects = rows.map((_, ri) => {
-    const rowY = tableY + headerH + ri * rowH;
-    return { x: tableX, y: rowY, width: tableW, height: rowH };
-  });
-
-  // Get current positions for the first and last rows to determine the overall Y extent for vertical lines
-  const firstRowRect = rows.length > 0
-    ? getRect(`row-0`, initialRowRects[0]!)
-    : { x: tableX, y: tableY + headerH, width: tableW, height: 0 }; // Fallback for empty table
-  const lastRowRect = rows.length > 0
-    ? getRect(`row-${rows.length - 1}`, initialRowRects[rows.length - 1]!)
-    : { x: tableX, y: tableY + headerH, width: tableW, height: 0 }; // Fallback for empty table
-
-  // Determine the overall Y extent for the data rows for vertical lines
-  const dataRowsMinY = firstRowRect.y;
-  const dataRowsMaxY = lastRowRect.y + lastRowRect.height;
+  const tableY = 40
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
-          {title}
-        </text>
-      )}
+      {/* Header Bar */}
+      {(() => {
+        const headerId = 'table-header'
+        const defaultBbox = { x: tableX, y: tableY, width: tableW, height: headerH }
+        const customPos = pos[headerId]
+        const bbox = {
+          x: customPos?.x ?? defaultBbox.x,
+          y: customPos?.y ?? defaultBbox.y,
+          width: customPos?.width ?? defaultBbox.width,
+          height: customPos?.height ?? defaultBbox.height,
+        }
+        const isSelected = selectedIds.has(headerId)
 
-      <rect x={tableX} y={tableY} width={tableW} height={headerH} rx={6} fill={BLUE_HEADER} />
-      <rect y={tableY + headerH - 6} width={tableW} height={6} fill={BLUE_HEADER} />
+        return (
+          <g
+            key={headerId}
+            data-element-id={headerId}
+            onMouseDown={e => startDrag(e, headerId, bbox)}
+            transform={getTransform(headerId, bbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill={BLUE_HEADER} />
+            <rect x={bbox.x} y={bbox.y} width={labelW} height={bbox.height} fill="#1e40af" />
 
-      <rect x={tableX} y={tableY} width={labelW} height={headerH} fill="#1e40af" />
-      <rect y={tableY + headerH - 6} width={labelW} height={6} fill="#1e40af" />
+            <text x={bbox.x + labelW / 2} y={bbox.y + bbox.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
+              #
+            </text>
 
-      {columns.map((col, ci) => (
-        <text key={`h-${ci}`} x={tableX + labelW + ci * colW + colW / 2} y={tableY + headerH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={600} fill="white">
-          {col}
-        </text>
-      ))}
+            {columns.map((col, ci) => {
+              const maxChars = Math.max(6, Math.floor(colW / 8))
+              const colLines = wrapTextByWidth(col, maxChars)
+              const colCenterX = bbox.x + labelW + ci * colW + colW / 2
+              return (
+                <text key={`h-${ci}`} x={colCenterX} y={bbox.y + bbox.height / 2 + (colLines.length > 1 ? -3 : 5)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={600} fill="white">
+                  {colLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={colCenterX} dy={lineIndex === 0 ? 0 : 13}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              )
+            })}
+            {isSelected && renderHandles(bbox, headerId)}
+          </g>
+        )
+      })()}
 
       {rows.map((row, ri) => {
         const elementId = `row-${ri}`
         const isSelected = selectedIds.has(elementId)
         const isEven = ri % 2 === 0
-        const rowY = tableY + headerH + ri * rowH // Initial Y for this row
-        const visualRect = { x: tableX, y: rowY, width: tableW, height: rowH }
+        const rowY = tableY + headerH + ri * rowH
+        const defaultBbox = { x: tableX, y: rowY, width: tableW, height: rowH }
+        const customPos = pos[elementId]
+        const bbox = {
+          x: customPos?.x ?? defaultBbox.x,
+          y: customPos?.y ?? defaultBbox.y,
+          width: customPos?.width ?? defaultBbox.width,
+          height: customPos?.height ?? defaultBbox.height,
+        }
+        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (isSelected ? 2 : 0)
+        const labelLines = wrapTextByWidth(row.label, Math.max(6, Math.floor(labelW / 8)))
 
         return (
           <g key={`r-${ri}`}>
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={tableX} y={rowY} width={tableW} height={rowH} fill={isSelected ? '#dbeafe' : isEven ? 'white' : BLUE_ACCENT} />
-              <rect x={tableX} y={rowY} width={labelW} height={rowH} fill="#eff6ff" />
+            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} fill={isSelected ? '#dbeafe' : isEven ? 'white' : BLUE_ACCENT} stroke={strokeColor} strokeWidth={strokeWidth} />
+              <rect x={bbox.x} y={bbox.y} width={labelW} height={bbox.height} fill="#eff6ff" />
 
-              <text x={tableX + labelW / 2} y={rowY + rowH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#1e40af">
-                {row.label}
+              <text x={bbox.x + labelW / 2} y={bbox.y + bbox.height / 2 + (labelLines.length > 1 ? -3 : 5)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#1e40af">
+                {labelLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={bbox.x + labelW / 2} dy={lineIndex === 0 ? 0 : 13}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
 
-              {row.cells.slice(0, columns.length).map((cell, ci) => (
-                <text key={`c-${ri}-${ci}`} x={tableX + labelW + ci * colW + colW / 2} y={rowY + rowH / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fill="#1a202c">
-                  {cell}
-                </text>
-              ))}
+              {row.cells.slice(0, columns.length).map((cell, ci) => {
+                const maxChars = Math.max(6, Math.floor(colW / 8))
+                const cellLines = wrapTextByWidth(cell, maxChars)
+                const cellCenterX = bbox.x + labelW + ci * colW + colW / 2
+                return (
+                  <text key={`c-${ri}-${ci}`} x={cellCenterX} y={bbox.y + bbox.height / 2 + (cellLines.length > 1 ? -3 : 5)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fill="#1a202c">
+                    {cellLines.map((line, lineIndex) => (
+                      <tspan key={lineIndex} x={cellCenterX} dy={lineIndex === 0 ? 0 : 13}>
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+                )
+              })}
 
-              {isSelected && renderHandles(visualRect, elementId)}
+              <line key={`hl-${ri}`} x1={bbox.x} y1={bbox.y + bbox.height} x2={bbox.x + bbox.width} y2={bbox.y + bbox.height} stroke={BLUE_LINE} strokeWidth={1} />
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
           </g>
         )
-      })}
-
-      {/* Vertical lines: span from the top of the first data row to the bottom of the last data row */}
-      {columns.map((_, ci) => (
-        <line
-          key={`vl-${ci}`}
-          x1={tableX + labelW + ci * colW}
-          y1={dataRowsMinY}
-          x2={tableX + labelW + ci * colW}
-          y2={dataRowsMaxY}
-          stroke="rgba(255,255,255,0.3)"
-          strokeWidth={1}
-        />
-      ))}
-      {/* Horizontal lines: drawn below each row, dynamically positioned */}
-      {rows.map((_, ri) => {
-        const elementId = `row-${ri}`;
-        const currentRect = getRect(elementId, initialRowRects[ri]!);
-        const lineY = currentRect.y + currentRect.height; // Position the line at the bottom of the current row
-        return (
-          <line
-            key={`hl-${ri}`}
-            x1={tableX}
-            y1={lineY}
-            x2={tableX + tableW}
-            y2={lineY}
-            stroke={BLUE_LINE}
-            strokeWidth={1}
-          />
-        );
       })}
     </g>
   )

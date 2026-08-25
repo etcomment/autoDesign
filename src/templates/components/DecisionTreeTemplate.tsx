@@ -2,6 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { DecisionTreeData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { wrapTextByWidth } from '../shared/primitives'
 
 interface NodePosition {
   id: string
@@ -18,11 +19,13 @@ export function DecisionTreeTemplate({ data }: { data: DecisionTreeData }): Reac
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const positions = useTemplateStore(s => s.templateElementPositions)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
   const { rootQuestion, branches } = data
   const W = 900
-  const nodeW = 160
-  const nodeH = 44
+  const nodeW = 170
+  const nodeH = 52
   const cx = W / 2
   const rootY = 40
 
@@ -46,9 +49,9 @@ export function DecisionTreeTemplate({ data }: { data: DecisionTreeData }): Reac
       if (!currentBranch) continue
 
       const parent = currentNodes[i]!
-      const yesX = parent.defaultX + nodeW + 80
+      const yesX = parent.defaultX + nodeW + 60
       const yesY = parent.defaultY + 120
-      const noX = parent.defaultX - nodeW - 80
+      const noX = parent.defaultX - nodeW - 60
       const noY = parent.defaultY + 120
 
       const yesId = `node-${nodeCounter++}`
@@ -65,14 +68,14 @@ export function DecisionTreeTemplate({ data }: { data: DecisionTreeData }): Reac
 
       if (currentBranch.children) {
         for (const child of currentBranch.children) {
-          const childX = yesX + 120
+          const childX = yesX + 100
           const childY = yesY + 100
           const childId = `node-${nodeCounter++}`
           connections.push({
             fromId: yesId,
             toId: childId,
-            label: '',
-            color: '#888',
+            label: child.answer ? (child.answer === 'yes' ? 'Yes' : 'No') : '',
+            color: child.answer === 'yes' ? '#2ecc71' : child.answer === 'no' ? '#e74c3c' : '#888',
           })
           nodes.push({ id: childId, defaultX: childX, defaultY: childY, label: child.label, answer: child.answer, outcome: child.outcome })
         }
@@ -111,10 +114,10 @@ export function DecisionTreeTemplate({ data }: { data: DecisionTreeData }): Reac
 
         return (
           <g key={`c-${i}`}>
-            <line x1={fromX} y1={fromY} x2={toX} y2={toY} stroke={conn.color} strokeWidth={1.5} opacity={0.6} />
+            <line x1={fromX} y1={fromY} x2={toX} y2={toY} stroke={conn.color} strokeWidth={2} opacity={0.7} />
             {conn.label && (
               <text
-                x={(fromX + toX) / 2 + (conn.label === 'Yes' ? 20 : -20)}
+                x={(fromX + toX) / 2 + (conn.label === 'Yes' ? 18 : -18)}
                 y={(fromY + toY) / 2 - 6}
                 textAnchor="middle"
                 fontFamily="Arial, sans-serif"
@@ -136,21 +139,37 @@ export function DecisionTreeTemplate({ data }: { data: DecisionTreeData }): Reac
         const bbox = getNodeBbox(node)
         const isRoot = i === 0
         const isLeaf = node.outcome !== undefined
-        const fill = isRoot ? '#1a1a2e' : isLeaf ? '#f0f4ff' : '#f8f9fa'
-        const textFill = isRoot ? 'white' : isLeaf ? '#1a56db' : '#333'
-        const stroke = isSelected ? '#4a90d9' : (tplColors[elementId] || (isRoot ? '#1a1a2e' : isLeaf ? '#4a90d9' : '#ccc'))
-        const rx = isLeaf ? 4 : 8
+        const defaultFill = isRoot ? '#1a1a2e' : isLeaf ? '#f0fdf4' : '#f8f9fa'
+        const fill = tplColors[elementId] || defaultFill
+        const textFill = isRoot ? 'white' : isLeaf ? '#166534' : '#1e293b'
+        const defaultStroke = isRoot ? '#1a1a2e' : isLeaf ? '#22c55e' : '#cbd5e1'
+        const stroke = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : defaultStroke)
+        const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2.5 : 1.5)
+        const rx = isLeaf ? 6 : 8
+
+        const maxChars = Math.max(10, Math.floor(bbox.width / 7.5))
+        const labelLines = wrapTextByWidth(node.label, maxChars)
+        const outcomeLines = node.outcome ? wrapTextByWidth(node.outcome, maxChars) : []
+        const startY = bbox.y + (outcomeLines.length > 0 ? 16 : (bbox.height - (labelLines.length - 1) * 13) / 2 + 4)
 
         return (
           <g key={elementId}>
             <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, bbox)} transform={getTransform(elementId, bbox)} style={{ cursor: 'pointer' }}>
-              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={rx} fill={fill} stroke={stroke} strokeWidth={isSelected ? 2.5 : 1.5} />
-              <text x={bbox.x + bbox.width / 2} y={bbox.y + bbox.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill={textFill}>
-                {node.label.length > 22 ? node.label.slice(0, 20) + '..' : node.label}
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={rx} fill={fill} stroke={stroke} strokeWidth={strokeWidth} />
+              <text x={bbox.x + bbox.width / 2} y={startY} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill={textFill}>
+                {labelLines.map((line, li) => (
+                  <tspan key={li} x={bbox.x + bbox.width / 2} dy={li === 0 ? 0 : 13}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
-              {node.outcome && (
-                <text x={bbox.x + bbox.width / 2} y={bbox.y + bbox.height + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={600} fill="#2ecc71">
-                  {node.outcome}
+              {outcomeLines.length > 0 && (
+                <text x={bbox.x + bbox.width / 2} y={bbox.y + bbox.height + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill="#16a34a">
+                  {outcomeLines.map((line, li) => (
+                    <tspan key={li} x={bbox.x + bbox.width / 2} dy={li === 0 ? 0 : 12}>
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
               )}
               {isSelected && renderHandles(bbox, elementId)}

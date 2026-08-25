@@ -2,8 +2,10 @@ import { useRef, type ReactElement } from 'react'
 import type { CircleData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
 
-const PALETTE = ['#2D2C59', '#3768D6', '#FF5338']
+const PALETTE = ['#2D2C59', '#3768D6', '#FF5338', '#00bcd4', '#4caf50', '#ff9800']
 
 function ringArcPath(
   cx: number,
@@ -35,7 +37,7 @@ function ringArcPath(
     `A ${outerR} ${outerR} 0 ${largeArc} 1 ${xEndOuter.toFixed(1)} ${yEndOuter.toFixed(1)}`,
     `L ${xEndInner.toFixed(1)} ${yEndInner.toFixed(1)}`,
     `A ${innerR} ${innerR} 0 ${largeArc} 0 ${xStartInner.toFixed(1)} ${yStartInner.toFixed(1)}`,
-    `Z`,
+    'Z',
   ].join(' ')
 }
 
@@ -46,22 +48,19 @@ function arrowheadPath(
   outerR: number,
   baseAngle: number,
   tipAngle: number,
-  outerFlareR: number, // New parameter for scaled flare
-  innerFlareR: number, // New parameter for scaled flare
+  outerFlareR: number,
+  innerFlareR: number,
 ): string {
   const cos = Math.cos
   const sin = Math.sin
   const midR = (innerR + outerR) / 2
 
-  // Base outer wing
   const xWingOuter = cx + outerFlareR * cos(baseAngle)
   const yWingOuter = cy + outerFlareR * sin(baseAngle)
 
-  // Arrow tip pointing along midR at tipAngle
   const xTip = cx + midR * cos(tipAngle)
   const yTip = cy + midR * sin(tipAngle)
 
-  // Base inner wing
   const xWingInner = cx + innerFlareR * cos(baseAngle)
   const yWingInner = cy + innerFlareR * sin(baseAngle)
 
@@ -69,32 +68,31 @@ function arrowheadPath(
     `M ${xWingOuter.toFixed(1)} ${yWingOuter.toFixed(1)}`,
     `L ${xTip.toFixed(1)} ${yTip.toFixed(1)}`,
     `L ${xWingInner.toFixed(1)} ${yWingInner.toFixed(1)}`,
-    `Z`,
+    'Z',
   ].join(' ')
 }
 
-export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
+export function Circle2Template({ data }: { data: CircleData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
-  const { startDrag, renderHandles } = useTemplateDragResize(svgRef) // getTransform is no longer needed for redrawing
+  const { startDrag, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
-  // Helper function to get element position or fallback to default
-  const getRect = (id: string, fallback: {x: number, y: number, width: number, height: number}) => positions[id] || fallback;
+  const getRect = (id: string, fallback: { x: number; y: number; width: number; height: number }) => positions[id] || fallback
 
   const W = 900
-  const H = 600
+  const H = 500
   const cx = W / 2
-  const cy = H / 2 + 20
+  const cy = H / 2
   const innerR = 75
-  const outerR = 180
+  const outerR = 170
 
   const segments = data.segments
   const n = segments.length
-  if (n < 2)
+  if (n < 2) {
     return (
       <g>
         <text x={cx} y={cy} textAnchor="middle" fontSize={16} fill="#999">
@@ -102,24 +100,16 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
         </text>
       </g>
     )
+  }
 
   const angleStep = (Math.PI * 2) / n
   const gapAngle = 0.005
-  const arrowOverlap = 0.35 // Arrowhead tip extends 0.35 rad into the next segment
+  const arrowOverlap = 0.35
   const baseStartAngle = -Math.PI / 2 + 0.15
 
   return (
     <g ref={svgRef}>
-      {data.title && (
-        <>
-          <text x={50} y={50} fontFamily="Arial, sans-serif" fontSize={32} fontWeight={700} fill="#2D2B55">
-            {data.title}
-          </text>
-          <rect x={50} y={62} width={70} height={5} fill="#2D2B55" rx={2} />
-        </>
-      )}
-
-      {/* 1. Render all segment ring bodies first */}
+      {/* Segment ring bodies */}
       {segments.map((_, i) => {
         const elementId = `segment-${i}`
         const startAngle = baseStartAngle + i * angleStep
@@ -132,14 +122,13 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
           width: outerR * 2,
           height: outerR * 2,
         }
-        const currentBbox = getRect(elementId, defaultBbox);
+        const currentBbox = getRect(elementId, defaultBbox)
 
-        // Calculate new center and radii based on currentBbox
-        const newCx = currentBbox.x + currentBbox.width / 2;
-        const newCy = currentBbox.y + currentBbox.height / 2;
-        const newOuterR = currentBbox.width / 2;
-        const scaleFactor = currentBbox.width / defaultBbox.width;
-        const newInnerR = innerR * scaleFactor;
+        const newCx = currentBbox.x + currentBbox.width / 2
+        const newCy = currentBbox.y + currentBbox.height / 2
+        const newOuterR = currentBbox.width / 2
+        const scaleFactor = currentBbox.width / defaultBbox.width
+        const newInnerR = innerR * scaleFactor
 
         return (
           <path
@@ -148,17 +137,14 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
             fill={color}
             stroke={tplStrokeColors[elementId]}
             strokeWidth={tplStrokeWidths[elementId]}
-            // Removed transform, path is drawn directly at its final position/size
           />
         )
       })}
 
-      {/* 2. White center hole circle rendered BEFORE arrowheads */}
-      {/* This circle is not a draggable element itself, so its position is relative to the overall canvas.
-          Keeping it static as it's not a "connector linking elements". */}
+      {/* Center hole */}
       <circle cx={cx} cy={cy} r={innerR - 1} fill="white" />
 
-      {/* 3. Render all arrowheads ON TOP of all bodies with unified interaction & transform */}
+      {/* Interactive Arrowheads, Numbers and Labels */}
       {segments.map((item, i) => {
         const elementId = `segment-${i}`
         const startAngle = baseStartAngle + i * angleStep
@@ -175,16 +161,14 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
           width: outerR * 2,
           height: outerR * 2,
         }
-        const currentBbox = getRect(elementId, defaultBbox);
+        const currentBbox = getRect(elementId, defaultBbox)
 
-        // Calculate new center and radii based on currentBbox
-        const newCx = currentBbox.x + currentBbox.width / 2;
-        const newCy = currentBbox.y + currentBbox.height / 2;
-        const newOuterR = currentBbox.width / 2;
-        const scaleFactor = currentBbox.width / defaultBbox.width;
-        const newInnerR = innerR * scaleFactor;
+        const newCx = currentBbox.x + currentBbox.width / 2
+        const newCy = currentBbox.y + currentBbox.height / 2
+        const newOuterR = currentBbox.width / 2
+        const scaleFactor = currentBbox.width / defaultBbox.width
+        const newInnerR = innerR * scaleFactor
 
-        // Recalculate icon, number, label positions based on newCx, newCy, newOuterR, newInnerR
         const cosMid = Math.cos(midAngle)
         const sinMid = Math.sin(midAngle)
 
@@ -192,7 +176,7 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
         const iconX = newCx + iconRadius * cosMid
         const iconY = newCy + iconRadius * sinMid
 
-        const numberRadius = newOuterR - (25 * scaleFactor) // Scale the offset
+        const numberRadius = newOuterR - (25 * scaleFactor)
         const numberX = newCx + numberRadius * cosMid
         const numberY = newCy + numberRadius * sinMid
 
@@ -205,81 +189,98 @@ export function CircleTemplate({ data }: { data: CircleData }): ReactElement {
           labelAnchor = 'middle'
         }
 
-        const labelRadius = newOuterR + (55 * scaleFactor) // Scale the offset
+        const labelRadius = newOuterR + (55 * scaleFactor)
         const labelX = newCx + labelRadius * cosMid
         const labelY = newCy + labelRadius * sinMid
 
         const baseAngle = endAngle - 0.03
+        const scaledOuterFlareR = newOuterR + (28 * scaleFactor)
+        const scaledInnerFlareR = newInnerR - (18 * scaleFactor)
 
-        // Calculate scaled flare radii for arrowhead
-        const scaledOuterFlareR = newOuterR + (28 * scaleFactor);
-        const scaledInnerFlareR = newInnerR - (18 * scaleFactor);
+        const IconComponent = item.icon ? TEMPLATE_ICONS[item.icon] : undefined
+        const titleLines = wrapTextByWidth(item.title, 18)
+        const descLines = item.description ? wrapTextByWidth(item.description, 24) : []
 
         return (
-          <g key={i}> {/* Removed transform from this G */}
-            {/* Invisible clickable layer over body for unified selection */}
-            {/* This path defines the draggable area for the segment.
-                It's drawn using the recalculated coordinates. */}
+          <g key={i}>
             <path
               d={ringArcPath(newCx, newCy, newInnerR, newOuterR, startAngle, endAngle + gapAngle)}
               fill="transparent"
               data-element-id={elementId}
-              onMouseDown={e => startDrag(e, elementId, currentBbox)} // Pass currentBbox
-              // Removed transform, path is drawn directly at its final position/size
+              onMouseDown={e => startDrag(e, elementId, currentBbox)}
               style={{ cursor: 'pointer' }}
             />
-            {/* Visible Triangular Arrowhead extending forward over next segment */}
             <path
               d={arrowheadPath(newCx, newCy, newInnerR, newOuterR, baseAngle, baseAngle + arrowOverlap, scaledOuterFlareR, scaledInnerFlareR)}
               fill={color}
               stroke={isSelected ? '#4a90d9' : (strokeColor || 'none')}
               strokeWidth={isSelected ? 3 : (strokeW || 0)}
               data-element-id={elementId}
-              onMouseDown={e => startDrag(e, elementId, currentBbox)} // Pass currentBbox
-              // Removed transform
+              onMouseDown={e => startDrag(e, elementId, currentBbox)}
               style={{ cursor: 'pointer' }}
             />
-            {item.icon && (
-              <text x={iconX} y={iconY + 7 * scaleFactor} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={28 * scaleFactor} fill="white">
+
+            {IconComponent ? (
+              <g transform={`translate(${iconX - 12}, ${iconY - 12})`}>
+                <IconComponent size={24 * scaleFactor} color="white" />
+              </g>
+            ) : item.icon ? (
+              <text x={iconX} y={iconY + 7 * scaleFactor} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={26 * scaleFactor} fill="white">
                 {item.icon}
               </text>
-            )}
+            ) : null}
+
             <text
               x={numberX}
               y={numberY + 7 * scaleFactor}
               textAnchor="middle"
               fontFamily="Arial, sans-serif"
-              fontSize={24 * scaleFactor}
+              fontSize={22 * scaleFactor}
               fontWeight={700}
               fill="white"
             >
               {item.number}
             </text>
+
             <text
               x={labelX}
               y={labelY - 6 * scaleFactor}
               textAnchor={labelAnchor}
               fontFamily="Arial, sans-serif"
-              fontSize={16 * scaleFactor}
+              fontSize={15 * scaleFactor}
               fontWeight={700}
               fill="#111"
             >
-              {item.title}
+              {titleLines.map((line, lineIndex) => (
+                <tspan key={lineIndex} x={labelX} dy={lineIndex === 0 ? 0 : 16 * scaleFactor}>
+                  {line}
+                </tspan>
+              ))}
             </text>
-            <text
-              x={labelX}
-              y={labelY + 14 * scaleFactor}
-              textAnchor={labelAnchor}
-              fontFamily="Arial, sans-serif"
-              fontSize={12 * scaleFactor}
-              fill="#555"
-            >
-              {item.description.length > 45 ? item.description.slice(0, 42) + '...' : item.description}
-            </text>
-            {isSelected && renderHandles(currentBbox, elementId)} {/* Pass currentBbox */}
+
+            {item.description && (
+              <text
+                x={labelX}
+                y={labelY + (titleLines.length * 16 + 2) * scaleFactor}
+                textAnchor={labelAnchor}
+                fontFamily="Arial, sans-serif"
+                fontSize={11 * scaleFactor}
+                fill="#555"
+              >
+                {descLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={labelX} dy={lineIndex === 0 ? 0 : 13 * scaleFactor}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+            )}
+
+            {isSelected && renderHandles(currentBbox, elementId)}
           </g>
         )
       })}
     </g>
   )
 }
+
+export { Circle2Template as CircleTemplate }

@@ -2,10 +2,12 @@ import { useRef, type ReactElement } from 'react'
 import type { PuzzleData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50', '#ff9800']
-const CELL_W = 180
+const CELL_W = 220
 const CELL_H = 100
 const TAB_W = 50
 const TAB_D = 20
@@ -47,67 +49,79 @@ export function Puzzle3Template({ data }: { data: PuzzleData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, pieces } = data
-  const W = 500
-  const totalH = pieces.length * CELL_H
-  const H = Math.max(600, totalH + 120)
+  const { pieces } = data
+  const W = 600
   const startX = (W - CELL_W) / 2
-  const startY = (H - totalH) / 2 + (title ? 20 : 0)
+  const startY = 40
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={44} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
-          {title}
-        </text>
-      )}
-
-      {pieces.map((piece, i) => {
-        const tabs = getTabsForPiece(i, pieces.length)
+      {pieces.map((piece, index) => {
+        const tabs = getTabsForPiece(index, pieces.length)
         const px = startX
-        const py = startY + i * CELL_H
-        const cx = px + CELL_W / 2
-        const cy = py + CELL_H / 2
+        const py = startY + index * CELL_H
         const path = piecePathV(px, py, tabs)
-        const defaultColor = piece.color || PALETTE[i % PALETTE.length]!
-        const elementId = `piece-${i}`
+        const defaultColor = piece.color || PALETTE[index % PALETTE.length]!
+        const elementId = `piece-${index}`
         const color = tplColors[elementId] ?? defaultColor
         const stroke = tplStrokeColors[elementId] || 'white'
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3.5 : 3)
         const isSelected = selectedIds.has(elementId)
+
         const defaultRect = { x: px, y: py, width: CELL_W, height: CELL_H }
         const customPos = templateElementPositions[elementId]
-        const visualRect = {
+        const bbox = {
           x: customPos ? customPos.x : defaultRect.x,
           y: customPos ? customPos.y : defaultRect.y,
           width: customPos?.width || defaultRect.width,
           height: customPos?.height || defaultRect.height,
         }
-        const dx = visualRect.x - defaultRect.x
-        const dy = visualRect.y - defaultRect.y
-        const scaleX = visualRect.width / defaultRect.width
-        const scaleY = visualRect.height / defaultRect.height
+        const centerCx = bbox.x + bbox.width / 2
+        const centerCy = bbox.y + bbox.height / 2
+        const IconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] : undefined
+        const maxChars = Math.max(8, Math.floor((bbox.width - 70) / 8))
+        const titleLines = wrapTextByWidth(piece.title, maxChars)
+        const subtitleLines = piece.subtitle ? wrapTextByWidth(piece.subtitle, maxChars) : []
 
         return (
-          <g key={i}>
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}>
-                <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3.5 : 3} strokeLinejoin="round" />
-                <circle cx={px + 30} cy={cy} r={14} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
-                <text x={px + 30} y={cy + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
+              <circle cx={bbox.x + 32} cy={centerCy} r={16} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
+              {IconComponent ? (
+                <g transform={`translate(${bbox.x + 24}, ${centerCy - 8})`}>
+                  <IconComponent size={16} color="white" />
+                </g>
+              ) : (
+                <text x={bbox.x + 32} y={centerCy + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
                   {piece.number}
                 </text>
-                <text x={cx + 18} y={cy + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={700} fill="white">
-                  {piece.title}
+              )}
+              <text x={centerCx + 20} y={centerCy + (subtitleLines.length > 0 ? -4 : 5) - (titleLines.length > 1 ? (titleLines.length - 1) * 6 : 0)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
+                {titleLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={centerCx + 20} dy={lineIndex === 0 ? 0 : 14}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+              {piece.subtitle && (
+                <text x={centerCx + 20} y={centerCy + titleLines.length * 14 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fill="rgba(255,255,255,0.85)">
+                  {subtitleLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={centerCx + 20} dy={lineIndex === 0 ? 0 : 12}>
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
-                {piece.subtitle && (
-                  <text x={cx + 18} y={cy + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fill="rgba(255,255,255,0.85)">
-                    {piece.subtitle}
-                  </text>
-                )}
-              </g>
-              {isSelected && renderHandles(visualRect, elementId)}
+              )}
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
           </g>
         )

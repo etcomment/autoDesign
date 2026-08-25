@@ -2,8 +2,9 @@ import { useRef, type ReactElement } from 'react'
 import type { BudgetData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
 export function Budget3Template({ data }: { data: BudgetData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -11,6 +12,8 @@ export function Budget3Template({ data }: { data: BudgetData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const positions = useTemplateStore(s => s.templateElementPositions)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
   const items = data.items && data.items.length > 0 ? data.items : [
     { label: 'Category A', percentage: 35, amount: '€35,000' },
@@ -27,16 +30,16 @@ export function Budget3Template({ data }: { data: BudgetData }): ReactElement {
   const cy = H / 2
   const outerR = 150
   const innerR = 85
-  const labelR = outerR + 40
+  const labelR = outerR + 45
   const total = Math.max(1, items.reduce((s, it) => s + it.percentage, 0))
 
   let cumulative = -90
 
   return (
     <g ref={svgRef}>
-      {items.map((item, i) => {
-        const elementId = `item-${i}`
-        const color = tplColors[elementId] ?? item.color ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
+      {items.map((item, index) => {
+        const elementId = `item-${index}`
+        const color = tplColors[elementId] ?? item.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
 
         const sliceAngle = (item.percentage / total) * 360
         const startAngle = cumulative
@@ -55,7 +58,7 @@ export function Budget3Template({ data }: { data: BudgetData }): ReactElement {
         const y2i = cy + innerR * Math.sin(endRad)
         const largeArc = sliceAngle > 180 ? 1 : 0
 
-        const d = [
+        const pathD = [
           `M ${x1o} ${y1o}`,
           `A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2o} ${y2o}`,
           `L ${x2i} ${y2i}`,
@@ -65,10 +68,10 @@ export function Budget3Template({ data }: { data: BudgetData }): ReactElement {
 
         const midAngle = (startAngle + endAngle) / 2
         const midRad = (midAngle * Math.PI) / 180
-        const defaultLx = cx + labelR * Math.cos(midRad) - 40
-        const defaultLy = cy + labelR * Math.sin(midRad) - 16
+        const defaultLx = cx + labelR * Math.cos(midRad) - 45
+        const defaultLy = cy + labelR * Math.sin(midRad) - 20
 
-        const defaultBbox = { x: defaultLx, y: defaultLy, width: 80, height: 32 }
+        const defaultBbox = { x: defaultLx, y: defaultLy, width: 90, height: 40 }
         const customPos = positions[elementId]
         const bbox = {
           x: customPos?.x ?? defaultBbox.x,
@@ -77,62 +80,72 @@ export function Budget3Template({ data }: { data: BudgetData }): ReactElement {
           height: customPos?.height ?? defaultBbox.height,
         }
         const isSelected = selectedIds.has(elementId)
+        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'white')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (isSelected ? 2.5 : 2)
+        const IconComponent = item.icon ? TEMPLATE_ICONS[item.icon] : undefined
+        const labelLines = wrapTextByWidth(item.label, 12)
 
         return (
           <g key={elementId}>
+            <path
+              d={pathD}
+              fill={color}
+              opacity={isSelected ? 1 : 0.88}
+              stroke={strokeColor}
+              strokeWidth={strokeWidth}
+            />
+
             <g
+              data-element-id={elementId}
               onMouseDown={e => startDrag(e, elementId, bbox)}
               transform={getTransform(elementId, bbox)}
               style={{ cursor: 'pointer' }}
             >
-              <path
-                d={d}
-                fill={color}
-                opacity={isSelected ? 1 : 0.88}
-                stroke={isSelected ? '#4a90d9' : 'white'}
-                strokeWidth={isSelected ? 2.5 : 2}
-              />
-
               <rect
                 x={bbox.x}
                 y={bbox.y}
                 width={bbox.width}
                 height={bbox.height}
-                rx={4}
+                rx={6}
                 fill="white"
                 stroke={color}
-                strokeWidth={1}
+                strokeWidth={1.5}
                 filter="drop-shadow(0 1px 3px rgba(0,0,0,0.1))"
               />
+
+              {IconComponent && (
+                <g transform={`translate(${bbox.x + 8}, ${bbox.y + 10})`}>
+                  <IconComponent size={14} color={color} />
+                </g>
+              )}
+
               <text
-                x={bbox.x + bbox.width / 2}
-                y={bbox.y + 14}
+                x={bbox.x + bbox.width / 2 + (IconComponent ? 6 : 0)}
+                y={bbox.y + 14 - (labelLines.length > 1 ? 2 : 0)}
                 textAnchor="middle"
                 fontFamily="Arial, sans-serif"
                 fontSize={10}
                 fontWeight={700}
                 fill="#333"
               >
-                {item.label}
+                {labelLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={bbox.x + bbox.width / 2 + (IconComponent ? 6 : 0)} dy={lineIndex === 0 ? 0 : 11}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
               <text
                 x={bbox.x + bbox.width / 2}
-                y={bbox.y + 26}
+                y={bbox.y + 14 + labelLines.length * 11 + 2}
                 textAnchor="middle"
                 fontFamily="Arial, sans-serif"
-                fontSize={9}
+                fontSize={10}
+                fontWeight={700}
                 fill={color}
               >
                 {Math.round(item.percentage)}%
               </text>
-              {item.icon && (() => {
-                const IconFn = TEMPLATE_ICONS[item.icon]
-                return IconFn ? (
-                  <g transform={`translate(${bbox.x + bbox.width / 2 - 8}, ${bbox.y + bbox.height - 14})`}>
-                    <IconFn size={16} color={color} />
-                  </g>
-                ) : null
-              })()}
+
               {isSelected && renderHandles(bbox, elementId)}
             </g>
           </g>
@@ -151,15 +164,18 @@ export function Budget3Template({ data }: { data: BudgetData }): ReactElement {
           height: customPos?.height ?? defaultBbox.height,
         }
         const isSelected = selectedIds.has(centerId)
+        const strokeColor = tplStrokeColors[centerId] || (isSelected ? '#4a90d9' : '#e0e0e0')
+        const strokeWidth = tplStrokeWidths[centerId] ?? (isSelected ? 2.5 : 1)
 
         return (
           <g
             key={centerId}
+            data-element-id={centerId}
             onMouseDown={e => startDrag(e, centerId, bbox)}
             transform={getTransform(centerId, bbox)}
             style={{ cursor: 'pointer' }}
           >
-            <circle cx={bbox.x + bbox.width / 2} cy={bbox.y + bbox.height / 2} r={innerR} fill="transparent" stroke="#e0e0e0" strokeWidth={1} />
+            <circle cx={bbox.x + bbox.width / 2} cy={bbox.y + bbox.height / 2} r={innerR} fill="transparent" stroke={strokeColor} strokeWidth={strokeWidth} />
             <text
               x={bbox.x + bbox.width / 2}
               y={bbox.y + bbox.height / 2 - 8}

@@ -1,163 +1,139 @@
-import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { BusinessData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
-import { ClipboardList, ClipboardCheck, Clock, CheckSquare } from 'lucide-react'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
 
-// Colors for the 4 chevron segments (Dark Navy, Royal Blue, Orange-Red, Golden Yellow)
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+function renderDynamicIcon(iconName?: string, size = 26, color = '#FFFFFF'): ReactElement | null {
+  if (!iconName) return null
+  const clean = iconName.trim()
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn({ size, color })
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const lucideRecord = LucideIcons as Record<string, unknown>
+  const LucideFn = (lucideRecord[pascalName] || lucideRecord[clean] || lucideRecord[clean.toUpperCase()]) as
+    | React.ComponentType<{ size?: number; color?: string }>
+    | undefined
+
+  if (LucideFn) {
+    return <LucideFn size={size} color={color} />
+  }
+  return null
+}
+
 const CHEVRON_COLORS = [
-  '#1F2456', // 1: Dark Navy / Indigo
-  '#2F66CE', // 2: Bright Royal Blue
-  '#FF5232', // 3: Vibrant Orange-Red
-  '#FFB800'  // 4: Golden Yellow
+  '#1F2456',
+  '#2F66CE',
+  '#FF5232',
+  '#FFB800',
 ]
 
-const ICONS = [ClipboardList, ClipboardCheck, Clock, CheckSquare]
+const DEFAULT_ICONS = ['clipboard-list', 'clipboard-check', 'clock', 'check-square']
+
+const DEFAULT_NODES = [
+  { title: 'Your title', description: 'Content and description to be added here as required' },
+  { title: 'Your title', description: 'Content and description to be added here as required' },
+  { title: 'Your title', description: 'Content and description to be added here as required' },
+  { title: 'Your title', description: 'Content and description to be added here as required' },
+]
 
 export function Business9Template({ data }: { data: BusinessData }): ReactElement {
-  const W = 1000
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
-  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const tplColors = useTemplateStore(s => s.templateElementColors)
-  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
-  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
-  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
+  const selectedIds = useTemplateStore(state => state.selectedTemplateElementIds)
+  const templateColors = useTemplateStore(state => state.templateElementColors)
+  const templateStrokeColors = useTemplateStore(state => state.templateStrokeColors)
+  const templateStrokeWidths = useTemplateStore(state => state.templateStrokeWidths)
+  const positions = useTemplateStore(state => state.templateElementPositions)
 
-  const { title, nodes } = data
-  const defaultNodes = [
-    { title: 'Your title', description: 'Content and description to be added here as required' },
-    { title: 'Your title', description: 'Content and description to be added here as required' },
-    { title: 'Your title', description: 'Content and description to be added here as required' },
-    { title: 'Your title', description: 'Content and description to be added here as required' }
-  ]
-  const displayNodes = nodes.length > 0 ? nodes : defaultNodes
+  const nodes = data.nodes ?? []
+  const displayNodes = nodes.length > 0 ? nodes : DEFAULT_NODES
 
-  // Chevron definitions (4 diamond/parallelogram polygon shapes forming a W / zigzag line)
-  // Polygon 1 (goes down-right): Top-Left (95,340), Top-Right (215,220), Bottom-Right (415,420), Bottom-Left (295,540) -> Wait, let's specify coordinates precisely.
-  // Chevron 1: Top-Left (95,345), Peak (215,225), Bottom (220,480) - let's make 4 interlocking chevrons!
-  // Chevron 1 (Dark Navy): Point 1 (95,345), Point 2 (215,225), Point 3 (315,325), Point 4 (220,480), Point 5 (95,355)?
-  // Let's use clean diamond/rhombus/polyline shapes that interlock seamlessly.
-  // Each segment is formed by thick diagonal bands (width ~ 120px) going at 45 degrees up and down.
-  // Segment 1 (Navy): Downward slope from (95, 345) down to V-bottom (220, 480).
-  // Polygon 1: (95, 345) -> (215, 225) -> (315, 325) -> (220, 480)
-  // Segment 2 (Blue): Upward slope from V-bottom (220, 480) up to Peak (410, 170).
-  // Polygon 2: (215, 225) -> (410, 170) -> (510, 270) -> (315, 325)
-  // Segment 3 (Red): Downward slope from Peak (410, 170) down to V-bottom (600, 480).
-  // Polygon 3: (510, 270) -> (600, 480) -> (500, 380) ... wait:
-  // Polygon 3: (410, 170) -> (510, 270) -> (700, 320)?
-  // Let's refine coordinates so all 4 chevrons are perfectly symmetrical and aligned!
-  //
-  // X coordinates for peaks & valleys:
-  // Start left: x = 95
-  // Valley 1: x = 220, y = 480
-  // Peak 1:   x = 410, y = 170
-  // Valley 2: x = 600, y = 480
-  // Peak 2:   x = 790, y = 170
-  // End right: x = 905, y = 285
-  //
-  // Band offset along (+1, +1) direction = (-85, +85) or similar for 120px perpendicular width.
-  // Let's define exact 4 polygon path strings:
-  // Poly 1 (Navy):  "95,345  215,225  315,325  220,480"
-  // Poly 2 (Blue):  "215,225  410,170  510,270  315,325"
-  // Poly 3 (Red):   "510,270  410,170 ... wait, Blue top is (410,170) and right corner (510,270), bottom valley corner is (315,325)."
-  // Poly 3 (Red):   "510,270  410,170  600,480 ... no, from peak (410,170) down to valley (600,480)."
-  // Let's trace shared edges between adjacent blocks:
-  // Block 1 & 2 share edge: (215,225) to (315,325)
-  // Block 2 & 3 share edge: (410,170) to (510,270)
-  // Block 3 & 4 share edge: (600,480) to (700,380) or (500, 380)? Wait:
-  //
-  // Let's verify shared edges:
-  // Block 1: (95,345) -> (215,225) -> (315,325) -> (220,480)
-  // Block 2: (215,225) -> (410,170) -> (510,270) -> (315,325)
-  // Block 3: (410,170) -> (600,480) -> (700,380) -> (510,270)  (Wait: 410,170 to 600,480 is right edge of peak; 510,270 is right-bottom corner of peak edge)
-  // Block 4: (600,480) -> (790,170) -> (905,285) -> (700,380)  (Wait: 790,170 is peak 2 top point, 905,285 is right end point).
-
-  const count = displayNodes.length;
+  const count = displayNodes.length
   const chevronPolygons = Array.from({ length: count }).map((_, i) => {
-    const spacing = 810 / count;
-    const startX = 95 + i * spacing;
-    const midX = startX + spacing / 2;
-    const endX = startX + spacing;
-    
-    // zigzag up and down
-    const isUp = i % 2 === 0;
-    const y1 = isUp ? 345 : 225;
-    const y2 = isUp ? 225 : 480;
-    const y3 = isUp ? 325 : 380;
-    const y4 = isUp ? 480 : 270;
+    const spacing = 810 / count
+    const startX = 95 + i * spacing
+    const midX = startX + spacing / 2
+    const endX = startX + spacing
 
-    if (i === 0) return '95,345 215,225 315,325 220,480';
-    if (i === 1) return '215,225 410,170 510,270 315,325';
-    if (i === 2) return '410,170 600,480 700,380 510,270';
-    if (i === 3) return '600,480 790,170 905,285 700,380';
-    
-    return `${startX},${y1} ${midX},${y2} ${endX},${y3} ${midX + (startX-midX)/2},${y4}`;
-  });
+    const isUp = i % 2 === 0
+    const y1 = isUp ? 345 : 225
+    const y2 = isUp ? 225 : 480
+    const y3 = isUp ? 325 : 380
+    const y4 = isUp ? 480 : 270
 
-  // Positions for numbers 1, 2, 3, 4 (centered inside each chevron block)
+    if (i === 0) return '95,345 215,225 315,325 220,480'
+    if (i === 1) return '215,225 410,170 510,270 315,325'
+    if (i === 2) return '410,170 600,480 700,380 510,270'
+    if (i === 3) return '600,480 790,170 905,285 700,380'
+
+    return `${startX},${y1} ${midX},${y2} ${endX},${y3} ${midX + (startX - midX) / 2},${y4}`
+  })
+
   const numberPositions = [
-    { x: 222, y: 418 }, // 1 (Navy, near bottom valley)
-    { x: 410, y: 245 }, // 2 (Blue, near top peak)
-    { x: 597, y: 418 }, // 3 (Red, near bottom valley)
-    { x: 785, y: 245 }  // 4 (Yellow, near top peak)
+    { x: 222, y: 418 },
+    { x: 410, y: 245 },
+    { x: 597, y: 418 },
+    { x: 785, y: 245 },
   ]
 
-  // Positions for circular icons (positioned over/under the W peaks and valleys)
   const iconPositions = [
-    { x: 222, y: 225 }, // Icon 1: Above Navy valley (Top Left)
-    { x: 410, y: 435 }, // Icon 2: Below Blue peak (Bottom Center)
-    { x: 597, y: 225 }, // Icon 3: Above Red valley (Top Right)
-    { x: 785, y: 435 }  // Icon 4: Below Yellow peak (Bottom Right)
+    { x: 222, y: 225 },
+    { x: 410, y: 435 },
+    { x: 597, y: 225 },
+    { x: 785, y: 435 },
   ]
 
-  // Positions for Text blocks (Title + Description)
-  // Nodes 1 & 3 (icons at top): text ABOVE icon (y around 130)
-  // Nodes 2 & 4 (icons at bottom): text BELOW icon (y around 525)
   const textPositions = [
-    { x: 222, y: 130, align: 'middle' as const, isTop: true },  // 1: Top Left
-    { x: 410, y: 525, align: 'middle' as const, isTop: false }, // 2: Bottom Center
-    { x: 597, y: 130, align: 'middle' as const, isTop: true },  // 3: Top Right
-    { x: 785, y: 525, align: 'middle' as const, isTop: false }  // 4: Bottom Right
+    { x: 222, y: 110, align: 'middle' as const, isTop: true },
+    { x: 410, y: 505, align: 'middle' as const, isTop: false },
+    { x: 597, y: 110, align: 'middle' as const, isTop: true },
+    { x: 785, y: 505, align: 'middle' as const, isTop: false },
   ]
+
+  const getElementRect = (elementId: string, defaultRect: Rect): Rect => {
+    const stored = positions[elementId]
+    return {
+      x: stored?.x ?? defaultRect.x,
+      y: stored?.y ?? defaultRect.y,
+      width: stored?.width ?? defaultRect.width,
+      height: stored?.height ?? defaultRect.height,
+    }
+  }
 
   return (
     <g ref={svgRef}>
-      {/* Header Title */}
-      {title && (
-        <text
-          x={W / 2}
-          y={48}
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={22}
-          fontWeight={700}
-          fill={TITLE_COLOR}
-        >
-          {title}
-        </text>
-      )}
-
-      {/* 4 Interlocking W-Zigzag Chevron Graphic Blocks */}
       <g>
         {chevronPolygons.map((pts, i) => {
           const chevId = `chevron-${i}`
-          const color = tplColors[chevId] ?? CHEVRON_COLORS[i % CHEVRON_COLORS.length]!
+          const isChevSelected = selectedIds.has(chevId)
+          const defaultColor = CHEVRON_COLORS[i % CHEVRON_COLORS.length]!
+          const color = templateColors[chevId] ?? defaultColor
+          const stroke = templateStrokeColors[chevId] ?? (isChevSelected ? '#4a90d9' : '#ffffff')
+          const strokeWidth = templateStrokeWidths[chevId] ?? (isChevSelected ? 3 : 1.5)
+
           return (
             <polygon
               key={chevId}
               points={pts}
               fill={color}
-              stroke={tplStrokeColors[chevId] || '#ffffff'}
-              strokeWidth={tplStrokeWidths[chevId] !== undefined ? tplStrokeWidths[chevId] : 1.5}
+              stroke={stroke}
+              strokeWidth={strokeWidth}
             />
           )
         })}
       </g>
 
-      {/* Numbers 1, 2, 3, 4 rendered on the chevrons */}
       <g style={{ pointerEvents: 'none' }}>
         {numberPositions.map((pos, i) => (
           <text
@@ -166,9 +142,9 @@ export function Business9Template({ data }: { data: BusinessData }): ReactElemen
             y={pos.y}
             textAnchor="middle"
             dominantBaseline="central"
-            fontFamily="sans-serif"
-            fontSize={46}
-            fontWeight="bold"
+            fontFamily="Arial, sans-serif"
+            fontSize={44}
+            fontWeight={700}
             fill="#FFFFFF"
           >
             {i + 1}
@@ -176,100 +152,112 @@ export function Business9Template({ data }: { data: BusinessData }): ReactElemen
         ))}
       </g>
 
-      {/* 4 Circles with Icons & Text Cards (Drag & Drop / Color customizable) */}
       {displayNodes.map((node, i) => {
+        const itemObject = typeof node === 'object' && node !== null ? node : {}
         const elementId = `node-${i}`
-        const color = tplColors[elementId] ?? CHEVRON_COLORS[i % CHEVRON_COLORS.length]!
+        const defaultColor = CHEVRON_COLORS[i % CHEVRON_COLORS.length]!
+        const color =
+          templateColors[elementId] ??
+          ('color' in itemObject && typeof itemObject.color === 'string' ? itemObject.color : defaultColor)
+
         const isSelected = selectedIds.has(elementId)
-        const IconComponent = ICONS[i % ICONS.length]!
 
-        const isUp = i % 2 === 0;
-        const defaultIconPos = iconPositions[i] || { x: 222 + i * 188, y: isUp ? 225 : 435 };
-        const defaultTextPos = textPositions[i] || { x: 222 + i * 188, y: isUp ? 130 : 525, align: 'middle', isTop: isUp };
-        const iconPos = defaultIconPos;
-        const textPos = defaultTextPos;
+        const isUp = i % 2 === 0
+        const defaultIconPos = iconPositions[i] || { x: 222 + i * 188, y: isUp ? 225 : 435 }
+        const defaultTextPos = textPositions[i] || { x: 222 + i * 188, y: isUp ? 110 : 505, align: 'middle' as const, isTop: isUp }
 
-        // Combined visual box for selection / drag-resize
-        const defaultBoxW = 280
+        const defaultBoxW = 260
         const defaultBoxH = 135
-        const defaultBoxX = textPos.x - defaultBoxW / 2
-        const defaultBoxY = textPos.isTop ? textPos.y - 25 : iconPos.y - 40
-        
-        const customPos = templateElementPositions[elementId]
-        const visualRect = {
-          x: customPos ? customPos.x : defaultBoxX,
-          y: customPos ? customPos.y : defaultBoxY,
-          width: customPos?.width || defaultBoxW,
-          height: customPos?.height || defaultBoxH,
-        }
-        
+        const defaultBoxX = defaultTextPos.x - defaultBoxW / 2
+        const defaultBoxY = defaultTextPos.isTop ? defaultTextPos.y - 25 : defaultIconPos.y - 40
+        const defaultRect: Rect = { x: defaultBoxX, y: defaultBoxY, width: defaultBoxW, height: defaultBoxH }
+
+        const visualRect = getElementRect(elementId, defaultRect)
         const dx = visualRect.x - defaultBoxX
         const dy = visualRect.y - defaultBoxY
 
-        const scaleX = visualRect.width / defaultBoxW;
-        const scaleY = visualRect.height / defaultBoxH;
+        const currentIconX = defaultIconPos.x + dx
+        const currentIconY = defaultIconPos.y + dy
+        const currentTextX = defaultTextPos.x + dx
+        const currentTextY = defaultTextPos.y + dy
 
-        const titleVal = node.title || (node as any)?.percent || (node as any)?.value || 'Your title'
-        const textVal = (node as any)?.subtitle || (node as any)?.text || (node as any)?.description || 'Content and description to be added here as required'
+        const titleVal =
+          'title' in itemObject && typeof itemObject.title === 'string' && itemObject.title
+            ? itemObject.title
+            : 'percent' in itemObject && typeof itemObject.percent === 'string'
+              ? itemObject.percent
+              : 'value' in itemObject && typeof itemObject.value === 'string'
+                ? itemObject.value
+                : 'Your title'
 
-        const titleLines = titleVal.split('\n').filter(Boolean)
-        const dynamicMaxChars = Math.max(15, Math.floor(visualRect.width / 7))
+        const textVal =
+          'subtitle' in itemObject && typeof itemObject.subtitle === 'string' && itemObject.subtitle
+            ? itemObject.subtitle
+            : 'text' in itemObject && typeof itemObject.text === 'string' && itemObject.text
+              ? itemObject.text
+              : 'description' in itemObject && typeof itemObject.description === 'string' && itemObject.description
+                ? itemObject.description
+                : 'Content and description to be added here as required'
+
+        const dynamicMaxChars = Math.max(14, Math.floor(visualRect.width / 7))
+        const titleLines = wrapTextByWidth(titleVal, dynamicMaxChars)
         const textLines = wrapTextByWidth(textVal, dynamicMaxChars)
 
+        const defaultIcon = DEFAULT_ICONS[i % DEFAULT_ICONS.length]!
+        const iconName = 'icon' in itemObject && typeof itemObject.icon === 'string' ? itemObject.icon : defaultIcon
+        const iconElement = renderDynamicIcon(iconName, 26, '#FFFFFF')
+
         return (
-          <g key={i}>
-            {/* Circle with Icon */}
-            <circle cx={iconPos.x + dx} cy={iconPos.y + dy} r={38} fill={color} />
-            <foreignObject x={iconPos.x + dx - 20} y={iconPos.y + dy - 20} width={40} height={40} style={{ pointerEvents: 'none' }}>
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF' }}>
-                <IconComponent size={28} strokeWidth={2} />
-              </div>
-            </foreignObject>
+          <g key={elementId}>
+            <circle cx={currentIconX} cy={currentIconY} r={36} fill={color} />
+            <g transform={`translate(${currentIconX - 13}, ${currentIconY - 13})`}>
+              {iconElement ?? <circle cx="13" cy="13" r="6" fill="#FFFFFF" />}
+            </g>
 
-            {/* Interactive Text & Selection area */}
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultBoxX}, ${-defaultBoxY})`}>
-                <rect
-                  x={defaultBoxX}
-                  y={defaultBoxY}
-                  width={defaultBoxW}
-                  height={defaultBoxH}
-                  fill={tplColors[`bg-${elementId}`] ?? 'transparent'}
-                  stroke={tplStrokeColors[elementId] || (isSelected ? '#2F66CE' : 'transparent')}
-                  strokeWidth={tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : 1.5}
-                  strokeDasharray={isSelected ? '4 2' : undefined}
-                  rx={6}
-                />
-              </g>
+            <g
+              data-element-id={elementId}
+              onMouseDown={event => startDrag(event, elementId, visualRect)}
+              transform={getTransform(elementId, visualRect)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect
+                x={visualRect.x}
+                y={visualRect.y}
+                width={visualRect.width}
+                height={visualRect.height}
+                fill={templateColors[`bg-${elementId}`] ?? 'transparent'}
+                stroke={templateStrokeColors[elementId] ?? (isSelected ? '#2F66CE' : 'transparent')}
+                strokeWidth={templateStrokeWidths[elementId] ?? 1.5}
+                strokeDasharray={isSelected ? '4 2' : undefined}
+                rx={6}
+              />
 
-              {/* Title */}
               <text
-                x={textPos.x + dx}
-                y={textPos.y + dy}
+                x={currentTextX}
+                y={currentTextY}
                 textAnchor="middle"
-                fontFamily="sans-serif"
-                fontSize={18}
-                fontWeight="bold"
+                fontFamily="Arial, sans-serif"
+                fontSize={17}
+                fontWeight={700}
                 fill="#252B42"
               >
-                {titleLines.map((line: string, lIdx: number) => (
-                  <tspan key={lIdx} x={textPos.x + dx} dy={lIdx === 0 ? 0 : 20}>
+                {titleLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={currentTextX} dy={lineIndex === 0 ? 0 : 20}>
                     {line}
                   </tspan>
                 ))}
               </text>
 
-              {/* Dynamic Description lines */}
               <text
-                x={textPos.x + dx}
-                y={textPos.y + dy + 22}
+                x={currentTextX}
+                y={currentTextY + titleLines.length * 20 + 2}
                 textAnchor="middle"
-                fontFamily="sans-serif"
+                fontFamily="Arial, sans-serif"
                 fontSize={12}
                 fill="#555555"
               >
-                {textLines.map((line, lIdx) => (
-                  <tspan key={lIdx} x={textPos.x + dx} dy={lIdx === 0 ? 0 : 16}>
+                {textLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={currentTextX} dy={lineIndex === 0 ? 0 : 16}>
                     {line}
                   </tspan>
                 ))}
@@ -280,8 +268,6 @@ export function Business9Template({ data }: { data: BusinessData }): ReactElemen
           </g>
         )
       })}
-
-
     </g>
   )
 }

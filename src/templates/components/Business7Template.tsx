@@ -1,174 +1,216 @@
-import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { BusinessData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
+
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+function renderDynamicIcon(iconName?: string, size = 24, color = '#FFFFFF'): ReactElement | null {
+  if (!iconName) return null
+  const clean = iconName.trim()
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn({ size, color })
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const lucideRecord = LucideIcons as Record<string, unknown>
+  const LucideFn = (lucideRecord[pascalName] || lucideRecord[clean] || lucideRecord[clean.toUpperCase()]) as
+    | React.ComponentType<{ size?: number; color?: string }>
+    | undefined
+
+  if (LucideFn) {
+    return <LucideFn size={size} color={color} />
+  }
+  return null
+}
 
 const DEFAULT_COLORS = ['#27295c', '#2962ff', '#ff4d30', '#ffc107']
+const DEFAULT_TITLES = ['Your title 01', 'Your title 02', 'Your title 03', 'Your title 04']
+const DEFAULT_DESC = 'Content and description to be added here as required'
 
 export function Business7Template({ data }: { data: BusinessData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
-  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const tplColors = useTemplateStore(s => s.templateElementColors)
-  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
-  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
-  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
+  const selectedIds = useTemplateStore(state => state.selectedTemplateElementIds)
+  const templateColors = useTemplateStore(state => state.templateElementColors)
+  const templateStrokeColors = useTemplateStore(state => state.templateStrokeColors)
+  const templateStrokeWidths = useTemplateStore(state => state.templateStrokeWidths)
+  const positions = useTemplateStore(state => state.templateElementPositions)
 
-  const { title, nodes = [] } = data
+  const nodes = data.nodes ?? []
+  const displayNodes = nodes.length > 0 ? nodes : Array.from({ length: 4 })
+  const count = displayNodes.length
+
   const W = 900
-
   const totalWidth = 800
   const startX = (W - totalWidth) / 2
-  
+
   const iconRadius = 38
-  const iconY = 160
-  const cardTopY = 200
+  const iconY = 100
+  const cardTopY = 140
   const cardH = 340
   const notchDepth = 35
 
-  const defaultTitles = ['Your title 01', 'Your title 02', 'Your title 03', 'Your title 04']
-  const defaultDesc = 'Content and description to be added here as required'
-
-  const displayNodes = nodes.length > 0 ? nodes : Array.from({ length: 4 })
-  const count = displayNodes.length
-  
-  // Calculate width per column, but if count is huge it might overflow.
-  // Using generic scaling per element
   const columnGap = 16
   const colW = count > 1 ? (totalWidth - (count - 1) * columnGap) / count : totalWidth
 
+  const getElementRect = (elementId: string, defaultRect: Rect): Rect => {
+    const stored = positions[elementId]
+    return {
+      x: stored?.x ?? defaultRect.x,
+      y: stored?.y ?? defaultRect.y,
+      width: stored?.width ?? defaultRect.width,
+      height: stored?.height ?? defaultRect.height,
+    }
+  }
+
   return (
     <g ref={svgRef}>
-      {title && (
-        <text
-          x={W / 2}
-          y={48}
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={22}
-          fontWeight={700}
-          fill={TITLE_COLOR}
-        >
-          {title}
-        </text>
-      )}
-
       {displayNodes.map((item, i) => {
         const elementId = `node-${i}`
-        const nodeData = typeof item === 'object' && item !== null ? (item as any) : {}
-        const x = startX + i * (colW + columnGap)
-        const mainColor = tplColors[elementId] ?? nodeData.color ?? DEFAULT_COLORS[i % DEFAULT_COLORS.length]!
-        
+        const itemObject = typeof item === 'object' && item !== null ? item : {}
+        const defaultColor = DEFAULT_COLORS[i % DEFAULT_COLORS.length]!
+        const mainColor =
+          templateColors[elementId] ??
+          ('color' in itemObject && typeof itemObject.color === 'string' ? itemObject.color : defaultColor)
+
         const isSelected = selectedIds.has(elementId)
-        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
-        const strokeW = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2.5 : 0)
+        const strokeColor = templateStrokeColors[elementId] ?? (isSelected ? '#4a90d9' : 'none')
+        const strokeW = templateStrokeWidths[elementId] ?? (isSelected ? 2.5 : 0)
 
-        const colTitle = nodeData.title || nodeData.percent || nodeData.value || defaultTitles[i % defaultTitles.length]!
-        const colDesc = nodeData.subtitle || nodeData.text || defaultDesc
+        const colTitle =
+          'title' in itemObject && typeof itemObject.title === 'string' && itemObject.title
+            ? itemObject.title
+            : 'percent' in itemObject && typeof itemObject.percent === 'string'
+              ? itemObject.percent
+              : 'value' in itemObject && typeof itemObject.value === 'string'
+                ? itemObject.value
+                : DEFAULT_TITLES[i % DEFAULT_TITLES.length]!
 
-        const defaultRect = { x, y: iconY - iconRadius, width: colW, height: cardTopY + cardH - (iconY - iconRadius) }
-        
-        const customPos = templateElementPositions[elementId]
-        const visualRect = {
-          x: customPos ? customPos.x : defaultRect.x,
-          y: customPos ? customPos.y : defaultRect.y,
-          width: customPos?.width || defaultRect.width,
-          height: customPos?.height || defaultRect.height,
+        const colDesc =
+          'subtitle' in itemObject && typeof itemObject.subtitle === 'string' && itemObject.subtitle
+            ? itemObject.subtitle
+            : 'text' in itemObject && typeof itemObject.text === 'string' && itemObject.text
+              ? itemObject.text
+              : DEFAULT_DESC
+
+        const iconName = 'icon' in itemObject && typeof itemObject.icon === 'string' ? itemObject.icon : undefined
+
+        const defaultX = startX + i * (colW + columnGap)
+        const defaultRect: Rect = {
+          x: defaultX,
+          y: iconY - iconRadius,
+          width: colW,
+          height: cardTopY + cardH - (iconY - iconRadius),
         }
-        
-        const scaleX = visualRect.width / defaultRect.width
-        const scaleY = visualRect.height / defaultRect.height
+
+        const visualRect = getElementRect(elementId, defaultRect)
+        const dx = visualRect.x - defaultX
+        const dy = visualRect.y - (iconY - iconRadius)
+
+        const currentX = defaultX + dx
+        const currentCardTopY = cardTopY + dy
+        const currentIconY = iconY + dy
+        const currentIconCenterX = currentX + visualRect.width / 2
 
         const grayChevronPath = `
-          M ${x} ${cardTopY + notchDepth}
-          L ${x + colW / 2} ${cardTopY}
-          L ${x + colW} ${cardTopY + notchDepth}
-          L ${x + colW} ${cardTopY + notchDepth + 20}
-          L ${x + colW / 2} ${cardTopY + 20}
-          L ${x} ${cardTopY + notchDepth + 20}
+          M ${currentX} ${currentCardTopY + notchDepth}
+          L ${currentIconCenterX} ${currentCardTopY}
+          L ${currentX + visualRect.width} ${currentCardTopY + notchDepth}
+          L ${currentX + visualRect.width} ${currentCardTopY + notchDepth + 20}
+          L ${currentIconCenterX} ${currentCardTopY + 20}
+          L ${currentX} ${currentCardTopY + notchDepth + 20}
           Z
         `
 
         const bodyPath = `
-          M ${x} ${cardTopY + notchDepth + 18}
-          L ${x + colW / 2} ${cardTopY + 18}
-          L ${x + colW} ${cardTopY + notchDepth + 18}
-          L ${x + colW} ${cardTopY + cardH}
-          L ${x} ${cardTopY + cardH}
+          M ${currentX} ${currentCardTopY + notchDepth + 18}
+          L ${currentIconCenterX} ${currentCardTopY + 18}
+          L ${currentX + visualRect.width} ${currentCardTopY + notchDepth + 18}
+          L ${currentX + visualRect.width} ${currentCardTopY + cardH}
+          L ${currentX} ${currentCardTopY + cardH}
           Z
         `
 
-        const titleLines = colTitle.split('\n').filter(Boolean)
-        const dynamicMaxChars = Math.max(15, Math.floor(visualRect.width / 7))
+        const maxTitleChars = Math.max(8, Math.floor(visualRect.width / 12))
+        const titleLines = wrapTextByWidth(colTitle, maxTitleChars)
+
+        const dynamicMaxChars = Math.max(10, Math.floor(visualRect.width / 7.5))
         const descLines = wrapTextByWidth(colDesc, dynamicMaxChars)
 
+        const iconElement = renderDynamicIcon(iconName, 24, '#FFFFFF')
+
         return (
-          <g key={i}>
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}>
-                <path d={grayChevronPath} fill="#afb4b9" />
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={event => startDrag(event, elementId, visualRect)}
+              transform={getTransform(elementId, visualRect)}
+              style={{ cursor: 'pointer' }}
+            >
+              <path d={grayChevronPath} fill="#afb4b9" />
 
-                <path
-                  d={bodyPath}
-                  fill={mainColor}
-                  stroke={strokeColor}
-                  strokeWidth={strokeW}
-                  strokeDasharray={isSelected ? '4 2' : undefined}
-                />
+              <path
+                d={bodyPath}
+                fill={mainColor}
+                stroke={strokeColor}
+                strokeWidth={strokeW}
+                strokeDasharray={isSelected ? '4 2' : undefined}
+              />
 
-                <circle cx={x + colW / 2} cy={iconY} r={iconRadius} fill={mainColor} stroke="#ffffff" strokeWidth={3} />
+              <circle
+                cx={currentIconCenterX}
+                cy={currentIconY}
+                r={iconRadius}
+                fill={mainColor}
+                stroke="#ffffff"
+                strokeWidth={3}
+              />
 
-                <g transform={`translate(${x + colW / 2 - 16}, ${iconY - 16})`} stroke="#ffffff" strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round">
-                  {i % 4 === 0 && <path d="M4 22h24L28 10l-6 6-6-10-6 10-6-6z" />}
-                  {i % 4 === 1 && (
-                    <>
-                      <rect x="5" y="4" width="22" height="24" rx="2" />
-                      <line x1="9" y1="10" x2="23" y2="10" />
-                      <line x1="9" y1="15" x2="23" y2="15" />
-                      <line x1="9" y1="20" x2="17" y2="20" />
-                    </>
-                  )}
-                  {i % 4 === 2 && (
-                    <>
-                      <circle cx="16" cy="16" r="8" />
-                      <path d="M16 2v4M16 26v4M2 16h4M26 16h4" />
-                    </>
-                  )}
-                  {i % 4 === 3 && (
-                    <>
-                      <rect x="5" y="10" width="22" height="17" rx="2" />
-                      <path d="M11 10V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4" />
-                      <line x1="5" y1="17" x2="27" y2="17" />
-                    </>
-                  )}
-                </g>
-
-                <text
-                  x={x + 18}
-                  y={cardTopY + notchDepth + 70}
-                  textAnchor="start"
-                  fontFamily="Arial, sans-serif"
-                  fontSize={18}
-                  fontWeight={700}
-                  fill="#ffffff"
-                >
-                  {titleLines.map((l: string, lIdx: number) => <tspan key={lIdx} x={x + 18} dy={lIdx === 0 ? 0 : 20}>{l}</tspan>)}
-                </text>
-
-                <text
-                  x={x + 18}
-                  y={cardTopY + notchDepth + 70 + titleLines.length * 20}
-                  textAnchor="start"
-                  fontFamily="Arial, sans-serif"
-                  fontSize={12}
-                  fill="#ffffff"
-                  opacity={0.9}
-                >
-                  {descLines.map((l: string, lIdx: number) => <tspan key={lIdx} x={x + 18} dy={lIdx === 0 ? 0 : 18}>{l}</tspan>)}
-                </text>
+              <g transform={`translate(${currentIconCenterX - 12}, ${currentIconY - 12})`}>
+                {iconElement ?? (
+                  <circle cx="12" cy="12" r="6" fill="#FFFFFF" />
+                )}
               </g>
+
+              <text
+                x={currentX + 18}
+                y={currentCardTopY + notchDepth + 70}
+                textAnchor="start"
+                fontFamily="Arial, sans-serif"
+                fontSize={17}
+                fontWeight={700}
+                fill="#ffffff"
+              >
+                {titleLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={currentX + 18} dy={lineIndex === 0 ? 0 : 20}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+
+              <text
+                x={currentX + 18}
+                y={currentCardTopY + notchDepth + 70 + titleLines.length * 20 + 4}
+                textAnchor="start"
+                fontFamily="Arial, sans-serif"
+                fontSize={12}
+                fill="#ffffff"
+                opacity={0.9}
+              >
+                {descLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={currentX + 18} dy={lineIndex === 0 ? 0 : 18}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
 
               {isSelected && renderHandles(visualRect, elementId)}
             </g>
@@ -178,3 +220,4 @@ export function Business7Template({ data }: { data: BusinessData }): ReactElemen
     </g>
   )
 }
+

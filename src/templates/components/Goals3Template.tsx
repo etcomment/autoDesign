@@ -2,6 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { GoalsData } from '../types'
 import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
@@ -36,6 +37,20 @@ function annulus(cx: number, cy: number, rOuter: number, rInner: number): string
   )
 }
 
+function getDynamicIcon(iconName?: string) {
+  if (!iconName) return null
+  const clean = iconName.trim()
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const LucideFn = (LucideIcons as Record<string, any>)[pascalName] || (LucideIcons as Record<string, any>)[clean] || (LucideIcons as Record<string, any>)[clean.toUpperCase()]
+  if (LucideFn) {
+    return (props: { size?: number; color?: string }) => <LucideFn size={props.size ?? 14} color={props.color ?? 'white'} />
+  }
+  return null
+}
+
 export function Goals3Template({ data }: { data: GoalsData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
@@ -43,29 +58,32 @@ export function Goals3Template({ data }: { data: GoalsData }): ReactElement {
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, metrics } = data
-  const W = 1000
+  const { metrics } = data
   const count = Math.min(metrics.length, 4)
   const visibleMetrics = metrics.slice(0, count)
   const outerR = OUTER_R
 
-  const targetStroke = tplStrokeColors['target'] || '#1e5340'
-  const targetStrokeWidth = tplStrokeWidths['target'] !== undefined ? tplStrokeWidths['target'] : 0
-  const targetRect = { x: CENTER.x - outerR, y: CENTER.y - outerR, width: outerR * 2, height: outerR * 2 }
+  const targetId = 'target'
+  const defaultTargetRect = { x: CENTER.x - outerR, y: CENTER.y - outerR, width: outerR * 2, height: outerR * 2 }
+  const customTargetPos = positions[targetId]
+  const targetRect = {
+    x: customTargetPos?.x ?? defaultTargetRect.x,
+    y: customTargetPos?.y ?? defaultTargetRect.y,
+    width: customTargetPos?.width ?? defaultTargetRect.width,
+    height: customTargetPos?.height ?? defaultTargetRect.height,
+  }
+  const isTargetSelected = selectedIds.has(targetId)
+  const targetStroke = tplStrokeColors[targetId] || (isTargetSelected ? '#4a90d9' : '#1e5340')
+  const targetStrokeWidth = tplStrokeWidths[targetId] !== undefined ? tplStrokeWidths[targetId] : (isTargetSelected ? 2.5 : 0)
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill="#2c2b64">
-          {title}
-        </text>
-      )}
-
       <g
-        data-element-id="target"
-        onMouseDown={e => startDrag(e, 'target', targetRect)}
-        transform={getTransform('target', targetRect)}
+        data-element-id={targetId}
+        onMouseDown={e => startDrag(e, targetId, targetRect)}
+        transform={getTransform(targetId, targetRect)}
         style={{ cursor: 'pointer' }}
       >
         <defs>
@@ -87,7 +105,7 @@ export function Goals3Template({ data }: { data: GoalsData }): ReactElement {
           ))}
         </g>
         <circle cx={CENTER.x} cy={CENTER.y} r={outerR} fill="none" stroke={targetStroke} strokeWidth={targetStrokeWidth} />
-        {selectedIds.has('target') && renderHandles(targetRect, 'target')}
+        {isTargetSelected && renderHandles(targetRect, targetId)}
       </g>
 
       {visibleMetrics.map((metric, index) => {
@@ -124,12 +142,30 @@ export function Goals3Template({ data }: { data: GoalsData }): ReactElement {
 
         const plume = PLUMES[index % PLUMES.length]!
         const plumeScale = 58 / plume.h
-        const IconFn = metric.icon ? TEMPLATE_ICONS[metric.icon] : undefined
-        const maxChars = Math.max(10, Math.floor(TEXT_W / 6.5))
+        const IconFn = getDynamicIcon(metric.icon)
+
+        const defaultArrowRect = { x: Math.min(feather.x, tip.x), y: Math.min(feather.y, tip.y) - 30, width: Math.abs(feather.x - tip.x), height: Math.abs(feather.y - tip.y) + 60 }
+        const customArrowPos = positions[arrowId]
+        const arrowRect = {
+          x: customArrowPos?.x ?? defaultArrowRect.x,
+          y: customArrowPos?.y ?? defaultArrowRect.y,
+          width: customArrowPos?.width ?? defaultArrowRect.width,
+          height: customArrowPos?.height ?? defaultArrowRect.height,
+        }
+
+        const defaultTextRect = { x: TEXT_X, y: rowY - 26, width: TEXT_W + 30, height: 52 }
+        const customTextPos = positions[textId]
+        const textRect = {
+          x: customTextPos?.x ?? defaultTextRect.x,
+          y: customTextPos?.y ?? defaultTextRect.y,
+          width: customTextPos?.width ?? defaultTextRect.width,
+          height: customTextPos?.height ?? defaultTextRect.height,
+        }
+
+        const maxChars = Math.max(10, Math.floor(textRect.width / 6.5))
         const titleLines = wrapTextByWidth(metric.label, maxChars)
-        const descLines = wrapTextByWidth(`${metric.value} / ${metric.target}`, maxChars)
-        const arrowRect = { x: Math.min(feather.x, tip.x), y: Math.min(feather.y, tip.y) - 30, width: Math.abs(feather.x - tip.x), height: Math.abs(feather.y - tip.y) + 60 }
-        const textRect = { x: TEXT_X, y: rowY - 22, width: TEXT_W, height: 44 }
+        const descLabel = [metric.value ? `${metric.value} / ${metric.target}` : metric.target, metric.change].filter(Boolean).join(' · ')
+        const descLines = wrapTextByWidth(descLabel, maxChars)
 
         return (
           <g key={arrowId}>
@@ -159,16 +195,16 @@ export function Goals3Template({ data }: { data: GoalsData }): ReactElement {
               transform={getTransform(textId, textRect)}
               style={{ cursor: 'pointer' }}
             >
-              <text x={TEXT_X} y={rowY - 6} fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="#2c2b64">
+              <text x={textRect.x} y={textRect.y + 16} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#2c2b64">
                 {titleLines.map((line, li) => (
-                  <tspan key={li} x={TEXT_X} dy={li === 0 ? 0 : 16}>
+                  <tspan key={li} x={textRect.x} dy={li === 0 ? 0 : 15}>
                     {line}
                   </tspan>
                 ))}
               </text>
-              <text x={TEXT_X} y={rowY + 14} fontFamily="Arial, sans-serif" fontSize={11} fill="#666">
+              <text x={textRect.x} y={textRect.y + 16 + titleLines.length * 15 + 2} fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#666">
                 {descLines.map((line, li) => (
-                  <tspan key={li} x={TEXT_X} dy={li === 0 ? 0 : 13}>
+                  <tspan key={li} x={textRect.x} dy={li === 0 ? 0 : 13}>
                     {line}
                   </tspan>
                 ))}

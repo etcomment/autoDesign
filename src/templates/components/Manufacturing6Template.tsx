@@ -1,77 +1,98 @@
 import { useRef, type ReactElement } from 'react'
 import type { ManufacturingData } from '../types'
-import { Arrow } from '../shared/primitives'
-import { GearIcon } from '../shared/icons'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#2ecc71', '#e67e22', '#9b59b6', '#e74c3c', '#1abc9c']
+const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6']
+const CARD_W = 140
+const CARD_H = 70
 
 export function Manufacturing6Template({ data }: { data: ManufacturingData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { title, stations } = data
-  const W = 800
+  const { stations = [] } = data
+  const W = 700
+  const H = 450
   const cx = W / 2
-  const cy = title ? 370 : 330
-  const hubR = 44
-  const spokeLen = 160
-  const boxW = 120
-  const boxH = 56
-
-  const useStations = stations.slice(0, 6)
+  const cy = H / 2
+  const orbitR = 155
+  const count = Math.max(1, stations.length)
+  const angleStep = 360 / count
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={48} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
-          {title}
-        </text>
-      )}
-
-      <circle cx={cx} cy={cy} r={hubR} fill="#2c2b64" />
-      <text x={cx} y={cy - 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
-        Warehouse
-      </text>
-      <text x={cx} y={cy + 12} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="rgba(255,255,255,0.7)">
-        HUB
+      <circle cx={cx} cy={cy} r={orbitR} fill="none" stroke="#e2e8f0" strokeWidth={2} strokeDasharray="6 4" />
+      <circle cx={cx} cy={cy} r={42} fill="#1a1a2e" />
+      <text x={cx} y={cy + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
+        FACTORY
       </text>
 
-      {useStations.map((station, i) => {
-        const elementId = `station-${i}`
-        const color = tplColors[elementId] ?? PALETTE[i % PALETTE.length]!
+      {stations.map((station, index) => {
+        const angle = index * angleStep - 90
+        const rad = (angle * Math.PI) / 180
+        const cardCx = cx + orbitR * Math.cos(rad)
+        const cardCy = cy + orbitR * Math.sin(rad)
+        const defaultRect = { x: cardCx - CARD_W / 2, y: cardCy - CARD_H / 2, width: CARD_W, height: CARD_H }
+
+        const elementId = `station-${index}`
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+
+        const defaultColor = station.color || PALETTE[index % PALETTE.length]!
+        const color = tplColors[elementId] ?? defaultColor
+        const strokeColor = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : color)
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1.5)
         const isSelected = selectedIds.has(elementId)
-        const angle = (i / useStations.length) * 2 * Math.PI - Math.PI / 2
-        const spokeEndX = cx + Math.cos(angle) * spokeLen
-        const spokeEndY = cy + Math.sin(angle) * spokeLen
-        const bx = spokeEndX - boxW / 2
-        const by = spokeEndY - boxH / 2
-        const visualRect = { x: bx, y: by, width: boxW, height: boxH }
+        const IconComponent = station.icon ? TEMPLATE_ICONS[station.icon] : undefined
+        const maxChars = Math.max(6, Math.floor((bbox.width - 20) / 8))
+        const nameLines = wrapTextByWidth(station.title, maxChars)
 
         return (
-          <g key={`s-${i}`}>
-            <line x1={cx + Math.cos(angle) * hubR} y1={cy + Math.sin(angle) * hubR} x2={spokeEndX} y2={spokeEndY} stroke={color} strokeWidth={2} opacity={0.5} />
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill="white" stroke={strokeColor} strokeWidth={strokeWidth} />
+              <circle cx={bbox.x + 18} cy={bbox.y + 18} r={10} fill={color} />
+              {IconComponent ? (
+                <g transform={`translate(${bbox.x + 12}, ${bbox.y + 12})`}>
+                  <IconComponent size={12} color="white" />
+                </g>
+              ) : (
+                <text x={bbox.x + 18} y={bbox.y + 22} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill="white">
+                  {index + 1}
+                </text>
+              )}
 
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={bx} y={by} width={boxW} height={boxH} rx={8} fill="white" stroke={isSelected ? '#4a90d9' : color} strokeWidth={isSelected ? 2.5 : 1.5} />
-              <g transform={`translate(${bx + boxW / 2 - 12}, ${by + 4})`}>
-                <GearIcon size={20} color={color} />
-              </g>
-              <text x={spokeEndX} y={by + boxH - 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill={color}>
-                {station.title.length > 14 ? station.title.slice(0, 12) + '..' : station.title}
+              <text x={bbox.x + 36} y={bbox.y + 22} fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill={color}>
+                {nameLines[0] || ''}
               </text>
-              {isSelected && renderHandles(visualRect, elementId)}
-            </g>
 
-            <Arrow
-              from={{ x: spokeEndX, y: spokeEndY + boxH / 2 + 2 }}
-              to={{ x: spokeEndX, y: spokeEndY + boxH / 2 + 22 }}
-              color={color}
-            />
+              {station.subtitle && (
+                <text x={bbox.x + 10} y={bbox.y + 46} fontFamily="Arial, sans-serif" fontSize={9} fill="#666">
+                  {station.subtitle.length > 22 ? station.subtitle.slice(0, 20) + '...' : station.subtitle}
+                </text>
+              )}
+
+              {isSelected && renderHandles(bbox, elementId)}
+            </g>
           </g>
         )
       })}

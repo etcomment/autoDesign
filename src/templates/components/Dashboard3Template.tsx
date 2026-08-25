@@ -2,6 +2,8 @@ import { useRef, type ReactElement } from 'react'
 import type { DashboardData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
 const BAR_W = 560
@@ -19,6 +21,8 @@ export function Dashboard3Template({ data }: { data: DashboardData }): ReactElem
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const positions = useTemplateStore(s => s.templateElementPositions)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
   const { metrics } = data
   const displayed = metrics && metrics.length > 0 ? metrics : [
@@ -28,7 +32,6 @@ export function Dashboard3Template({ data }: { data: DashboardData }): ReactElem
     { label: 'NPS Score', value: '72', change: '+4%' },
   ]
 
-  const count = displayed.length
   const startY = 40
   const startX = (900 - BAR_W) / 2
 
@@ -37,12 +40,12 @@ export function Dashboard3Template({ data }: { data: DashboardData }): ReactElem
 
   return (
     <g ref={svgRef}>
-      {displayed.map((metric, i) => {
-        const elementId = `metric-${i}`
-        const y = startY + i * (BAR_H + GAP)
-        const val = values[i]!
+      {displayed.map((metric, index) => {
+        const elementId = `metric-${index}`
+        const y = startY + index * (BAR_H + GAP)
+        const val = values[index]!
         const fillW = Math.max(10, (val / maxVal) * BAR_W)
-        const color = tplColors[elementId] ?? metric.color ?? MIGSO_PALETTE[i % MIGSO_PALETTE.length]!
+        const color = tplColors[elementId] ?? metric.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
 
         const defaultBbox = { x: startX, y, width: BAR_W, height: BAR_H }
         const customPos = positions[elementId]
@@ -53,19 +56,35 @@ export function Dashboard3Template({ data }: { data: DashboardData }): ReactElem
           height: customPos?.height ?? defaultBbox.height,
         }
         const isSelected = selectedIds.has(elementId)
+        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (isSelected ? 2 : 0)
+        const IconComponent = metric.icon ? TEMPLATE_ICONS[metric.icon] : undefined
+        const maxChars = Math.max(8, Math.floor(bbox.width / 18))
+        const labelLines = wrapTextByWidth(metric.label, maxChars)
 
         return (
           <g
             key={elementId}
+            data-element-id={elementId}
             onMouseDown={e => startDrag(e, elementId, bbox)}
             transform={getTransform(elementId, bbox)}
             style={{ cursor: 'pointer' }}
           >
-            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill="#f1f5f9" />
-            <rect x={bbox.x} y={bbox.y} width={fillW} height={bbox.height} rx={6} fill={color} opacity={0.88} />
+            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill="#f1f5f9" stroke={strokeColor} strokeWidth={strokeWidth} />
+            <rect x={bbox.x} y={bbox.y} width={Math.min(fillW, bbox.width)} height={bbox.height} rx={6} fill={color} opacity={0.88} />
 
-            <text x={bbox.x - 14} y={bbox.y + bbox.height / 2 + 5} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={600} fill="#1a202c">
-              {metric.label}
+            {IconComponent && (
+              <g transform={`translate(${bbox.x - 36}, ${bbox.y + bbox.height / 2 - 8})`}>
+                <IconComponent size={16} color={color} />
+              </g>
+            )}
+
+            <text x={bbox.x - 14} y={bbox.y + bbox.height / 2 - (labelLines.length > 1 ? (labelLines.length - 1) * 6 : 0) + 5} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={600} fill="#1a202c">
+              {labelLines.map((line, lineIndex) => (
+                <tspan key={lineIndex} x={bbox.x - 14} dy={lineIndex === 0 ? 0 : 13}>
+                  {line}
+                </tspan>
+              ))}
             </text>
 
             <text x={bbox.x + bbox.width + 14} y={bbox.y + bbox.height / 2 + 5} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={800} fill={color}>
@@ -85,4 +104,3 @@ export function Dashboard3Template({ data }: { data: DashboardData }): ReactElem
     </g>
   )
 }
-

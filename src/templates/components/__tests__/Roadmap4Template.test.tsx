@@ -14,7 +14,8 @@ describe('Roadmap4Template', () => {
       ],
     }
     const { container } = render(<svg><Roadmap4Template data={data} /></svg>)
-    expect(container.querySelector('[data-element-id="main-title"]')).not.toBeNull()
+    expect(container.querySelector('[data-element-id="step-body-1"]')).not.toBeNull()
+    expect(container.querySelector('[data-element-id="main-title"]')).toBeNull()
   })
 
   it('should adapt dynamically to N steps and milestones', () => {

@@ -1,28 +1,55 @@
-import { TITLE_COLOR } from '../../lib/theme'
 import { useRef, type ReactElement } from 'react'
 import type { BusinessData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
+
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+function renderDynamicIcon(iconName?: string, size = 18, color = '#FFFFFF'): ReactElement | null {
+  if (!iconName) return null
+  const clean = iconName.trim()
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn({ size, color })
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const lucideRecord = LucideIcons as Record<string, unknown>
+  const LucideFn = (lucideRecord[pascalName] || lucideRecord[clean] || lucideRecord[clean.toUpperCase()]) as
+    | React.ComponentType<{ size?: number; color?: string }>
+    | undefined
+
+  if (LucideFn) {
+    return <LucideFn size={size} color={color} />
+  }
+  return null
+}
 
 const DEFAULT_STEP_COLORS = [
-  '#2E2D6A', // Step 1: Navy
-  '#FFB800', // Step 2: Yellow
-  '#2F6EE5', // Step 3: Royal Blue
-  '#4CB994', // Step 4: Teal
-  '#FF523B', // Step 5: Coral
-  '#E62E6B', // Step 6: Magenta
-  '#2E2D6A', // Step 7: Navy
-  '#FFB800', // Step 8: Yellow
-  '#2F6EE5', // Step 9: Royal Blue
-  '#4CB994', // Step 10: Teal
-  '#FF523B', // Step 11: Coral
-  '#E62E6B', // Step 12: Magenta
+  '#2E2D6A',
+  '#FFB800',
+  '#2F6EE5',
+  '#4CB994',
+  '#FF523B',
+  '#E62E6B',
+  '#2E2D6A',
+  '#FFB800',
+  '#2F6EE5',
+  '#4CB994',
+  '#FF523B',
+  '#E62E6B',
 ]
 
 interface StepConfig {
   num: number
   path: string
-  rect: { x: number; y: number; width: number; height: number }
+  rect: Rect
   centerY: number
 }
 
@@ -31,20 +58,20 @@ function getStepsConfig(): StepConfig[] {
   const rowH = 85
   const gapY = 50
 
-  const x0 = 120 // Col 1
-  const x1 = x0 + colW // 310 - Col 2
-  const x2 = x1 + colW // 500 - Col 3
-  const x3 = x2 + colW // 690 - Col 4
-  const xEnd = x3 + colW // 880
+  const x0 = 120
+  const x1 = x0 + colW
+  const x2 = x1 + colW
+  const x3 = x2 + colW
+  const xEnd = x3 + colW
 
-  const y1 = 110 // Row 1
-  const y2 = y1 + rowH + gapY // 245 - Row 2
-  const y3 = y2 + rowH + gapY // 380 - Row 3
+  const y1 = 60
+  const y2 = y1 + rowH + gapY
+  const y3 = y2 + rowH + gapY
 
-  const midY12 = y1 + rowH + gapY / 2 // 220 (Halfway between Row 1 & Row 2)
-  const midY23 = y2 + rowH + gapY / 2 // 355 (Halfway between Row 2 & Row 3)
+  const midY12 = y1 + rowH + gapY / 2
+  const midY23 = y2 + rowH + gapY / 2
 
-  const r = 20 // Corner radius
+  const r = 20
 
   return [
     {
@@ -125,171 +152,197 @@ function getStepsConfig(): StepConfig[] {
 export function Business3Template({ data }: { data: BusinessData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
-  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const tplColors = useTemplateStore(s => s.templateElementColors)
-  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
-  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
-  const positions = useTemplateStore(s => s.templateElementPositions)
+  const selectedIds = useTemplateStore(state => state.selectedTemplateElementIds)
+  const templateColors = useTemplateStore(state => state.templateElementColors)
+  const templateStrokeColors = useTemplateStore(state => state.templateStrokeColors)
+  const templateStrokeWidths = useTemplateStore(state => state.templateStrokeWidths)
+  const positions = useTemplateStore(state => state.templateElementPositions)
 
-  const mainTitle = data.title || 'Business 3'
   const nodes = data.nodes ?? []
   const stepsConfig = getStepsConfig()
-  
   const displayNodes = nodes.length > 0 ? nodes : Array.from({ length: 12 })
 
-  const W = 1000
-  const H = 562.5
+  const getElementRect = (elementId: string, defaultRect: Rect): Rect => {
+    const stored = positions[elementId]
+    return {
+      x: stored?.x ?? defaultRect.x,
+      y: stored?.y ?? defaultRect.y,
+      width: stored?.width ?? defaultRect.width,
+      height: stored?.height ?? defaultRect.height,
+    }
+  }
+
+  const startDefaultRect: Rect = { x: 70, y: 80, width: 40, height: 50 }
+  const startVisualRect = getElementRect('start-badge', startDefaultRect)
+
+  const endDefaultRect: Rect = { x: 890, y: 350, width: 40, height: 50 }
+  const endVisualRect = getElementRect('end-badge', endDefaultRect)
 
   return (
     <g ref={svgRef}>
-      {/* Slide Title */}
-      {mainTitle && (
-        <text
-          x={W / 2}
-          y={48}
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={22}
-          fontWeight={700}
-          fill={TITLE_COLOR}
-        >
-          {mainTitle}
-        </text>
-      )}
-
-      <g transform="translate(90, 152.5)">
-        <text
-          transform="rotate(-90)"
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={16}
-          fontWeight={800}
-          fill="#1D1D4B"
-          letterSpacing="3"
-        >
-          START
-        </text>
+      <g
+        data-element-id="start-badge"
+        onMouseDown={event => startDrag(event, 'start-badge', startVisualRect)}
+        transform={getTransform('start-badge', startVisualRect)}
+        style={{ cursor: 'pointer' }}
+      >
+        <g transform={`translate(${startVisualRect.x + startVisualRect.width / 2}, ${startVisualRect.y + startVisualRect.height / 2})`}>
+          <text
+            transform="rotate(-90)"
+            textAnchor="middle"
+            fontFamily="Arial, sans-serif"
+            fontSize={16}
+            fontWeight={800}
+            fill={templateColors['start-badge'] ?? '#1D1D4B'}
+            letterSpacing="3"
+          >
+            START
+          </text>
+        </g>
+        {selectedIds.has('start-badge') && renderHandles(startVisualRect, 'start-badge')}
       </g>
 
-      <g transform="translate(910, 422.5)">
-        <text
-          transform="rotate(90)"
-          textAnchor="middle"
-          fontFamily="Arial, sans-serif"
-          fontSize={16}
-          fontWeight={800}
-          fill="#1D1D4B"
-          letterSpacing="3"
-        >
-          END
-        </text>
+      <g
+        data-element-id="end-badge"
+        onMouseDown={event => startDrag(event, 'end-badge', endVisualRect)}
+        transform={getTransform('end-badge', endVisualRect)}
+        style={{ cursor: 'pointer' }}
+      >
+        <g transform={`translate(${endVisualRect.x + endVisualRect.width / 2}, ${endVisualRect.y + endVisualRect.height / 2})`}>
+          <text
+            transform="rotate(90)"
+            textAnchor="middle"
+            fontFamily="Arial, sans-serif"
+            fontSize={16}
+            fontWeight={800}
+            fill={templateColors['end-badge'] ?? '#1D1D4B'}
+            letterSpacing="3"
+          >
+            END
+          </text>
+        </g>
+        {selectedIds.has('end-badge') && renderHandles(endVisualRect, 'end-badge')}
       </g>
 
-      {displayNodes.map((item, i) => {
-        const nodeData = typeof item === 'object' && item !== null ? (item as any) : undefined
-        const cfg = stepsConfig[i % stepsConfig.length]!
-        const elementId = `step-${i}`
+      {displayNodes.map((item, index) => {
+        const itemObject = typeof item === 'object' && item !== null ? item : {}
+        const cfg = stepsConfig[index % stepsConfig.length]!
+        const elementId = `step-${index}`
         const isSelected = selectedIds.has(elementId)
 
-        const color = tplColors[elementId] ?? (nodeData as any)?.color ?? DEFAULT_STEP_COLORS[i % DEFAULT_STEP_COLORS.length]!
-        
-        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
-        const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2.5 : 0)
+        const defaultColor = DEFAULT_STEP_COLORS[index % DEFAULT_STEP_COLORS.length]!
+        const customColor = 'color' in itemObject && typeof itemObject.color === 'string' ? itemObject.color : defaultColor
+        const color = templateColors[elementId] ?? customColor
 
-        const defaultRect = cfg.rect
-        const customPos = positions[elementId]
+        const strokeColor = templateStrokeColors[elementId] ?? (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = templateStrokeWidths[elementId] ?? (isSelected ? 2.5 : 0)
 
-        const x = customPos ? customPos.x : defaultRect.x
-        const y = customPos ? customPos.y : defaultRect.y
-        const width = customPos?.width || defaultRect.width
-        const height = customPos?.height || defaultRect.height
+        const visualRect = getElementRect(elementId, cfg.rect)
+        const dx = visualRect.x - cfg.rect.x
+        const dy = visualRect.y - cfg.rect.y
 
-        const dx = x - defaultRect.x
-        const dy = y - defaultRect.y
+        const titleVal =
+          'title' in itemObject && typeof itemObject.title === 'string' && itemObject.title
+            ? itemObject.title
+            : `Title ${index + 1}`
 
-        const scaleX = width / defaultRect.width
-        const scaleY = height / defaultRect.height
+        const descVal =
+          'subtitle' in itemObject && typeof itemObject.subtitle === 'string' && itemObject.subtitle
+            ? itemObject.subtitle
+            : 'text' in itemObject && typeof itemObject.text === 'string' && itemObject.text
+              ? itemObject.text
+              : 'Content and description to be added here as required'
 
-        const visualRect = { x, y, width, height }
+        const numVal =
+          'num' in itemObject && (typeof itemObject.num === 'string' || typeof itemObject.num === 'number')
+            ? String(itemObject.num)
+            : 'value' in itemObject && typeof itemObject.value === 'string'
+              ? itemObject.value
+              : 'percent' in itemObject && typeof itemObject.percent === 'string'
+                ? itemObject.percent
+                : String(index + 1)
 
-        const titleVal = (nodeData as any)?.title || 'Title'
-        const descVal = (nodeData as any)?.subtitle || (nodeData as any)?.text || 'Content and description to be added here as required'
-        const numVal = (nodeData as any)?.num ?? (nodeData as any)?.value ?? (nodeData as any)?.percent ?? (i + 1)
-        
-        const fullDescLines = descVal.split('\n').flatMap((line: string) => {
-          const words = line.split(' ');
-          const lines: string[] = []
-          let currentLine = ''
-          for (const word of words) {
-            if ((currentLine + ' ' + word).trim().length <= 20) {
-              currentLine = (currentLine + ' ' + word).trim()
-            } else {
-              if (currentLine) lines.push(currentLine)
-              currentLine = word
-            }
-          }
-          if (currentLine) lines.push(currentLine)
-          return lines
-        })
+        const iconName = 'icon' in itemObject && typeof itemObject.icon === 'string' ? itemObject.icon : undefined
+        const iconElement = renderDynamicIcon(iconName, 18, '#FFFFFF')
 
-        const isDoubleDigit = String(numVal).length >= 2
-        const numX = defaultRect.x + (isDoubleDigit ? 14 : 20)
-        const textX = defaultRect.x + (isDoubleDigit ? 62 : 52)
-        const centerY = cfg.centerY
+        const maxTitleChars = Math.max(8, Math.floor(visualRect.width / 14))
+        const titleLines = wrapTextByWidth(titleVal, maxTitleChars)
+
+        const dynamicMaxChars = Math.max(12, Math.floor(visualRect.width / 11))
+        const descLines = wrapTextByWidth(descVal, dynamicMaxChars)
+
+        const isDoubleDigit = numVal.length >= 2
+        const numX = visualRect.x + (isDoubleDigit ? 14 : 20)
+        const textX = visualRect.x + (isDoubleDigit ? 62 : 52)
+        const centerY = cfg.centerY + dy
 
         return (
-          <g key={i}>
+          <g key={elementId}>
             <g
-              data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)}
+              data-element-id={elementId}
+              onMouseDown={event => startDrag(event, elementId, visualRect)}
+              transform={getTransform(elementId, visualRect)}
               style={{ cursor: 'pointer' }}
             >
-              <g transform={`translate(${visualRect.x}, ${visualRect.y}) scale(${scaleX}, ${scaleY}) translate(${-defaultRect.x}, ${-defaultRect.y})`}>
-                <path
-                  d={cfg.path}
-                  fill={color}
-                  stroke={strokeColor}
-                  strokeWidth={strokeWidth}
-                  strokeDasharray={isSelected ? '4 2' : undefined}
-                />
+              <path
+                d={cfg.path}
+                transform={`translate(${dx}, ${dy})`}
+                fill={color}
+                stroke={strokeColor}
+                strokeWidth={strokeWidth}
+                strokeDasharray={isSelected ? '4 2' : undefined}
+              />
 
-                <text
-                  x={numX}
-                  y={centerY + 12}
-                  fontFamily="Arial, sans-serif"
-                  fontSize={isDoubleDigit ? 30 : 36}
-                  fontWeight={700}
-                  fill="#FFFFFF"
-                >
-                  {numVal}
-                </text>
+              <text
+                x={numX}
+                y={centerY + 12}
+                fontFamily="Arial, sans-serif"
+                fontSize={isDoubleDigit ? 30 : 36}
+                fontWeight={700}
+                fill="#FFFFFF"
+              >
+                {numVal}
+              </text>
 
+              <g transform={`translate(${textX}, ${centerY - 14})`}>
+                {iconElement && <g transform="translate(-22, -12)">{iconElement}</g>}
                 <text
-                  x={textX}
-                  y={centerY - 14}
+                  x={0}
+                  y={0}
                   fontFamily="Arial, sans-serif"
                   fontSize={12}
                   fontWeight={700}
                   fill="#FFFFFF"
                 >
-                  {titleVal}
-                </text>
-
-                <text x={textX} y={centerY - 1} fontFamily="Arial, sans-serif" fontSize={10} fill="#FFFFFF" opacity={0.92}>
-                  {fullDescLines.slice(0, 3).map((line: string, idx: number) => (
-                    <tspan key={idx} x={textX} dy={idx === 0 ? 0 : 13}>
+                  {titleLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={0} dy={lineIndex === 0 ? 0 : 14}>
                       {line}
                     </tspan>
                   ))}
                 </text>
               </g>
-            </g>
 
-            {isSelected && renderHandles(visualRect, elementId)}
+              <text
+                x={textX}
+                y={centerY - 14 + (titleLines.length * 14) + 2}
+                fontFamily="Arial, sans-serif"
+                fontSize={10}
+                fill="#FFFFFF"
+                opacity={0.92}
+              >
+                {descLines.slice(0, 3).map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={textX} dy={lineIndex === 0 ? 0 : 13}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+
+              {isSelected && renderHandles(visualRect, elementId)}
+            </g>
           </g>
         )
       })}
-
-
     </g>
   )
 }
+

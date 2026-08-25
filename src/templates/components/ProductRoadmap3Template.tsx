@@ -3,8 +3,31 @@ import type { ProductRoadmap3Data } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db', '#e91e63', '#00bcd4']
+
+function getDynamicIcon(iconName?: string, size = 18, color = '#23255a'): ReactElement | null {
+  if (!iconName) return null
+  const clean = iconName.trim()
+
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn({ size, color })
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const lucideRecord = LucideIcons as Record<string, unknown>
+  const LucideFn = (lucideRecord[pascalName] || lucideRecord[clean] || lucideRecord[clean.toUpperCase()]) as
+    | React.ComponentType<{ size?: number; color?: string }>
+    | undefined
+
+  if (LucideFn) {
+    return <LucideFn size={size} color={color} />
+  }
+
+  return null
+}
 
 export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -12,19 +35,17 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const pos = useTemplateStore(s => s.templateElementPositions)
-  const moveEl = useTemplateStore(s => s.moveTemplateElement)
-  const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
-  const { title, quarters, milestones, lanes } = data
+  const { quarters = [], milestones = [] } = data
   const W = 1000
-  const topMargin = 50
-  const headerHeight = 60
-  const timelineY = topMargin + headerHeight
+  const topMargin = 40
+  const headerHeight = 50
+  const timelineY = topMargin + headerHeight + 15
   const cardSpacing = 220
-  const cardW = 160
-  const cardH = 90
+  const cardW = 170
+  const cardH = 95
   const leftPad = 40
 
   const sortedMilestones = [...milestones].sort((a, b) => {
@@ -33,36 +54,16 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
     return qiA - qiB
   })
 
-  const quarterGroups = new Map<string, (typeof sortedMilestones)[number][]>()
-  for (const m of sortedMilestones) {
-    const q = m.quarter ?? '?'
-    if (!quarterGroups.has(q)) quarterGroups.set(q, [])
-    quarterGroups.get(q)!.push(m)
-  }
-
-  const totalCards = sortedMilestones.length
+  const totalCards = Math.max(1, sortedMilestones.length)
   const totalWidth = totalCards * cardSpacing + leftPad * 2
   const startX = Math.max(leftPad, (W - totalWidth) / 2 + leftPad)
 
+  const tId = 'timeline'
+  const tr = pos[tId] ?? { x: startX, y: timelineY + 28, width: Math.max(100, (totalCards - 1) * cardSpacing + cardW), height: 4 }
+
   return (
     <g ref={svgRef}>
-      {(() => {
-        const r = pos['main-title'] ?? { x: W / 2 - 250, y: 10, width: 500, height: 35 }
-        const fill = tplColors['main-title'] ?? '#1a1a2e'
-        const stroke = tplStrokeColors['main-title']
-        const sW = tplStrokeWidths['main-title'] ?? 1
-        return title ? (
-          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
-            {title.split('\n').map((line, i) => (
-              <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
-                {line}
-              </text>
-            ))}
-            {selectedIds.has('main-title') && renderHandles(r, 'main-title')}
-          </g>
-        ) : null
-      })()}
-
+      {/* Quarter Group Headers */}
       {quarters.map((quarter, qi) => {
         const qKey = quarter.label
         const qMs = sortedMilestones.filter(m => m.quarter === qKey)
@@ -82,9 +83,33 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
         const isSelected = selectedIds.has(qId)
 
         return (
-          <g key={`q-group-${qKey}`} onMouseDown={e => startDrag(e, qId, qRect)} transform={getTransform(qId, qRect)} style={{ cursor: 'pointer' }}>
-            <rect x={qRect.x} y={qRect.y} width={qRect.width} height={qRect.height} rx={8} fill={color} opacity={0.1} stroke={stroke} strokeWidth={strokeWidth} />
-            <text x={qRect.x + qRect.width / 2} y={qRect.y + qRect.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill={color}>
+          <g
+            key={`q-group-${qKey}`}
+            data-element-id={qId}
+            onMouseDown={e => startDrag(e, qId, qRect)}
+            transform={getTransform(qId, qRect)}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect
+              x={qRect.x}
+              y={qRect.y}
+              width={qRect.width}
+              height={qRect.height}
+              rx={8}
+              fill={color}
+              opacity={0.12}
+              stroke={stroke}
+              strokeWidth={strokeWidth}
+            />
+            <text
+              x={qRect.x + qRect.width / 2}
+              y={qRect.y + qRect.height / 2 + 5}
+              textAnchor="middle"
+              fontFamily="Arial, sans-serif"
+              fontSize={14}
+              fontWeight={700}
+              fill={color}
+            >
               {qKey} {quarter.year ? quarter.year : ''}
             </text>
             {isSelected && renderHandles(qRect, qId)}
@@ -92,71 +117,168 @@ export function ProductRoadmap3Template({ data }: { data: ProductRoadmap3Data })
         )
       })}
 
-      {(() => {
-        const tId = 'timeline'
-        const tr = pos[tId] ?? { x: startX, y: timelineY + 28, width: (totalCards - 1) * cardSpacing + cardW, height: 4 }
-        return (
-          <g onMouseDown={e => startDrag(e, tId, tr)} transform={getTransform(tId, tr)} style={{ cursor: 'pointer' }}>
-            <rect x={tr.x} y={tr.y - 4} width={tr.width} height={tr.height + 8} fill="transparent" />
-            <line x1={tr.x} y1={tr.y + tr.height / 2} x2={tr.x + tr.width} y2={tr.y + tr.height / 2} stroke={tplStrokeColors[tId] ?? '#c0c8d0'} strokeWidth={tplStrokeWidths[tId] ?? 2} />
-            {selectedIds.has(tId) && renderHandles(tr, tId)}
-          </g>
-        )
-      })()}
+      {/* Timeline track line */}
+      <g
+        data-element-id={tId}
+        onMouseDown={e => startDrag(e, tId, tr)}
+        transform={getTransform(tId, tr)}
+        style={{ cursor: 'pointer' }}
+      >
+        <rect x={tr.x} y={tr.y - 4} width={tr.width} height={tr.height + 8} fill="transparent" />
+        <line
+          x1={tr.x}
+          y1={tr.y + tr.height / 2}
+          x2={tr.x + tr.width}
+          y2={tr.y + tr.height / 2}
+          stroke={tplColors[tId] || '#dcdcdc'}
+          strokeWidth={tr.height}
+        />
+        {selectedIds.has(tId) && renderHandles(tr, tId)}
+      </g>
 
+      {/* Milestone Cards, Nodes & Connectors */}
       {sortedMilestones.map((milestone, mi) => {
-        const elementId = `milestone-${mi}`
+        const cardId = `card-${mi}`
+        const dotId = `dot-${mi}`
         const qi = quarters.findIndex(q => q.label === milestone.quarter)
-        const color = tplColors[elementId] ?? milestone.style?.fill ?? PALETTE[qi >= 0 ? qi % PALETTE.length : mi % PALETTE.length]!
-        const stroke = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : (milestone.style?.stroke || color))
-        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1)
-        const isSelected = selectedIds.has(elementId)
-        const cardX = startX + mi * cardSpacing
-        const cardY = topMargin + headerHeight + 20
-        const defaultMRect = { x: cardX, y: cardY, width: milestone.style?.boxWidth ?? cardW, height: milestone.style?.boxHeight ?? cardH }
-        const visualRect = pos[elementId] ?? defaultMRect
-        const mRectX = visualRect.x; const mRectY = visualRect.y; const mRectW = visualRect.width; const mRectH = visualRect.height
+        const defaultColor = PALETTE[qi >= 0 ? qi % PALETTE.length : mi % PALETTE.length]!
+        const color = tplColors[cardId] ?? milestone.style?.fill ?? milestone.color ?? defaultColor
+        const stroke = tplStrokeColors[cardId] || (selectedIds.has(cardId) ? '#4a90d9' : (milestone.style?.stroke || '#e0e0e0'))
+        const strokeWidth = tplStrokeWidths[cardId] ?? (selectedIds.has(cardId) ? 2.5 : 1)
+        const isSelected = selectedIds.has(cardId)
 
-        const laneColor = lanes.find(l => l.label === milestone.lane)
-          ? PALETTE[lanes.findIndex(l => l.label === milestone.lane) % PALETTE.length]
-          : color
-        const styleFontSize = milestone.style?.fontSize ?? 11
-        const styleFontWeight = milestone.style?.fontWeight ?? 700
-        const styleFontColor = milestone.style?.fontColor ?? color
+        const defaultCX = startX + mi * cardSpacing + cardW / 2
+        const defaultCardX = defaultCX - cardW / 2
+        const defaultCardY = timelineY + 80
+        const cardRect = pos[cardId] ?? { x: defaultCardX, y: defaultCardY, width: cardW, height: cardH }
+        const dotRect = pos[dotId] ?? { x: defaultCX - 7, y: timelineY + 28 - 5, width: 14, height: 14 }
+        const isDotSelected = selectedIds.has(dotId)
+
+        const maxTitleChars = Math.max(6, Math.floor(cardRect.width / 9))
+        const maxSubChars = Math.max(8, Math.floor(cardRect.width / 7))
+        const titleLines = wrapTextByWidth(milestone.title || '', maxTitleChars)
+        const subLines = milestone.subtitle ? wrapTextByWidth(milestone.subtitle, maxSubChars) : []
+
+        const iconEl = getDynamicIcon(milestone.icon, 16, color)
 
         return (
-          <g key={`m-${mi}`}>
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
-              <rect x={mRectX} y={mRectY} width={mRectW} height={mRectH} rx={8} fill="#fff" stroke={stroke} strokeWidth={strokeWidth} />
-              <rect x={mRectX} y={mRectY} width={mRectW} height={32} rx={8} fill={color} opacity={0.15} />
-              <rect x={mRectX} y={mRectY + 24} width={mRectW} height={8} fill={color} opacity={0.15} />
-              <rect x={mRectX + 4} y={mRectY + 3} width={4} height={26} rx={2} fill={laneColor} />
-              {milestone.title.split('\n').map((line, li) => (<text x={mRectX + 14} key={li} y={mRectY + 20 + li * 12 - ((milestone.title.split('\\n').length - 1) * 6)} fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>{line}</text>))}
-              {milestone.subtitle && (
-                <text x={mRectX + mRectW / 2} y={mRectY + 52} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#666">
-                  {milestone.subtitle.length > 24 ? milestone.subtitle.slice(0, 22) + '...' : milestone.subtitle}
+          <g key={`ms-group-${mi}`}>
+            {/* Dynamic vertical connector line */}
+            <g data-element-id={`conn-${mi}`}>
+              <line
+                x1={dotRect.x + dotRect.width / 2}
+                y1={dotRect.y + dotRect.height / 2}
+                x2={cardRect.x + cardRect.width / 2}
+                y2={cardRect.y}
+                stroke={color}
+                strokeWidth={2}
+                strokeDasharray="4 2"
+              />
+            </g>
+
+            {/* Timeline Dot */}
+            <g
+              data-element-id={dotId}
+              onMouseDown={e => startDrag(e, dotId, dotRect)}
+              transform={getTransform(dotId, dotRect)}
+              style={{ cursor: 'pointer' }}
+            >
+              <circle
+                cx={dotRect.x + dotRect.width / 2}
+                cy={dotRect.y + dotRect.height / 2}
+                r={Math.min(dotRect.width, dotRect.height) / 2}
+                fill={color}
+              />
+              <circle
+                cx={dotRect.x + dotRect.width / 2}
+                cy={dotRect.y + dotRect.height / 2}
+                r={Math.min(dotRect.width, dotRect.height) / 2 - 2}
+                fill="#ffffff"
+              />
+              <circle
+                cx={dotRect.x + dotRect.width / 2}
+                cy={dotRect.y + dotRect.height / 2}
+                r={Math.min(dotRect.width, dotRect.height) / 2 - 4}
+                fill={color}
+              />
+              {isDotSelected && renderHandles(dotRect, dotId)}
+            </g>
+
+            {/* Milestone Card */}
+            <g
+              data-element-id={cardId}
+              onMouseDown={e => startDrag(e, cardId, cardRect)}
+              transform={getTransform(cardId, cardRect)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect
+                x={cardRect.x}
+                y={cardRect.y}
+                width={cardRect.width}
+                height={cardRect.height}
+                rx={8}
+                fill="#ffffff"
+                stroke={stroke}
+                strokeWidth={strokeWidth}
+              />
+              <rect x={cardRect.x} y={cardRect.y} width={cardRect.width} height={4} rx={2} fill={color} />
+
+              <g transform={`translate(${cardRect.x + 12}, ${cardRect.y + 22})`}>
+                {iconEl && (
+                  <g transform="translate(0, -11)">
+                    {iconEl}
+                  </g>
+                )}
+                <text
+                  x={iconEl ? 20 : 0}
+                  y={0}
+                  textAnchor="start"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={13}
+                  fontWeight={700}
+                  fill="#1a1a2e"
+                >
+                  {titleLines.map((line, li) => (
+                    <tspan key={li} x={iconEl ? 20 : 0} dy={li === 0 ? 0 : 16}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              </g>
+
+              {subLines.length > 0 && (
+                <text
+                  x={cardRect.x + 12 + (iconEl ? 20 : 0)}
+                  y={cardRect.y + 22 + titleLines.length * 16 + 2}
+                  textAnchor="start"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={10.5}
+                  fill="#666666"
+                >
+                  {subLines.map((line, li) => (
+                    <tspan key={li} x={cardRect.x + 12 + (iconEl ? 20 : 0)} dy={li === 0 ? 0 : 13}>
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
               )}
-              <text x={mRectX + mRectW / 2} y={mRectY + mRectH - 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={8} fill="#aaa">
-                {milestone.lane ?? ''}  ·  {milestone.quarter ?? ''}
-              </text>
-              {isSelected && renderHandles(visualRect, elementId)}
-            </g>
-          </g>
-        )
-      })}
 
-      {totalCards > 0 && [...Array(totalCards)].map((_, i) => {
-        const dId = `dot-${i}`
-        const defaultCx = startX + i * cardSpacing + cardW / 2
-        const defaultCy = timelineY + 30
-        const r = pos[dId] ?? { x: defaultCx - 5, y: defaultCy - 5, width: 10, height: 10 }
-        const dotColor = tplColors[dId] ?? PALETTE[sortedMilestones[i] ? quarters.findIndex(q => q.label === sortedMilestones[i]!.quarter) % PALETTE.length : i % PALETTE.length]
-        return (
-          <g key={dId} onMouseDown={e => startDrag(e, dId, r)} transform={getTransform(dId, r)} style={{ cursor: 'pointer' }}>
-            <circle cx={r.x + r.width / 2} cy={r.y + r.height / 2} r={Math.min(r.width, r.height) / 2} fill={dotColor} />
-            <circle cx={r.x + r.width / 2} cy={r.y + r.height / 2} r={Math.min(r.width, r.height) / 4} fill="#fff" />
-            {selectedIds.has(dId) && renderHandles(r, dId)}
+              {milestone.lane && (
+                <text
+                  x={cardRect.x + cardRect.width - 10}
+                  y={cardRect.y + cardRect.height - 10}
+                  textAnchor="end"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={9.5}
+                  fontWeight={600}
+                  fill={color}
+                >
+                  {milestone.lane}
+                </text>
+              )}
+
+              {isSelected && renderHandles(cardRect, cardId)}
+            </g>
           </g>
         )
       })}

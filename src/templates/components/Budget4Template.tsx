@@ -2,6 +2,7 @@ import { useRef, type ReactElement } from 'react'
 import type { BudgetData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { wrapTextByWidth } from '../shared/primitives'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
 export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
@@ -9,6 +10,8 @@ export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
   const items = data.items && data.items.length > 0 ? data.items : [
@@ -31,20 +34,18 @@ export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      {/* Baseline */}
       <line x1={startX - 20} y1={baselineY} x2={W - startX + 20} y2={baselineY} stroke="#e2e8f0" strokeWidth={2} />
 
-      {/* Dynamic connector lines connecting waterfall bars */}
-      {items.map((_, i) => {
-        if (i === 0) return null
-        const prevId = `item-${i - 1}`
-        const curId = `item-${i}`
+      {items.map((_, index) => {
+        if (index === 0) return null
+        const prevId = `item-${index - 1}`
+        const curId = `item-${index}`
 
         const prevPos = positions[prevId]
         const curPos = positions[curId]
 
-        const defaultPrevX = startX + (i - 1) * (barW + gap)
-        const defaultCurX = startX + i * (barW + gap)
+        const defaultPrevX = startX + (index - 1) * (barW + gap)
+        const defaultCurX = startX + index * (barW + gap)
 
         const x1 = (prevPos?.x ?? defaultPrevX) + (prevPos?.width ?? barW)
         const y1 = (prevPos?.y ?? baselineY - 100) + (prevPos?.height ?? 100) / 2
@@ -54,7 +55,7 @@ export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
 
         return (
           <line
-            key={`conn-${i}`}
+            key={`conn-${index}`}
             x1={x1}
             y1={y1}
             x2={x2}
@@ -66,14 +67,15 @@ export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
         )
       })}
 
-      {/* Waterfall Bars */}
-      {items.map((item, i) => {
-        const elementId = `item-${i}`
-        const defaultColor = item.percentage >= 0 ? MIGSO_PALETTE[i % MIGSO_PALETTE.length]! : '#e53e3e'
+      {items.map((item, index) => {
+        const elementId = `item-${index}`
+        const defaultColor = item.percentage >= 0 ? MIGSO_PALETTE[index % MIGSO_PALETTE.length]! : '#e53e3e'
         const color = tplColors[elementId] ?? item.color ?? defaultColor
         const isSelected = selectedIds.has(elementId)
+        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : color)
+        const strokeWidth = tplStrokeWidths[elementId] ?? (isSelected ? 2.5 : 0)
 
-        const isTotal = i === 0 || i === items.length - 1
+        const isTotal = index === 0 || index === items.length - 1
         const val = item.percentage
         const h = Math.max(24, (Math.abs(val) / 100) * maxH)
 
@@ -90,7 +92,7 @@ export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
           currentLevel = val
         }
 
-        const bx = startX + i * (barW + gap)
+        const bx = startX + index * (barW + gap)
         const defaultBbox = { x: bx, y: barY, width: barW, height: h }
 
         const customPos = positions[elementId]
@@ -100,10 +102,12 @@ export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
           width: customPos?.width ?? defaultBbox.width,
           height: customPos?.height ?? defaultBbox.height,
         }
+        const labelLines = wrapTextByWidth(item.label, 12)
 
         return (
           <g
             key={elementId}
+            data-element-id={elementId}
             onMouseDown={e => startDrag(e, elementId, bbox)}
             transform={getTransform(elementId, bbox)}
             style={{ cursor: 'pointer' }}
@@ -116,11 +120,10 @@ export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
               rx={6}
               fill={color}
               opacity={0.9}
-              stroke={isSelected ? '#4a90d9' : color}
-              strokeWidth={isSelected ? 2.5 : 0}
+              stroke={strokeColor}
+              strokeWidth={strokeWidth}
             />
 
-            {/* Amount above bar */}
             <text
               x={bbox.x + bbox.width / 2}
               y={bbox.y - 8}
@@ -133,7 +136,6 @@ export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
               {item.amount}
             </text>
 
-            {/* Label below baseline */}
             <text
               x={bbox.x + bbox.width / 2}
               y={baselineY + 24}
@@ -143,7 +145,11 @@ export function Budget4Template({ data }: { data: BudgetData }): ReactElement {
               fontWeight={600}
               fill="#4a5568"
             >
-              {item.label}
+              {labelLines.map((line, lineIndex) => (
+                <tspan key={lineIndex} x={bbox.x + bbox.width / 2} dy={lineIndex === 0 ? 0 : 13}>
+                  {line}
+                </tspan>
+              ))}
             </text>
 
             {isSelected && renderHandles(bbox, elementId)}

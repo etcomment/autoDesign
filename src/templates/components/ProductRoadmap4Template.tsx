@@ -3,10 +3,32 @@ import type { ProductRoadmap4Data } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
 
 const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e67e22', '#2ecc71', '#9b59b6', '#e74c3c', '#1abc9c', '#f39c12', '#3498db', '#e91e63', '#00bcd4']
-
 const CHEVRON_OFFSET = 16
+
+function getDynamicIcon(iconName?: string, size = 18, color = '#ffffff'): ReactElement | null {
+  if (!iconName) return null
+  const clean = iconName.trim()
+
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn({ size, color })
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const lucideRecord = LucideIcons as Record<string, unknown>
+  const LucideFn = (lucideRecord[pascalName] || lucideRecord[clean] || lucideRecord[clean.toUpperCase()]) as
+    | React.ComponentType<{ size?: number; color?: string }>
+    | undefined
+
+  if (LucideFn) {
+    return <LucideFn size={size} color={color} />
+  }
+
+  return null
+}
 
 export function ProductRoadmap4Template({ data }: { data: ProductRoadmap4Data }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -14,18 +36,16 @@ export function ProductRoadmap4Template({ data }: { data: ProductRoadmap4Data })
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const pos = useTemplateStore(s => s.templateElementPositions)
-  const moveEl = useTemplateStore(s => s.moveTemplateElement)
-  const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
-  const { title, quarters, milestones } = data
+  const { quarters = [], milestones = [] } = data
   const W = 1100
   const H = 420
-  const topMargin = 80
+  const topMargin = 50
   const stepW = 200
-  const stepH = 100
-  const gap = 8
+  const stepH = 110
+  const gap = 12
 
   const sorted = [...milestones].sort((a, b) => {
     const qiA = quarters.findIndex(q => q.label === a.quarter)
@@ -34,41 +54,21 @@ export function ProductRoadmap4Template({ data }: { data: ProductRoadmap4Data })
   })
 
   if (sorted.length === 0) {
-    return (
-      <g ref={svgRef}>
-        {title && <text x={W / 2} y={36} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill="#1a1a2e">{title}</text>}
-      </g>
-    )
+    return <g ref={svgRef} />
   }
 
-  const leftOffset = Math.max(20, (W - sorted.length * (stepW + gap) + gap) / 2)
+  const leftOffset = Math.max(30, (W - sorted.length * (stepW + gap) + gap) / 2)
 
   return (
     <g ref={svgRef}>
-      {(() => {
-        const r = pos['main-title'] ?? { x: W / 2 - 250, y: 10, width: 500, height: 35 }
-        const fill = tplColors['main-title'] ?? '#1a1a2e'
-        const stroke = tplStrokeColors['main-title']
-        const sW = tplStrokeWidths['main-title'] ?? 1
-        return title ? (
-          <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', r)} transform={getTransform('main-title', r)} style={{ cursor: 'pointer' }}>
-            {title.split('\n').map((line, i) => (
-              <text key={i} x={r.x + r.width / 2} y={r.y + 24 + i * 24} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill={fill} stroke={stroke} strokeWidth={stroke ? sW : undefined}>
-                {line}
-              </text>
-            ))}
-            {selectedIds.has('main-title') && renderHandles(r, 'main-title')}
-          </g>
-        ) : null
-      })()}
-
       {sorted.map((milestone, mi) => {
         const elementId = `milestone-${mi}`
         const qi = quarters.findIndex(q => q.label === milestone.quarter)
-        const color = tplColors[elementId] ?? milestone.style?.fill ?? PALETTE[qi >= 0 ? qi % PALETTE.length : mi % PALETTE.length]!
+        const color = tplColors[elementId] ?? milestone.style?.fill ?? milestone.color ?? PALETTE[qi >= 0 ? qi % PALETTE.length : mi % PALETTE.length]!
         const stroke = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : (milestone.style?.stroke || color))
         const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1.5)
         const isSelected = selectedIds.has(elementId)
+
         const defaultX = leftOffset + mi * (stepW + gap)
         const defaultY = topMargin + (H - topMargin - stepH) / 2
         const defaultW = milestone.style?.boxWidth ?? stepW
@@ -87,18 +87,35 @@ export function ProductRoadmap4Template({ data }: { data: ProductRoadmap4Data })
 
         const styleFontSize = milestone.style?.fontSize ?? 13
         const styleFontWeight = milestone.style?.fontWeight ?? 700
-        const styleFontColor = milestone.style?.fontColor ?? color
+        const styleFontColor = milestone.style?.fontColor ?? '#ffffff'
+
+        const maxTitleChars = Math.max(6, Math.floor((curW - 20) / 8))
+        const maxSubChars = Math.max(8, Math.floor((curW - 20) / 7))
+        const titleLines = wrapTextByWidth(milestone.title || '', maxTitleChars)
+        const subLines = milestone.subtitle ? wrapTextByWidth(milestone.subtitle, maxSubChars) : []
+
+        const iconEl = getDynamicIcon(milestone.icon, 18, styleFontColor)
 
         return (
           <g key={`m-${mi}`}>
+            {/* Arrow connector between chevrons */}
             {mi < sorted.length - 1 && (() => {
               const arrId = `arrow-${mi}`
-              const arrRect = pos[arrId] ?? { x: x + curW + CHEVRON_OFFSET, y: y + curH / 2 - 10, width: leftOffset + (mi + 1) * (stepW + gap) - (x + curW + CHEVRON_OFFSET), height: 20 }
+              const arrRect = pos[arrId] ?? {
+                x: x + curW + CHEVRON_OFFSET + 2,
+                y: y + curH / 2 - 10,
+                width: gap - 4,
+                height: 20,
+              }
               const arrStroke = tplStrokeColors[arrId] ?? color
               const arrStrokeW = tplStrokeWidths[arrId] ?? 2
               return (
-                <g onMouseDown={e => startDrag(e, arrId, arrRect)} transform={getTransform(arrId, arrRect)} style={{ cursor: 'pointer' }}>
-                  <rect x={arrRect.x} y={arrRect.y} width={arrRect.width} height={arrRect.height} fill="transparent" />
+                <g
+                  data-element-id={arrId}
+                  onMouseDown={e => startDrag(e, arrId, arrRect)}
+                  transform={getTransform(arrId, arrRect)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <line
                     x1={arrRect.x}
                     y1={arrRect.y + arrRect.height / 2}
@@ -106,35 +123,94 @@ export function ProductRoadmap4Template({ data }: { data: ProductRoadmap4Data })
                     y2={arrRect.y + arrRect.height / 2}
                     stroke={arrStroke}
                     strokeWidth={arrStrokeW}
-                    markerEnd={`url(#marker-${arrId})`}
+                    strokeDasharray="2 2"
                   />
-                  <defs>
-                    <marker id={`marker-${arrId}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill={arrStroke} />
-                    </marker>
-                  </defs>
                   {selectedIds.has(arrId) && renderHandles(arrRect, arrId)}
                 </g>
               )
             })()}
 
-            <g data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)} style={{ cursor: 'pointer' }}>
+            {/* Chevron shape */}
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, visualRect)}
+              transform={getTransform(elementId, visualRect)}
+              style={{ cursor: 'pointer' }}
+            >
               <polygon
                 points={points}
                 fill={color}
-                opacity={isSelected ? 0.25 : 0.12}
                 stroke={stroke}
                 strokeWidth={strokeWidth}
               />
-              <text x={x + curW / 2 + CHEVRON_OFFSET / 2} y={y + curH / 2 - 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={18} fontWeight={700} fill={color}>
-                {mi + 1}
-              </text>
-              {milestone.title.split('\n').map((line, li) => (<text x={x + curW / 2 + CHEVRON_OFFSET / 2} key={li} y={y + curH / 2 + 12 + li * 12 - ((milestone.title.split('\\n').length - 1) * 6)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={styleFontSize} fontWeight={styleFontWeight} fill={styleFontColor}>{line}</text>))}
-              {milestone.subtitle && (
-                <text x={x + curW / 2 + CHEVRON_OFFSET / 2} y={y + curH / 2 + 30} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="#666">
-                  {milestone.subtitle.length > 22 ? milestone.subtitle.slice(0, 20) + '...' : milestone.subtitle}
+
+              {/* Quarter Pill inside Chevron */}
+              {milestone.quarter && (
+                <g transform={`translate(${x + CHEVRON_OFFSET + 8}, ${y + 12})`}>
+                  <rect
+                    x={0}
+                    y={0}
+                    width={48}
+                    height={18}
+                    rx={4}
+                    fill="#ffffff"
+                    opacity={0.25}
+                  />
+                  <text
+                    x={24}
+                    y={13}
+                    textAnchor="middle"
+                    fontFamily="Arial, sans-serif"
+                    fontSize={10}
+                    fontWeight={700}
+                    fill="#ffffff"
+                  >
+                    {milestone.quarter}
+                  </text>
+                </g>
+              )}
+
+              {/* Title and Subtitle */}
+              <g transform={`translate(${x + CHEVRON_OFFSET + 8}, ${y + (milestone.quarter ? 44 : 28)})`}>
+                {iconEl && (
+                  <g transform="translate(0, -10)">
+                    {iconEl}
+                  </g>
+                )}
+                <text
+                  x={iconEl ? 22 : 0}
+                  y={0}
+                  textAnchor="start"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={styleFontSize}
+                  fontWeight={styleFontWeight}
+                  fill={styleFontColor}
+                >
+                  {titleLines.map((line, li) => (
+                    <tspan key={li} x={iconEl ? 22 : 0} dy={li === 0 ? 0 : 15}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              </g>
+
+              {subLines.length > 0 && (
+                <text
+                  x={x + CHEVRON_OFFSET + 8}
+                  y={y + (milestone.quarter ? 44 : 28) + titleLines.length * 15 + 4}
+                  textAnchor="start"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={10.5}
+                  fill="rgba(255,255,255,0.9)"
+                >
+                  {subLines.map((line, li) => (
+                    <tspan key={li} x={x + CHEVRON_OFFSET + 8} dy={li === 0 ? 0 : 13}>
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
               )}
+
               {isSelected && renderHandles(visualRect, elementId)}
             </g>
           </g>

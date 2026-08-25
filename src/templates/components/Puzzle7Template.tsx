@@ -2,15 +2,16 @@ import { useRef, type ReactElement } from 'react'
 import type { PuzzleData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { MIGSO_PALETTE, TITLE_COLOR } from '../../lib/theme'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50', '#ff9800']
-const BIG_W = 240
-const BIG_H = 160
-const SMALL_W = 130
-const SMALL_H = 85
-const BIG_X = 360
-const BIG_Y = 240
+const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50']
+const MAIN_W = 280
+const MAIN_H = 260
+const SIDE_W = 200
+const SIDE_H = 80
+const SIDE_GAP = 12
 
 export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -18,139 +19,139 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
-  const pos = useTemplateStore(s => s.templateElementPositions) // Retrieve positions as 'pos'
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
-  // Helper function to get current or fallback rectangle position
-  const getRect = (id: string, fallback: {x: number, y: number, width: number, height: number}) => pos[id] || fallback;
+  const { pieces } = data
+  const mainPiece = pieces[0]
+  const sidePieces = pieces.slice(1)
 
-  const { title, pieces } = data
-  const W = 900
+  const W = 700
+  const totalW = MAIN_W + 40 + SIDE_W
+  const startX = (W - totalW) / 2
+  const startY = 40
 
-  const staticSmallPositions = [
-    { x: BIG_X - SMALL_W - 30, y: BIG_Y - 20 },
-    { x: BIG_X + BIG_W + 30, y: BIG_Y - 20 },
-    { x: BIG_X + (BIG_W - SMALL_W) / 2, y: BIG_Y + BIG_H + 30 },
-  ]
-
-  // Define default and current positions for the main piece
-  const mainPieceId = 'piece-0';
-  const mainDefaultRect = { x: BIG_X, y: BIG_Y, width: BIG_W, height: BIG_H };
-  const mainRect = getRect(mainPieceId, mainDefaultRect);
+  const mainDefaultRect = { x: startX, y: startY, width: MAIN_W, height: MAIN_H }
+  const mainCustomPos = templateElementPositions['piece-0']
+  const mainBbox = {
+    x: mainCustomPos ? mainCustomPos.x : mainDefaultRect.x,
+    y: mainCustomPos ? mainCustomPos.y : mainDefaultRect.y,
+    width: mainCustomPos?.width || mainDefaultRect.width,
+    height: mainCustomPos?.height || mainDefaultRect.height,
+  }
 
   return (
     <g ref={svgRef}>
-      {title && (
-        <text x={W / 2} y={50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight={700} fill={TITLE_COLOR}>
-          {title}
-        </text>
-      )}
-
-      {pieces.length > 0 && (() => {
-        const main = pieces[0]!
-        const elementId = mainPieceId
-        const visualRect = mainRect; // Use the dynamically retrieved position
-        const scaleX = visualRect.width / mainDefaultRect.width
-        const scaleY = visualRect.height / mainDefaultRect.height
+      {/* Main Big Piece */}
+      {mainPiece && (() => {
+        const elementId = 'piece-0'
+        const color = tplColors[elementId] ?? mainPiece.color ?? PALETTE[0]!
+        const stroke = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : 'white')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3.5 : 2.5)
         const isSelected = selectedIds.has(elementId)
+        const IconComponent = mainPiece.icon ? TEMPLATE_ICONS[mainPiece.icon] : undefined
+        const maxChars = Math.max(10, Math.floor((mainBbox.width - 40) / 8))
+        const titleLines = wrapTextByWidth(mainPiece.title, maxChars)
+        const subtitleLines = mainPiece.subtitle ? wrapTextByWidth(mainPiece.subtitle, maxChars) : []
 
         return (
-          <g>
-            <g
-              data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, visualRect)} transform={getTransform(elementId, visualRect)}
-              style={{ cursor: 'pointer' }}
-            >
-              {/* Content drawn relative to (0,0) of its original size, as getTransform handles the full positioning and scaling */}
-              <rect x={3} y={3} width={BIG_W} height={BIG_H} rx={12} fill="black" opacity={0.15} />
-              <rect
-                x={0}
-                y={0}
-                width={BIG_W}
-                height={BIG_H}
-                rx={10}
-                fill={(tplColors[elementId] ?? main.color) || PALETTE[0]!}
-                stroke={isSelected ? '#4a90d9' : tplStrokeColors[elementId] || 'white'}
-                strokeWidth={isSelected ? 3.5 : 3}
-              />
-              <circle cx={36} cy={44} r={18} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
-              <text x={36} y={50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={16} fontWeight={700} fill="white">
-                {main.number}
+          <g
+            key={elementId}
+            data-element-id={elementId}
+            onMouseDown={e => startDrag(e, elementId, mainBbox)}
+            transform={getTransform(elementId, mainBbox)}
+            style={{ cursor: 'pointer' }}
+          >
+            <rect x={mainBbox.x} y={mainBbox.y} width={mainBbox.width} height={mainBbox.height} rx={16} fill={color} stroke={stroke} strokeWidth={strokeWidth} />
+            <circle cx={mainBbox.x + 36} cy={mainBbox.y + 36} r={18} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
+            {IconComponent ? (
+              <g transform={`translate(${mainBbox.x + 27}, ${mainBbox.y + 27})`}>
+                <IconComponent size={18} color="white" />
+              </g>
+            ) : (
+              <text x={mainBbox.x + 36} y={mainBbox.y + 42} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={700} fill="white">
+                {mainPiece.number}
               </text>
-              <text x={BIG_W / 2} y={BIG_H / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight={700} fill="white">
-                {main.title}
+            )}
+            <text x={mainBbox.x + mainBbox.width / 2} y={mainBbox.y + mainBbox.height / 2 + 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={18} fontWeight={700} fill="white">
+              {titleLines.map((line, lineIndex) => (
+                <tspan key={lineIndex} x={mainBbox.x + mainBbox.width / 2} dy={lineIndex === 0 ? 0 : 18}>
+                  {line}
+                </tspan>
+              ))}
+            </text>
+            {mainPiece.subtitle && (
+              <text x={mainBbox.x + mainBbox.width / 2} y={mainBbox.y + mainBbox.height / 2 + titleLines.length * 18 + 14} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fill="rgba(255,255,255,0.85)">
+                {subtitleLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={mainBbox.x + mainBbox.width / 2} dy={lineIndex === 0 ? 0 : 13}>
+                    {line}
+                  </tspan>
+                ))}
               </text>
-              {main.subtitle && (
-                <text x={BIG_W / 2} y={BIG_H / 2 + 26} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fill="rgba(255,255,255,0.85)">
-                  {main.subtitle}
-                </text>
-              )}
-              {isSelected && renderHandles(visualRect, elementId)}
-            </g>
+            )}
+            {isSelected && renderHandles(mainBbox, elementId)}
           </g>
         )
       })()}
 
-      {pieces.slice(1).map((piece, i) => {
-        let px: number
-        let py: number
-
-        if (i < staticSmallPositions.length) {
-          px = staticSmallPositions[i]!.x
-          py = staticSmallPositions[i]!.y
-        } else {
-          const smallCount = pieces.length - 1
-          const angle = (i / smallCount) * 2 * Math.PI - Math.PI / 2
-          const radius = 220
-          const centerPx = BIG_X + BIG_W / 2
-          const centerPy = BIG_Y + BIG_H / 2
-          px = centerPx + radius * Math.cos(angle) - SMALL_W / 2
-          py = centerPy + radius * Math.sin(angle) - SMALL_H / 2
+      {/* Side Pieces */}
+      {sidePieces.map((piece, index) => {
+        const sideIdx = index + 1
+        const elementId = `piece-${sideIdx}`
+        const sy = startY + index * (SIDE_H + SIDE_GAP)
+        const defaultRect = { x: startX + MAIN_W + 40, y: sy, width: SIDE_W, height: SIDE_H }
+        const customPos = templateElementPositions[elementId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
         }
 
-        const elementId = `piece-${i + 1}`
-        const defaultColor = piece.color || PALETTE[(i + 1) % PALETTE.length]!
-        const color = tplColors[elementId] ?? defaultColor
-        const stroke = tplStrokeColors[elementId] || 'white'
+        const color = tplColors[elementId] ?? piece.color ?? PALETTE[sideIdx % PALETTE.length]!
+        const stroke = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : 'white')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3.5 : 2)
         const isSelected = selectedIds.has(elementId)
+        const IconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] : undefined
 
-        const smallDefaultRect = { x: px, y: py, width: SMALL_W, height: SMALL_H };
-        const smallRect = getRect(elementId, smallDefaultRect); // Use the dynamically retrieved position
-        const scaleX = smallRect.width / smallDefaultRect.width
-        const scaleY = smallRect.height / smallDefaultRect.height
+        const lineX1 = mainBbox.x + mainBbox.width
+        const lineY1 = mainBbox.y + 40 + index * 80
+        const lineX2 = bbox.x
+        const lineY2 = bbox.y + bbox.height / 2
+        const maxChars = Math.max(8, Math.floor((bbox.width - 50) / 8))
+        const titleLines = wrapTextByWidth(piece.title, maxChars)
 
         return (
-          <g key={i + 1}>
+          <g key={elementId}>
+            <line x1={lineX1} y1={lineY1} x2={lineX2} y2={lineY2} stroke={color} strokeWidth={2} strokeDasharray="4 3" opacity={0.6} />
+
             <g
-              data-element-id={elementId} onMouseDown={e => startDrag(e, elementId, smallRect)} transform={getTransform(elementId, smallRect)}
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
               style={{ cursor: 'pointer' }}
             >
-              {/* Content drawn relative to (0,0) of its original size, as getTransform handles the full positioning and scaling */}
-              <rect x={2} y={2} width={SMALL_W} height={SMALL_H} rx={8} fill="black" opacity={0.1} />
-              <rect x={0} y={0} width={SMALL_W} height={SMALL_H} rx={8} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={isSelected ? 3 : 2} />
-              <circle cx={24} cy={28} r={11} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={1.5} />
-              <text x={24} y={32} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fontWeight={700} fill="white">
-                {piece.number}
-              </text>
-              <text x={SMALL_W / 2} y={SMALL_H / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
-                {piece.title}
-              </text>
-              {piece.subtitle && (
-                <text x={SMALL_W / 2} y={SMALL_H / 2 + 20} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={9} fill="rgba(255,255,255,0.85)">
-                  {piece.subtitle}
+              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={10} fill={color} stroke={stroke} strokeWidth={strokeWidth} />
+              <circle cx={bbox.x + 24} cy={bbox.y + bbox.height / 2} r={14} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={1.5} />
+              {IconComponent ? (
+                <g transform={`translate(${bbox.x + 17}, ${bbox.y + bbox.height / 2 - 7})`}>
+                  <IconComponent size={14} color="white" />
+                </g>
+              ) : (
+                <text x={bbox.x + 24} y={bbox.y + bbox.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
+                  {piece.number}
                 </text>
               )}
-              {isSelected && renderHandles(smallRect, elementId)}
+              <text x={bbox.x + 48} y={bbox.y + bbox.height / 2 + (piece.subtitle ? -2 : 5)} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
+                {titleLines[0] || ''}
+              </text>
+              {piece.subtitle && (
+                <text x={bbox.x + 48} y={bbox.y + bbox.height / 2 + 16} fontFamily="Arial, sans-serif" fontSize={10} fill="rgba(255,255,255,0.85)">
+                  {piece.subtitle.length > 18 ? piece.subtitle.slice(0, 16) + '...' : piece.subtitle}
+                </text>
+              )}
+              {isSelected && renderHandles(bbox, elementId)}
             </g>
-            {/* Connector line: dynamically calculate endpoints based on current positions */}
-            <line
-              x1={mainRect.x + mainRect.width / 2}
-              y1={mainRect.y + mainRect.height / 2}
-              x2={smallRect.x + smallRect.width / 2}
-              y2={smallRect.y + smallRect.height / 2}
-              stroke={color}
-              strokeWidth={1}
-              strokeDasharray="4 3"
-              opacity={0.5}
-            />
           </g>
         )
       })}
