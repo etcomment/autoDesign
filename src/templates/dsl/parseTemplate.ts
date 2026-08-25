@@ -155,13 +155,13 @@ function emitTrailingArgs(n: Record<string, any>): string {
   return out
 }
 
-function parseHeader(trimmed: string): { type: string; title?: string } | null {
+function parseHeader(trimmed: string): { type: string; baseType: string; title?: string } | null {
   const firstLine = trimmed.split('\n')[0]!.trim()
-  const match = /^@(\w+)(\d*)\s*"?([^"]*)"?\s*$/.exec(firstLine)
+  const match = /^@([a-zA-Z]+)(\d+[a-zA-Z]*)?\s*"?([^"]*)"?\s*$/.exec(firstLine)
   if (!match) return null
-  const [, baseType, variantNum, rawTitle] = match
-  const type = variantNum ? `${baseType}${variantNum}` : baseType
-  return { type: type!, title: rawTitle ? stripQuotes(rawTitle) : undefined }
+  const [, baseType, variant, rawTitle] = match
+  const type = variant ? `${baseType}${variant}` : baseType
+  return { type: type!, baseType: baseType!, title: rawTitle ? stripQuotes(rawTitle) : undefined }
 }
 
 export function parseTemplateDsl(dsl: string): TemplateData | null {
@@ -171,7 +171,7 @@ export function parseTemplateDsl(dsl: string): TemplateData | null {
   const header = parseHeader(trimmed)
   if (!header) return null
 
-  const baseType = header.type.replace(/\d+$/, '')
+  const baseType = header.baseType
   let result: TemplateData | null = null
 
   switch (baseType) {

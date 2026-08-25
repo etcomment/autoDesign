@@ -44,6 +44,7 @@ import { RoadmapTemplate } from './components/RoadmapTemplate'
 import { Roadmap2Template } from './components/Roadmap2Template'
 import { Roadmap3Template } from './components/Roadmap3Template'
 import { Roadmap4Template } from './components/Roadmap4Template'
+import { Roadmap4bTemplate } from './components/Roadmap4bTemplate'
 import { Roadmap5Template } from './components/Roadmap5Template'
 import { Roadmap6Template } from './components/Roadmap6Template'
 import { Roadmap7Template } from './components/Roadmap7Template'
@@ -164,6 +165,7 @@ const TEMPLATE_MAP: Record<TemplateType, TemplateComponent> = {
   roadmap2: ({ data }) => <Roadmap2Template data={data as RoadmapData} />,
   roadmap3: ({ data }) => <Roadmap3Template data={data as RoadmapData} />,
   roadmap4: ({ data }) => <Roadmap4Template data={data as RoadmapData} />,
+  roadmap4b: ({ data }) => <Roadmap4bTemplate data={data as RoadmapData} />,
   roadmap5: ({ data }) => <Roadmap5Template data={data as RoadmapData} />,
   roadmap6: ({ data }) => <Roadmap6Template data={data as RoadmapData} />,
   roadmap7: ({ data }) => <Roadmap7Template data={data as RoadmapData} />,
