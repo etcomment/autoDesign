@@ -258,7 +258,7 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
                 transform={getTransform(lastId, lastR)}
                 style={{ cursor: 'pointer' }}
               >
-                <rect x={lastR.x} y={lastR.y} width={lastR.width} height={lastR.height} fill={tplColors[lastId] || '#e0e0e0'} />
+                <rect x={lastR.x} y={lastR.y} width={lastR.width} height={lastR.height} fill={tplColors[lastId] || '#d7d7d7'} />
                 {selectedIds.has(lastId) && renderHandles(lastR, lastId)}
               </g>
             )}
@@ -387,8 +387,6 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
                 cy={cy}
                 r={Math.min(dotR.width, dotR.height) / 2}
                 fill={tplColors[`dot-${i}`] || dotColor}
-                stroke="#ffffff"
-                strokeWidth={2}
               />
               {selectedIds.has(`dot-${i}`) && renderHandles(dotR, `dot-${i}`)}
             </g>
