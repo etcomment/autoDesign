@@ -14,7 +14,7 @@ interface Rect {
   height: number
 }
 
-function getDynamicIcon(iconName?: string, size = 18, color = '#ffffff'): ReactElement | null {
+function getDynamicIcon(iconName?: string, size = 18, color = '#23255a'): ReactElement | null {
   if (!iconName) return null
   const clean = iconName.trim()
 
@@ -51,7 +51,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
   const moveEl = useTemplateStore(s => s.moveTemplateElement)
   const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
 
-  const { milestones = [], quarters, lanes, progress, current } = data
+  const { milestones = [], quarters, lanes, progress, current, trackColor, trackBgColor } = data
   const W = 1000
 
   const phases = useMemo(() => {
@@ -66,45 +66,54 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
 
   const years = useMemo(() => {
     if (milestones.length > 0 && milestones.some(ms => ms.date)) {
-      return milestones.map((ms, i) => ms.date ?? String(2019 + i))
+      return milestones.map((ms, i) => ms.date ?? String(2022 + i))
     }
     if (quarters && quarters.length > 0) {
       return quarters.map(q => q.label)
     }
-    return ['2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028']
+    return ['2022', '2023', '2024', '2025', '2026']
   }, [milestones, quarters])
 
   const N = Math.max(1, years.length)
-  const startX = 80
-  const spacing = Math.min(95, (W - startX * 2) / Math.max(N - 1, 1))
-  const timelineY = 460
+  const startX = N <= 5 ? 140 : 80
+  const spacing = Math.min(170, (W - startX * 2) / Math.max(N - 1, 1))
+  const timelineY = 320
 
   const progressIdx = useMemo(() => {
     const target = current || progress
     if (target) {
+      const targetStr = String(target).trim().toLowerCase()
+      const foundYear = years.findIndex(y => y.toLowerCase() === targetStr)
+      if (foundYear >= 0) return foundYear
+
+      const foundMs = milestones.findIndex(
+        m => m.title?.toLowerCase() === targetStr || m.date?.toLowerCase() === targetStr
+      )
+      if (foundMs >= 0) return foundMs
+
       const asNum = Number(target)
-      if (!isNaN(asNum)) return Math.min(asNum, N - 1)
-      const found = years.findIndex(y => y.toLowerCase() === target.toLowerCase())
-      if (found >= 0) return found
+      if (!isNaN(asNum) && asNum >= 0 && asNum < N) return asNum
     }
     return Math.floor(N / 2)
-  }, [current, progress, years, N])
+  }, [current, progress, years, milestones, N])
 
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
-    map.set('timeline-line', { x: 40, y: timelineY - 10, width: W - 80, height: 20 })
+    map.set('timeline-line', { x: 50, y: timelineY - 10, width: W - 100, height: 20 })
 
     const phaseCount = Math.max(1, phases.length)
     const phaseGap = 6
-    const phaseTotalW = W - 80
+    const phaseTotalW = W - 100
     const phaseW = Math.floor((phaseTotalW - phaseGap * (phaseCount - 1)) / phaseCount)
-    const phaseY = 530
+    const phaseY = 440
     const phaseH = 55
 
     phases.forEach((_, i) => {
-      const phaseX = 40 + i * (phaseW + phaseGap)
+      const phaseX = 50 + i * (phaseW + phaseGap)
       map.set(`phase-${i}`, { x: phaseX, y: phaseY, width: phaseW, height: phaseH })
     })
+
+    const tan30 = Math.tan((30 * Math.PI) / 180) // ~0.577
 
     years.forEach((_, i) => {
       const cx = startX + i * spacing
@@ -112,21 +121,27 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
       map.set(`dot-${i}`, { x: cx - 12, y: cy - 12, width: 24, height: 24 })
       map.set(`year-${i}`, { x: cx - 40, y: cy + 24, width: 80, height: 30 })
 
+      // Alternating heights to give generous breathing room for 30-degree slanted cards
       const isTop = i % 2 === 0
-      const txtX = cx - 75
-      const txtY = isTop ? 100 : 250
-      map.set(`text-${i}`, { x: txtX, y: txtY, width: 150, height: 95 })
+      const connH = isTop ? 140 : 85
+      const deltaX = Math.round(connH * tan30) // 30-degree offset to the left
+      const cardW = 150
+      const cardH = 80
+      const cardX = cx - deltaX - cardW / 2
+      const cardY = cy - 12 - connH - cardH
 
+      map.set(`text-${i}`, { x: cardX, y: cardY, width: cardW, height: cardH })
+      map.set(`card-${i}`, { x: cardX, y: cardY, width: cardW, height: cardH })
       map.set(`conn-${i}`, {
-        x: cx - 2,
-        y: Math.min(cy - 12, txtY + 95),
-        width: 4,
-        height: Math.abs(cy - 12 - (txtY + 95)),
+        x: cx - deltaX,
+        y: cy - 12 - connH,
+        width: deltaX,
+        height: connH,
       })
     })
 
     return map
-  }, [years, spacing, phases, timelineY, N])
+  }, [years, spacing, phases, startX, timelineY, N])
 
   useEffect(() => {
     for (const [id, rect] of defaultPositions.entries()) {
@@ -149,9 +164,12 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
   }
 
   const timelineLineR = getR('timeline-line')
-  const progressX = startX + progressIdx * spacing
   const timelineY2 = timelineLineR.y + timelineLineR.height / 2
-  const progressLineX = timelineLineR.x + (progressX / W) * timelineLineR.width
+  const activeDotR = getR(`dot-${progressIdx}`)
+  const progressLineX = activeDotR.x + activeDotR.width / 2
+
+  const activeColor = trackColor || '#23255a'
+  const inactiveColor = trackBgColor || '#e2e8f0'
 
   const chevronPath = (r: Rect, idx: number, total: number): string => {
     const { x, y, width: w, height: h } = r
@@ -177,8 +195,26 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
         transform={getTransform('timeline-line', timelineLineR)}
         style={{ cursor: 'pointer' }}
       >
-        <line x1={timelineLineR.x} y1={timelineY2} x2={progressLineX} y2={timelineY2} stroke="#ff4a2b" strokeWidth={5} />
-        <line x1={progressLineX} y1={timelineY2} x2={timelineLineR.x + timelineLineR.width} y2={timelineY2} stroke="#e0e0e0" strokeWidth={5} />
+        {/* Active segment from start up to progress dot */}
+        <line
+          x1={timelineLineR.x}
+          y1={timelineY2}
+          x2={progressLineX}
+          y2={timelineY2}
+          stroke={activeColor}
+          strokeWidth={6}
+          strokeLinecap="round"
+        />
+        {/* Inactive segment from progress dot to end */}
+        <line
+          x1={progressLineX}
+          y1={timelineY2}
+          x2={timelineLineR.x + timelineLineR.width}
+          y2={timelineY2}
+          stroke={inactiveColor}
+          strokeWidth={6}
+          strokeLinecap="round"
+        />
         {selectedIds.has('timeline-line') && renderHandles(timelineLineR, 'timeline-line')}
       </g>
 
@@ -192,7 +228,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
         const laneColor = ms?.lane
           ? (phases.find(p => p.label === ms.lane) || phases.find(p => p.label.startsWith(ms.lane!)))?.color
           : undefined
-        const dotColor = laneColor || ms?.color || (i <= progressIdx ? '#1e204c' : '#2d62ed')
+        const dotColor = laneColor || ms?.color || (i <= progressIdx ? '#23255a' : '#a0aec0')
 
         const maxTitleChars = Math.max(8, Math.floor(txtR.width / 9.5))
         const maxSubChars = Math.max(10, Math.floor(txtR.width / 7.5))
@@ -201,50 +237,57 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
 
         const iconEl = getDynamicIcon(ms?.icon, 16, dotColor)
 
+        const dotCenterX = dotR.x + dotR.width / 2
+        const dotCenterY = dotR.y + dotR.height / 2
+        const cardBottomCenterX = txtR.x + txtR.width / 2
+        const cardBottomCenterY = txtR.y + txtR.height
+
+        const isTextSelected = selectedIds.has(`text-${i}`) || selectedIds.has(`card-${i}`)
+
         return (
           <g key={i}>
-            {/* Dynamic vertical connector line */}
+            {/* Dynamic solid grey connector line (30-degree slanted) */}
             <g data-element-id={`conn-${i}`}>
               <line
-                x1={dotR.x + dotR.width / 2}
-                y1={dotR.y + dotR.height / 2}
-                x2={txtR.x + txtR.width / 2}
-                y2={txtR.y + txtR.height}
-                stroke={tplColors[`conn-${i}`] || '#cccccc'}
-                strokeWidth={tplStrokeWidths[`conn-${i}`] || 2.5}
-                strokeDasharray="4 2"
+                x1={dotCenterX}
+                y1={dotCenterY - dotR.height / 2}
+                x2={cardBottomCenterX}
+                y2={cardBottomCenterY}
+                stroke={tplColors[`conn-${i}`] || '#b0b7c3'}
+                strokeWidth={tplStrokeWidths[`conn-${i}`] || 2}
               />
             </g>
 
-            {/* Text Card */}
+            {/* Text Card with transparent background & solid layout */}
             <g
               data-element-id={`text-${i}`}
               onMouseDown={e => startDrag(e, `text-${i}`, txtR)}
               transform={getTransform(`text-${i}`, txtR)}
               style={{ cursor: 'pointer' }}
             >
+              {/* Card Container (Transparent background) */}
               <rect
                 x={txtR.x}
                 y={txtR.y}
                 width={txtR.width}
                 height={txtR.height}
                 rx={6}
-                fill={tplColors[`text-${i}`] || '#ffffff'}
-                stroke={tplStrokeColors[`text-${i}`] || (selectedIds.has(`text-${i}`) ? '#2196f3' : '#e2e8f0')}
-                strokeWidth={selectedIds.has(`text-${i}`) ? 2 : (tplStrokeWidths[`text-${i}`] ?? 1)}
+                fill={tplColors[`text-${i}`] || 'none'}
+                stroke={tplStrokeColors[`text-${i}`] || (isTextSelected ? '#2196f3' : 'none')}
+                strokeWidth={isTextSelected ? 2 : (tplStrokeWidths[`text-${i}`] ?? 0)}
               />
-              <g transform={`translate(${txtR.x + 8}, ${txtR.y + 16})`}>
-                {iconEl && <g transform="translate(0, -10)">{iconEl}</g>}
+              <g transform={`translate(${txtR.x + 4}, ${txtR.y + 14})`}>
+                {iconEl && <g transform="translate(0, -8)">{iconEl}</g>}
                 <text
                   x={iconEl ? 22 : 0}
                   y={0}
                   fontFamily="Arial, sans-serif"
-                  fontSize={13}
+                  fontSize={14}
                   fontWeight={700}
-                  fill={tplColors[`text-${i}`] ? '#ffffff' : '#222222'}
+                  fill={tplColors[`text-${i}`] ? '#ffffff' : '#23255a'}
                 >
                   {titleLines.map((line, li) => (
-                    <tspan key={li} x={iconEl ? 22 : 0} dy={li === 0 ? 0 : 15}>
+                    <tspan key={li} x={iconEl ? 22 : 0} dy={li === 0 ? 0 : 16}>
                       {line}
                     </tspan>
                   ))}
@@ -252,20 +295,20 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
               </g>
               {subLines.length > 0 && (
                 <text
-                  x={txtR.x + 8}
-                  y={txtR.y + 18 + titleLines.length * 15 + 4}
+                  x={txtR.x + 4}
+                  y={txtR.y + 16 + titleLines.length * 16 + 4}
                   fontFamily="Arial, sans-serif"
-                  fontSize={11}
+                  fontSize={12}
                   fill="#555555"
                 >
                   {subLines.map((line, li) => (
-                    <tspan key={li} x={txtR.x + 8} dy={li === 0 ? 0 : 13}>
+                    <tspan key={li} x={txtR.x + 4} dy={li === 0 ? 0 : 14}>
                       {line}
                     </tspan>
                   ))}
                 </text>
               )}
-              {selectedIds.has(`text-${i}`) && renderHandles(txtR, `text-${i}`)}
+              {isTextSelected && renderHandles(txtR, `text-${i}`)}
             </g>
 
             {/* Timeline Dot */}
@@ -276,8 +319,8 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
               style={{ cursor: 'pointer' }}
             >
               <circle
-                cx={dotR.x + dotR.width / 2}
-                cy={dotR.y + dotR.height / 2}
+                cx={dotCenterX}
+                cy={dotCenterY}
                 r={Math.min(dotR.width, dotR.height) / 2}
                 fill={tplColors[`dot-${i}`] || dotColor}
                 stroke="#ffffff"
@@ -300,7 +343,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
                 fontFamily="Arial, sans-serif"
                 fontSize={18}
                 fontWeight="bold"
-                fill={tplColors[`year-${i}`] || '#222222'}
+                fill={tplColors[`year-${i}`] || (i <= progressIdx ? '#23255a' : '#888888')}
               >
                 {yr}
               </text>

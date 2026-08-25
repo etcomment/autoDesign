@@ -25,6 +25,7 @@ const collectionKeys: Record<string, string> = {
   support: 'support',
   dot: 'milestones',
   card: 'milestones',
+  text: 'milestones',
   tick: 'milestones',
   segment: 'segments',
   ring: 'rings',
@@ -36,6 +37,9 @@ const collectionKeys: Record<string, string> = {
   q: 'quarters',
   qa: 'qaItems',
   quadrant: 'quadrants',
+  phase: 'lanes',
+  lane: 'lanes',
+  col: 'nodes',
 }
 
 export function parseTemplateElementId(elementId: string): ParsedElement {

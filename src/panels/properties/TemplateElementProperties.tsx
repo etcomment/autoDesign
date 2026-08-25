@@ -120,6 +120,9 @@ export function TemplateElementProperties() {
         if (parsed.prefix === 'circle' && field === 'title') {
           return { ...item, value: coerced }
         }
+        if (parsed.collectionKey === 'lanes' && field === 'title') {
+          return { ...item, label: coerced }
+        }
         return { ...item, [field]: coerced }
       })
 
