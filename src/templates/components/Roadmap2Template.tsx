@@ -235,7 +235,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
           x2={progressLineX}
           y2={timelineY2}
           stroke={activeColor}
-          strokeWidth={6}
+          strokeWidth={5}
           strokeLinecap="round"
         />
         {/* Inactive MIGSO gray segment from progress dot to end */}
@@ -245,7 +245,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
           x2={timelineLineR.x + timelineLineR.width}
           y2={timelineY2}
           stroke={inactiveColor}
-          strokeWidth={6}
+          strokeWidth={5}
           strokeLinecap="round"
         />
         {selectedIds.has('timeline-line') && renderHandles(timelineLineR, 'timeline-line')}
@@ -276,8 +276,6 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
                   cy={dotCenterY}
                   r={Math.min(dotR.width, dotR.height) / 2}
                   fill={tplColors['dot-0'] || originDotColor}
-                  stroke="#ffffff"
-                  strokeWidth={2}
                 />
                 {selectedIds.has('dot-0') && renderHandles(dotR, 'dot-0')}
               </g>
@@ -329,15 +327,15 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
 
         return (
           <g key={`ms-${msIdx}`}>
-            {/* Dynamic solid grey connector line (30-degree slanted, 6px MIGSO gray) */}
+            {/* Dynamic solid grey connector line (30-degree slanted, 5px MIGSO gray directly attached to dot) */}
             <g data-element-id={`conn-${msIdx}`}>
               <line
                 x1={dotCenterX}
-                y1={dotCenterY - dotR.height / 2 - 25}
+                y1={dotCenterY - Math.min(dotR.width, dotR.height) / 2}
                 x2={cardBottomCenterX}
                 y2={cardBottomCenterY}
                 stroke={tplColors[`conn-${msIdx}`] || inactiveColor}
-                strokeWidth={tplStrokeWidths[`conn-${msIdx}`] || 6}
+                strokeWidth={tplStrokeWidths[`conn-${msIdx}`] || 5}
                 strokeLinecap="round"
               />
             </g>
@@ -406,8 +404,6 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
                 cy={dotCenterY}
                 r={Math.min(dotR.width, dotR.height) / 2}
                 fill={tplColors[`dot-${ptIdx}`] || dotColor}
-                stroke="#ffffff"
-                strokeWidth={2}
               />
               {selectedIds.has(`dot-${ptIdx}`) && renderHandles(dotR, `dot-${ptIdx}`)}
             </g>
