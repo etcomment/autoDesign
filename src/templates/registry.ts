@@ -85,7 +85,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'roadmap4',
     label: 'roadmap4',
-    description: 'Timeline découpée en 4 trimestres (Q1 à Q4) avec cartes de jalons.',
+    description: 'Timeline découpée en 5 trimestres (Q1 à Q5) avec cartes de jalons.',
     category: 'Roadmaps',
     defaultData: {
       type: 'roadmap',
@@ -94,12 +94,14 @@ export const TEMPLATES: TemplateDefinition[] = [
         { label: 'Q2', year: '2026' },
         { label: 'Q3', year: '2026' },
         { label: 'Q4', year: '2026' },
+        { label: 'Q5', year: '2026' },
       ],
       milestones: [
         { title: 'Alpha Release', subtitle: 'Internal testing', quarter: 'Q1' },
         { title: 'Beta Launch', subtitle: 'Private preview', quarter: 'Q2' },
         { title: 'RC1', subtitle: 'Stabilization', quarter: 'Q3' },
-        { title: 'GA Release', subtitle: 'General availability', quarter: 'Q4' },
+        { title: 'RC2', subtitle: 'Hardening', quarter: 'Q4' },
+        { title: 'GA Release', subtitle: 'General availability', quarter: 'Q5' },
       ],
       startLabel: 'START',
       finishLabel: 'FINISH',
@@ -108,7 +110,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'roadmap4b',
     label: 'roadmap4b',
-    description: 'Zigzag à enveloppe fixe : les segments se compriment pour conserver la même forme globale.',
+    description: 'Serpentin à 4 virages de forme FIXE : le départ et l\'arrivée sont ancrés, et les jalons ne font que diviser la forme en portions de longueurs variables (la forme générale ne bouge jamais).',
     category: 'Roadmaps',
     defaultData: {
       type: 'roadmap',

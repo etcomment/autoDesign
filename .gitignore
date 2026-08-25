@@ -27,3 +27,4 @@ bugs/
 *.patch
 *.orig
 *.rej
+ex/.~lock.*

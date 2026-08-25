@@ -6,7 +6,7 @@ import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE, '#4a90d9', '#e91e63', '#4caf50', '#ff9800']
+const PALETTE = [...MIGSO_PALETTE]
 const CELL_W = 190
 const CELL_H = 160
 const TAB_H = 50

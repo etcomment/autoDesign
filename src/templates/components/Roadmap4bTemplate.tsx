@@ -72,12 +72,12 @@ export function Roadmap4bTemplate({ data }: { data: RoadmapData }): ReactElement
   const getTurnRightX = (index: number) => (Math.floor(index / 2) % 2 === 0 ? 660 : 710)
   const getTurnLeftX = (index: number) => (Math.floor((index - 1) / 2) % 2 === 0 ? 310 : 260)
 
-  // 3. Enveloppe verticale FIXE : départ en bas, arrivée en haut.
-  //    rowHeight = span / count => la longueur totale du chemin reste constante,
-  //    les segments se compriment (se rapprochent) sans s'étendre vers le haut.
+  // 3. Enveloppe fixe : départ ancré à startY, arrivée ancrée à topY. À 5 jalons
+  //    rowHeight = 115 => strictement identique à roadmap4 ; sinon les rangées
+  //    se compressent/étirent sans bouger le début ni la fin.
   const startY = 475
-  const topY = 70
-  const rowHeight = Math.max(46, (startY - topY) / count)
+  const topY = 15
+  const rowHeight = count > 1 ? (startY - topY) / (count - 1) : 115
 
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
