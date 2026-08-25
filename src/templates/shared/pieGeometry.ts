@@ -49,14 +49,16 @@ export function donutSlicePath(
 }
 
 // Distribution des angles selon les valeurs (parts égales si pas de valeurs).
-export function sliceBounds(values: Array<number | undefined>): PieSliceArc[] {
+// `gapAngle` (radians) réserve un espace vide entre deux parts consécutives.
+export function sliceBounds(values: Array<number | undefined>, gapAngle = 0): PieSliceArc[] {
   const total = values.reduce<number>((sum, v) => sum + ((v ?? 0) > 0 ? v! : 1), 0) || 1
-  let cursor = -Math.PI / 2
+  let cursor = -Math.PI / 2 + gapAngle / 2
   return values.map(v => {
-    const weight = v && v > 0 ? v : 1
+    const weight = v && (v ?? 0) > 0 ? v! : 1
     const start = cursor
-    const end = cursor + (weight / total) * Math.PI * 2
-    cursor = end
+    const span = (weight / total) * Math.PI * 2 - gapAngle
+    const end = start + Math.max(span, 0)
+    cursor = end + gapAngle
     return { start, end }
   })
 }

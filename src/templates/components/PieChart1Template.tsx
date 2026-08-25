@@ -21,7 +21,7 @@ export function PieChart1Template({ data }: { data: PieData }): ReactElement {
 
   const slices: PieSlice[] = data.slices.length > 0 ? data.slices : [{ label: '01' }, { label: '02' }, { label: '03' }]
   const values = slices.map(s => s.value)
-  const bounds = sliceBounds(values)
+  const bounds = sliceBounds(values, 10 / outerR)
   const box = { x: cx - outerR - 10, y: cy - outerR - 10, width: outerR * 2 + 20, height: outerR * 2 + 20 }
 
   return (
