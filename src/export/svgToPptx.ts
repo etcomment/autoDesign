@@ -154,23 +154,19 @@ function getAbsBounds(el: SVGGraphicsElement, svgRoot: SVGSVGElement): AbsBounds
   if (!ctm) return null
 
   const { lx, ly, lw, lh } = local
-  const corners: Array<{ x: number; y: number }> = [
-    [lx, ly], [lx + lw, ly], [lx + lw, ly + lh], [lx, ly + lh],
-  ].map(([px, py]) => {
-    const pt = svgRoot.createSVGPoint()
-    pt.x = px!
-    pt.y = py!
-    return pt.matrixTransform(ctm!)
-  })
+  const pt = svgRoot.createSVGPoint()
+  pt.x = lx + lw / 2
+  pt.y = ly + lh / 2
+  const center = pt.matrixTransform(ctm)
 
-  const xs = corners.map(c => c.x)
-  const ys = corners.map(c => c.y)
-  const absX = Math.min(...xs)
-  const absY = Math.min(...ys)
-  const absW = Math.max(...xs) - absX
-  const absH = Math.max(...ys) - absY
+  const scale = Math.hypot(ctm.a, ctm.b)
+  const absW = lw * scale
+  const absH = lh * scale
+  const absX = center.x - absW / 2
+  const absY = center.y - absH / 2
 
-  const rotation = Math.round(Math.atan2(ctm.b, ctm.a) * 180 / Math.PI * 100) / 100
+  const rawRotation = Math.atan2(ctm.b, ctm.a) * 180 / Math.PI
+  const rotation = (Math.round(rawRotation * 100) / 100 % 360 + 360) % 360
 
   return { x: absX, y: absY, w: absW, h: absH, rotation }
 }
@@ -403,17 +399,24 @@ function addTextToSlide(
       if (ctm) {
         ctmScale = Math.hypot(ctm.a, ctm.b)
         const pt = svgRoot.createSVGPoint()
-        const corners = [
-          [bbox.x, bbox.y], [bbox.x + bbox.width, bbox.y],
-          [bbox.x + bbox.width, bbox.y + bbox.height], [bbox.x, bbox.y + bbox.height],
-        ].map(([px, py]) => { pt.x = px!; pt.y = py!; return pt.matrixTransform(ctm!) })
-        const xs = corners.map(c => c.x)
-        const ys = corners.map(c => c.y)
+        pt.x = bbox.x + bbox.width / 2
+        pt.y = bbox.y + bbox.height / 2
+        const center = pt.matrixTransform(ctm)
+
+        const unrotatedW = bbox.width * ctmScale
+        const unrotatedH = bbox.height * ctmScale
+        const absX = center.x - unrotatedW / 2
+        const absY = center.y - unrotatedH / 2
+
+        const rawRotation = Math.atan2(ctm.b, ctm.a) * (180 / Math.PI)
+        const rotation = (Math.round(rawRotation * 100) / 100 % 360 + 360) % 360
+
         bounds = {
-          x: Math.min(...xs), y: Math.min(...ys),
-          w: Math.max(...xs) - Math.min(...xs),
-          h: Math.max(...ys) - Math.min(...ys),
-          rotation: 0,
+          x: absX,
+          y: absY,
+          w: unrotatedW,
+          h: unrotatedH,
+          rotation,
         }
       }
     }
@@ -436,7 +439,7 @@ function addTextToSlide(
     ? tspans.map((ts, i) => ({ text: ts.textContent || '', options: { breakLine: i < tspans.length - 1 } }))
     : content
 
-  slide.addText(textValue, {
+  const textProps: PptxGenJS.TextPropsOptions = {
     x: Math.max(0, x),
     y: Math.max(0, y),
     w,
@@ -449,7 +452,13 @@ function addTextToSlide(
     margin: 0,
     wrap: false,
     isTextBox: true,
-  })
+  }
+
+  if (bounds.rotation !== 0) {
+    textProps.rotate = bounds.rotation
+  }
+
+  slide.addText(textValue, textProps)
 }
 
 function isInteractiveElement(el: Element): boolean {

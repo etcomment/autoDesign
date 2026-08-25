@@ -23,6 +23,10 @@ function addShapeToSlide(slide: PptxGenJS.Slide, shape: Shape): void {
     line: { color: hexStroke, width: Math.max(0.5, shape.style.strokeWidth * 0.75), dashType: 'solid' },
   }
 
+  if (shape.rotation) {
+    shapeOpts.rotate = (Math.round(shape.rotation) % 360 + 360) % 360
+  }
+
   if (shape.style.fill !== '#ffffff' && shape.style.fill !== 'transparent') {
     shapeOpts.fill = { color: hexFill }
   }
@@ -41,6 +45,7 @@ function addShapeToSlide(slide: PptxGenJS.Slide, shape: Shape): void {
       fontSize: shape.text.fontSize,
       fontFace: shape.text.fontFamily,
       color: hexStroke,
+      rotate: shape.rotation ? (Math.round(shape.rotation) % 360 + 360) % 360 : undefined,
     })
   }
 }
