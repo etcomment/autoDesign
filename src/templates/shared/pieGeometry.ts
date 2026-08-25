@@ -89,17 +89,22 @@ export function donutSlicePath(
   ].join(' ')
 }
 
-// Distribution des angles selon les valeurs (parts égales si pas de valeurs).
-// `gapAngle` (radians) réserve un espace vide entre deux parts consécutives.
-export function sliceBounds(values: Array<number | undefined>, gapAngle = 0): PieSliceArc[] {
-  const total = values.reduce<number>((sum, v) => sum + ((v ?? 0) > 0 ? v! : 1), 0) || 1
-  let cursor = -Math.PI / 2 + gapAngle / 2
+// Distribution des angles selon des POURCENTAGES : chaque part couvre
+// `value/100 * 2*PI`. Les parts sans `value` (<0) se partagent le reste
+// jusqu'à 100%. Somme = 100 => cercle complet.
+export function sliceBounds(values: Array<number | undefined>): PieSliceArc[] {
+  const defined = values.map(v => ((v ?? 0) > 0 ? v! : 0))
+  const sumDefined = defined.reduce<number>((a, b) => a + b, 0)
+  const undefCount = values.filter(v => !((v ?? 0) > 0)).length
+  const remainder = Math.max(0, 100 - sumDefined)
+  const undefShare = undefCount > 0 ? remainder / undefCount : 0
+  let cursor = -Math.PI / 2
   return values.map(v => {
-    const weight = v && (v ?? 0) > 0 ? v! : 1
+    const pct = (v ?? 0) > 0 ? v! : undefShare
+    const span = (pct / 100) * Math.PI * 2
     const start = cursor
-    const span = (weight / total) * Math.PI * 2 - gapAngle
-    const end = start + Math.max(span, 0)
-    cursor = end + gapAngle
+    const end = cursor + Math.max(span, 0)
+    cursor = end
     return { start, end }
   })
 }
