@@ -126,10 +126,20 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
       const cardW = 230
       const cardH = 140
       const cardY = above ? 50 : timelineY + 60
-      map.set(`card-${i}`, { x: pinX - cardW / 2, y: cardY, width: cardW, height: cardH })
+      const aW = Math.min(16, cardW * 0.1) // 16px arrow tip width
 
-      const lineY1 = above ? cardY + cardH : timelineY
-      const lineY2 = above ? timelineY : cardY
+      // Arrow points towards the pinX line:
+      // When leftArrow (arrow is at left edge x - aW): place card so x - aW is at pinX, or arrow tip connects at pinX
+      // If card sits to the right of pinX: arrow tip is at pinX, cardX = pinX + aW
+      // If card sits to the left of pinX: arrow tip is at pinX, cardX = pinX - cardW - aW
+      // With alternating left/right layout centered around pin:
+      const leftArrow = i % 2 === 0 // arrow on the left
+      const cardX = leftArrow ? pinX + 16 : pinX - cardW - 16
+
+      map.set(`card-${i}`, { x: cardX, y: cardY, width: cardW, height: cardH })
+
+      const lineY1 = above ? cardY + cardH * 0.675 : timelineY
+      const lineY2 = above ? timelineY : cardY + (above ? cardH * 0.675 : cardH * 0.325)
       map.set(`vline-${i}`, {
         x: pinX - 2,
         y: Math.min(lineY1, lineY2),
@@ -276,16 +286,18 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
         const dotR = getR(`dot-${pinYearIdx}`)
         const dotCx = dotR.x + dotR.width / 2
         const dotCy = dotR.y + dotR.height / 2
-        const cardMiddleX = r.x + r.width / 2
-        const cardYEdge = above ? r.y + r.height : r.y
+
+        const aW = Math.min(16, r.width * 0.1)
+        const arrowTipX = leftArrow ? r.x - aW : r.x + r.width + aW
+        const arrowTipY = r.y + r.height * 0.675
 
         return (
           <g key={`card-${i}`}>
-            {/* Dynamic vertical connection line */}
+            {/* Dynamic vertical connection line ending right at the card arrow tip */}
             <g data-element-id={`vline-${i}`}>
               <line
-                x1={cardMiddleX}
-                y1={cardYEdge}
+                x1={dotCx}
+                y1={arrowTipY}
                 x2={dotCx}
                 y2={dotCy}
                 stroke={tplColors[`vline-${i}`] || color}
