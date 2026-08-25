@@ -221,10 +221,10 @@ Pour la quasi-totalité des éléments de liste (`milestone`, `step`, `block`, `
 #### Exemple : Puzzle 4 Pièces (`@puzzle4`)
 ```
 @puzzle4 "Synergie des Facteurs de Succès"
-  piece "Recherche" "Compréhension fine des besoins" icon:Search #4a90d9
-  piece "Design" "Prototypage rapide et intuitif" icon:PenTool #e91e63
-  piece "Exécution" "Développement agile et solide" icon:Code #4caf50
-  piece "Mesure" "Analyse des métriques de rétention" icon:BarChart2 #ff9800
+  piece "Recherche" "Compréhension fine des besoins" icon:Search #2c2b64
+  piece "Design" "Prototypage rapide et intuitif" icon:PenTool #3366cc
+  piece "Exécution" "Développement agile et solide" icon:Code #ff5338
+  piece "Mesure" "Analyse des métriques de rétention" icon:BarChart2 #f2cb13
 ```
 
 ---
@@ -239,10 +239,10 @@ Pour la quasi-totalité des éléments de liste (`milestone`, `step`, `block`, `
 #### Exemple : Entonnoir de Vente (`@funnel`)
 ```
 @funnel "Funnel de Conversion Sales"
-  level "Impressions Web" 100 "Visiteurs uniques du site" icon:Globe #4a90d9
-  level "Leads Qualifiés (MQL)" 65 "Demandes de démonstration" icon:Filter #7b68ee
-  level "Opportunités (SQL)" 35 "Propositions commerciales envoyées" icon:FileText #e91e63
-  level "Clients Signés" 12 "Contrats validés" icon:CheckCircle #4caf50
+  level "Impressions Web" 100 "Visiteurs uniques du site" icon:Globe #2c2b64
+  level "Leads Qualifiés (MQL)" 65 "Demandes de démonstration" icon:Filter #3366cc
+  level "Opportunités (SQL)" 35 "Propositions commerciales envoyées" icon:FileText #ff5338
+  level "Clients Signés" 12 "Contrats validés" icon:CheckCircle #f2cb13
 ```
 
 ---

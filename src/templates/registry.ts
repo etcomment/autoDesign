@@ -660,10 +660,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'puzzle',
       pieces: [
-        { number: 1, title: 'Identify', subtitle: 'Find opportunities', color: '#4a90d9' },
-        { number: 2, title: 'Innovation', subtitle: 'Create solutions', color: '#e91e63' },
-        { number: 3, title: 'Improve', subtitle: 'Optimize process', color: '#4caf50' },
-        { number: 4, title: 'Management', subtitle: 'Lead teams', color: '#ff9800' },
+        { number: 1, title: 'Identify', subtitle: 'Find opportunities', color: '#2c2b64' },
+        { number: 2, title: 'Innovation', subtitle: 'Create solutions', color: '#3366cc' },
+        { number: 3, title: 'Improve', subtitle: 'Optimize process', color: '#ff5338' },
+        { number: 4, title: 'Management', subtitle: 'Lead teams', color: '#f2cb13' },
       ],
     },
   },
@@ -675,10 +675,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'puzzle',
       pieces: [
-        { number: 1, title: 'Research', subtitle: 'Gather data', color: '#4a90d9' },
-        { number: 2, title: 'Strategy', subtitle: 'Define approach', color: '#e91e63' },
-        { number: 3, title: 'Execute', subtitle: 'Implement plan', color: '#4caf50' },
-        { number: 4, title: 'Results', subtitle: 'Measure impact', color: '#ff9800' },
+        { number: 1, title: 'Research', subtitle: 'Gather data', color: '#2c2b64' },
+        { number: 2, title: 'Strategy', subtitle: 'Define approach', color: '#3366cc' },
+        { number: 3, title: 'Execute', subtitle: 'Implement plan', color: '#ff5338' },
+        { number: 4, title: 'Results', subtitle: 'Measure impact', color: '#f2cb13' },
       ],
     },
   },
@@ -690,10 +690,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'puzzle',
       pieces: [
-        { number: 1, title: 'Discover', subtitle: 'Find the need', color: '#4a90d9' },
-        { number: 2, title: 'Design', subtitle: 'Build solution', color: '#e91e63' },
-        { number: 3, title: 'Develop', subtitle: 'Create product', color: '#4caf50' },
-        { number: 4, title: 'Deliver', subtitle: 'Ship to users', color: '#ff9800' },
+        { number: 1, title: 'Discover', subtitle: 'Find the need', color: '#2c2b64' },
+        { number: 2, title: 'Design', subtitle: 'Build solution', color: '#3366cc' },
+        { number: 3, title: 'Develop', subtitle: 'Create product', color: '#ff5338' },
+        { number: 4, title: 'Deliver', subtitle: 'Ship to users', color: '#f2cb13' },
       ],
     },
   },
@@ -721,10 +721,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'puzzle',
       pieces: [
-        { number: 1, title: 'People', subtitle: 'Talent', color: '#4a90d9' },
-        { number: 2, title: 'Process', subtitle: 'Operate', color: '#e91e63' },
-        { number: 3, title: 'Tech', subtitle: 'Platform', color: '#4caf50' },
-        { number: 4, title: 'Data', subtitle: 'Insights', color: '#ff9800' },
+        { number: 1, title: 'People', subtitle: 'Talent', color: '#2c2b64' },
+        { number: 2, title: 'Process', subtitle: 'Operate', color: '#3366cc' },
+        { number: 3, title: 'Tech', subtitle: 'Platform', color: '#ff5338' },
+        { number: 4, title: 'Data', subtitle: 'Insights', color: '#f2cb13' },
       ],
     },
   },
@@ -736,10 +736,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'puzzle',
       pieces: [
-        { number: 1, title: 'Analyze', subtitle: 'Understand', color: '#4a90d9' },
-        { number: 2, title: 'Ideate', subtitle: 'Brainstorm', color: '#e91e63' },
-        { number: 3, title: 'Prototype', subtitle: 'Build MVP', color: '#4caf50' },
-        { number: 4, title: 'Validate', subtitle: 'Test', color: '#ff9800' },
+        { number: 1, title: 'Analyze', subtitle: 'Understand', color: '#2c2b64' },
+        { number: 2, title: 'Ideate', subtitle: 'Brainstorm', color: '#3366cc' },
+        { number: 3, title: 'Prototype', subtitle: 'Build MVP', color: '#ff5338' },
+        { number: 4, title: 'Validate', subtitle: 'Test', color: '#f2cb13' },
       ],
     },
   },
@@ -751,10 +751,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'puzzle',
       pieces: [
-        { number: 1, title: 'Core Strategy', subtitle: 'Main focus area', color: '#4a90d9' },
-        { number: 2, title: 'Support', subtitle: 'Enablement', color: '#e91e63' },
-        { number: 3, title: 'Growth', subtitle: 'Expansion', color: '#4caf50' },
-        { number: 4, title: 'Sustain', subtitle: 'Maintain', color: '#ff9800' },
+        { number: 1, title: 'Core Strategy', subtitle: 'Main focus area', color: '#2c2b64' },
+        { number: 2, title: 'Support', subtitle: 'Enablement', color: '#3366cc' },
+        { number: 3, title: 'Growth', subtitle: 'Expansion', color: '#ff5338' },
+        { number: 4, title: 'Sustain', subtitle: 'Maintain', color: '#f2cb13' },
       ],
     },
   },
@@ -766,10 +766,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'funnel',
       levels: [
-        { title: 'Awareness', percentage: 100, color: '#4a90d9' },
-        { title: 'Interest', percentage: 75, color: '#7b68ee' },
-        { title: 'Consideration', percentage: 50, color: '#e91e63' },
-        { title: 'Purchase', percentage: 25, color: '#4caf50' },
+        { title: 'Awareness', percentage: 100, color: '#2c2b64' },
+        { title: 'Interest', percentage: 75, color: '#3366cc' },
+        { title: 'Consideration', percentage: 50, color: '#ff5338' },
+        { title: 'Purchase', percentage: 25, color: '#f2cb13' },
       ],
     },
   },
@@ -781,10 +781,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'funnel',
       levels: [
-        { title: 'Leads', percentage: 100, color: '#4a90d9' },
-        { title: 'MQL', percentage: 70, color: '#7b68ee' },
-        { title: 'SQL', percentage: 40, color: '#e91e63' },
-        { title: 'Won', percentage: 20, color: '#4caf50' },
+        { title: 'Leads', percentage: 100, color: '#2c2b64' },
+        { title: 'MQL', percentage: 70, color: '#3366cc' },
+        { title: 'SQL', percentage: 40, color: '#ff5338' },
+        { title: 'Won', percentage: 20, color: '#f2cb13' },
       ],
     },
   },
@@ -796,10 +796,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'funnel',
       levels: [
-        { title: 'Visitors', percentage: 100, color: '#4a90d9' },
-        { title: 'Sign-ups', percentage: 60, color: '#7b68ee' },
-        { title: 'Active', percentage: 35, color: '#e91e63' },
-        { title: 'Paying', percentage: 15, color: '#4caf50' },
+        { title: 'Visitors', percentage: 100, color: '#2c2b64' },
+        { title: 'Sign-ups', percentage: 60, color: '#3366cc' },
+        { title: 'Active', percentage: 35, color: '#ff5338' },
+        { title: 'Paying', percentage: 15, color: '#f2cb13' },
       ],
     },
   },
@@ -811,10 +811,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'funnel',
       levels: [
-        { title: 'Traffic', percentage: 100, color: '#4a90d9' },
-        { title: 'Engaged', percentage: 55, color: '#7b68ee' },
-        { title: 'Plan A', percentage: 30, color: '#e91e63' },
-        { title: 'Plan B', percentage: 25, color: '#4caf50' },
+        { title: 'Traffic', percentage: 100, color: '#2c2b64' },
+        { title: 'Engaged', percentage: 55, color: '#3366cc' },
+        { title: 'Plan A', percentage: 30, color: '#ff5338' },
+        { title: 'Plan B', percentage: 25, color: '#f2cb13' },
       ],
     },
   },
@@ -826,10 +826,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'funnel',
       levels: [
-        { title: 'Awareness', percentage: 100, color: '#4a90d9' },
-        { title: 'Interest', percentage: 75, color: '#7b68ee' },
-        { title: 'Decision', percentage: 45, color: '#e91e63' },
-        { title: 'Action', percentage: 20, color: '#4caf50' },
+        { title: 'Awareness', percentage: 100, color: '#2c2b64' },
+        { title: 'Interest', percentage: 75, color: '#3366cc' },
+        { title: 'Decision', percentage: 45, color: '#ff5338' },
+        { title: 'Action', percentage: 20, color: '#f2cb13' },
       ],
     },
   },

@@ -282,22 +282,22 @@ Ce document constitue la **source officielle et unique de la syntaxe DSL** pour 
 
 ```dsl
 @puzzle "Composants de l'Écosystème"
-  piece "Stratégie" "Alignement de la vision" val:"100%" icon:"compass" #3b82f6
-    style fill #3b82f6 fontColor #ffffff
-  piece "Exécution" "Mise en œuvre des projets" val:"85%" icon:"cpu" #8b5cf6
-  piece "Mesure" "Suivi des KPIs" val:"90%" icon:"bar-chart-2" #10b981
-  piece "Optimisation" "Amélioration continue" val:"70%" icon:"sliders" #f59e0b
+  piece "Stratégie" "Alignement de la vision" val:"100%" icon:"compass" #2c2b64
+    style fill #2c2b64 fontColor #ffffff
+  piece "Exécution" "Mise en œuvre des projets" val:"85%" icon:"cpu" #3366cc
+  piece "Mesure" "Suivi des KPIs" val:"90%" icon:"bar-chart-2" #ff5338
+  piece "Optimisation" "Amélioration continue" val:"70%" icon:"sliders" #f2cb13
 ```
 
 ### 2.6 Funnel 1 à 5 (`@funnel` à `@funnel5`)
 
 ```dsl
 @funnel "Tunnel de Conversion Marketing"
-  level "Visiteurs Unique" 10000 val:"10,000" pct:"100%" icon:"users" #242254
-    style fill #242254 fontColor #ffffff
-  level "Leads Qualifiés" 2500 val:"2,500" pct:"25%" icon:"user-check" #2b60d3
-  level "Opportunités" 800 val:"800" pct:"8%" icon:"target" #8b5cf6
-  level "Clients Signés" 150 val:"150" pct:"1.5%" icon:"award" #ff472e
+  level "Visiteurs Unique" 10000 val:"10,000" pct:"100%" icon:"users" #2c2b64
+    style fill #2c2b64 fontColor #ffffff
+  level "Leads Qualifiés" 2500 val:"2,500" pct:"25%" icon:"user-check" #3366cc
+  level "Opportunités" 800 val:"800" pct:"8%" icon:"target" #ff5338
+  level "Clients Signés" 150 val:"150" pct:"1.5%" icon:"award" #f2cb13
 ```
 
 ### 2.7 Dashboard 1 à 5 (`@dashboard` à `@dashboard5`)
