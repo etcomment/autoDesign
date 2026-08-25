@@ -19,7 +19,7 @@ import type {
 export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'roadmap',
-    label: 'Timeline avec Jalons Alternés',
+    label: 'roadmap',
     description: 'Timeline horizontale avec jalons numérotés positionnés alternativement au-dessus et en-dessous de la ligne.',
     category: 'Roadmaps',
     defaultData: {
@@ -36,7 +36,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'roadmap2',
-    label: 'Chronologie avec Jalons & Phases',
+    label: 'roadmap2',
     description: 'Timeline verticale avec phases colorées (Phase One, Two, Three) et jalons par années.',
     category: 'Roadmaps',
     defaultData: {
@@ -60,7 +60,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'roadmap3',
-    label: 'Trajectoire Serpentin Multi-Années',
+    label: 'roadmap3',
     description: 'Schéma en serpentin reliant 10 années consécutives avec jalons ancrés.',
     category: 'Roadmaps',
     defaultData: {
@@ -84,7 +84,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'roadmap4',
-    label: 'Planification par Trimestre (Q1-Q4)',
+    label: 'roadmap4',
     description: 'Timeline découpée en 4 trimestres (Q1 à Q4) avec cartes de jalons.',
     category: 'Roadmaps',
     defaultData: {
@@ -106,8 +106,33 @@ export const TEMPLATES: TemplateDefinition[] = [
     },
   },
   {
+    type: 'roadmap4b',
+    label: 'roadmap4b',
+    description: 'Zigzag à enveloppe fixe : les segments se compriment pour conserver la même forme globale.',
+    category: 'Roadmaps',
+    defaultData: {
+      type: 'roadmap',
+      quarters: [
+        { label: 'Q1', year: '2026' },
+        { label: 'Q2', year: '2026' },
+        { label: 'Q3', year: '2026' },
+        { label: 'Q4', year: '2026' },
+        { label: 'Q5', year: '2026' },
+      ],
+      startLabel: 'START',
+      finishLabel: 'FINISH',
+      milestones: [
+        { title: 'Milestone 01', subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required' },
+        { title: 'Milestone 02', subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required' },
+        { title: 'Milestone 03', subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required' },
+        { title: 'Milestone 04', subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required' },
+        { title: 'Milestone 05', subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required' },
+      ],
+    },
+  },
+  {
     type: 'roadmap5',
-    label: 'Cartes de Projets en Escalier',
+    label: 'roadmap5',
     description: 'Présentation sous forme de cartes décalées en escalier avec dates clés.',
     category: 'Roadmaps',
     defaultData: {
@@ -130,7 +155,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'roadmap6',
-    label: 'Calendrier de Déploiement Hebdo',
+    label: 'roadmap6',
     description: 'Timeline de jalons hebdomadaires étalés sur plusieurs années.',
     category: 'Roadmaps',
     defaultData: {
@@ -154,7 +179,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'roadmap7',
-    label: 'Courbe de Progression Annuelle',
+    label: 'roadmap7',
     description: 'Courbe fluide reliant des métriques et étapes annuelles.',
     category: 'Roadmaps',
     defaultData: {
@@ -170,7 +195,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'roadmap8',
-    label: 'Milestones et Tâches Échelonnées',
+    label: 'roadmap8',
     description: 'Timeline à jalons décalés avec sous-titres de périmètre.',
     category: 'Roadmaps',
     defaultData: {
@@ -185,7 +210,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'roadmap9',
-    label: 'Timeline à Double Étage',
+    label: 'roadmap9',
     description: 'Deux niveaux de jalons (haut et bas) reliés à un axe central.',
     category: 'Roadmaps',
     defaultData: {
@@ -202,7 +227,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'roadmap10',
-    label: 'Jalons à Grands Métriques',
+    label: 'roadmap10',
     description: 'Cartes de jalons avec affichage en grands caractères pour les mois.',
     category: 'Roadmaps',
     defaultData: {
@@ -217,7 +242,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'roadmap11',
-    label: 'Suivi Mensuel avec Pourcentages',
+    label: 'roadmap11',
     description: 'Liste verticale de jalons mensuels avec indicateurs de progression.',
     category: 'Roadmaps',
     defaultData: {
@@ -233,7 +258,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'roadmap12',
-    label: 'Parcours par Étapes Clés',
+    label: 'roadmap12',
     description: 'Timeline sous forme de chemin par étapes numérotées.',
     category: 'Roadmaps',
     defaultData: {
@@ -248,7 +273,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'roadmap13',
-    label: 'Tableau de Sprint par Semaines',
+    label: 'roadmap13',
     description: 'Grille de colonnes hebdomadaires (Week 1 à Week 8).',
     category: 'Roadmaps',
     defaultData: {
@@ -267,7 +292,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'roadmap14',
-    label: 'Feuille de Route Multi-Années',
+    label: 'roadmap14',
     description: 'Timeline prospective s\'étalant sur plusieurs années.',
     category: 'Roadmaps',
     defaultData: {
@@ -282,7 +307,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'roadmap15',
-    label: 'Barre de Progression par Quart',
+    label: 'roadmap15',
     description: 'Blocs de jalons trimestriels avec barre de progression globale.',
     category: 'Roadmaps',
     defaultData: {
@@ -300,7 +325,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'roadmap16',
-    label: 'Chemin Courbé de Maturation',
+    label: 'roadmap16',
     description: 'Parcours sinueux reliant les étapes d\'idéation à la livraison.',
     category: 'Roadmaps',
     defaultData: {
@@ -318,7 +343,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'productRoadmap',
-    label: 'Grille Produit 4 Quarters',
+    label: 'productRoadmap',
     description: 'Grille trimestrielle (Q1-Q4) croisée avec 4 pôles (Dev, Product, UX, QA).',
     category: 'Product Roadmaps',
     defaultData: {
@@ -345,7 +370,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'productRoadmap2',
-    label: 'Feuille de Route Multi-Équipes',
+    label: 'productRoadmap2',
     description: 'Grille trimestrielle avec bandes d\'équipes et badges de fonctionnalités.',
     category: 'Product Roadmaps',
     defaultData: {
@@ -372,7 +397,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'productRoadmap3',
-    label: 'Matrice Produit avec Cartes Détails',
+    label: 'productRoadmap3',
     description: 'Grille trimestrielle avec cartes détaillées contenant titres et sous-titres.',
     category: 'Product Roadmaps',
     defaultData: {
@@ -399,7 +424,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'productRoadmap4',
-    label: 'Suivi Produit Découverte & MVP',
+    label: 'productRoadmap4',
     description: 'Matrice centrée sur les phases de recherche, prototypage et mise sur le marché.',
     category: 'Product Roadmaps',
     defaultData: {
@@ -426,7 +451,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'productRoadmap5',
-    label: 'Tableau de Jalons Produit',
+    label: 'productRoadmap5',
     description: 'Vue en tableau des livrables clés par trimestre et pôle métier.',
     category: 'Product Roadmaps',
     defaultData: {
@@ -453,7 +478,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'productRoadmap6',
-    label: 'Matrice Synthétique de Fonctionnalités',
+    label: 'productRoadmap6',
     description: 'Vue condensée des fonctionnalités à livrer par trimestre.',
     category: 'Product Roadmaps',
     defaultData: {
@@ -480,7 +505,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'strategy',
-    label: '5 Piliers Stratégiques',
+    label: 'strategy',
     description: 'Alignement horizontal de 5 blocs représentant les axes stratégiques.',
     category: 'Strategy',
     defaultData: {
@@ -496,7 +521,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'strategy2',
-    label: 'Pyramide de Vision & Mission',
+    label: 'strategy2',
     description: 'Pyramide à 5 niveaux (Vision, Mission, Objectifs, Initiatives, Fondations).',
     category: 'Strategy',
     defaultData: {
@@ -512,7 +537,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'strategy3',
-    label: 'Hub Central & 6 Axes Stratégiques',
+    label: 'strategy3',
     description: 'Disposition en étoile autour d\'un sujet central avec 6 rayons.',
     category: 'Strategy',
     defaultData: {
@@ -529,7 +554,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'strategy4',
-    label: '3 Colonnes de Piliers d\'Action',
+    label: 'strategy4',
     description: 'Disposition en 3 colonnes verticales avec 6 blocs stratégiques.',
     category: 'Strategy',
     defaultData: {
@@ -546,7 +571,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'strategy5',
-    label: 'Feuille de Route Stratégique',
+    label: 'strategy5',
     description: 'Timeline stratégique découpée par objectifs trimestriels.',
     category: 'Strategy',
     defaultData: {
@@ -562,7 +587,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'process',
-    label: 'Processus 4 Étapes Horizontales',
+    label: 'process',
     description: 'Flux séquentiel de 4 étapes avec résultat final (Outcome).',
     category: 'Process',
     defaultData: {
@@ -578,7 +603,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'process2',
-    label: 'Flux de Processus en Flèches',
+    label: 'process2',
     description: 'Étapes interconnectées par des flèches directionnelles.',
     category: 'Process',
     defaultData: {
@@ -594,7 +619,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'process4',
-    label: 'Cartes de Processus Séquentielles',
+    label: 'process4',
     description: 'Cartes de phases avec numéro, titre et sous-titre.',
     category: 'Process',
     defaultData: {
@@ -610,7 +635,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'process5',
-    label: 'Processus Vertical Pas à Pas',
+    label: 'process5',
     description: 'Flux vertical étape par étape de l\'idéation au release.',
     category: 'Process',
     defaultData: {
@@ -627,7 +652,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'puzzle',
-    label: 'Puzzle 4 Blocs d\'Interconnexion',
+    label: 'puzzle',
     description: 'Assemblage 2x2 de 4 pièces de puzzle interconnectées.',
     category: 'Puzzles',
     defaultData: {
@@ -642,7 +667,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'puzzle2',
-    label: 'Puzzle Ligne Horizontale',
+    label: 'puzzle2',
     description: 'Alignement horizontal de 4 pièces de puzzle imbriquées.',
     category: 'Puzzles',
     defaultData: {
@@ -657,7 +682,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'puzzle3',
-    label: 'Puzzle Colonne Verticale',
+    label: 'puzzle3',
     description: 'Empilement vertical de 4 pièces de puzzle.',
     category: 'Puzzles',
     defaultData: {
@@ -672,7 +697,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'puzzle4',
-    label: 'Matrice Puzzle 6 Pièces (2x3)',
+    label: 'puzzle4',
     category: 'Puzzles',
     defaultData: {
       type: 'puzzle',
@@ -688,7 +713,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'puzzle5',
-    label: 'Puzzle Cercle d\'Interdépendance',
+    label: 'puzzle5',
     description: 'Disposition circulaire de 4 pièces de puzzle.',
     category: 'Puzzles',
     defaultData: {
@@ -703,7 +728,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'puzzle6',
-    label: 'Puzzle Losange 4 Piliers',
+    label: 'puzzle6',
     description: 'Disposition en losange des pièces de puzzle.',
     category: 'Puzzles',
     defaultData: {
@@ -718,7 +743,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'puzzle7',
-    label: 'Puzzle Cœur de Métier & Soutien',
+    label: 'puzzle7',
     description: 'Pièce centrale avec pièces périphériques de soutien.',
     category: 'Puzzles',
     defaultData: {
@@ -733,7 +758,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'funnel',
-    label: 'Entonnoir de Conversion Marketing',
+    label: 'funnel',
     description: 'Entonnoir classique à 4 niveaux (Awareness, Interest, Consideration, Purchase).',
     category: 'Funnels',
     defaultData: {
@@ -748,7 +773,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'funnel2',
-    label: 'Entonnoir Horizontal de Pipeline',
+    label: 'funnel2',
     description: 'Entonnoir couché horizontalement de la prospection au closing.',
     category: 'Funnels',
     defaultData: {
@@ -763,7 +788,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'funnel3',
-    label: 'Entonnoir 3D en Couches',
+    label: 'funnel3',
     description: 'Représentation 3D en couches empilées avec pourcentages.',
     category: 'Funnels',
     defaultData: {
@@ -778,7 +803,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'funnel4',
-    label: 'Entonnoir avec Bifurcation',
+    label: 'funnel4',
     description: 'Entonnoir se séparant en deux parcours au niveau inférieur.',
     category: 'Funnels',
     defaultData: {
@@ -793,7 +818,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'funnel5',
-    label: 'Entonnoir par Niveaux d\'Étape',
+    label: 'funnel5',
     description: 'Entonnoir par segments gradués avec pourcentages de conversion.',
     category: 'Funnels',
     defaultData: {
@@ -808,7 +833,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'iceberg',
-    label: 'Iceberg Partie Visible vs Cachée',
+    label: 'iceberg',
     description: 'Diagramme séparant les éléments émergés (visibles) et immergés (cachés).',
     category: 'Icebergs',
     defaultData: {
@@ -823,7 +848,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'iceberg2',
-    label: 'Iceberg Vertical d\'Effort',
+    label: 'iceberg2',
     description: 'Vue verticale des efforts et apprentissages sous la surface du succès.',
     category: 'Icebergs',
     defaultData: {
@@ -838,7 +863,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'dashboard',
-    label: 'Tableau KPI 4 Cartes Métriques',
+    label: 'dashboard',
     description: 'Grille de 4 cartes métriques (Chiffre d\'affaires, Utilisateurs, Churn, NPS).',
     category: 'Dashboards',
     defaultData: {
@@ -853,7 +878,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'dashboard2',
-    label: 'Focus Métrique Principale & Cartes',
+    label: 'dashboard2',
     description: 'Grand affichage de la métrique clé accompagné de cartes secondaires.',
     category: 'Dashboards',
     defaultData: {
@@ -868,7 +893,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'dashboard3',
-    label: 'Indicateurs avec Barres de Progression',
+    label: 'dashboard3',
     description: 'Cartes KPI avec barres de progression et variations.',
     category: 'Dashboards',
     defaultData: {
@@ -883,7 +908,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'dashboard4',
-    label: 'Tableau d\'Indicateurs à Jauges',
+    label: 'dashboard4',
     description: 'Affichage sous forme de jauges et compteurs.',
     category: 'Dashboards',
     defaultData: {
@@ -898,7 +923,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'dashboard5',
-    label: 'Synthèse de Métriques Compacte',
+    label: 'dashboard5',
     description: 'Vue condensée des principaux indicateurs de performance.',
     category: 'Dashboards',
     defaultData: {
@@ -915,7 +940,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'table',
-    label: 'Grille de Données Classique',
+    label: 'table',
     description: 'Tableau de données avec en-têtes et lignes structurées.',
     category: 'Tables',
     defaultData: {
@@ -930,7 +955,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'agenda',
-    label: 'Ordre du Jour Chronologique',
+    label: 'agenda',
     description: 'Liste chronologique des points à traiter avec numérotation.',
     category: 'Agendas',
     defaultData: {
@@ -945,7 +970,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'comparison',
-    label: 'Tableau Comparatif Direct',
+    label: 'comparison',
     description: 'Comparaison colonne à colonne entre deux solutions (Left vs Right).',
     category: 'Comparisons',
     defaultData: {
@@ -962,7 +987,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'brain',
-    label: 'Mindmap Carte Centrée',
+    label: 'brain',
     description: 'Sujet central avec branches diffusant vers les idées secondaires.',
     category: 'Brains',
     supportsStroke: false,
@@ -979,7 +1004,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'brain2',
-    label: 'Mindmap Arbre Bi-Directionnel',
+    label: 'brain2',
     description: 'Sujet central avec branches réparties à gauche et à droite.',
     category: 'Brains',
     supportsStroke: false,
@@ -997,7 +1022,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'brain3',
-    label: "Mindmap Toile de Réseau",
+    label: 'brain3',
     description: 'Réseau d\'idées interconnectées autour d\'un noyau.',
     category: 'Brains',
     supportsStroke: false,
@@ -1016,7 +1041,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'brain4',
-    label: 'Mindmap Arborescence Hiérarchique',
+    label: 'brain4',
     description: 'Structure en arbre hiérarchique descendant.',
     category: 'Brains',
     supportsStroke: false,
@@ -1035,7 +1060,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'budget',
-    label: 'Répartition Budget par Postes',
+    label: 'budget',
     description: 'Synthèse du budget total et répartition par postes de dépense.',
     category: 'Budgets',
     defaultData: {
@@ -1052,7 +1077,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'budget2',
-    label: 'Comparaison Budget Barres Horizontales',
+    label: 'budget2',
     description: 'Barres horizontales de répartition du budget par poste, proportionnelles au pourcentage.',
     category: 'Budgets',
     defaultData: {
@@ -1070,7 +1095,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'budget3',
-    label: 'Répartition Budgétaire en Donut',
+    label: 'budget3',
     description: 'Diagramme en anneau (Donut) avec total au centre.',
     category: 'Budgets',
     defaultData: {
@@ -1087,7 +1112,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'budget4',
-    label: 'Analyse de Flux en Cascade (Waterfall)',
+    label: 'budget4',
     description: 'Diagramme de cascade (Waterfall) d\'évolution budgétaire.',
     category: 'Budgets',
     defaultData: {
@@ -1105,7 +1130,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'budget5',
-    label: 'Camembert Budget par Catégorie',
+    label: 'budget5',
     description: 'Diagramme circulaire (Pie Chart) des dépenses.',
     category: 'Budgets',
     defaultData: {
@@ -1122,7 +1147,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'business',
-    label: "Vue d\'Ensemble Modèle Business",
+    label: 'business',
     description: 'Sujet central entouré de ses composants business.',
     category: 'Business',
     defaultData: {
@@ -1140,7 +1165,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'business2',
-    label: 'Hub Central & Pôles Métier',
+    label: 'business2',
     description: 'Hub vertical connectant les différents pôles de l\'entreprise.',
     category: 'Business',
     defaultData: {
@@ -1158,7 +1183,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'business3',
-    label: 'Matrice d\'Analyse Business 2x3',
+    label: 'business3',
     description: 'Grille 2x3 d\'analyse stratégique et opérationnelle.',
     category: 'Business',
     defaultData: {
@@ -1176,7 +1201,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'business4',
-    label: 'Flux de Processus par Chevrons',
+    label: 'business4',
     description: 'Chaîne de valeur représentée par des chevrons successifs.',
     category: 'Business',
     defaultData: {
@@ -1193,7 +1218,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'business5',
-    label: 'Schéma Losange d\'Interactions',
+    label: 'business5',
     description: 'Disposition en losange des flux d\'interaction d\'affaires.',
     category: 'Business',
     defaultData: {
@@ -1209,7 +1234,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'business6',
-    label: 'Comparatif Barres Empilées Business',
+    label: 'business6',
     description: 'Barres empilées représentant les facteurs d\'affaires.',
     category: 'Business',
     defaultData: {
@@ -1227,7 +1252,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'business7',
-    label: 'Cycle d\'Activité Circulaire',
+    label: 'business7',
     description: 'Schéma circulaire du cycle de vie des affaires.',
     category: 'Business',
     defaultData: {
@@ -1247,7 +1272,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'business8',
-    label: 'Liste Structurée Verticale',
+    label: 'business8',
     description: 'Liste verticale des fonctions business clés.',
     category: 'Business',
     defaultData: {
@@ -1265,7 +1290,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'business9',
-    label: 'Grille d\'Analyse 9 Cases (3x3)',
+    label: 'business9',
     description: 'Matrice 3x3 pour le diagnostic d\'entreprise.',
     category: 'Business',
     defaultData: {
@@ -1286,7 +1311,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'business10',
-    label: 'Pyramide de Valeur Business',
+    label: 'business10',
     description: 'Pyramide à niveaux de la création de valeur.',
     category: 'Business',
     defaultData: {
@@ -1308,7 +1333,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'business11',
-    label: 'Parcours Chronologique d\'Entreprise',
+    label: 'business11',
     description: 'Timeline de l\'historique et des jalons de la société.',
     category: 'Business',
     defaultData: {
@@ -1326,7 +1351,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'decisionTree',
-    label: 'Arbre de Décision Binaire',
+    label: 'decisionTree',
     description: 'Arbre binaire de choix avec réponses Oui / Non.',
     category: 'Decision trees',
     defaultData: {
@@ -1347,7 +1372,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'decision2',
-    label: 'Arbre de Décision Horizontal',
+    label: 'decision2',
     description: 'Arbre de décision déployé horizontalement de gauche à droite.',
     category: 'Decision trees',
     defaultData: {
@@ -1364,7 +1389,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'goals',
-    label: 'Tableau d\'Objectifs & Cibles',
+    label: 'goals',
     description: 'Objectif central et indicateurs cibles associés.',
     category: 'Goals',
     defaultData: {
@@ -1379,7 +1404,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'goals1',
-    label: 'Cible de Performance',
+    label: 'goals1',
     description: 'Visuel en cible concentrique avec objectifs de performance.',
     category: 'Goals',
     defaultData: {
@@ -1396,7 +1421,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'goals2',
-    label: 'Objectif Ascension / Montagne',
+    label: 'goals2',
     description: 'Parcours d\'ascension représenté par la montée d\'une montagne.',
     category: 'Goals',
     defaultData: {
@@ -1412,7 +1437,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'goals3',
-    label: 'Niveau d\'Objectif par Jauge',
+    label: 'goals3',
     description: 'Jauges de niveau d\'atteinte des objectifs.',
     category: 'Goals',
     defaultData: {
@@ -1428,7 +1453,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'goals4',
-    label: 'Progression des Objectifs en Barres',
+    label: 'goals4',
     description: 'Barres de progression des objectifs avec pourcentages.',
     category: 'Goals',
     defaultData: {
@@ -1445,7 +1470,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'goals5',
-    label: 'Indicateur d\'Objectif Thermomètre',
+    label: 'goals5',
     description: 'Indicateur vertical sous forme de thermomètre de réussite.',
     category: 'Goals',
     defaultData: {
@@ -1461,7 +1486,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'manufacturing',
-    label: 'Chaîne de Production Générale',
+    label: 'manufacturing',
     description: 'Ligne de fabrication avec stations et points de contrôle qualité.',
     category: 'Manufacturing',
     defaultData: {
@@ -1477,7 +1502,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'valueChain',
-    label: 'Chaîne de Valeur de Porter (Horizontale)',
+    label: 'valueChain',
     description: 'Chaîne de valeur avec activités principales et de soutien.',
     category: 'Value Chain',
     defaultData: {
@@ -1499,7 +1524,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'productRoadmap7',
-    label: 'Grille Produit par Trimestre',
+    label: 'productRoadmap7',
     category: 'Product Roadmaps',
     defaultData: {
       type: 'productRoadmap',
@@ -1520,7 +1545,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'productRoadmap8',
-    label: 'Planification Calendrier Équipes',
+    label: 'productRoadmap8',
     description: 'Calendrier de livraison avec suivi par équipe.',
     category: 'Product Roadmaps',
     defaultData: {
@@ -1547,7 +1572,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'productRoadmap9',
-    label: 'Barres Chronologiques de Livraison',
+    label: 'productRoadmap9',
     description: 'Feuille de route avec barres d\'avancement par trimestre.',
     category: 'Product Roadmaps',
     defaultData: {
@@ -1569,7 +1594,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'productRoadmap10',
-    label: 'Vue Gantt des Équipes Produit',
+    label: 'productRoadmap10',
     description: 'Représentation style Gantt simplifiée pour les livrables produit.',
     category: 'Product Roadmaps',
     defaultData: {
@@ -1596,7 +1621,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'productRoadmap11',
-    label: 'Cartes de Livrables par Trimestre',
+    label: 'productRoadmap11',
     description: 'Affichage par cartes indépendantes dans chaque trimestre.',
     category: 'Product Roadmaps',
     defaultData: {
@@ -1614,7 +1639,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'productRoadmap12',
-    label: 'Badges Trimestriels par Pôle',
+    label: 'productRoadmap12',
     description: 'Badges colorés de jalons organisés par trimestre.',
     category: 'Product Roadmaps',
     defaultData: {
@@ -1636,7 +1661,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'strategy6',
-    label: 'Matrice Stratégique 4 Cadrans',
+    label: 'strategy6',
     description: 'Matrice 2x2 avec axes X et Y paramétrables.',
     category: 'Strategy',
     defaultData: {
@@ -1653,7 +1678,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'strategy7',
-    label: 'Niveaux Concentriques d\'Impact',
+    label: 'strategy7',
     description: 'Cercles imbriqués illustrant les niveaux d\'impact stratégique.',
     category: 'Strategy',
     defaultData: {
@@ -1670,7 +1695,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'strategy8',
-    label: 'Escalier de Croissance',
+    label: 'strategy8',
     description: 'Disposition en escalier illustrant la montée en puissance stratégique.',
     category: 'Strategy',
     defaultData: {
@@ -1686,7 +1711,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'process1',
-    label: 'Étapes Simples avec Flèches',
+    label: 'process1',
     description: 'Schéma minimaliste à 4 étapes avec connecteurs.',
     category: 'Process',
     defaultData: {
@@ -1704,7 +1729,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'table2',
-    label: 'Tableau Lignes Alternées',
+    label: 'table2',
     description: 'Tableau avec lignes bicolores pour une meilleure lisibilité.',
     category: 'Tables',
     defaultData: {
@@ -1719,7 +1744,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'table3',
-    label: 'Grille sous forme de Cartes',
+    label: 'table3',
     category: 'Tables',
     defaultData: {
       type: 'table',
@@ -1735,7 +1760,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'table4',
-    label: 'Tableau En-tête Mis en Avant',
+    label: 'table4',
     description: 'Tableau avec en-tête coloré mis en valeur.',
     category: 'Tables',
     defaultData: {
@@ -1751,7 +1776,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'table5',
-    label: 'Tableau Épuré sans Bordures',
+    label: 'table5',
     description: 'Design minimaliste sans lignes de séparation.',
     category: 'Tables',
     defaultData: {
@@ -1766,7 +1791,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'table6',
-    label: 'Tableau Thématique Bleu',
+    label: 'table6',
     description: 'Tableau stylisé aux tons bleus professionnels.',
     category: 'Tables',
     defaultData: {
@@ -1782,7 +1807,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'agenda2',
-    label: 'Ordre du Jour Ligne Temporelle',
+    label: 'agenda2',
     description: 'Timeline horizontale des créneaux de la réunion.',
     category: 'Agendas',
     defaultData: {
@@ -1797,7 +1822,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'agenda3',
-    label: 'Ordre du Jour Grille d\'Horaire',
+    label: 'agenda3',
     description: 'Grille horaire par blocs d\'interventions.',
     category: 'Agendas',
     defaultData: {
@@ -1812,7 +1837,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'agenda4',
-    label: 'Ordre du Jour Cartes Séquentielles',
+    label: 'agenda4',
     description: 'Cartes indépendantes pour chaque sujet de l\'ordre du jour.',
     category: 'Agendas',
     defaultData: {
@@ -1827,7 +1852,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'comparison2',
-    label: 'Comparatif Graphique Radar/Toile',
+    label: 'comparison2',
     description: 'Graphique en radar/toile comparant 2 séries sur plusieurs critères.',
     category: 'Comparisons',
     defaultData: {
@@ -1845,7 +1870,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'comparison3',
-    label: 'Comparatif Barres de Mesure',
+    label: 'comparison3',
     description: 'Barres de mesure horizontales comparatives.',
     category: 'Comparisons',
     defaultData: {
@@ -1862,7 +1887,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'comparison4',
-    label: 'Comparatif Bulles & Cercles',
+    label: 'comparison4',
     description: 'Comparaison visuelle sous forme de cercles proportionnels.',
     category: 'Comparisons',
     defaultData: {
@@ -1881,7 +1906,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'comparison5',
-    label: 'Comparatif Évaluation par Scores',
+    label: 'comparison5',
     description: 'Liste d\'options avec scores et évaluations.',
     category: 'Comparisons',
     defaultData: {
@@ -1895,7 +1920,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'comparison6',
-    label: 'Tableau d\'Éléments Valides (Checklist)',
+    label: 'comparison6',
     category: 'Comparisons',
     defaultData: {
       type: 'comparison6',
@@ -1907,7 +1932,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'comparison7',
-    label: 'Matrice Pour et Contre',
+    label: 'comparison7',
     description: 'Tableau 2 colonnes séparant les Avantages (Pros) et Inconvénients (Cons).',
     category: 'Comparisons',
     defaultData: {
@@ -1918,7 +1943,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'manufacturing2',
-    label: 'Ligne de Fabrique Verticale',
+    label: 'manufacturing2',
     description: 'Flux de production vertical de l\'entrée matière au produit fini.',
     category: 'Manufacturing',
     defaultData: {
@@ -1934,7 +1959,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'manufacturing3',
-    label: 'Circuit de Production en U',
+    label: 'manufacturing3',
     description: 'Disposition des postes de travail en forme de U.',
     category: 'Manufacturing',
     defaultData: {
@@ -1950,7 +1975,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'manufacturing4',
-    label: 'Lignes de Production Parallèles',
+    label: 'manufacturing4',
     description: 'Lignes d\'assemblage parallèles convergentes.',
     category: 'Manufacturing',
     defaultData: {
@@ -1967,7 +1992,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'manufacturing5',
-    label: 'Diagramme de Production Losange',
+    label: 'manufacturing5',
     description: 'Diagramme de processus de fabrication en losange.',
     category: 'Manufacturing',
     defaultData: {
@@ -1982,7 +2007,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'manufacturing6',
-    label: 'Centre de Distribution Hub & Spoke',
+    label: 'manufacturing6',
     description: 'Réseau logistique hub & rayons.',
     category: 'Manufacturing',
     defaultData: {
@@ -1999,7 +2024,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'manufacturing7',
-    label: 'Timeline de Production',
+    label: 'manufacturing7',
     description: 'Calendrier des étapes de fabrication.',
     category: 'Manufacturing',
     defaultData: {
@@ -2015,7 +2040,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'manufacturing8',
-    label: 'Circuit Fermé Circulaire',
+    label: 'manufacturing8',
     description: 'Flux de production en boucle fermée (recyclage / réutilisation).',
     category: 'Manufacturing',
     defaultData: {
@@ -2032,7 +2057,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'valueChain2',
-    label: 'Chaîne de Valeur Verticale',
+    label: 'valueChain2',
     description: 'Vue verticale des activités principales et de soutien.',
     category: 'Value Chain',
     defaultData: {
@@ -2054,7 +2079,7 @@ export const TEMPLATES: TemplateDefinition[] = [
   },
   {
     type: 'circle',
-    label: 'Cycle d\'Amélioration Continue',
+    label: 'circle',
     description: 'Cycle itératif en 4 étapes (PDCA / Amélioration continue).',
     category: 'Cycles',
     defaultData: {
