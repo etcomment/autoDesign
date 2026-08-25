@@ -290,7 +290,17 @@ export function TemplateRenderer(): ReactElement | null {
   if (!Component) return null
 
   const hideRules = Array.from(hiddenTemplateElementIds)
-    .map(id => `[data-element-id="${id}"], [id="${id}"] { display: none !important; }`)
+    .map(id => {
+      if (id.startsWith('block-')) {
+        const idx = id.split('-')[1]
+        return `[data-element-id="${id}"], [id="${id}"], [data-element-id$="-${idx}"] { display: none !important; }`
+      }
+      if (id.startsWith('step-group-')) {
+        const idx = id.split('-')[2]
+        return `[data-element-id="step-body-${idx}"], [data-element-id="step-arrow-${idx}"], [data-element-id="step-${idx}"] { display: none !important; }`
+      }
+      return `[data-element-id="${id}"], [id="${id}"] { display: none !important; }`
+    })
     .join('\n')
 
   return (

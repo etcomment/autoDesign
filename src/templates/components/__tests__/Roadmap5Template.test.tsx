@@ -1,0 +1,160 @@
+import { describe, expect, it } from 'vitest'
+import { render } from '@testing-library/react'
+import { Roadmap5Template } from '../Roadmap5Template'
+import type { RoadmapData } from '../../types'
+
+describe('Roadmap5Template', () => {
+  it('should render without crashing with default data', () => {
+    const data: RoadmapData = {
+      type: 'roadmap',
+      milestones: [
+        { title: 'Milestone 1', subtitle: 'Desc 1', date: '2024' },
+        { title: 'Milestone 2', subtitle: 'Desc 2', date: '2025' },
+      ],
+    }
+    const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
+    expect(container.querySelector('[data-element-id="start-badge"]')).not.toBeNull()
+    expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(2)
+    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(3) // 2 milestones + 1 terminal
+    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(3)
+  })
+
+  it('should adapt dynamically to N milestones with dates, icons and values', () => {
+    const data: RoadmapData = {
+      type: 'roadmap',
+      startLabel: 'GO',
+      milestones: [
+        { title: 'Discovery Phase', subtitle: 'Detailed scoping', date: '2024', icon: 'search', value: '01' },
+        { title: 'Prototyping', subtitle: 'Fast wireframing', date: '2025', icon: 'gear', percent: '50%' },
+        { title: 'Development', subtitle: 'Core implementation', date: '2026', icon: 'code', value: '03' },
+        { title: 'Testing', subtitle: 'QA validation', date: '2027', icon: 'check', value: '04' },
+        { title: 'Release', subtitle: 'Global launch', date: '2028', icon: 'rocket', value: '05' },
+      ],
+    }
+    const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
+    expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(5)
+    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(6) // 5 milestones + 1 terminal
+    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(6)
+    expect(container.textContent).toContain('GO')
+    expect(container.textContent).toContain('Discovery Phase')
+    expect(container.textContent).toContain('2028')
+    expect(container.textContent).toContain('2029') // Extra terminal dot with next year
+  })
+
+  it('should dynamically update when a milestone is added in DSL and increment terminal year', () => {
+    const initialData: RoadmapData = {
+      type: 'roadmap',
+      milestones: [
+        { title: 'Discovery', subtitle: 'Understanding user needs', date: '2024' },
+        { title: 'Prototyping', subtitle: 'Building rapid prototypes', date: '2025' },
+        { title: 'Development', subtitle: 'Engineering core modules', date: '2026' },
+      ],
+    }
+    const { container, rerender } = render(<svg><Roadmap5Template data={initialData} /></svg>)
+    expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(3)
+    expect(container.textContent).toContain('2027') // Terminal year for initial
+
+    // User adds 4th milestone in DSL:
+    const updatedData: RoadmapData = {
+      type: 'roadmap',
+      milestones: [
+        ...initialData.milestones,
+        { title: 'Release', subtitle: 'Production deployment and monitoring', date: '2028' },
+      ],
+    }
+    rerender(<svg><Roadmap5Template data={updatedData} /></svg>)
+    expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(4)
+    expect(container.textContent).toContain('Release')
+    expect(container.textContent).toContain('Production deployment')
+    expect(container.textContent).toContain('monitoring')
+    expect(container.textContent).toContain('2028')
+    expect(container.textContent).toContain('2029') // Terminal dot shows 2029
+  })
+
+  it('should support track and progress colors from DSL data', () => {
+    const data: RoadmapData = {
+      type: 'roadmap',
+      trackColor: '#e11d48',
+      trackBgColor: '#f1f5f9',
+      progress: '3',
+      progressColor: '#2563eb',
+      milestones: [
+        { title: 'Step 1', subtitle: 'Desc 1', date: '2024', color: '#10b981' },
+        { title: 'Step 2', subtitle: 'Desc 2', date: '2025', color: '#f59e0b' },
+        { title: 'Step 3', subtitle: 'Desc 3', date: '2026', color: '#8b5cf6' },
+      ],
+    }
+    const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
+    const lines = container.querySelectorAll('line')
+    expect(lines.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('should support quarters axis and pinning by date like Roadmap 3', () => {
+    const data: RoadmapData = {
+      type: 'roadmap',
+      quarters: [
+        { label: '2019' },
+        { label: '2020' },
+        { label: '2021' },
+        { label: '2022' },
+      ],
+      milestones: [
+        { title: 'Milestone 01', subtitle: 'Desc 1', color: '#4cbfa0' },
+        { title: 'Milestone 02', subtitle: 'Desc 2', date: '2019', color: '#23255a' },
+        { title: 'Milestone 03', subtitle: 'Desc 3', date: '2020', color: '#23255a' },
+        { title: 'Milestone 04', subtitle: 'Desc 4', date: '2021', color: '#2d62ed' },
+      ],
+    }
+    const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
+    expect(container.querySelectorAll('[data-element-id^="dot-"]')).toHaveLength(4)
+    expect(container.querySelectorAll('[data-element-id^="year-"]')).toHaveLength(4)
+    expect(container.querySelectorAll('[data-element-id^="card-"]')).toHaveLength(4)
+    expect(container.textContent).toContain('2019')
+    expect(container.textContent).toContain('2022')
+    expect(container.textContent).toContain('Milestone 01')
+    expect(container.textContent).toContain('Milestone 04')
+  })
+
+  it('should support defining current step via current keyword in DSL', () => {
+    const data: RoadmapData = {
+      type: 'roadmap',
+      current: '2020',
+      quarters: [
+        { label: '2019' },
+        { label: '2020' },
+        { label: '2021' },
+        { label: '2022' },
+      ],
+      milestones: [
+        { title: 'Milestone 01', subtitle: 'Desc 1' },
+        { title: 'Milestone 02', subtitle: 'Desc 2', date: '2019' },
+        { title: 'Milestone 03', subtitle: 'Desc 3', date: '2020' },
+        { title: 'Milestone 04', subtitle: 'Desc 4', date: '2021' },
+      ],
+    }
+    const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
+    const lines = container.querySelectorAll('line')
+    expect(lines.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('should inherit previous milestone color for empty quarters/dots', () => {
+    const data: RoadmapData = {
+      type: 'roadmap',
+      quarters: [
+        { label: '2019' },
+        { label: '2020' },
+        { label: '2021' },
+        { label: '2022' },
+      ],
+      milestones: [
+        { title: 'Milestone 01', subtitle: 'Desc 1', color: '#4cbfa0' },
+        { title: 'Milestone 02', subtitle: 'Desc 2', date: '2019', color: '#23255a' },
+        { title: 'Milestone 03', subtitle: 'Desc 3', date: '2020', color: '#23255a' },
+        { title: 'Milestone 04', subtitle: 'Desc 4', date: '2021', color: '#2d62ed' },
+      ],
+    }
+    const { container } = render(<svg><Roadmap5Template data={data} /></svg>)
+    const terminalDot = container.querySelector('[data-element-id="dot-3"] circle')
+    expect(terminalDot?.getAttribute('fill')).toBe('#2d62ed')
+  })
+})

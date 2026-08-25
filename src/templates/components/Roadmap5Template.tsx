@@ -1,8 +1,11 @@
-import { TITLE_COLOR } from '../../lib/theme'
+import { MIGSO_PALETTE } from '../../lib/theme'
 import { useEffect, useMemo, useRef, type ReactElement } from 'react'
 import type { RoadmapData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
+import * as LucideIcons from 'lucide-react'
 
 interface Rect {
   x: number
@@ -11,220 +14,561 @@ interface Rect {
   height: number
 }
 
-// Design from PDF Page 140:
-// Large green circle "START" on left, horizontal timeline, 4 milestones alternating above/below.
-// Each milestone is anchored to a specific x position on the timeline.
-// The year label comes from ms.date (or fallback 2019/2020/2021/2022).
-// 4 year dots at ms[0].date, ms[1].date, ms[2].date, ms[3].date positions.
+function getDynamicIcon(iconName?: string, size = 18, color = '#23255a'): ReactElement | null {
+  if (!iconName) return null
+  const clean = iconName.trim()
 
-const DEFAULT_DATES = ['2019', '2020', '2021', '2022']
-const POSITIONS_X = [320, 515, 710, 905]  // default x positions for 4 milestones
+  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
+  if (templateFn) return templateFn({ size, color })
+
+  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
+  const lucideRecord = LucideIcons as Record<string, unknown>
+  const LucideFn = (lucideRecord[pascalName] || lucideRecord[clean] || lucideRecord[clean.toUpperCase()]) as
+    | React.ComponentType<{ size?: number; color?: string }>
+    | undefined
+
+  if (LucideFn) {
+    return <LucideFn size={size} color={color} />
+  }
+
+  return null
+}
+
+function getNextDate(dateStr?: string, fallbackYear = 2022): string {
+  if (!dateStr) return String(fallbackYear)
+  const trimmed = dateStr.trim()
+  const num = Number(trimmed)
+  if (!isNaN(num)) {
+    return String(num + 1)
+  }
+  const match = /(\d+)$/.exec(trimmed)
+  if (match && match[1]) {
+    const nextNum = Number(match[1]) + 1
+    return trimmed.slice(0, match.index) + String(nextNum)
+  }
+  return String(fallbackYear)
+}
+
+const DEFAULT_PALETTE = ['#4cbfa0', '#23255a', '#23255a', '#2d62ed', '#2d62ed', ...MIGSO_PALETTE]
 
 export function Roadmap5Template({ data }: { data: RoadmapData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
-  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const tplColors = useTemplateStore(s => s.templateElementColors)
-  const pos = useTemplateStore(s => s.templateElementPositions)
-  const moveEl = useTemplateStore(s => s.moveTemplateElement)
-  const resizeEl = useTemplateStore(s => s.resizeTemplateElement)
+  const selectedIds = useTemplateStore(state => state.selectedTemplateElementIds)
+  const templateColors = useTemplateStore(state => state.templateElementColors)
+  const templateStrokeColors = useTemplateStore(state => state.templateStrokeColors)
+  const templateStrokeWidths = useTemplateStore(state => state.templateStrokeWidths)
+  const positions = useTemplateStore(state => state.templateElementPositions)
+  const moveElement = useTemplateStore(state => state.moveTemplateElement)
+  const resizeElement = useTemplateStore(state => state.resizeTemplateElement)
 
-  const { title, milestones } = data
-  const W = 1000
+  const {
+    milestones = [],
+    quarters,
+    startLabel = 'START',
+    current,
+    trackColor,
+    trackBgColor,
+    progress,
+    progressColor,
+  } = data
 
-  // Take the first 4 milestones (the design has 4 slots)
-  const slots = useMemo(() => {
-    return Array.from({ length: 4 }, (_, i) => ({
-      ms: milestones[i] || null,
-      date: milestones[i]?.date ?? DEFAULT_DATES[i]!,
-      x: POSITIONS_X[i]!,
-    }))
-  }, [milestones])
+  // Timeline years / quarters (same logic as Roadmap 3)
+  const years = useMemo(() => {
+    if (quarters && quarters.length > 0) {
+      return quarters.map(q => q.label.trim())
+    }
+    const dates = milestones
+      .map(m => m.date?.trim())
+      .filter((d): d is string => Boolean(d))
 
-  const timelineY = 520
-  const startCircleX = 125
-  const startCircleR = 50
+    if (dates.length > 0) {
+      const last = dates[dates.length - 1]!
+      const next = getNextDate(last, 2022)
+      return [...dates, next]
+    }
+    return ['2019', '2020', '2021', '2022']
+  }, [quarters, milestones])
+
+  const totalDots = Math.max(1, years.length)
+  const N = Math.max(1, milestones.length)
+
+  // Pinning milestones to year dots (like Roadmap 3)
+  const findYearIdx = (dateStr: string | undefined, fallbackIdx: number): number => {
+    if (!dateStr) return fallbackIdx
+    const idx = years.indexOf(dateStr.trim())
+    return idx >= 0 ? idx : fallbackIdx
+  }
+
+  const pinIndices = useMemo(() => {
+    return milestones.map((ms, i) => {
+      if (i === 0 && !ms.date) return -1 // -1 means attached to START badge
+      return findYearIdx(ms.date, Math.min(i - 1, totalDots - 1))
+    })
+  }, [milestones, years, totalDots])
+
+  // Current Step calculation: determines which stage is active/current
+  const currentStepIdx = useMemo(() => {
+    // 1. Explicit current in data: e.g. "current 2020" or "current 2" or "current Milestone 03"
+    if (current) {
+      const trimmed = current.trim()
+      const yrIdx = years.indexOf(trimmed)
+      if (yrIdx >= 0) return yrIdx
+
+      const num = Number(trimmed)
+      if (!isNaN(num) && num >= 1 && num <= totalDots) {
+        return num - 1
+      }
+
+      const msMatch = milestones.findIndex(m => m.title.toLowerCase() === trimmed.toLowerCase())
+      if (msMatch >= 0 && pinIndices[msMatch] !== undefined && pinIndices[msMatch]! >= 0) {
+        return pinIndices[msMatch]!
+      }
+    }
+
+    // 2. Explicit milestone marked with current: true or status: 'current'
+    const currentMsIdx = milestones.findIndex(m => m.current || m.status === 'current')
+    if (currentMsIdx >= 0 && pinIndices[currentMsIdx] !== undefined && pinIndices[currentMsIdx]! >= 0) {
+      return pinIndices[currentMsIdx]!
+    }
+
+    // 3. Explicit progress e.g. "progress 2020" or "progress 2"
+    if (progress) {
+      const yrIdx = years.indexOf(progress.trim())
+      if (yrIdx >= 0) return yrIdx
+      const num = Number(progress.trim())
+      if (!isNaN(num) && num >= 1 && num <= totalDots) return num - 1
+    }
+
+    // 4. Default: active up to 2020 or the 2nd dot (index 1)
+    const default2020Idx = years.indexOf('2020')
+    if (default2020Idx >= 0) return default2020Idx
+
+    const validPins = pinIndices.filter(idx => idx >= 0)
+    if (validPins.length > 1) {
+      return validPins[Math.min(1, validPins.length - 1)]!
+    }
+    return Math.max(0, Math.min(1, totalDots - 2))
+  }, [current, progress, milestones, pinIndices, years, totalDots])
+
+  // Helper to get the color for an empty quarter (inherits from the milestone just before)
+  const getMilestoneColorForDot = (dotIdx: number): string => {
+    // Direct match at dotIdx
+    const matchedMsIdx = pinIndices.indexOf(dotIdx)
+    if (matchedMsIdx >= 0) {
+      const ms = milestones[matchedMsIdx]
+      return (
+        ms?.color ||
+        (dotIdx <= currentStepIdx ? '#23255a' : '#2d62ed')
+      )
+    }
+
+    // Empty quarter: look for previous milestone on the timeline
+    for (let prev = dotIdx - 1; prev >= 0; prev--) {
+      const prevMsIdx = pinIndices.indexOf(prev)
+      if (prevMsIdx >= 0) {
+        const ms = milestones[prevMsIdx]
+        return (
+          ms?.color ||
+          (dotIdx <= currentStepIdx ? '#23255a' : '#2d62ed')
+        )
+      }
+    }
+
+    // Fallback to Milestone 0 (START badge)
+    return (
+      milestones[0]?.color ||
+      (dotIdx <= currentStepIdx ? '#23255a' : '#2d62ed')
+    )
+  }
+
+  const timelineY = 290
+  const startCircleX = 100
+  const startCircleR = 52
 
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
-    map.set('main-title', { x: 45, y: 40, width: 350, height: 60 })
-    map.set('start-badge', { x: startCircleX - startCircleR, y: timelineY - startCircleR, width: 100, height: 100 })
 
-    // Cards: ms[0] top-left, ms[1] bottom, ms[2] top, ms[3] bottom
-    map.set('card-0', { x: slots[0]!.x - 125, y: 220, width: 250, height: 120 })
-    map.set('card-1', { x: slots[1]!.x - 125, y: 650, width: 250, height: 120 })
-    map.set('card-2', { x: slots[2]!.x - 125, y: 220, width: 250, height: 120 })
-    map.set('card-3', { x: slots[3]!.x - 125, y: 650, width: 250, height: 120 })
+    // START Badge
+    map.set('start-badge', {
+      x: startCircleX - startCircleR,
+      y: timelineY - startCircleR,
+      width: startCircleR * 2,
+      height: startCircleR * 2,
+    })
 
-    // Year labels
-    slots.forEach((slot, i) => {
-      const above = i % 2 === 0 // slots 0,2 above; slots 1,3 below
-      map.set(`year-${i}`, {
-        x: slot.x - 30,
-        y: above ? timelineY - 40 : timelineY + 15,
-        width: 60,
-        height: 30,
+    const cardWidth = 230
+    const cardHeight = 120
+    const startX = 310
+    const endX = 930
+    const stepX = totalDots > 1 ? (endX - startX) / (totalDots - 1) : 0
+
+    // Year Dots on the timeline
+    years.forEach((_, idx) => {
+      const slotX = totalDots > 1 ? startX + idx * stepX : (startX + endX) / 2
+      const isOdd = (idx + 1) % 2 !== 0
+
+      map.set(`dot-${idx}`, {
+        x: slotX - 9,
+        y: timelineY - 9,
+        width: 18,
+        height: 18,
+      })
+
+      const yearY = isOdd ? timelineY - 42 : timelineY + 16
+      map.set(`year-${idx}`, {
+        x: slotX - 45,
+        y: yearY,
+        width: 90,
+        height: 28,
       })
     })
 
-    return map
-  }, [slots])
+    // Milestone Cards
+    milestones.forEach((_, i) => {
+      const pinIdx = pinIndices[i]!
+      if (pinIdx === -1) {
+        map.set(`card-${i}`, {
+          x: startCircleX + 16,
+          y: 35,
+          width: cardWidth,
+          height: cardHeight,
+        })
+      } else {
+        const slotX = totalDots > 1 ? startX + pinIdx * stepX : (startX + endX) / 2
+        const isAbove = i % 2 === 0
+        const cardY = isAbove ? 35 : timelineY + 50
 
+        map.set(`card-${i}`, {
+          x: slotX + 16,
+          y: cardY,
+          width: cardWidth,
+          height: cardHeight,
+        })
+      }
+    })
+
+    return map
+  }, [milestones, years, pinIndices, totalDots, startCircleX, startCircleR, timelineY])
+
+  // Synchronisation avec le store Zustand
+  const prevCountRef = useRef({ N, totalDots })
   useEffect(() => {
+    const countChanged = prevCountRef.current.N !== N || prevCountRef.current.totalDots !== totalDots
+    prevCountRef.current = { N, totalDots }
+
     for (const [id, rect] of defaultPositions.entries()) {
-      if (!pos[id]) {
-        moveEl(id, { x: rect.x, y: rect.y })
-        resizeEl(id, { width: rect.width, height: rect.height })
+      if (countChanged || !positions[id]) {
+        moveElement(id, { x: rect.x, y: rect.y })
+        resizeElement(id, { width: rect.width, height: rect.height })
       }
     }
-  }, [defaultPositions, pos, moveEl, resizeEl])
+  }, [N, totalDots, defaultPositions, positions, moveElement, resizeElement])
 
-  const getR = (id: string): Rect => {
-    const p = pos[id]
-    const d = defaultPositions.get(id) || { x: 0, y: 0, width: 100, height: 50 }
+  const getElementRect = (id: string): Rect => {
+    const stored = positions[id]
+    const defaultRect = defaultPositions.get(id) || { x: 0, y: 0, width: 100, height: 50 }
     return {
-      x: p?.x ?? d.x,
-      y: p?.y ?? d.y,
-      width: p?.width || d.width,
-      height: p?.height || d.height,
+      x: stored?.x ?? defaultRect.x,
+      y: stored?.y ?? defaultRect.y,
+      width: stored?.width || defaultRect.width,
+      height: stored?.height || defaultRect.height,
     }
   }
 
-  const titleR = getR('main-title')
-  const startR = getR('start-badge')
+  const startBadgeRect = getElementRect('start-badge')
+  const startColor = templateColors['start-badge'] || milestones[0]?.color || '#4cbfa0'
 
-  // Colors for stems & dots
-  const stemColors = ['#4cbfa0', '#23255a', '#23255a', '#2d62ed']
-  const dotColors  = ['#23255a', '#23255a', '#2d62ed', '#2d62ed']
+  const inactiveTrackColor =
+    templateColors['timeline-track-light'] ||
+    trackBgColor ||
+    '#d9dee4'
 
   return (
     <g ref={svgRef}>
-      {/* Title */}
-      {title && (
-        <g data-element-id="main-title" onMouseDown={e => startDrag(e, 'main-title', titleR)} transform={getTransform('main-title', titleR)} style={{ cursor: 'pointer' }}>
-          <text
-            x={W / 2}
-            y={48}
-            textAnchor="middle"
-            fontFamily="Arial, sans-serif"
-            fontSize={22}
-            fontWeight={700}
-            fill={tplColors['main-title'] || TITLE_COLOR}
-          >
-            {title}
-          </text>
-          {selectedIds.has('main-title') && renderHandles(titleR, 'main-title')}
-        </g>
-      )}
+      {/* Horizontal Timeline Track: Segment 0 from START to first Dot */}
+      {totalDots > 0 && (() => {
+        const firstDotRect = getElementRect('dot-0')
+        const firstDotCenterX = firstDotRect.x + firstDotRect.width / 2
+        const isCompleted = currentStepIdx >= 0
+        const seg0Color = isCompleted
+          ? templateColors['seg-start'] ||
+            trackColor ||
+            progressColor ||
+            milestones[0]?.color ||
+            '#4cbfa0'
+          : inactiveTrackColor
 
-      {/* Horizontal Timeline Lines */}
-      {/* Dark Navy line from START to slot[1].x (pivot) */}
-      <line x1={startR.x + startR.width} y1={startR.y + startR.height / 2} x2={slots[1]!.x} y2={timelineY} stroke="#23255a" strokeWidth={5} />
-      {/* Light Grey line from slot[1].x to end */}
-      <line x1={slots[1]!.x} y1={timelineY} x2={slots[3]!.x + 50} y2={timelineY} stroke="#e0e0e0" strokeWidth={5} />
-
-      {/* Vertical Stems (slot 0: up from start, others up or down alternately) */}
-      {slots.map((slot, i) => {
-        const cardR = getR(`card-${i}`)
-        const above = i % 2 === 0
-        const color = tplColors[`stem-${i}`] ?? stemColors[i]!
-
-        if (i === 0) {
-          // Stem from START circle top to card bottom
-          return (
-            <line
-              key={`stem-${i}`}
-              x1={cardR.x + cardR.width / 2}
-              y1={cardR.y + cardR.height}
-              x2={startR.x + startR.width / 2}
-              y2={startR.y}
-              stroke={color}
-              strokeWidth={4}
-            />
-          )
-        }
-        if (above) {
-          // Stem goes up from timeline to card bottom
-          return (
-            <line
-              key={`stem-${i}`}
-              x1={cardR.x + cardR.width / 2}
-              y1={cardR.y + cardR.height}
-              x2={slot.x}
-              y2={timelineY}
-              stroke={color}
-              strokeWidth={4}
-            />
-          )
-        }
-        // Stem goes down from timeline to card top
         return (
           <line
-            key={`stem-${i}`}
-            x1={cardR.x + cardR.width / 2}
-            y1={cardR.y}
-            x2={slot.x}
-            y2={timelineY}
-            stroke={color}
+            key="seg-start"
+            x1={startBadgeRect.x + startBadgeRect.width}
+            y1={startBadgeRect.y + startBadgeRect.height / 2}
+            x2={firstDotCenterX}
+            y2={startBadgeRect.y + startBadgeRect.height / 2}
+            stroke={seg0Color}
+            strokeWidth={templateStrokeWidths['timeline-track'] || 4.5}
+          />
+        )
+      })()}
+
+      {/* Horizontal Timeline Track: Segments between Dots (colored starting from dot-i) */}
+      {Array.from({ length: Math.max(0, totalDots - 1) }, (_, i) => {
+        const dotFromRect = getElementRect(`dot-${i}`)
+        const dotToRect = getElementRect(`dot-${i + 1}`)
+        const fromX = dotFromRect.x + dotFromRect.width / 2
+        const toX = dotToRect.x + dotToRect.width / 2
+        const lineY = startBadgeRect.y + startBadgeRect.height / 2
+
+        // Completed starting from dot-i towards dot-(i+1) if origin i < currentStepIdx
+        const isCompleted = i < currentStepIdx
+        const dotIColor = getMilestoneColorForDot(i)
+
+        const activeColor =
+          templateColors[`seg-${i}`] ||
+          trackColor ||
+          progressColor ||
+          dotIColor
+
+        const segColor = isCompleted ? activeColor : inactiveTrackColor
+
+        return (
+          <line
+            key={`seg-${i}`}
+            x1={fromX}
+            y1={lineY}
+            x2={toX}
+            y2={lineY}
+            stroke={segColor}
+            strokeWidth={templateStrokeWidths['timeline-track'] || 4.5}
+          />
+        )
+      })}
+
+      {/* Vertical Stems for Milestones */}
+      {milestones.map((milestone, index) => {
+        const pinIdx = pinIndices[index]!
+        const isPastOrCurrent = pinIdx <= currentStepIdx
+        const defaultColor = isPastOrCurrent ? '#23255a' : '#2d62ed'
+
+        const stemColor =
+          templateColors[`stem-${index}`] ||
+          templateColors[`card-${index}`] ||
+          milestone.color ||
+          (index === 0 ? '#4cbfa0' : defaultColor)
+
+        if (pinIdx === -1) {
+          // Green stem going straight up from top of START circle
+          const stemX = startBadgeRect.x + startBadgeRect.width / 2
+          return (
+            <line
+              key={`stem-${index}`}
+              x1={stemX}
+              y1={startBadgeRect.y}
+              x2={stemX}
+              y2={0}
+              stroke={stemColor}
+              strokeWidth={4}
+            />
+          )
+        }
+
+        const isAbove = index % 2 === 0
+        const dotRect = getElementRect(`dot-${pinIdx}`)
+        const dotCenterX = dotRect.x + dotRect.width / 2
+        const dotCenterY = dotRect.y + dotRect.height / 2
+        const stemEndY = isAbove ? 0 : 580
+
+        return (
+          <line
+            key={`stem-${index}`}
+            x1={dotCenterX}
+            y1={dotCenterY}
+            x2={dotCenterX}
+            y2={stemEndY}
+            stroke={stemColor}
             strokeWidth={4}
           />
         )
       })}
 
-      {/* Year Dots */}
-      {slots.map((slot, i) => (
+      {/* START Badge (Circle on Timeline) */}
+      <g
+        data-element-id="start-badge"
+        onMouseDown={event => startDrag(event, 'start-badge', startBadgeRect)}
+        transform={getTransform('start-badge', startBadgeRect)}
+        style={{ cursor: 'pointer' }}
+      >
         <circle
-          key={`dot-${i}`}
-          cx={slot.x}
-          cy={timelineY}
-          r={8}
-          fill={tplColors[`dot-${i}`] ?? dotColors[i]!}
+          cx={startBadgeRect.x + startBadgeRect.width / 2}
+          cy={startBadgeRect.y + startBadgeRect.height / 2}
+          r={Math.min(startBadgeRect.width, startBadgeRect.height) / 2}
+          fill={startColor}
+          stroke={templateStrokeColors['start-badge'] || '#ffffff'}
+          strokeWidth={templateStrokeWidths['start-badge'] || 0}
         />
-      ))}
+        <text
+          x={startBadgeRect.x + startBadgeRect.width / 2}
+          y={startBadgeRect.y + startBadgeRect.height / 2 + 7}
+          textAnchor="middle"
+          fontFamily="Arial, sans-serif"
+          fontSize={20}
+          fontWeight="bold"
+          fill="#ffffff"
+        >
+          {startLabel}
+        </text>
+        {selectedIds.has('start-badge') && renderHandles(startBadgeRect, 'start-badge')}
+      </g>
 
-      {/* Year Text Labels */}
-      {slots.map((slot, i) => {
-        const yrR = getR(`year-${i}`)
-        const above = i % 2 === 0
-        const yPos = above ? timelineY - 15 : timelineY + 32
+      {/* Timeline Dots */}
+      {years.map((_, dotIdx) => {
+        const dotRect = getElementRect(`dot-${dotIdx}`)
+        const matchedMsIdx = pinIndices.indexOf(dotIdx)
+        const dotColor =
+          templateColors[`dot-${dotIdx}`] ||
+          (matchedMsIdx >= 0 ? templateColors[`card-${matchedMsIdx}`] : undefined) ||
+          getMilestoneColorForDot(dotIdx)
+
+        const dotRadius = Math.min(dotRect.width, dotRect.height) / 2
+
         return (
-          <g data-element-id={`year-${i}`} key={`year-${i}`} onMouseDown={e => startDrag(e, `year-${i}`, yrR)} transform={getTransform(`year-${i}`, yrR)} style={{ cursor: 'pointer' }}>
-            <text
-              x={slot.x}
-              y={yPos}
-              textAnchor="middle"
-              fontFamily="Arial, sans-serif"
-              fontSize={22}
-              fontWeight="bold"
-              fill={dotColors[i]!}
-            >
-              {slot.date}
-            </text>
-            {selectedIds.has(`year-${i}`) && renderHandles(yrR, `year-${i}`)}
+          <g
+            key={`dot-${dotIdx}`}
+            data-element-id={`dot-${dotIdx}`}
+            onMouseDown={event => startDrag(event, `dot-${dotIdx}`, dotRect)}
+            transform={getTransform(`dot-${dotIdx}`, dotRect)}
+            style={{ cursor: 'pointer' }}
+          >
+            <circle
+              cx={dotRect.x + dotRect.width / 2}
+              cy={dotRect.y + dotRect.height / 2}
+              r={dotRadius}
+              fill={dotColor}
+            />
+            {selectedIds.has(`dot-${dotIdx}`) && renderHandles(dotRect, `dot-${dotIdx}`)}
           </g>
         )
       })}
 
-      {/* START Badge (Large Green Circle) */}
-      <g data-element-id="start-badge" onMouseDown={e => startDrag(e, 'start-badge', startR)} transform={getTransform('start-badge', startR)} style={{ cursor: 'pointer' }}>
-        <circle cx={startCircleX} cy={timelineY} r={startCircleR} fill={tplColors['start-badge'] || '#4cbfa0'} />
-        <text x={startCircleX} y={timelineY + 8} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={22} fontWeight="bold" fill="#ffffff">START</text>
-        {selectedIds.has('start-badge') && renderHandles(startR, 'start-badge')}
-      </g>
+      {/* Year / Date Text Labels */}
+      {years.map((yearLabel, dotIdx) => {
+        const yearRect = getElementRect(`year-${dotIdx}`)
+        const matchedMsIdx = pinIndices.indexOf(dotIdx)
+        const dateColor =
+          templateColors[`year-${dotIdx}`] ||
+          (matchedMsIdx >= 0 ? templateColors[`card-${matchedMsIdx}`] : undefined) ||
+          getMilestoneColorForDot(dotIdx)
 
-      {/* Milestone Cards */}
-      {slots.map((slot, i) => {
-        const cardR = getR(`card-${i}`)
-        const ms = slot.ms
-        const title_ = ms?.title ?? `Milestone 0${i + 1}`
-        const subtitle_ = ms?.subtitle ?? 'Content and description to be\nadded here as required'
         return (
-          <g data-element-id={`card-${i}`} key={`card-${i}`} onMouseDown={e => startDrag(e, `card-${i}`, cardR)} transform={getTransform(`card-${i}`, cardR)} style={{ cursor: 'pointer' }}>
-            <text x={cardR.x} y={cardR.y + 25} fontFamily="Arial, sans-serif" fontSize={22} fontWeight="bold" fill="#23255a">{title_}</text>
-            {subtitle_.split('\n').map((line: string, li: number) => (
-              <text key={li} x={cardR.x} y={cardR.y + 55 + li * 24} fontFamily="Arial, sans-serif" fontSize={14} fill="#555555">{line}</text>
-            ))}
-            {selectedIds.has(`card-${i}`) && renderHandles(cardR, `card-${i}`)}
+          <g
+            key={`year-${dotIdx}`}
+            data-element-id={`year-${dotIdx}`}
+            onMouseDown={event => startDrag(event, `year-${dotIdx}`, yearRect)}
+            transform={getTransform(`year-${dotIdx}`, yearRect)}
+            style={{ cursor: 'pointer' }}
+          >
+            <text
+              x={yearRect.x + yearRect.width / 2}
+              y={yearRect.y + yearRect.height / 2 + 7}
+              textAnchor="middle"
+              fontFamily="Arial, sans-serif"
+              fontSize={22}
+              fontWeight="bold"
+              fill={dateColor}
+            >
+              {yearLabel}
+            </text>
+            {selectedIds.has(`year-${dotIdx}`) && renderHandles(yearRect, `year-${dotIdx}`)}
+          </g>
+        )
+      })}
+
+      {/* Milestone Texts (Title & Subtitle directly next to stems) */}
+      {milestones.map((milestone, index) => {
+        const cardId = `card-${index}`
+        const cardRect = getElementRect(cardId)
+        const isSelected = selectedIds.has(cardId)
+
+        const pinIdx = pinIndices[index]!
+        const isPastOrCurrent = pinIdx <= currentStepIdx
+        const defaultTitleColor = isPastOrCurrent ? '#23255a' : '#23255a'
+
+        const titleColor = templateColors[cardId] || milestone.color || defaultTitleColor
+        const subtitleColor = templateColors[`subtitle-${index}`] || '#23255a'
+
+        const maxTitleChars = Math.max(8, Math.floor(cardRect.width / 11))
+        const titleLines = wrapTextByWidth(milestone.title || `Milestone 0${index + 1}`, maxTitleChars)
+
+        const maxSubtitleChars = Math.max(10, Math.floor(cardRect.width / 7.2))
+        const subtitleLines = milestone.subtitle
+          ? wrapTextByWidth(milestone.subtitle, maxSubtitleChars)
+          : ['MIGSO-PCUBED content and words to', 'be added here as required']
+
+        const iconElement = getDynamicIcon(milestone.icon, 20, titleColor)
+        const iconOffset = iconElement ? 24 : 0
+
+        const titleLineHeight = 24
+        const subtitleLineHeight = 18
+        const titleTotalHeight = titleLines.length * titleLineHeight
+        const subtitleTotalHeight = subtitleLines.length * subtitleLineHeight
+        const neededHeight = Math.max(cardRect.height, titleTotalHeight + subtitleTotalHeight + 20)
+
+        const effectiveCardRect: Rect = {
+          ...cardRect,
+          height: neededHeight,
+        }
+
+        return (
+          <g
+            key={cardId}
+            data-element-id={cardId}
+            onMouseDown={event => startDrag(event, cardId, effectiveCardRect)}
+            transform={getTransform(cardId, effectiveCardRect)}
+            style={{ cursor: 'pointer' }}
+          >
+            {/* Title */}
+            <g transform={`translate(${effectiveCardRect.x}, ${effectiveCardRect.y + 20})`}>
+              {iconElement && (
+                <g transform="translate(0, -16)">
+                  {iconElement}
+                </g>
+              )}
+              <text
+                x={iconOffset}
+                y={0}
+                fontFamily="Arial, sans-serif"
+                fontSize={20}
+                fontWeight="bold"
+                fill={titleColor}
+              >
+                {titleLines.map((line, lIdx) => (
+                  <tspan key={lIdx} x={iconOffset} dy={lIdx === 0 ? 0 : titleLineHeight}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+            </g>
+
+            {/* Subtitle */}
+            {subtitleLines.length > 0 && (
+              <text
+                x={effectiveCardRect.x}
+                y={effectiveCardRect.y + 20 + titleTotalHeight + 8}
+                fontFamily="Arial, sans-serif"
+                fontSize={13.5}
+                fill={subtitleColor}
+                opacity={0.88}
+              >
+                {subtitleLines.map((line, lIdx) => (
+                  <tspan key={lIdx} x={effectiveCardRect.x} dy={lIdx === 0 ? 0 : subtitleLineHeight}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+            )}
+
+            {isSelected && renderHandles(effectiveCardRect, cardId)}
           </g>
         )
       })}

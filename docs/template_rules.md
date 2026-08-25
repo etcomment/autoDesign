@@ -119,3 +119,16 @@ cartes, jalons, etc.).
 * **Sauts de ligne explicites** : Préserver aussi les `\n` explicites présents
   dans le contenu (le parser convertit `\n` en vrai saut de ligne via
   `stripQuotes`).
+
+### 6.2 Accrochage Temporel & Quarters (`quarters`, `date:`)
+
+* **Axe temporel unifié** : Les templates de type Roadmap (`Roadmap 3`, `Roadmap 5`, etc.) utilisent la directive `quarters <an1> <an2> ...` pour définir les points d'ancrage de la timeline.
+* **Déduction automatique** : Si `quarters` n'est pas fourni, le template déduit dynamiquement la liste des dates depuis les attributs `date:` des jalons (+ l'étape terminale).
+* **Accrochage par `date:`** : Chaque jalon avec `date:<année>` vient se positionner et s'accrocher au point d'année correspondant. Le jalon sans `date:` s'accroche au marqueur `START`.
+
+### 6.3 Progression & Coloration des Segments (`progress`, `current`, `track`)
+
+* **Étape actuelle** : La directive `progress <année|index>` ou `current <année>` définit jusqu'où la timeline est avancée.
+* **Segments dynamiques** : Les segments horizontaux de la timeline s'activent et héritent de la couleur du jalon d'origine de chaque segment (ou de `track`). Les segments futurs restent en gris clair inactif (`#d9dee4`).
+* **Héritage sur quarters vides** : Les points/quarters sans jalon propre héritent automatiquement de la couleur du jalon qui les précède.
+

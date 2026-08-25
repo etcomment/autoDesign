@@ -16,6 +16,8 @@ export interface TemplateMilestone {
   icon?: string
   value?: string
   percent?: string
+  current?: boolean
+  status?: 'done' | 'current' | 'future'
 }
 
 export interface TemplateElementStyle {
@@ -47,7 +49,12 @@ export interface RoadmapData {
   lanes?: TemplateLane[]
   startLabel?: string
   finishLabel?: string
+  current?: string
   progress?: string
+  progressColor?: string
+  trackColor?: string
+  trackBgColor?: string
+  color?: string
   defaultStyle?: TemplateElementStyle
 }
 

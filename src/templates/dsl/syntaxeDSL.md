@@ -46,9 +46,9 @@ Ce document constitue la **source officielle et unique de la syntaxe DSL** pour 
 @roadmap "Roadmap Stratégique 2026"
   start "DÉBUT"
   finish "LIVRAISON"
-  milestone "Alpha Release" "Tests internes" date:2024 icon:"flask" #3b82f6
-  milestone "Beta Launch" "Accès anticipé" date:2025 icon:"users" #8b5cf6
-  milestone "GA Release" "Disponibilité générale" date:2026 icon:"rocket" #10b981
+  milestone "Alpha Release" "Tests internes" val:"STEP 1" date:2024 icon:"flask" #3b82f6
+  milestone "Beta Launch" "Accès anticipé" val:"STEP 2" date:2025 icon:"users" #8b5cf6
+  milestone "GA Release" "Disponibilité générale" val:"STEP 3" date:2026 icon:"rocket" #10b981
 ```
 
 #### Roadmap 2 — Timeline 10 points (dates par jalon)
@@ -91,15 +91,25 @@ Ce document constitue la **source officielle et unique de la syntaxe DSL** pour 
   milestone:Q4 "GA Release" "General availability"
 ```
 
-#### Roadmap 5 — 4 jalons alternés (haut/bas) avec dates
+#### Roadmap 5 — Timeline alternée avec années (`quarters`), progression (`progress`) & jalons positionnés (`date:`)
 
 ```dsl
 @roadmap5
-  milestone "Discovery" "Understanding user needs" date:2024
-  milestone "Prototyping" "Building rapid prototypes" date:2025
-  milestone "Development" "Engineering core modules" date:2026
-  milestone "Release" "Production deployment" date:2027
+  start "START"
+  quarters 2019 2020 2021 2022
+  progress 2020
+  track #23255a #d9dee4
+  milestone "Milestone 01" "MIGSO-PCUBED content and words to be added here as required" #4cbfa0
+  milestone "Milestone 02" "MIGSO-PCUBED content and words to be added here as required" date:2019 #23255a
+  milestone "Milestone 03" "MIGSO-PCUBED content and words to be added here as required" date:2020 #23255a
+  milestone "Milestone 04" "MIGSO-PCUBED content and words to be added here as required" date:2021 #2d62ed
 ```
+
+> - `progress <année|index>` : indique jusqu'où la timeline est avancée / l'étape actuelle (ex: `progress 2020` ou `progress 2`). Le segment actif (bleu nuit) s'étend jusqu'à ce point et bascule en gris clair pour la suite.
+> - `quarters <an1> <an2> ...` : définit l'axe des années sur la timeline.
+> - `date:<année>` : détermine à quelle année/point de la timeline chaque jalon vient **s'accrocher** (comme pour `@roadmap3`).
+> - Le premier jalon sans `date:` s'accroche directement au sommet du cercle `START`.
+> - `track #couleurActive #couleurFond` : personnalise les couleurs des segments actif et inactif.
 
 #### Roadmap 6 — Ruban de chevrons groupés par période
 

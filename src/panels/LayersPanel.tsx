@@ -31,26 +31,52 @@ function getTemplateSubElements(templateData: any, templateElementPositions: Rec
     add('title', `Titre: "${typeof templateData.title === 'string' ? templateData.title : 'Titre'}"`)
   }
 
-  const collections = ['milestones', 'items', 'pieces', 'steps', 'phases', 'branches', 'nodes', 'cards', 'blocks']
-  for (const colKey of collections) {
-    if (Array.isArray(templateData[colKey])) {
-      const arr = templateData[colKey]
-      const singular = colKey.endsWith('s') ? colKey.slice(0, -1) : colKey
-      arr.forEach((item: any, i: number) => {
-        const id = `${singular}-${i}`
-        const rawTitle = typeof item === 'string' ? item : (item?.title || item?.name || item?.text || item?.label)
-        const titleStr = rawTitle ? `"${rawTitle}"` : `${i + 1}`
-        
-        const children: TemplateSubElement[] = []
-        for (const posId of Object.keys(templateElementPositions)) {
-          if (posId.endsWith(`-${i}`) && posId !== id) {
-            children.push({ id: posId, label: `Élément: ${posId.split('-')[0]}` })
-            seenIds.add(posId)
-          }
-        }
-        
-        add(id, `${singular.charAt(0).toUpperCase() + singular.slice(1)} ${i + 1}: ${titleStr}`, children.length > 0 ? children : undefined)
-      })
+  // Création des Groupes Virtuels par Bloc (ex: Groupe 1, Groupe 2...)
+  const stepsCount = Array.isArray(templateData.steps) ? templateData.steps.length : (Array.isArray(templateData.milestones) ? templateData.milestones.length : 0)
+  if (stepsCount > 0) {
+    for (let i = 0; i < stepsCount; i++) {
+      const idx = i + 1
+      const blockId = `block-${idx}`
+      const msItem = templateData.milestones?.[i]
+      const stepItem = templateData.steps?.[i]
+      const rawTitle = stepItem?.title || msItem?.quarter || msItem?.title || `Jalon ${idx}`
+
+      const groupChildren: TemplateSubElement[] = []
+      const stepSubChildren: TemplateSubElement[] = []
+
+      const msId = `milestone-${idx}`
+      const bodyId = `step-body-${idx}`
+      const arrowId = `step-arrow-${idx}`
+      const stepId = `step-${idx}`
+
+      if (templateElementPositions[msId]) {
+        groupChildren.push({ id: msId, label: `Titre / Description Jalon` })
+        seenIds.add(msId)
+      }
+
+      if (templateElementPositions[bodyId]) {
+        stepSubChildren.push({ id: bodyId, label: `Ruban segment` })
+        seenIds.add(bodyId)
+      }
+      if (templateElementPositions[arrowId]) {
+        stepSubChildren.push({ id: arrowId, label: `Flèche triangulaire` })
+        seenIds.add(arrowId)
+      }
+      if (templateElementPositions[stepId]) {
+        stepSubChildren.push({ id: stepId, label: `Code / Libellé étape` })
+        seenIds.add(stepId)
+      }
+
+      if (stepSubChildren.length > 0) {
+        groupChildren.push({
+          id: `step-group-${idx}`,
+          label: `Sous-groupe Ruban & Flèche`,
+          children: stepSubChildren,
+        })
+        seenIds.add(`step-group-${idx}`)
+      }
+
+      add(blockId, `Groupe ${idx} : "${rawTitle}"`, groupChildren.length > 0 ? groupChildren : undefined)
     }
   }
 
@@ -127,6 +153,39 @@ export function LayersPanel() {
   }
 
   const handleSelectSubElement = (subId: string, e: React.MouseEvent) => {
+    const templateSubElementsMap = new Map<string, TemplateSubElement>()
+    const findSub = (items: TemplateSubElement[]) => {
+      for (const item of items) {
+        templateSubElementsMap.set(item.id, item)
+        if (item.children) findSub(item.children)
+      }
+    }
+    findSub(templateSubElements)
+
+    const subItem = templateSubElementsMap.get(subId)
+    if (subItem && subItem.children && subItem.children.length > 0) {
+      // Sélection collective de tous les enfants du groupe virtuel
+      const childIds: string[] = []
+      const collectIds = (items: TemplateSubElement[]) => {
+        for (const it of items) {
+          if (!it.children || it.children.length === 0) {
+            childIds.push(it.id)
+          } else {
+            collectIds(it.children)
+          }
+        }
+      }
+      collectIds(subItem.children)
+
+      if (e.ctrlKey || e.metaKey) {
+        for (const cid of childIds) toggleTemplateElement(cid)
+      } else {
+        clearSelection()
+        for (const cid of childIds) toggleTemplateElement(cid)
+      }
+      return
+    }
+
     if (e.ctrlKey || e.metaKey) {
       toggleTemplateElement(subId)
     } else {
@@ -364,58 +423,60 @@ export function LayersPanel() {
 
                 {/* Render Template Child Sub-Elements */}
                 {isTemplate && isTemplateTreeExpanded && templateSubElements.map((subItem) => {
-                  const isSubSelected = selectedTemplateElementIds.has(subItem.id)
-                  const isSubHidden = hiddenTemplateElementIds.has(subItem.id)
+                  const isSubHidden = hiddenTemplateElementIds.has(subItem.id) || isTemplateHidden
 
-                  const renderSubItemRow = (item: TemplateSubElement, isChild = false) => {
+                  const renderSubItemRow = (item: TemplateSubElement, depth = 1) => {
                     const isSelected = selectedTemplateElementIds.has(item.id)
-                    const isHidden = hiddenTemplateElementIds.has(item.id) || (!isChild && isSubHidden) || isTemplateHidden
+                    const isHidden = hiddenTemplateElementIds.has(item.id) || isSubHidden
 
                     return (
-                      <div
-                        key={`sub-${item.id}`}
-                        onClick={(e) => handleSelectSubElement(item.id, e)}
-                        style={{
-                          ...styles.item,
-                          paddingLeft: isChild ? 42 : 28,
-                          backgroundColor: isSelected ? '#e3f2fd' : '#fafafa',
-                        }}
-                      >
-                        <div style={styles.itemContent}>
-                          <Square size={10} color={isChild ? "#a0a0a0" : "#757575"} style={{ flexShrink: 0 }} />
-                          <span
-                            style={{
-                              ...styles.itemLabel,
-                              fontSize: 11,
-                              opacity: isHidden ? 0.4 : 1,
-                              textDecoration: isHidden ? 'line-through' : 'none',
-                            }}
-                            title={item.label}
-                          >
-                            {item.label}
-                          </span>
+                      <React.Fragment key={`frag-${item.id}`}>
+                        <div
+                          onClick={(e) => handleSelectSubElement(item.id, e)}
+                          style={{
+                            ...styles.item,
+                            paddingLeft: 14 + depth * 14,
+                            backgroundColor: isSelected ? '#e3f2fd' : '#fafafa',
+                          }}
+                        >
+                          <div style={styles.itemContent}>
+                            <Square size={10} color={depth > 1 ? "#a0a0a0" : "#757575"} style={{ flexShrink: 0 }} />
+                            <span
+                              style={{
+                                ...styles.itemLabel,
+                                fontSize: 11,
+                                fontWeight: item.children ? 600 : 400,
+                                opacity: isHidden ? 0.4 : 1,
+                                textDecoration: isHidden ? 'line-through' : 'none',
+                              }}
+                              title={item.label}
+                            >
+                              {item.label}
+                            </span>
+                          </div>
+                          <div style={styles.actions}>
+                            <button
+                              type="button"
+                              style={styles.actionBtn}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleTemplateElementHidden(item.id)
+                              }}
+                              title={isHidden ? 'Afficher la sous-composante' : 'Masquer la sous-composante'}
+                            >
+                              {isHidden ? <EyeOff size={13} color="#888" /> : <Eye size={13} color="#555" />}
+                            </button>
+                          </div>
                         </div>
-                        <div style={styles.actions}>
-                          <button
-                            type="button"
-                            style={styles.actionBtn}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggleTemplateElementHidden(item.id)
-                            }}
-                            title={isHidden ? 'Afficher la sous-composante' : 'Masquer la sous-composante'}
-                          >
-                            {isHidden ? <EyeOff size={13} color="#888" /> : <Eye size={13} color="#555" />}
-                          </button>
-                        </div>
-                      </div>
+
+                        {item.children?.map(child => renderSubItemRow(child, depth + 1))}
+                      </React.Fragment>
                     )
                   }
 
                   return (
                     <React.Fragment key={`frag-${subItem.id}`}>
-                      {renderSubItemRow(subItem, false)}
-                      {subItem.children?.map(child => renderSubItemRow(child, true))}
+                      {renderSubItemRow(subItem, 1)}
                     </React.Fragment>
                   )
                 })}
