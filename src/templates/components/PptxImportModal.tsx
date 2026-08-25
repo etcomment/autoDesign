@@ -3,6 +3,7 @@ import { X, Check, FileUp, Sparkles, AlertCircle, RefreshCw } from 'lucide-react
 import { useTemplateStore } from '../store'
 import { PptxRenderer } from 'pptx-svg'
 import wasmUrl from 'pptx-svg/wasm?url'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 interface PptxImportModalProps {
   isOpen: boolean
@@ -29,6 +30,8 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
   const [isSuccess, setIsSuccess] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const isMobile = useIsMobile()
 
   if (!isOpen) return null
 
@@ -224,7 +227,7 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
           )}
 
           {file && !isLoading && previews.length > 0 && (
-            <div style={styles.gridContainer}>
+            <div style={isMobile ? styles.gridContainerMobile : styles.gridContainer}>
               <div style={styles.leftColumn}>
                 <div style={styles.formGroup}>
                   <label style={styles.label}>Diapositives Détectées ({previews.length})</label>
@@ -280,7 +283,7 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
                     </div>
                   )}
                 </div>
-                <div style={styles.canvasContainer}>
+                <div style={isMobile ? styles.canvasContainerMobile : styles.canvasContainer}>
                   {activePreview && (
                     <div 
                       dangerouslySetInnerHTML={{ __html: activePreview.svgString }} 
@@ -423,6 +426,11 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: '260px 1fr',
     gap: 24,
   },
+  gridContainerMobile: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 20,
+  },
   leftColumn: {
     display: 'flex',
     flexDirection: 'column',
@@ -517,6 +525,19 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     border: '1px solid #1e293b',
     padding: 16,
+    boxSizing: 'border-box',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  canvasContainerMobile: {
+    width: '100%',
+    height: 300,
+    backgroundColor: '#cbd5e1',
+    borderRadius: 12,
+    border: '1px solid #1e293b',
+    padding: 12,
     boxSizing: 'border-box',
     display: 'flex',
     alignItems: 'center',

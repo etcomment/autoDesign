@@ -1,12 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTemplateStore } from '../store'
 import { parseTemplateDsl } from '../dsl/parseTemplate'
+import { Collapsible } from '../../ui/Collapsible'
+import { Button } from '../../ui/Button'
+import { CodeEditor } from '../../ui/CodeEditor'
+import { theme } from '../../lib/theme'
+
+const LIVE_PREVIEW_DELAY_MS = 700
 
 export function TemplateDslEditor() {
+  return (
+    <Collapsible title="Template DSL">
+      <TemplateDslEditorBody />
+    </Collapsible>
+  )
+}
+
+export function TemplateDslEditorBody() {
   const selectTemplateWithData = useTemplateStore(s => s.selectTemplateWithData)
   const dslText = useTemplateStore(s => s.dslText)
-  const [collapsed, setCollapsed] = useState(true)
-  const [dsl, setDsl] = useState('')
+  const [dsl, setDsl] = useState(dslText)
+  const [livePreview, setLivePreview] = useState(false)
 
   useEffect(() => { setDsl(dslText) }, [dslText])
 
@@ -15,34 +29,82 @@ export function TemplateDslEditor() {
     if (data) selectTemplateWithData(data.type, data)
   }
 
+  useEffect(() => {
+    if (!livePreview || !dsl.trim()) return
+    const timer = setTimeout(() => {
+      const data = parseTemplateDsl(dsl)
+      if (!data) return
+      const state = useTemplateStore.getState()
+      if (state.activeTemplate !== data.type) {
+        state.selectTemplateWithData(data.type, data)
+      } else {
+        state.updateTemplateData(data)
+      }
+    }, LIVE_PREVIEW_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [dsl, livePreview])
+
   return (
-    <div style={styles.panel}>
-      <div style={{ ...styles.title, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }} onClick={() => setCollapsed(!collapsed)}>
-        <span>{collapsed ? '\u25B6' : '\u25BC'}</span>
-        Template DSL
+    <>
+      <CodeEditor
+        value={dsl}
+        onChange={setDsl}
+        language="templates"
+        placeholder="Cliquez sur un template pour générer le DSL..."
+        minHeight="180px"
+        maxHeight="360px"
+      />
+      <div style={styles.actions}>
+        <button
+          style={{ ...styles.liveButton, ...(livePreview ? styles.liveButtonActive : {}) }}
+          onClick={() => setLivePreview(!livePreview)}
+          title="Rendre automatiquement le template pendant la saisie"
+        >
+          <span style={{ ...styles.liveDot, ...(livePreview ? styles.liveDotActive : {}) }} />
+          Live
+        </button>
+        <Button size="sm" onClick={handleParse} disabled={!dsl.trim()}>
+          Parse & Render
+        </Button>
       </div>
-      {!collapsed && (
-        <>
-          <textarea
-            value={dsl}
-            onChange={e => setDsl(e.target.value)}
-            style={styles.textarea}
-            rows={8}
-            placeholder="Cliquez sur un template pour générer le DSL..."
-            spellCheck={false}
-          />
-          <button style={styles.button} onClick={handleParse}>
-            Parse & Render
-          </button>
-        </>
-      )}
-    </div>
+    </>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  panel: { padding: 8, borderTop: '1px solid #ddd', marginTop: 4 },
-  title: { fontSize: 13, fontWeight: 600, margin: '0 0 6px 0', color: '#333' },
-  textarea: { width: '100%', height: 120, padding: 6, border: '1px solid #ccc', borderRadius: 4, fontSize: 11, fontFamily: 'monospace', resize: 'vertical' as const, boxSizing: 'border-box' as const, marginBottom: 6, background: '#fafafa' },
-  button: { width: '100%', padding: '6px 0', borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: 'pointer', border: 'none', background: '#4a90d9', color: 'white' },
+  actions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
+  },
+  liveButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+    borderRadius: theme.radius.sm,
+    border: `1px solid ${theme.color.border}`,
+    background: theme.color.bgSurfaceHover,
+    color: theme.color.textSecondary,
+    fontSize: theme.font.sizeXs,
+    fontWeight: theme.font.weightMedium,
+    cursor: 'pointer',
+    transition: theme.transition.fast,
+  },
+  liveButtonActive: {
+    background: theme.color.accent,
+    borderColor: theme.color.accent,
+    color: theme.color.textOnPrimary,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: theme.radius.full,
+    background: theme.color.disabled,
+    transition: theme.transition.fast,
+  },
+  liveDotActive: {
+    background: theme.color.textOnPrimary,
+  },
 }

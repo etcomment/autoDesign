@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
 import { useTemplateStore } from '../templates/store'
-import { Undo2, Redo2, Trash2, MousePointer2, Download, Link2, ChevronsUp, ChevronUp, ChevronDown, ChevronsDown, Group, Ungroup, ChevronsLeft, ChevronsRight, Sparkles } from 'lucide-react'
+import { Undo2, Redo2, Trash2, MousePointer2, Download, Link2, ChevronsUp, ChevronUp, ChevronDown, ChevronsDown, Group, Ungroup, ChevronsLeft, ChevronsRight, Sparkles, Terminal } from 'lucide-react'
 import { downloadContentSvg } from '../export/generateSvg'
 import { downloadCanvasPptx } from '../export/generatePptx'
 import { generateCanvasPng, generateCanvasJpg, downloadBlob, copyCanvasToClipboard } from '../export/generateImage'
@@ -11,6 +11,8 @@ interface ToolbarProps {
   onToggleLeftSidebar?: () => void
   rightPanelCollapsed?: boolean
   onToggleRightSidebar?: () => void
+  codeDrawerOpen?: boolean
+  onToggleCodeDrawer?: () => void
   onOpenImportModal?: () => void
 }
 
@@ -19,6 +21,8 @@ export function Toolbar({
   onToggleLeftSidebar,
   rightPanelCollapsed = false,
   onToggleRightSidebar,
+  codeDrawerOpen = false,
+  onToggleCodeDrawer,
   onOpenImportModal,
 }: ToolbarProps) {
   const canUndo = useDiagramStore(s => s.canUndo)
@@ -51,6 +55,21 @@ export function Toolbar({
 
   const [exportOpen, setExportOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const exportButtonRef = useRef<HTMLButtonElement>(null)
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null)
+
+  const toggleExportMenu = () => {
+    if (exportOpen) {
+      setExportOpen(false)
+      return
+    }
+    const element = exportButtonRef.current
+    if (element) {
+      const rect = element.getBoundingClientRect()
+      setDropdownPosition({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    }
+    setExportOpen(true)
+  }
 
   const hasSelection = selectedShapeIds.size > 0
 
@@ -109,7 +128,7 @@ export function Toolbar({
   }
 
   return (
-    <div style={styles.bar}>
+    <div style={styles.bar} className="ad-toolbar-scroll">
       <button
         style={{
           ...styles.button,
@@ -239,14 +258,15 @@ export function Toolbar({
       <div style={styles.separator} />
       <div style={styles.dropdownContainer}>
         <button
+          ref={exportButtonRef}
           style={styles.button}
-          onClick={() => setExportOpen(!exportOpen)}
+          onClick={toggleExportMenu}
           title="Export"
         >
           <Download size={18} />
         </button>
-        {exportOpen && (
-          <div style={styles.dropdown}>
+        {exportOpen && dropdownPosition && (
+          <div style={{ ...styles.dropdown, position: 'fixed', top: dropdownPosition.top, right: dropdownPosition.right }}>
             <button style={styles.dropdownItem} onClick={handleExportSvg}>SVG</button>
             <button style={styles.dropdownItem} onClick={handleExportPng}>PNG</button>
             <button style={styles.dropdownItem} onClick={handleExportJpg}>JPG</button>
@@ -266,6 +286,17 @@ export function Toolbar({
       >
         <Sparkles size={16} />
         <span style={{ fontSize: 12, fontWeight: 600 }}>Importer PPTX</span>
+      </button>
+      <div style={styles.separator} />
+      <button
+        style={{
+          ...styles.button,
+          background: codeDrawerOpen ? '#4a90d9' : 'transparent',
+        }}
+        onClick={onToggleCodeDrawer}
+        title={codeDrawerOpen ? 'Masquer l\u2019éditeur de code' : 'Afficher l\u2019éditeur de code DSL'}
+      >
+        <Terminal size={18} />
       </button>
       <div style={styles.separator} />
       <button
@@ -293,6 +324,8 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#fff',
     gap: 4,
     flexShrink: 0,
+    overflowX: 'auto',
+    overflowY: 'hidden',
   },
   brand: {
     fontSize: 15,
@@ -328,8 +361,8 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'relative',
   },
   dropdown: {
-    position: 'absolute',
-    top: 36,
+    position: 'fixed',
+    top: 0,
     right: 0,
     background: '#333',
     borderRadius: 4,

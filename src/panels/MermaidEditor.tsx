@@ -1,10 +1,24 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
+import { Collapsible } from '../ui/Collapsible'
+import { Button } from '../ui/Button'
+import { CodeEditor } from '../ui/CodeEditor'
+import { theme } from '../lib/theme'
+
+const LIVE_PREVIEW_DELAY_MS = 700
 
 export function MermaidEditor() {
+  return (
+    <Collapsible title="Mermaid">
+      <MermaidEditorBody />
+    </Collapsible>
+  )
+}
+
+export function MermaidEditorBody() {
   const [dsl, setDsl] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [collapsed, setCollapsed] = useState(true)
+  const [livePreview, setLivePreview] = useState(false)
 
   const mergeMermaid = useDiagramStore(s => s.mergeMermaid)
 
@@ -18,98 +32,98 @@ export function MermaidEditor() {
     }
   }
 
+  useEffect(() => {
+    if (!livePreview || !dsl.trim()) return
+    const timer = setTimeout(() => {
+      try {
+        setError(null)
+        mergeMermaid(dsl)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Invalid Mermaid syntax')
+      }
+    }, LIVE_PREVIEW_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [dsl, livePreview, mergeMermaid])
+
   return (
-    <div style={styles.container}>
-      <button
-        style={styles.toggle}
-        onClick={() => setCollapsed(!collapsed)}
-      >
-        {collapsed ? '▶ Mermaid' : '▼ Mermaid'}
-      </button>
-      {!collapsed && (
-        <div style={styles.body}>
-          <textarea
-            style={styles.textarea}
-            value={dsl}
-            onChange={(e) => setDsl(e.target.value)}
-            placeholder={`graph TD\n  A[Start] --> B[End]`}
-            rows={6}
-          />
-          {error && <div style={styles.error}>{error}</div>}
-          <div style={styles.buttons}>
-            <button style={styles.importButton} onClick={handleImport}>
-              Import
-            </button>
-            <button
-              style={styles.clearButton}
-              onClick={() => { setDsl(''); setError(null) }}
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+    <>
+      <CodeEditor
+        value={dsl}
+        onChange={setDsl}
+        language="mermaid"
+        placeholder={`graph TD\n  A[Start] --> B[End]`}
+        minHeight="140px"
+        maxHeight="300px"
+      />
+      {error && <div style={styles.error}>{error}</div>}
+      <div style={styles.buttons}>
+        <button
+          style={{ ...styles.liveButton, ...(livePreview ? styles.liveButtonActive : {}) }}
+          onClick={() => setLivePreview(!livePreview)}
+          title="Appliquer automatiquement le diagramme pendant la saisie"
+        >
+          <span style={{ ...styles.liveDot, ...(livePreview ? styles.liveDotActive : {}) }} />
+          Live
+        </button>
+        <Button size="sm" onClick={handleImport} disabled={!dsl.trim()}>
+          Import
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => { setDsl(''); setError(null) }}
+          disabled={!dsl}
+        >
+          Clear
+        </Button>
+      </div>
+    </>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  container: {
-    borderBottom: '1px solid #ddd',
-    background: '#fafafa',
-  },
-  toggle: {
-    width: '100%',
-    padding: '6px 12px',
-    border: 'none',
-    background: 'transparent',
-    cursor: 'pointer',
-    textAlign: 'left',
-    fontSize: 12,
-    fontWeight: 600,
-    color: '#555',
-  },
-  body: {
-    padding: '0 12px 12px',
-  },
-  textarea: {
-    width: '100%',
-    padding: 8,
-    border: '1px solid #ddd',
-    borderRadius: 4,
-    fontFamily: 'monospace',
-    fontSize: 12,
-    resize: 'vertical',
-    boxSizing: 'border-box',
-  },
   error: {
-    color: '#d32f2f',
-    fontSize: 11,
-    marginTop: 4,
-    padding: '4px 8px',
-    background: '#fde',
-    borderRadius: 3,
+    color: theme.color.danger,
+    fontSize: theme.font.sizeXs,
+    marginTop: theme.spacing.xs,
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+    background: 'rgba(211, 47, 47, 0.08)',
+    borderRadius: theme.radius.sm,
+    marginBottom: theme.spacing.sm,
   },
   buttons: {
     display: 'flex',
-    gap: 8,
-    marginTop: 8,
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
   },
-  importButton: {
-    padding: '4px 12px',
-    border: 'none',
-    borderRadius: 4,
-    background: '#4a90d9',
-    color: 'white',
-    fontSize: 12,
+  liveButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+    borderRadius: theme.radius.sm,
+    border: `1px solid ${theme.color.border}`,
+    background: theme.color.bgSurfaceHover,
+    color: theme.color.textSecondary,
+    fontSize: theme.font.sizeXs,
+    fontWeight: theme.font.weightMedium,
     cursor: 'pointer',
+    transition: theme.transition.fast,
   },
-  clearButton: {
-    padding: '4px 12px',
-    border: '1px solid #ccc',
-    borderRadius: 4,
-    background: 'white',
-    fontSize: 12,
-    cursor: 'pointer',
+  liveButtonActive: {
+    background: theme.color.accent,
+    borderColor: theme.color.accent,
+    color: theme.color.textOnPrimary,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: theme.radius.full,
+    background: theme.color.disabled,
+    transition: theme.transition.fast,
+  },
+  liveDotActive: {
+    background: theme.color.textOnPrimary,
   },
 }

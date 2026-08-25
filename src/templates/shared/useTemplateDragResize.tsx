@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from 'react'
+import { useRef, useCallback, useState, useEffect } from 'react'
 import { useTemplateStore } from '../store'
 import { useSmartGuidesStore } from '../../store/smartGuidesStore'
 import { calculateSmartGuides } from '../../core/smartGuides'
@@ -34,6 +34,7 @@ const MIN_SIZE = 20
 export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null>) {
   const interactionRef = useRef<Interaction | null>(null)
   const renderedRectsRef = useRef<Map<string, Rect>>(new Map())
+  const pendingRectsRef = useRef<Map<string, Rect>>(new Map())
   const [currentRotation, setCurrentRotation] = useState<number | null>(null)
 
   const toggleElement = useTemplateStore(s => s.toggleTemplateElement)
@@ -386,6 +387,7 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
   }, [startInteraction])
 
   const getTransform = useCallback((id: string, rect: Rect) => {
+    pendingRectsRef.current.set(id, rect)
     const rot = templateElementRotations[id]
     if (!rot) return undefined
     const cx = rect.x + rect.width / 2
@@ -514,6 +516,23 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
       </g>
     )
   }, [selectedIds, startResize, startRotate, templateElementPositions, templateElementRotations, currentRotation])
+
+  useEffect(() => {
+    const snapshot = new Map(pendingRectsRef.current)
+    pendingRectsRef.current.clear()
+    const { templateElementPositions } = useTemplateStore.getState()
+    let changed = false
+    const next = { ...templateElementPositions }
+    for (const [id, rect] of snapshot) {
+      if (!next[id]) {
+        next[id] = { ...rect }
+        changed = true
+      }
+    }
+    if (changed) {
+      useTemplateStore.setState({ templateElementPositions: next })
+    }
+  })
 
   return { startDrag, startResize, startRotate, getTransform, renderHandles, toSvgPoint }
 }

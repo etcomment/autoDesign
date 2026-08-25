@@ -1,5 +1,7 @@
 import { useDiagramStore } from '../store/diagramStore'
 import { snapToGrid } from '../core/grid'
+import { Panel } from '../ui/Panel'
+import { theme } from '../lib/theme'
 import type { ShapeType } from '../core/model/Shape'
 
 interface ShapeTemplate {
@@ -26,8 +28,7 @@ export function ShapeLibrary() {
   }
 
   return (
-    <div style={styles.panel}>
-      <h3 style={styles.title}>Shapes</h3>
+    <Panel title="Shapes">
       <div style={styles.grid}>
         {SHAPES.map((shape) => (
           <button
@@ -44,7 +45,7 @@ export function ShapeLibrary() {
           </button>
         ))}
       </div>
-    </div>
+    </Panel>
   )
 }
 
@@ -118,35 +119,25 @@ function ShapeIcon({ type }: { readonly type: ShapeType }) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  panel: {
-    background: '#ffffff',
-    padding: 8,
-    flexShrink: 0,
-  },
-  title: {
-    fontSize: 13,
-    fontWeight: 600,
-    margin: '0 0 8px 0',
-    color: '#333',
-  },
   grid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))',
-    gap: 6,
+    gap: theme.spacing.xs,
   },
   shapeButton: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     gap: 2,
-    padding: 6,
-    border: '1px solid #e0e0e0',
-    borderRadius: 6,
-    background: '#fafafa',
+    padding: theme.spacing.xs,
+    border: `1px solid ${theme.color.border}`,
+    borderRadius: theme.radius.sm,
+    background: theme.color.bgSurfaceHover,
     cursor: 'grab',
+    transition: theme.transition.fast,
   },
   label: {
-    fontSize: 10,
-    color: '#666',
+    fontSize: theme.font.sizeXs,
+    color: theme.color.textSecondary,
   },
 }

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useTemplateStore } from '../store'
 import { getTemplatesByCategory } from '../registry'
+import { Panel } from '../../ui/Panel'
+import { theme } from '../../lib/theme'
 import type { TemplateType } from '../types'
 
 export function TemplatePanel() {
@@ -13,7 +15,6 @@ export function TemplatePanel() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     () => new Set(categoryNames.length > 0 ? [categoryNames[0]!] : [])
   )
-  const [tplCollapsed, setTplCollapsed] = useState(false)
 
   const toggleCategory = (category: string) => {
     setExpandedCategories(prev => {
@@ -25,14 +26,7 @@ export function TemplatePanel() {
   }
 
   return (
-    <div style={styles.panel}>
-      <h3 style={{ ...styles.title, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }} onClick={() => setTplCollapsed(!tplCollapsed)}>
-        <span>{tplCollapsed ? '▶' : '▼'}</span>
-        Templates
-      </h3>
-
-      {!tplCollapsed && (
-        <>
+    <Panel title="Templates" badge={categoryNames.length}>
       {categoryNames.map((category) => {
         const templates = categories.get(category)!
         const isExpanded = expandedCategories.has(category)
@@ -53,9 +47,9 @@ export function TemplatePanel() {
                   title={tpl.description || tpl.label}
                   style={{
                     ...styles.templateButton,
-                    background: isActive ? '#4a90d9' : '#f7fafc',
-                    color: isActive ? '#ffffff' : '#4a5568',
-                    border: isActive ? '1px solid #4a90d9' : '1px solid #e2e8f0',
+                    background: isActive ? theme.color.accent : theme.color.bgSurfaceHover,
+                    color: isActive ? theme.color.textOnPrimary : theme.color.textSecondary,
+                    border: isActive ? `1px solid ${theme.color.accent}` : `1px solid ${theme.color.border}`,
                   }}
                   onClick={() => selectTemplate(tpl.type as TemplateType)}
                 >
@@ -72,41 +66,27 @@ export function TemplatePanel() {
           Clear
         </button>
       )}
-        </>
-      )}
-    </div>
+    </Panel>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  panel: {
-    background: '#ffffff',
-    padding: 12,
-    flexShrink: 0,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: 600,
-    margin: '0 0 8px 0',
-    color: '#333',
-    flexShrink: 0,
-  },
   category: {
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   categoryHeader: {
-    fontSize: 11,
-    fontWeight: 600,
-    color: '#a0aec0',
+    fontSize: theme.font.sizeXs,
+    fontWeight: theme.font.weightSemibold,
+    color: theme.color.textSecondary,
     textTransform: 'uppercase' as const,
     letterSpacing: '0.05em',
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
     paddingLeft: 2,
     cursor: 'pointer',
     userSelect: 'none',
     display: 'flex',
     alignItems: 'center',
-    gap: 4,
+    gap: theme.spacing.xs,
   },
   arrow: {
     fontSize: 10,
@@ -118,24 +98,25 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'block',
     width: '100%',
     textAlign: 'left' as const,
-    padding: '6px 10px',
-    borderRadius: 4,
-    fontSize: 12,
-    fontWeight: 500,
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+    borderRadius: theme.radius.sm,
+    fontSize: theme.font.sizeXs,
+    fontWeight: theme.font.weightMedium,
     cursor: 'pointer',
-    border: '1px solid #e2e8f0',
+    border: `1px solid ${theme.color.border}`,
     marginBottom: 3,
+    transition: theme.transition.fast,
   },
   clearButton: {
     width: '100%',
-    padding: '8px 0',
-    borderRadius: 4,
-    fontSize: 12,
-    fontWeight: 600,
+    padding: theme.spacing.sm,
+    borderRadius: theme.radius.sm,
+    fontSize: theme.font.sizeXs,
+    fontWeight: theme.font.weightSemibold,
     cursor: 'pointer',
-    border: '1px solid #e2e8f0',
-    background: '#fff5f5',
-    color: '#c53030',
-    marginTop: 8,
+    border: `1px solid ${theme.color.border}`,
+    background: 'rgba(211, 47, 47, 0.06)',
+    color: theme.color.danger,
+    marginTop: theme.spacing.sm,
   },
 }

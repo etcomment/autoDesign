@@ -2,6 +2,9 @@ import React, { useState } from 'react'
 import { Eye, EyeOff, Lock, Unlock, Layers, ChevronUp, ChevronDown, ChevronRight, LayoutTemplate, Square } from 'lucide-react'
 import { useDiagramStore } from '../store/diagramStore'
 import { useTemplateStore } from '../templates/store'
+import { Panel } from '../ui/Panel'
+import { IconButton } from '../ui/IconButton'
+import { theme } from '../lib/theme'
 import type { Shape } from '../core/model/Shape'
 
 interface LayerItem {
@@ -16,8 +19,20 @@ interface TemplateSubElement {
   children?: TemplateSubElement[]
 }
 
-function getTemplateSubElements(templateData: any, templateElementPositions: Record<string, any>): TemplateSubElement[] {
-  if (!templateData) return []
+interface TemplateItemLike {
+  title?: string
+  quarter?: string
+}
+
+type TemplateElementPositionsMap = Record<string, { x: number; y: number; width: number; height: number }>
+
+function getTemplateSubElements(
+  templateData: Record<string, unknown> | null,
+  templateElementPositions: TemplateElementPositionsMap,
+): TemplateSubElement[] {
+  const positionIds = Object.keys(templateElementPositions)
+  if (positionIds.length === 0) return []
+
   const subElements: TemplateSubElement[] = []
   const seenIds = new Set<string>()
 
@@ -27,19 +42,25 @@ function getTemplateSubElements(templateData: any, templateElementPositions: Rec
     subElements.push({ id, label, children })
   }
 
-  if (templateData.title) {
+  if (templateData?.title) {
     add('title', `Titre: "${typeof templateData.title === 'string' ? templateData.title : 'Titre'}"`)
   }
 
-  // Création des Groupes Virtuels par Bloc (ex: Groupe 1, Groupe 2...)
-  const stepsCount = Array.isArray(templateData.steps) ? templateData.steps.length : (Array.isArray(templateData.milestones) ? templateData.milestones.length : 0)
+  const milestones = templateData?.milestones as TemplateItemLike[] | undefined
+  const steps = templateData?.steps as TemplateItemLike[] | undefined
+  const stepsCount = Array.isArray(steps) ? steps.length : (Array.isArray(milestones) ? milestones.length : 0)
+
   if (stepsCount > 0) {
     for (let i = 0; i < stepsCount; i++) {
-      const idx = i + 1
+      const candidates = [i, i + 1]
+      const msIdx = candidates.find(idx => templateElementPositions[`milestone-${idx}`] !== undefined)
+      const stepIdx = candidates.find(idx => templateElementPositions[`step-${idx}`] !== undefined)
+      const idx = msIdx ?? stepIdx ?? i
+
       const blockId = `block-${idx}`
-      const msItem = templateData.milestones?.[i]
-      const stepItem = templateData.steps?.[i]
-      const rawTitle = stepItem?.title || msItem?.quarter || msItem?.title || `Jalon ${idx}`
+      const msItem = milestones?.[i]
+      const stepItem = steps?.[i]
+      const rawTitle = stepItem?.title || msItem?.quarter || msItem?.title || `Jalon ${i + 1}`
 
       const groupChildren: TemplateSubElement[] = []
       const stepSubChildren: TemplateSubElement[] = []
@@ -50,37 +71,94 @@ function getTemplateSubElements(templateData: any, templateElementPositions: Rec
       const stepId = `step-${idx}`
 
       if (templateElementPositions[msId]) {
-        groupChildren.push({ id: msId, label: `Titre / Description Jalon` })
+        groupChildren.push({ id: msId, label: 'Titre / Description Jalon' })
         seenIds.add(msId)
       }
 
       if (templateElementPositions[bodyId]) {
-        stepSubChildren.push({ id: bodyId, label: `Ruban segment` })
+        stepSubChildren.push({ id: bodyId, label: 'Ruban segment' })
         seenIds.add(bodyId)
       }
       if (templateElementPositions[arrowId]) {
-        stepSubChildren.push({ id: arrowId, label: `Flèche triangulaire` })
+        stepSubChildren.push({ id: arrowId, label: 'Flèche triangulaire' })
         seenIds.add(arrowId)
       }
       if (templateElementPositions[stepId]) {
-        stepSubChildren.push({ id: stepId, label: `Code / Libellé étape` })
+        stepSubChildren.push({ id: stepId, label: 'Code / Libellé étape' })
         seenIds.add(stepId)
       }
 
       if (stepSubChildren.length > 0) {
         groupChildren.push({
           id: `step-group-${idx}`,
-          label: `Sous-groupe Ruban & Flèche`,
+          label: 'Sous-groupe Ruban & Flèche',
           children: stepSubChildren,
         })
         seenIds.add(`step-group-${idx}`)
       }
 
-      add(blockId, `Groupe ${idx} : "${rawTitle}"`, groupChildren.length > 0 ? groupChildren : undefined)
+      add(blockId, `Groupe ${i + 1} : "${rawTitle}"`, groupChildren.length > 0 ? groupChildren : undefined)
     }
   }
 
-  for (const id of Object.keys(templateElementPositions)) {
+  const PREFIX_LABELS: Record<string, string> = {
+    level: 'Niveau',
+    band: 'Bande',
+    section: 'Section',
+    callout: 'Callout',
+    row: 'Ligne',
+    header: 'En-tête',
+    item: 'Élément',
+    column: 'Colonne',
+    cell: 'Cellule',
+    card: 'Carte',
+    step: 'Étape',
+    phase: 'Phase',
+    ring: 'Anneau',
+    slice: 'Part',
+    segment: 'Segment',
+    pie: 'Part',
+    bar: 'Barre',
+    dot: 'Point',
+    connector: 'Connecteur',
+    label: 'Étiquette',
+    icon: 'Icône',
+    bg: 'Arrière-plan',
+  }
+
+  const groups = new Map<string, { prefix: string; index: number; id: string }[]>()
+
+  for (const id of positionIds) {
+    if (seenIds.has(id)) continue
+    const match = id.match(/^([a-z]+)-(\d+)$/)
+    if (match) {
+      const prefix = match[1]!
+      const index = parseInt(match[2]!, 10)
+      if (!groups.has(prefix)) groups.set(prefix, [])
+      groups.get(prefix)!.push({ prefix, index, id })
+    }
+  }
+
+  const HIERARCHICAL_PREFIXES = new Set(['step', 'milestone', 'band', 'callout'])
+
+  for (const [prefix, items] of groups) {
+    items.sort((a, b) => a.index - b.index)
+    const labelBase = PREFIX_LABELS[prefix] ?? prefix.charAt(0).toUpperCase() + prefix.slice(1)
+
+    if (HIERARCHICAL_PREFIXES.has(prefix)) continue
+
+    if (items.length > 1) {
+      const children: TemplateSubElement[] = items.map(item => {
+        seenIds.add(item.id)
+        return { id: item.id, label: `${labelBase} ${item.index + 1}` }
+      })
+      add(`group-${prefix}`, `${labelBase}s (${items.length})`, children)
+    } else if (items.length === 1) {
+      add(items[0]!.id, `${labelBase} 1`)
+    }
+  }
+
+  for (const id of positionIds) {
     if (!seenIds.has(id)) {
       add(id, `Élément: ${id}`)
     }
@@ -115,6 +193,14 @@ export function LayersPanel() {
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
   const [isTemplateTreeExpanded, setIsTemplateTreeExpanded] = useState(true)
+  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(() => {
+    const ids = new Set<string>()
+    for (const key of Object.keys(templateElementPositions)) {
+      const match = key.match(/^([a-z]+)-(\d+)$/)
+      if (match) ids.add(`group-${match[1]}`)
+    }
+    return ids
+  })
 
   // Construct bottom-to-top SVG render order list of items
   const clampedTemplateIndex = Math.max(0, Math.min(shapes.length, templateZIndex))
@@ -133,7 +219,7 @@ export function LayersPanel() {
 
   // UI display order is top-to-bottom (reversed SVG render order)
   const reversedLayerItems = [...svgOrderItems].reverse()
-  const templateSubElements = getTemplateSubElements(templateData, templateElementPositions)
+  const templateSubElements = getTemplateSubElements(templateData as unknown as Record<string, unknown> | null, templateElementPositions)
   const totalCount = (activeTemplate ? 1 + templateSubElements.length : 0) + shapes.length
 
   const handleSelect = (item: LayerItem, e: React.MouseEvent) => {
@@ -293,12 +379,7 @@ export function LayersPanel() {
   }
 
   return (
-    <div style={styles.panel}>
-      <div style={styles.header}>
-        <Layers size={16} style={{ marginRight: 6 }} />
-        <span style={styles.title}>Calques ({totalCount})</span>
-      </div>
-
+    <Panel title="Calques" icon={<Layers size={14} />} badge={totalCount}>
       {totalCount === 0 ? (
         <div style={styles.emptyState}>Aucun élément sur le canvas</div>
       ) : (
@@ -333,24 +414,24 @@ export function LayersPanel() {
                       ⋮⋮
                     </span>
                     {isTemplate && (
-                      <button
-                        type="button"
-                        style={{ ...styles.actionBtn, padding: 0, marginRight: 2 }}
+                      <IconButton
+                        size="sm"
+                        variant="ghost"
+                        icon={isTemplateTreeExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        style={{ width: 22, height: 22, marginRight: 2 }}
                         onClick={(e) => {
                           e.stopPropagation()
                           setIsTemplateTreeExpanded(!isTemplateTreeExpanded)
                         }}
-                      >
-                        {isTemplateTreeExpanded ? <ChevronDown size={14} color="#4a90d9" /> : <ChevronRight size={14} color="#4a90d9" />}
-                      </button>
+                      />
                     )}
-                    {isTemplate && <LayoutTemplate size={14} color="#4a90d9" style={{ flexShrink: 0 }} />}
+                    {isTemplate && <LayoutTemplate size={14} color={theme.color.accent} style={{ flexShrink: 0 }} />}
                     <span
                       style={{
                         ...styles.itemLabel,
                         opacity: isHidden ? 0.5 : 1,
                         textDecoration: isHidden ? 'line-through' : 'none',
-                        fontWeight: isTemplate ? 600 : 400,
+                        fontWeight: isTemplate ? theme.font.weightSemibold : theme.font.weightNormal,
                       }}
                       title={getItemLabel(item)}
                     >
@@ -359,9 +440,11 @@ export function LayersPanel() {
                   </div>
 
                   <div style={styles.actions}>
-                    <button
-                      type="button"
-                      style={styles.actionBtn}
+                    <IconButton
+                      size="sm"
+                      variant="ghost"
+                      icon={isHidden ? <EyeOff size={14} color="#888" /> : <Eye size={14} color="#555" />}
+                      tooltip={isHidden ? 'Afficher' : 'Masquer'}
                       onClick={(e) => {
                         e.stopPropagation()
                         if (isTemplate) {
@@ -370,64 +453,79 @@ export function LayersPanel() {
                           toggleShapeHidden(item.shape.id)
                         }
                       }}
-                      title={isHidden ? 'Afficher' : 'Masquer'}
-                    >
-                      {isHidden ? <EyeOff size={14} color="#888" /> : <Eye size={14} color="#555" />}
-                    </button>
+                    />
 
                     {!isTemplate && (
-                      <button
-                        type="button"
-                        style={styles.actionBtn}
+                      <IconButton
+                        size="sm"
+                        variant="ghost"
+                        icon={isLocked ? <Lock size={14} color={theme.color.danger} /> : <Unlock size={14} color="#888" />}
+                        tooltip={isLocked ? 'Déverrouiller' : 'Verrouiller'}
                         onClick={(e) => {
                           e.stopPropagation()
                           if (item.shape) {
                             toggleShapeLocked(item.shape.id)
                           }
                         }}
-                        title={isLocked ? 'Déverrouiller' : 'Verrouiller'}
-                      >
-                        {isLocked ? <Lock size={14} color="#d9534f" /> : <Unlock size={14} color="#888" />}
-                      </button>
+                      />
                     )}
 
-                    <button
-                      type="button"
-                      style={{
-                        ...styles.actionBtn,
-                        opacity: index === 0 ? 0.3 : 1,
-                        cursor: index === 0 ? 'default' : 'pointer',
-                      }}
+                    <IconButton
+                      size="sm"
+                      variant="ghost"
+                      icon={<ChevronUp size={14} color="#555" />}
+                      tooltip="Monter l'élément"
                       disabled={index === 0}
                       onClick={(e) => handleMoveUp(item.id, e)}
-                      title="Monter l'élément"
-                    >
-                      <ChevronUp size={14} color="#555" />
-                    </button>
+                    />
 
-                    <button
-                      type="button"
-                      style={{
-                        ...styles.actionBtn,
-                        opacity: index === reversedLayerItems.length - 1 ? 0.3 : 1,
-                        cursor: index === reversedLayerItems.length - 1 ? 'default' : 'pointer',
-                      }}
+                    <IconButton
+                      size="sm"
+                      variant="ghost"
+                      icon={<ChevronDown size={14} color="#555" />}
+                      tooltip="Descendre l'élément"
                       disabled={index === reversedLayerItems.length - 1}
                       onClick={(e) => handleMoveDown(item.id, e)}
-                      title="Descendre l'élément"
-                    >
-                      <ChevronDown size={14} color="#555" />
-                    </button>
+                    />
                   </div>
                 </div>
 
-                {/* Render Template Child Sub-Elements */}
                 {isTemplate && isTemplateTreeExpanded && templateSubElements.map((subItem) => {
                   const isSubHidden = hiddenTemplateElementIds.has(subItem.id) || isTemplateHidden
 
+                  const collectLeafIds = (item: TemplateSubElement): string[] => {
+                    if (!item.children || item.children.length === 0) return [item.id]
+                    return item.children.flatMap(collectLeafIds)
+                  }
+
+                  const toggleGroupVisibility = (item: TemplateSubElement) => {
+                    const leafIds = collectLeafIds(item)
+                    const allHidden = leafIds.every(id => hiddenTemplateElementIds.has(id))
+                    for (const id of leafIds) {
+                      if (allHidden) {
+                        if (hiddenTemplateElementIds.has(id)) toggleTemplateElementHidden(id)
+                      } else {
+                        if (!hiddenTemplateElementIds.has(id)) toggleTemplateElementHidden(id)
+                      }
+                    }
+                  }
+
+                  const toggleGroupExpand = (id: string) => {
+                    setExpandedGroupIds(prev => {
+                      const next = new Set(prev)
+                      if (next.has(id)) next.delete(id)
+                      else next.add(id)
+                      return next
+                    })
+                  }
+
                   const renderSubItemRow = (item: TemplateSubElement, depth = 1) => {
                     const isSelected = selectedTemplateElementIds.has(item.id)
-                    const isHidden = hiddenTemplateElementIds.has(item.id) || isSubHidden
+                    const hasChildren = item.children && item.children.length > 0
+                    const isExpanded = expandedGroupIds.has(item.id)
+                    const isHidden = hasChildren
+                      ? collectLeafIds(item).every(id => hiddenTemplateElementIds.has(id)) || isSubHidden
+                      : hiddenTemplateElementIds.has(item.id) || isSubHidden
 
                     return (
                       <React.Fragment key={`frag-${item.id}`}>
@@ -436,16 +534,29 @@ export function LayersPanel() {
                           style={{
                             ...styles.item,
                             paddingLeft: 14 + depth * 14,
-                            backgroundColor: isSelected ? '#e3f2fd' : '#fafafa',
+                            backgroundColor: isSelected ? theme.color.selection : theme.color.bgPanelHover,
                           }}
                         >
                           <div style={styles.itemContent}>
-                            <Square size={10} color={depth > 1 ? "#a0a0a0" : "#757575"} style={{ flexShrink: 0 }} />
+                            {hasChildren ? (
+                              <IconButton
+                                size="sm"
+                                variant="ghost"
+                                icon={isExpanded ? <ChevronDown size={12} color="#555" /> : <ChevronRight size={12} color="#555" />}
+                                style={{ width: 18, height: 18, marginRight: -2 }}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  toggleGroupExpand(item.id)
+                                }}
+                              />
+                            ) : (
+                              <Square size={10} color={depth > 1 ? '#a0a0a0' : '#757575'} style={{ flexShrink: 0 }} />
+                            )}
                             <span
                               style={{
                                 ...styles.itemLabel,
-                                fontSize: 11,
-                                fontWeight: item.children ? 600 : 400,
+                                fontSize: theme.font.sizeXs,
+                                fontWeight: hasChildren ? theme.font.weightSemibold : theme.font.weightNormal,
                                 opacity: isHidden ? 0.4 : 1,
                                 textDecoration: isHidden ? 'line-through' : 'none',
                               }}
@@ -455,130 +566,98 @@ export function LayersPanel() {
                             </span>
                           </div>
                           <div style={styles.actions}>
-                            <button
-                              type="button"
-                              style={styles.actionBtn}
+                            <IconButton
+                              size="sm"
+                              variant="ghost"
+                              icon={isHidden ? <EyeOff size={13} color="#888" /> : <Eye size={13} color="#555" />}
+                              tooltip={isHidden ? 'Afficher' : 'Masquer'}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                toggleTemplateElementHidden(item.id)
+                                if (hasChildren) {
+                                  toggleGroupVisibility(item)
+                                } else {
+                                  toggleTemplateElementHidden(item.id)
+                                }
                               }}
-                              title={isHidden ? 'Afficher la sous-composante' : 'Masquer la sous-composante'}
-                            >
-                              {isHidden ? <EyeOff size={13} color="#888" /> : <Eye size={13} color="#555" />}
-                            </button>
+                            />
                           </div>
                         </div>
 
-                        {item.children?.map(child => renderSubItemRow(child, depth + 1))}
+                        {hasChildren && isExpanded && item.children!.map(child => renderSubItemRow(child, depth + 1))}
                       </React.Fragment>
                     )
                   }
 
-                  return (
-                    <React.Fragment key={`frag-${subItem.id}`}>
-                      {renderSubItemRow(subItem, 1)}
-                    </React.Fragment>
-                  )
+                  return renderSubItemRow(subItem, 1)
                 })}
               </React.Fragment>
             )
           })}
         </div>
       )}
-    </div>
+    </Panel>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  panel: {
-    display: 'flex',
-    flexDirection: 'column',
-    borderBottom: '1px solid #ddd',
-    backgroundColor: '#fff',
-    maxHeight: 280,
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '8px 12px',
-    backgroundColor: '#f5f5f5',
-    borderBottom: '1px solid #eee',
-    fontWeight: 600,
-    fontSize: 13,
-    color: '#333',
-  },
-  title: {
-    userSelect: 'none',
-  },
   emptyState: {
-    padding: 16,
-    fontSize: 12,
-    color: '#888',
+    padding: theme.spacing.lg,
+    fontSize: theme.font.sizeXs,
+    color: theme.color.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',
   },
   list: {
-    overflowY: 'auto',
     display: 'flex',
     flexDirection: 'column',
-    maxHeight: 220,
   },
   item: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '6px 10px',
-    borderBottom: '1px solid #f0f0f0',
+    padding: `4px ${theme.spacing.xs}`,
+    borderBottom: `1px solid ${theme.color.border}`,
     cursor: 'pointer',
     userSelect: 'none',
-    fontSize: 12,
-    transition: 'background-color 0.15s',
+    fontSize: theme.font.sizeXs,
+    transition: theme.transition.fast,
   },
   selectedItem: {
-    backgroundColor: '#e6f0fa',
+    backgroundColor: theme.color.selection,
   },
   templateItem: {
-    backgroundColor: '#f0f7ff',
+    backgroundColor: theme.color.bgPanelHover,
   },
   draggingItem: {
     opacity: 0.4,
   },
   dragOverItem: {
-    borderTop: '2px solid #4a90d9',
+    borderTop: `2px solid ${theme.color.accent}`,
   },
   itemContent: {
     display: 'flex',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing.sm,
     flex: 1,
     minWidth: 0,
-    marginRight: 8,
+    marginRight: theme.spacing.sm,
   },
   dragHandle: {
     cursor: 'grab',
-    color: '#999',
-    fontSize: 12,
+    color: theme.color.disabled,
+    fontSize: theme.font.sizeXs,
     lineHeight: 1,
   },
   itemLabel: {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    color: '#333',
+    color: theme.color.textPrimary,
   },
   actions: {
     display: 'flex',
     alignItems: 'center',
-    gap: 4,
-  },
-  actionBtn: {
-    border: 'none',
-    background: 'transparent',
-    padding: 2,
-    borderRadius: 3,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: 2,
+    flexShrink: 0,
   },
 }

@@ -1,5 +1,6 @@
-import { useState } from 'react'
 import { useDiagramStore } from '../store/diagramStore'
+import { Collapsible } from '../ui/Collapsible'
+import { ColorGrid } from '../ui/ColorGrid'
 
 const COLORS = [
   '#f44336', '#e91e63', '#9c27b0', '#673ab7',
@@ -13,116 +14,29 @@ export function SubgraphStylePanel() {
   const subgraphStyle = useDiagramStore(s => s.subgraphStyle)
   const updateSubgraphStyle = useDiagramStore(s => s.updateSubgraphStyle)
   const subgraphGroups = useDiagramStore(s => s.subgraphGroups)
-  const [collapsed, setCollapsed] = useState(true)
 
   if (subgraphGroups.length === 0) return null
 
   return (
-    <div style={styles.container}>
-      <button
-        style={styles.toggle}
-        onClick={() => setCollapsed(!collapsed)}
-      >
-        {collapsed ? '▶ Subgraph Style' : '▼ Subgraph Style'}
-      </button>
-      {!collapsed && (
-        <div style={styles.body}>
-          <div style={styles.section}>
-            <label style={styles.label}>Stroke</label>
-            <div style={styles.colorGrid}>
-              {COLORS.map((color) => (
-                <button
-                  key={color}
-                  style={{
-                    ...styles.colorButton,
-                    backgroundColor: color,
-                    border: subgraphStyle.stroke === color ? '2px solid #333' : '1px solid #ccc',
-                  }}
-                  onClick={() => updateSubgraphStyle({ stroke: color })}
-                  title={color}
-                />
-              ))}
-            </div>
-          </div>
-          <div style={styles.section}>
-            <label style={styles.label}>Background</label>
-            <div style={styles.colorGrid}>
-              {COLORS.filter(c => c !== '#ffffff').map((color) => (
-                <button
-                  key={color}
-                  style={{
-                    ...styles.colorButton,
-                    backgroundColor: color,
-                    border: subgraphStyle.fill === color ? '2px solid #333' : '1px solid #ccc',
-                  }}
-                  onClick={() => updateSubgraphStyle({ fill: color })}
-                  title={color}
-                />
-              ))}
-            </div>
-          </div>
-          <div style={styles.section}>
-            <label style={styles.label}>Text</label>
-            <div style={styles.colorGrid}>
-              {['#333333', '#666666', '#ffffff'].map((color) => (
-                <button
-                  key={color}
-                  style={{
-                    ...styles.colorButton,
-                    backgroundColor: color,
-                    border: subgraphStyle.textColor === color ? '2px solid #333' : '1px solid #ccc',
-                  }}
-                  onClick={() => updateSubgraphStyle({ textColor: color })}
-                  title={color}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    <Collapsible title="Subgraph Style">
+      <ColorGrid
+        label="Stroke"
+        colors={COLORS}
+        value={subgraphStyle.stroke}
+        onSelect={color => updateSubgraphStyle({ stroke: color })}
+      />
+      <ColorGrid
+        label="Background"
+        colors={COLORS.filter(c => c !== '#ffffff')}
+        value={subgraphStyle.fill}
+        onSelect={color => updateSubgraphStyle({ fill: color })}
+      />
+      <ColorGrid
+        label="Text"
+        colors={['#333333', '#666666', '#ffffff']}
+        value={subgraphStyle.textColor}
+        onSelect={color => updateSubgraphStyle({ textColor: color })}
+      />
+    </Collapsible>
   )
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    borderBottom: '1px solid #ddd',
-    background: '#fafafa',
-  },
-  toggle: {
-    width: '100%',
-    padding: '6px 12px',
-    border: 'none',
-    background: 'transparent',
-    cursor: 'pointer',
-    textAlign: 'left',
-    fontSize: 12,
-    fontWeight: 600,
-    color: '#555',
-  },
-  body: {
-    padding: '0 12px 12px',
-  },
-  section: {
-    marginBottom: 10,
-  },
-  label: {
-    display: 'block',
-    fontSize: 11,
-    fontWeight: 500,
-    color: '#666',
-    marginBottom: 4,
-  },
-  colorGrid: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: 3,
-  },
-  colorButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 3,
-    cursor: 'pointer',
-    padding: 0,
-  },
 }

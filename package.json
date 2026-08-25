@@ -10,9 +10,14 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "template:from-pptx": "tsx scripts/pptxToTemplate.ts"
+    "template:from-pptx": "tsx scripts/pptxToTemplate.ts",
+    "dataset:generate": "tsx scripts/generate_dataset.ts"
   },
   "dependencies": {
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/legacy-modes": "^6.5.3",
+    "@codemirror/lint": "^6.9.7",
+    "@uiw/react-codemirror": "^4.25.11",
     "dagre": "^0.8.5",
     "pptx-svg": "^0.6.5",
     "pptxgenjs": "^4.0.1",

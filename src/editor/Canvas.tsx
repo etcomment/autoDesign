@@ -342,6 +342,7 @@ export function Canvas() {
         display: 'block',
         background: isConnectMode ? '#f0f4ff' : '#f8f8f8',
         cursor: isConnectMode ? 'crosshair' : isPanning.current ? 'grabbing' : 'default',
+        touchAction: 'none',
       }}
       onMouseDown={onMouseDown}
       onMouseMove={onMouseMove}
