@@ -187,9 +187,17 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
 
   useEffect(() => {
     for (const [id, rect] of defaultPositions.entries()) {
-      if (!pos[id]) {
+      const existing = pos[id]
+      if (!existing) {
         moveEl(id, { x: rect.x, y: rect.y })
         resizeEl(id, { width: rect.width, height: rect.height })
+      } else if (id.startsWith('text-') || id.startsWith('card-')) {
+        // If content lines changed in DSL or Properties Panel, dynamically expand upwards
+        if (existing.height !== rect.height) {
+          const bottomY = existing.y + existing.height
+          moveEl(id, { x: existing.x, y: bottomY - rect.height })
+          resizeEl(id, { width: existing.width, height: rect.height })
+        }
       }
     }
   }, [defaultPositions, pos, moveEl, resizeEl])
@@ -197,6 +205,17 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
   const getR = (id: string): Rect => {
     const p = pos[id]
     const d = defaultPositions.get(id) || { x: 0, y: 0, width: 100, height: 50 }
+    if (id.startsWith('text-') || id.startsWith('card-')) {
+      const w = p?.width || d.width
+      const h = d.height
+      const bottomY = (p?.y ?? d.y) + (p?.height || d.height)
+      return {
+        x: p?.x ?? d.x,
+        y: bottomY - h,
+        width: w,
+        height: h,
+      }
+    }
     return {
       x: p?.x ?? d.x,
       y: p?.y ?? d.y,
