@@ -342,25 +342,10 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
                 </text>
               </g>
 
-              {ms.date && (
-                <text
-                  x={textX}
-                  y={r.y + 32 + titleLines.length * 20}
-                  textAnchor={textAnchor}
-                  fontFamily="Arial, sans-serif"
-                  fontSize={12}
-                  fontWeight={600}
-                  fill="#ffffff"
-                  opacity={0.8}
-                >
-                  {ms.date}
-                </text>
-              )}
-
               {subLines.length > 0 && (
                 <text
                   x={textX}
-                  y={r.y + (ms.date ? 52 : 36) + titleLines.length * 20}
+                  y={r.y + 30 + titleLines.length * 20}
                   textAnchor={textAnchor}
                   fontFamily="Arial, sans-serif"
                   fontSize={12}
