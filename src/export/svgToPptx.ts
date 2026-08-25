@@ -224,6 +224,7 @@ function addEllipseToSlide(
   const opts: PptxGenJS.ShapeProps = { x, y, w, h }
   if (hexFill) opts.fill = { color: hexFill }
   if (hexStroke && strokeWidth > 0) opts.line = { color: hexStroke, width: Math.max(0.25, strokeWidth * layout.scaleX * 72) }
+  if (bounds.rotation !== 0) opts.rotate = bounds.rotation
 
   slide.addShape('ellipse', opts)
 }
@@ -359,15 +360,18 @@ async function addElementAsImageToSlide(
     const strokePad = isNaN(sw) ? 0 : sw / 2
     const padAbs = (4 + strokePad) * ctmScale
     const padW = padAbs * layout.scaleX
-    const padH = padAbs * layout.scaleY
-
-    slide.addImage({
+    const imgOpts: PptxGenJS.ImageProps = {
       data: svgDataUri,
       x: toSlideX(bounds.x, vb, layout) - padW,
       y: toSlideY(bounds.y, vb, layout) - padH,
       w: Math.max(0.01, toSlideW(bounds.w, layout)) + padW * 2,
       h: Math.max(0.01, toSlideH(bounds.h, layout)) + padH * 2,
-    })
+    }
+    if (bounds.rotation !== 0) {
+      imgOpts.rotate = bounds.rotation
+    }
+
+    slide.addImage(imgOpts)
   } catch { /* skip unrenderable elements */ }
 }
 
