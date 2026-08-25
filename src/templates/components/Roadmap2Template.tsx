@@ -151,16 +151,23 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
       // Point 0 is origin date anchor without card
       if (ptIdx > 0) {
         const msIdx = ptIdx - 1
+        const ms = milestones[msIdx]
+        const maxTitleChars = 15
+        const maxSubChars = 20
+        const titleLines = wrapTextByWidth(ms?.title || `Step ${msIdx + 1}`, maxTitleChars)
+        const subLines = ms?.subtitle ? wrapTextByWidth(ms.subtitle, maxSubChars) : []
+
         // Alternating heights: first milestone (msIdx=0) low (35px), second (msIdx=1) high (145px)...
         const isTop = msIdx % 2 === 1
         const lineH = isTop ? 145 : 35
         const deltaX = Math.round(lineH * tan20) // Exact 20-degree offset for this height
         const cardW = 150
-        const cardH = 50
+        const cardH = Math.max(36, titleLines.length * 16 + (subLines.length > 0 ? subLines.length * 14 + 6 : 0) + 10)
         const lineY1 = cy - 12 - 25
         const lineY2 = lineY1 - lineH
         const lineX2 = cx - deltaX
 
+        // Card grows UPWARDS from lineY2 so the connector line stays attached to the bottom
         const cardX = lineX2 - cardW / 2
         const cardY = lineY2 - cardH
 
@@ -176,7 +183,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
     })
 
     return map
-  }, [allYears, spacing, phases, startX, timelineY])
+  }, [allYears, spacing, phases, startX, timelineY, milestones])
 
   useEffect(() => {
     for (const [id, rect] of defaultPositions.entries()) {
