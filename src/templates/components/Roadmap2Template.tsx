@@ -38,7 +38,7 @@ function computePriorDate(firstDate: string): string {
   const numMatch = firstDate.match(/\b(19\d\d|20\d\d)\b/)
   if (numMatch) {
     const yr = Number(numMatch[1])
-    return firstDate.replace(numMatch[1], String(yr - 1))
+    return firstDate.replace(numMatch[1]!, String(yr - 1))
   }
   const qMatch = firstDate.match(/^Q([1-4])\s*(\d{4})$/i)
   if (qMatch) {

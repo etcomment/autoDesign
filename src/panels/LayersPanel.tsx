@@ -150,11 +150,21 @@ function getTemplateSubElements(
     if (items.length > 1) {
       const children: TemplateSubElement[] = items.map(item => {
         seenIds.add(item.id)
-        return { id: item.id, label: `${labelBase} ${item.index + 1}` }
+        let label = `${labelBase} ${item.index + 1}`
+        if (prefix === 'item' && Array.isArray(templateData?.items)) {
+          const dataItem = (templateData.items as Array<{ label?: string }>)[item.index]
+          if (dataItem?.label) label = dataItem.label
+        }
+        return { id: item.id, label }
       })
       add(`group-${prefix}`, `${labelBase}s (${items.length})`, children)
     } else if (items.length === 1) {
-      add(items[0]!.id, `${labelBase} 1`)
+      let label = `${labelBase} 1`
+      if (prefix === 'item' && Array.isArray(templateData?.items)) {
+        const dataItem = (templateData.items as Array<{ label?: string }>)[items[0]!.index]
+        if (dataItem?.label) label = dataItem.label
+      }
+      add(items[0]!.id, label)
     }
   }
 
@@ -193,14 +203,7 @@ export function LayersPanel() {
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
   const [isTemplateTreeExpanded, setIsTemplateTreeExpanded] = useState(true)
-  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(() => {
-    const ids = new Set<string>()
-    for (const key of Object.keys(templateElementPositions)) {
-      const match = key.match(/^([a-z]+)-(\d+)$/)
-      if (match) ids.add(`group-${match[1]}`)
-    }
-    return ids
-  })
+  const [collapsedGroupIds, setCollapsedGroupIds] = useState<Set<string>>(new Set())
 
   // Construct bottom-to-top SVG render order list of items
   const clampedTemplateIndex = Math.max(0, Math.min(shapes.length, templateZIndex))
@@ -511,7 +514,7 @@ export function LayersPanel() {
                   }
 
                   const toggleGroupExpand = (id: string) => {
-                    setExpandedGroupIds(prev => {
+                    setCollapsedGroupIds(prev => {
                       const next = new Set(prev)
                       if (next.has(id)) next.delete(id)
                       else next.add(id)
@@ -522,7 +525,7 @@ export function LayersPanel() {
                   const renderSubItemRow = (item: TemplateSubElement, depth = 1) => {
                     const isSelected = selectedTemplateElementIds.has(item.id)
                     const hasChildren = item.children && item.children.length > 0
-                    const isExpanded = expandedGroupIds.has(item.id)
+                    const isExpanded = !collapsedGroupIds.has(item.id)
                     const isHidden = hasChildren
                       ? collectLeafIds(item).every(id => hiddenTemplateElementIds.has(id)) || isSubHidden
                       : hiddenTemplateElementIds.has(item.id) || isSubHidden
