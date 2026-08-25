@@ -202,7 +202,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
   // MIGSO Red for active progress track
   const activeColor = trackColor || '#ff5338'
   // MIGSO Gray for inactive track and connector lines
-  const inactiveColor = trackBgColor || '#d9dee4'
+  const inactiveColor = trackBgColor || '#e8eaed'
 
   const chevronPath = (r: Rect, idx: number, total: number): string => {
     const { x, y, width: w, height: h } = r
@@ -382,7 +382,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
                   y={txtR.y + 16 + titleLines.length * 16 + 4}
                   fontFamily="Arial, sans-serif"
                   fontSize={12}
-                  fill="#555555"
+                  fill="#3366cc"
                 >
                   {subLines.map((line, li) => (
                     <tspan key={li} x={txtR.x + 4} dy={li === 0 ? 0 : 14}>
@@ -426,7 +426,7 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
                 fontFamily="Arial, sans-serif"
                 fontSize={18}
                 fontWeight="bold"
-                fill={tplColors[`year-${ptIdx}`] || (ptIdx <= progressIdx ? (phases[0]?.color || '#2c2b64') : '#888888')}
+                fill={tplColors[`year-${ptIdx}`] || '#2c2b64'}
               >
                 {yr}
               </text>
