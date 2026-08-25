@@ -14,6 +14,7 @@ import type {
   ManufacturingData,
   ValueChainData,
   CircleData,
+  PieData,
 } from './types'
 
 export const TEMPLATES: TemplateDefinition[] = [
@@ -2093,6 +2094,86 @@ export const TEMPLATES: TemplateDefinition[] = [
         { number: '03', title: 'Your title 03', description: 'Content and words to be added here as required', icon: '💼' },
       ],
     } as CircleData,
+  },
+  {
+    type: 'pieChart1',
+    label: 'pieChart1',
+    description: 'Donut à 3 parts égales avec marqueurs numérotés et légende.',
+    category: 'Pie Charts',
+    defaultData: {
+      type: 'pieChart1',
+      slices: [
+        { label: '01', value: 15, color: '#2c2b64' },
+        { label: '02', value: 15, color: '#3366cc' },
+        { label: '03', value: 15, color: '#ff5338' },
+      ],
+    } as PieData,
+  },
+  {
+    type: 'pieChart2',
+    label: 'pieChart2',
+    description: 'Donut avec titre central et libellés autour, 4 parts.',
+    category: 'Pie Charts',
+    defaultData: {
+      type: 'pieChart2',
+      title: 'Total',
+      slices: [
+        { label: 'Libellé 01', value: 10, pct: '25%', color: '#2c2b64' },
+        { label: 'Libellé 02', value: 10, pct: '25%', color: '#3366cc' },
+        { label: 'Libellé 03', value: 10, pct: '25%', color: '#ff5338' },
+        { label: 'Libellé 04', value: 10, pct: '25%', color: '#f2cb13' },
+      ],
+    } as PieData,
+  },
+  {
+    type: 'pieChart3',
+    label: 'pieChart3',
+    description: 'Donut à 6 parts numérotées avec légende.',
+    category: 'Pie Charts',
+    defaultData: {
+      type: 'pieChart3',
+      slices: [
+        { label: '1', value: 10, color: '#2c2b64' },
+        { label: '2', value: 10, color: '#3366cc' },
+        { label: '3', value: 10, color: '#ff5338' },
+        { label: '4', value: 10, color: '#f2cb13' },
+        { label: '5', value: 10, color: '#5cc29d' },
+        { label: '6', value: 10, color: '#f27798' },
+      ],
+    } as PieData,
+  },
+  {
+    type: 'pieChart4',
+    label: 'pieChart4',
+    description: 'Comparaison de 3 mini-donuts à 2 parts avec pourcentages.',
+    category: 'Pie Charts',
+    defaultData: {
+      type: 'pieChart4',
+      title: 'Comparaison',
+      slices: [
+        { label: 'A', value: 90, pct: '90%', color: '#2c2b64' },
+        { label: 'B', value: 10, color: '#3366cc' },
+        { label: 'A', value: 80, pct: '80%', color: '#ff5338' },
+        { label: 'B', value: 20, color: '#f2cb13' },
+        { label: 'A', value: 65, pct: '65%', color: '#5cc29d' },
+        { label: 'B', value: 35, color: '#f27798' },
+      ],
+    } as PieData,
+  },
+  {
+    type: 'pieChart5',
+    label: 'pieChart5',
+    description: 'Camembert à 4 parts pondérées avec libellés et pourcentages.',
+    category: 'Pie Charts',
+    defaultData: {
+      type: 'pieChart5',
+      slices: [
+        { label: 'Part 01', value: 15, pct: '15%', color: '#2c2b64' },
+        { label: 'Part 02', value: 35, pct: '35%', color: '#3366cc' },
+        { label: 'Part 03', value: 20, pct: '20%', color: '#ff5338' },
+        { label: 'Part 04', value: 30, pct: '30%', color: '#f2cb13' },
+      ],
+    } as PieData,
   },
 ]
 

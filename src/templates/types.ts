@@ -528,6 +528,21 @@ export interface CircleData {
   segments: CircleSegment[]
 }
 
+export interface PieSlice {
+  label: string
+  value?: number
+  description?: string
+  pct?: string
+  icon?: string
+  color?: string
+}
+
+export interface PieData {
+  type: string
+  title?: string
+  slices: PieSlice[]
+}
+
 export type TemplateData =
   | RoadmapData
   | Roadmap15Data
@@ -616,6 +631,7 @@ export type TemplateData =
   | ValueChainData
   | ValueChain2Data
   | CircleData
+  | PieData
 
 export type TemplateType = | 'testlayout60' | string
 

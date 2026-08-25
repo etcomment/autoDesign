@@ -37,6 +37,7 @@ import type {
   ManufacturingData,
   ValueChainData,
   CircleData,
+  PieData,
 } from './types'
 import { useTemplateStore } from './store'
 
@@ -157,6 +158,11 @@ import { Manufacturing8Template } from './components/Manufacturing8Template'
 import { ValueChainTemplate } from './components/ValueChainTemplate'
 import { ValueChain2Template } from './components/ValueChain2Template'
 import { CircleTemplate } from './components/Circle2Template'
+import { PieChart1Template } from './components/PieChart1Template'
+import { PieChart2Template } from './components/PieChart2Template'
+import { PieChart3Template } from './components/PieChart3Template'
+import { PieChart4Template } from './components/PieChart4Template'
+import { PieChart5Template } from './components/PieChart5Template'
 
 type TemplateComponent = (props: { data: TemplateData }) => ReactElement
 
@@ -278,6 +284,11 @@ const TEMPLATE_MAP: Record<TemplateType, TemplateComponent> = {
   valueChain: ({ data }) => <ValueChainTemplate data={data as ValueChainData} />,
   valueChain2: ({ data }) => <ValueChain2Template data={data as ValueChainData} />,
   circle: ({ data }) => <CircleTemplate data={data as CircleData} />,
+  pieChart1: ({ data }) => <PieChart1Template data={data as PieData} />,
+  pieChart2: ({ data }) => <PieChart2Template data={data as PieData} />,
+  pieChart3: ({ data }) => <PieChart3Template data={data as PieData} />,
+  pieChart4: ({ data }) => <PieChart4Template data={data as PieData} />,
+  pieChart5: ({ data }) => <PieChart5Template data={data as PieData} />,
 }
 
 export function TemplateRenderer(): ReactElement | null {

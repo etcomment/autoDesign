@@ -497,3 +497,21 @@ Pour la quasi-totalité des éléments de liste (`milestone`, `step`, `block`, `
   segment "03" "Check (Contrôler)" "Vérifier l'efficacité et mesurer les résultats" icon:CheckCircle #ff9800
   segment "04" "Act (Agir)" "Standardiser les améliorations ou corriger" icon:RefreshCw #e91e63
 ```
+
+---
+
+### 3.20 Camemberts / Pie Charts (`Pie Charts`)
+
+**Variantes supportées** : `pieChart`, `pieChart2`, `pieChart3`, `pieChart4`, `pieChart5`.
+
+#### Syntaxe et sous-commandes :
+* `slice "Libellé" <valeur> ["Description"] [pct:"x%"] [#HEX]` : Une part du camembert. La `<valeur>` numérique détermine la taille de l'angle.
+
+#### Exemple : Camembert de Répartition (`@pieChart5`)
+```
+@pieChart5
+  slice "Part 01" 15 "Segment principal" pct:"15%" #2c2b64
+  slice "Part 02" 35 "Deuxième segment" pct:"35%" #3366cc
+  slice "Part 03" 20 "Troisième segment" pct:"20%" #ff5338
+  slice "Part 04" 30 "Quatrième segment" pct:"30%" #f2cb13
+```

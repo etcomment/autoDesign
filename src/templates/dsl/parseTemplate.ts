@@ -36,6 +36,8 @@ import type {
   GoalsMetric,
   CircleData,
   CircleSegment,
+  PieData,
+  PieSlice,
   TemplateLane,
 } from '../types'
 
@@ -230,6 +232,9 @@ export function parseTemplateDsl(dsl: string): TemplateData | null {
       break
     case 'circle':
       result = parseCircle(trimmed, header.title)
+      break
+    case 'pieChart':
+      result = parsePieChart(trimmed, header.title)
       break
   }
 
@@ -1120,6 +1125,38 @@ function parseCircle(dsl: string, headerTitle?: string): CircleData {
   return { type: 'circle', title, segments }
 }
 
+// @pieChart1..5 : parts de camembert. `slice "Libellé" <valeur> ["desc"] [pct:] [#HEX]`
+function parsePieChart(dsl: string, headerTitle?: string): PieData {
+  const lines = getLines(dsl)
+  let title: string | undefined = headerTitle
+  const slices: PieSlice[] = []
+
+  for (const line of lines) {
+    if (line.startsWith('@pieChart')) {
+      const m = /^@pieChart\d*\s*"?([^"]*)"?\s*$/.exec(line)
+      if (m && m[1]) title = stripQuotes(m[1])
+      continue
+    }
+
+    const tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'slice' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 2)
+      const valueNum = Number(stripQuotes(args[1] ?? ''))
+      slices.push({
+        label: stripQuotes(args[0]!),
+        value: isNaN(valueNum) ? undefined : valueNum,
+        description: trailing.subtitle,
+        pct: trailing.percent,
+        color: trailing.color,
+        icon: trailing.icon ?? '',
+      })
+    }
+  }
+
+  return { type: 'pieChart', title, slices }
+}
+
 export function generateDslText(type: string, data: TemplateData): string {
   const d = data as unknown as Record<string, unknown>
   const esc = escapeField
@@ -1185,6 +1222,19 @@ export function generateDslText(type: string, data: TemplateData): string {
 
   const segments = list('segments')
   if (segments) for (const s of segments) out += `  segment "${esc(s.number)}" "${esc(s.title)}" "${esc(s.description ?? '')}"${emitTrailingArgs(s)}\n`
+
+  const slices = list('slices')
+  if (slices) {
+    for (const s of slices) {
+      let line = `  slice "${esc(s.label)}"`
+      if (s.value != null) line += ` ${s.value}`
+      if (s.description) line += ` "${esc(s.description)}"`
+      if (s.pct) line += ` pct:"${esc(s.pct)}"`
+      if (s.icon) line += ` icon:${esc(s.icon)}`
+      if (s.color) line += ` ${s.color}`
+      out += line + '\n'
+    }
+  }
 
   const stations = list('stations')
   if (stations) for (const s of stations) out += `  station "${esc(s.title)}"${s.subtitle ? ' "' + esc(s.subtitle) + '"' : ''}${emitTrailingArgs(s)}\n`
