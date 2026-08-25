@@ -151,20 +151,20 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
       // Point 0 is origin date anchor without card
       if (ptIdx > 0) {
         const msIdx = ptIdx - 1
-        // Alternating heights: first milestone (msIdx=0) low, second (msIdx=1) high...
+        // Alternating heights: first milestone (msIdx=0) low (55px), second (msIdx=1) high (165px)...
         const isTop = msIdx % 2 === 1
-        const connH = isTop ? 145 : 85
+        const connH = isTop ? 165 : 55
         const deltaX = Math.round(connH * tan20) // 20-degree offset to the left
         const cardW = 150
-        const cardH = 80
+        const cardH = 50
         const cardX = cx - deltaX - cardW / 2
-        const cardY = cy - 12 - connH - cardH - 15
+        const cardY = cy - 12 - connH - cardH
 
         map.set(`text-${msIdx}`, { x: cardX, y: cardY, width: cardW, height: cardH })
         map.set(`card-${msIdx}`, { x: cardX, y: cardY, width: cardW, height: cardH })
         map.set(`conn-${msIdx}`, {
           x: cx - deltaX,
-          y: cy - 12 - connH - 15,
+          y: cy - 12 - connH,
           width: deltaX,
           height: connH,
         })
