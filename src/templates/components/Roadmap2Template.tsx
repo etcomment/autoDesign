@@ -162,14 +162,14 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
         const lineH = isTop ? 145 : 35
         const deltaX = Math.round(lineH * tan20) // Exact 20-degree offset for this height
         const cardW = 150
-        const cardH = Math.max(36, titleLines.length * 16 + (subLines.length > 0 ? subLines.length * 14 + 6 : 0) + 10)
+        const cardH = Math.max(36, titleLines.length * 16 + (subLines.length > 0 ? subLines.length * 14 + 6 : 0) + 8)
         const lineY1 = cy - 12 - 25
         const lineY2 = lineY1 - lineH
         const lineX2 = cx - deltaX
 
-        // Card grows UPWARDS with a clean 5px gap above lineY2
+        // Card sits with a clear space above lineY2 (where the bar terminates)
         const cardX = lineX2 - cardW / 2
-        const cardY = lineY2 - cardH - 5
+        const cardY = lineY2 - cardH - 10
 
         map.set(`text-${msIdx}`, { x: cardX, y: cardY, width: cardW, height: cardH })
         map.set(`card-${msIdx}`, { x: cardX, y: cardY, width: cardW, height: cardH })
@@ -340,13 +340,13 @@ export function Roadmap2Template({ data }: { data: RoadmapData }): ReactElement 
 
         return (
           <g key={`ms-${msIdx}`}>
-            {/* Dynamic solid grey connector line (30-degree slanted, 5px MIGSO gray) */}
+            {/* Dynamic solid grey connector line (20-degree slanted, 5px MIGSO gray) */}
             <g data-element-id={`conn-${msIdx}`}>
               <line
                 x1={dotCenterX}
                 y1={lineY1}
                 x2={cardBottomCenterX}
-                y2={cardBottomCenterY + 5}
+                y2={cardBottomCenterY + 10}
                 stroke={tplColors[`conn-${msIdx}`] || inactiveColor}
                 strokeWidth={tplStrokeWidths[`conn-${msIdx}`] || 5}
                 strokeLinecap="round"
