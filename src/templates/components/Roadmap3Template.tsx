@@ -126,15 +126,10 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
       const cardW = 230
       const cardH = 140
       const cardY = above ? 50 : timelineY + 60
-      const aW = Math.min(16, cardW * 0.1) // 16px arrow tip width
 
-      // Arrow points towards the pinX line:
-      // When leftArrow (arrow is at left edge x - aW): place card so x - aW is at pinX, or arrow tip connects at pinX
-      // If card sits to the right of pinX: arrow tip is at pinX, cardX = pinX + aW
-      // If card sits to the left of pinX: arrow tip is at pinX, cardX = pinX - cardW - aW
-      // With alternating left/right layout centered around pin:
+      // 10px space between the arrow tip and the vertical line:
       const leftArrow = i % 2 === 0 // arrow on the left
-      const cardX = leftArrow ? pinX + 16 : pinX - cardW - 16
+      const cardX = leftArrow ? pinX + 16 + 10 : pinX - cardW - 16 - 10
 
       map.set(`card-${i}`, { x: cardX, y: cardY, width: cardW, height: cardH })
 
@@ -166,8 +161,13 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
 
     years.forEach((_, i) => {
       const cx = startX + i * spacing
+      // Check if there is a milestone attached to this year
+      const msIdx = pinIndices.indexOf(i)
+      const isBottomMilestone = msIdx >= 0 && msIdx % 2 === 1
+      const yearY = isBottomMilestone ? timelineY - 45 : timelineY + 20
+
       map.set(`dot-${i}`, { x: cx - 10, y: timelineY - 10, width: 20, height: 20 })
-      map.set(`year-${i}`, { x: cx - 35, y: timelineY + 20, width: 70, height: 30 })
+      map.set(`year-${i}`, { x: cx - 35, y: yearY, width: 70, height: 30 })
     })
 
     return map
