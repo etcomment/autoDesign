@@ -19,7 +19,7 @@ export function Comparison6Template({ data }: { data: Comparison6Data }): ReactE
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
-  const { leftTitle, rightTitle, leftItems, rightItems } = data
+  const { leftTitle = '', rightTitle = '', leftItems = [], rightItems = [] } = data || {}
   const W = 800
   const colW = 280
   const colGap = 40
@@ -30,7 +30,7 @@ export function Comparison6Template({ data }: { data: Comparison6Data }): ReactE
   const topY = 50
   const checkSize = 14
 
-  const maxItems = Math.max(leftItems.length, rightItems.length, 4)
+  const maxItems = Math.max(leftItems?.length || 0, rightItems?.length || 0, 4)
 
   return (
     <g ref={svgRef}>

@@ -209,7 +209,7 @@ export function parseTemplateDsl(dsl: string): TemplateData | null {
       result = parseAgenda(trimmed, header.title)
       break
     case 'comparison':
-      result = parseComparison(trimmed, header.title)
+      result = parseComparison(trimmed, header.title, header.type)
       break
     case 'business':
       result = parseBusiness(trimmed, header.title)
@@ -690,12 +690,16 @@ function parseAgenda(dsl: string, headerTitle?: string): AgendaData {
   return { type: 'agenda', title, items }
 }
 
-function parseComparison(dsl: string, headerTitle?: string): ComparisonData {
+function parseComparison(dsl: string, headerTitle?: string, headerType: string = 'comparison'): any {
   const lines = getLines(dsl)
   let title: string | undefined = headerTitle
   let leftTitle = ''
   let rightTitle = ''
   const items: ComparisonItem[] = []
+  const leftItems: string[] = []
+  const rightItems: string[] = []
+  const pros: string[] = []
+  const cons: string[] = []
 
   for (const line of lines) {
     if (line.startsWith('@comparison')) {
@@ -703,13 +707,25 @@ function parseComparison(dsl: string, headerTitle?: string): ComparisonData {
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
-    const leftMatch = /^left\s+"([^"]*)"\s*$/.exec(line)
+    const leftMatch = /^(?:leftTitle|left)\s+"([^"]*)"\s*$/.exec(line)
     if (leftMatch) { leftTitle = leftMatch[1]!; continue }
 
-    const rightMatch = /^right\s+"([^"]*)"\s*$/.exec(line)
+    const rightMatch = /^(?:rightTitle|right)\s+"([^"]*)"\s*$/.exec(line)
     if (rightMatch) { rightTitle = rightMatch[1]!; continue }
 
-    var tokens = tokenizeLine(line)
+    const leftItemMatch = /^(?:leftItem|left_item)\s+"([^"]*)"\s*$/.exec(line)
+    if (leftItemMatch) { leftItems.push(leftItemMatch[1]!); continue }
+
+    const rightItemMatch = /^(?:rightItem|right_item)\s+"([^"]*)"\s*$/.exec(line)
+    if (rightItemMatch) { rightItems.push(rightItemMatch[1]!); continue }
+
+    const proMatch = /^(?:pro|pros)\s+"([^"]*)"\s*$/.exec(line)
+    if (proMatch) { pros.push(proMatch[1]!); continue }
+
+    const conMatch = /^(?:con|cons)\s+"([^"]*)"\s*$/.exec(line)
+    if (conMatch) { cons.push(conMatch[1]!); continue }
+
+    const tokens = tokenizeLine(line)
     if (tokens.tokens[0] === 'comp' && tokens.tokens.length >= 4) {
       const args = tokens.tokens.slice(1)
       const trailing = extractTrailingArgs(args, 3)
@@ -720,6 +736,26 @@ function parseComparison(dsl: string, headerTitle?: string): ComparisonData {
         ...trailing
       })
       continue
+    }
+  }
+
+  if (headerType === 'comparison6' || leftItems.length > 0 || rightItems.length > 0) {
+    return {
+      type: 'comparison6',
+      title,
+      leftTitle: leftTitle || 'Plan A',
+      rightTitle: rightTitle || 'Plan B',
+      leftItems: leftItems.length > 0 ? leftItems : ['Item 1', 'Item 2'],
+      rightItems: rightItems.length > 0 ? rightItems : ['Item 1', 'Item 2'],
+    }
+  }
+
+  if (headerType === 'comparison7' || pros.length > 0 || cons.length > 0) {
+    return {
+      type: 'comparison7',
+      title,
+      pros: pros.length > 0 ? pros : ['Avantage 1', 'Avantage 2'],
+      cons: cons.length > 0 ? cons : ['Inconvénient 1', 'Inconvénient 2'],
     }
   }
 

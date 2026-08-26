@@ -19,7 +19,7 @@ export function Comparison7Template({ data }: { data: Comparison7Data }): ReactE
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
-  const { pros, cons } = data
+  const { pros = [], cons = [] } = data || {}
   const W = 800
   const colW = 300
   const colGap = 40
