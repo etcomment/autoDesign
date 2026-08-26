@@ -30,7 +30,34 @@ export function Comparison6Template({ data }: { data: Comparison6Data }): ReactE
   const topY = 50
   const checkSize = 14
 
-  const maxItems = Math.max(leftItems?.length || 0, rightItems?.length || 0, 4)
+  const maxItems = Math.max(leftItems?.length || 0, rightItems?.length || 0)
+  const maxItemChars = Math.max(8, Math.floor((colW - 50) / 7.5))
+
+  // Calculate lines for each item
+  const rowData = Array.from({ length: maxItems }, (_, index) => {
+    const leftText = leftItems[index]
+    const rightText = rightItems[index]
+    const leftLines = leftText ? wrapTextByWidth(leftText, maxItemChars) : []
+    const rightLines = rightText ? wrapTextByWidth(rightText, maxItemChars) : []
+    const linesCount = Math.max(leftLines.length, rightLines.length, 1)
+    const baseH = Math.max(44, 24 + linesCount * 18)
+    return {
+      leftText,
+      rightText,
+      leftLines,
+      rightLines,
+      linesCount,
+      height: baseH,
+    }
+  })
+
+  // Calculate cumulative Y positions for each row
+  const rowYPositions: number[] = []
+  let currentY = topY + headerH + 12
+  for (let i = 0; i < maxItems; i++) {
+    rowYPositions.push(currentY)
+    currentY += rowData[i]!.height + 8
+  }
 
   return (
     <g ref={svgRef}>
@@ -110,11 +137,12 @@ export function Comparison6Template({ data }: { data: Comparison6Data }): ReactE
         )
       })()}
 
-      {Array.from({ length: maxItems }, (_, index) => {
-        const rowY = topY + headerH + 8 + index * rowH
+      {rowData.map((row, index) => {
+        const rowY = rowYPositions[index]!
+        const rowHeight = row.height
 
         const leftId = `left-item-${index}`
-        const defaultLeftBbox = { x: leftX, y: rowY, width: colW, height: rowH }
+        const defaultLeftBbox = { x: leftX, y: rowY, width: colW, height: rowHeight }
         const customLeftPos = positions[leftId]
         const leftBbox = {
           x: customLeftPos?.x ?? defaultLeftBbox.x,
@@ -127,7 +155,7 @@ export function Comparison6Template({ data }: { data: Comparison6Data }): ReactE
         const leftStrokeWidth = tplStrokeWidths[leftId] ?? (isLeftSelected ? 2 : 1)
 
         const rightId = `right-item-${index}`
-        const defaultRightBbox = { x: rightX, y: rowY, width: colW, height: rowH }
+        const defaultRightBbox = { x: rightX, y: rowY, width: colW, height: rowHeight }
         const customRightPos = positions[rightId]
         const rightBbox = {
           x: customRightPos?.x ?? defaultRightBbox.x,
@@ -139,13 +167,9 @@ export function Comparison6Template({ data }: { data: Comparison6Data }): ReactE
         const rightStrokeColor = tplStrokeColors[rightId] || (isRightSelected ? '#4a90d9' : '#e2e8f0')
         const rightStrokeWidth = tplStrokeWidths[rightId] ?? (isRightSelected ? 2 : 1)
 
-        const maxItemChars = Math.max(8, Math.floor((colW - 50) / 8))
-        const leftLines = leftItems[index] ? wrapTextByWidth(leftItems[index], maxItemChars) : []
-        const rightLines = rightItems[index] ? wrapTextByWidth(rightItems[index], maxItemChars) : []
-
         return (
           <g key={`row-${index}`}>
-            {leftItems[index] && (
+            {row.leftText !== undefined && (
               <g
                 key={leftId}
                 data-element-id={leftId}
@@ -153,11 +177,11 @@ export function Comparison6Template({ data }: { data: Comparison6Data }): ReactE
                 transform={getTransform(leftId, leftBbox)}
                 style={{ cursor: 'pointer' }}
               >
-                <rect x={leftBbox.x} y={leftBbox.y} width={leftBbox.width} height={leftBbox.height} rx={4} fill={index % 2 === 0 ? LEFT_BG : 'white'} stroke={leftStrokeColor} strokeWidth={leftStrokeWidth} />
-                <circle cx={leftBbox.x + 22} cy={leftBbox.y + leftBbox.height / 2} r={checkSize / 2} fill={LEFT_COLOR} />
-                <text x={leftBbox.x + 38} y={leftBbox.y + leftBbox.height / 2 + (leftLines.length > 1 ? -3 : 5)} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={500} fill="#333">
-                  {leftLines.map((line, lineIndex) => (
-                    <tspan key={lineIndex} x={leftBbox.x + 38} dy={lineIndex === 0 ? 0 : 13}>
+                <rect x={leftBbox.x} y={leftBbox.y} width={leftBbox.width} height={leftBbox.height} rx={6} fill={index % 2 === 0 ? LEFT_BG : 'white'} stroke={leftStrokeColor} strokeWidth={leftStrokeWidth} />
+                <circle cx={leftBbox.x + 20} cy={leftBbox.y + 22} r={checkSize / 2} fill={LEFT_COLOR} />
+                <text x={leftBbox.x + 36} y={leftBbox.y + 20} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={500} fill="#333">
+                  {row.leftLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={leftBbox.x + 36} dy={lineIndex === 0 ? 0 : 16}>
                       {line}
                     </tspan>
                   ))}
@@ -166,7 +190,7 @@ export function Comparison6Template({ data }: { data: Comparison6Data }): ReactE
               </g>
             )}
 
-            {rightItems[index] && (
+            {row.rightText !== undefined && (
               <g
                 key={rightId}
                 data-element-id={rightId}
@@ -174,11 +198,11 @@ export function Comparison6Template({ data }: { data: Comparison6Data }): ReactE
                 transform={getTransform(rightId, rightBbox)}
                 style={{ cursor: 'pointer' }}
               >
-                <rect x={rightBbox.x} y={rightBbox.y} width={rightBbox.width} height={rightBbox.height} rx={4} fill={index % 2 === 0 ? RIGHT_BG : 'white'} stroke={rightStrokeColor} strokeWidth={rightStrokeWidth} />
-                <circle cx={rightBbox.x + 22} cy={rightBbox.y + rightBbox.height / 2} r={checkSize / 2} fill={RIGHT_COLOR} />
-                <text x={rightBbox.x + 38} y={rightBbox.y + rightBbox.height / 2 + (rightLines.length > 1 ? -3 : 5)} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={500} fill="#333">
-                  {rightLines.map((line, lineIndex) => (
-                    <tspan key={lineIndex} x={rightBbox.x + 38} dy={lineIndex === 0 ? 0 : 13}>
+                <rect x={rightBbox.x} y={rightBbox.y} width={rightBbox.width} height={rightBbox.height} rx={6} fill={index % 2 === 0 ? RIGHT_BG : 'white'} stroke={rightStrokeColor} strokeWidth={rightStrokeWidth} />
+                <circle cx={rightBbox.x + 20} cy={rightBbox.y + 22} r={checkSize / 2} fill={RIGHT_COLOR} />
+                <text x={rightBbox.x + 36} y={rightBbox.y + 20} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={500} fill="#333">
+                  {row.rightLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={rightBbox.x + 36} dy={lineIndex === 0 ? 0 : 16}>
                       {line}
                     </tspan>
                   ))}
