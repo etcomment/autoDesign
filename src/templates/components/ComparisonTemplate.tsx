@@ -17,11 +17,14 @@ function parsePercent(val?: string | number, defaultVal: number = 50): number {
 const HEX_OUTER = 'M 4620 450 C 4477 202 4127 0 3842 0 L 1894 0 C 1609 0 1259 202 1116 450 L 143 2136 C 0 2383 0 2787 143 3034 L 1116 4720 C 1259 4967 1609 5169 1894 5169 L 3842 5169 C 4127 5169 4477 4967 4620 4720 L 5593 3034 C 5736 2787 5736 2383 5593 2136 L 4620 450 Z'
 const HEX_INNER = 'M 4220 4029 C 4078 4276 3728 4478 3443 4478 L 2293 4478 C 2008 4478 1658 4276 1516 4029 L 941 3034 C 798 2787 798 2383 941 2136 L 1516 1141 C 1658 894 2008 692 2293 692 L 3443 692 C 3728 692 4078 894 4220 1141 L 4795 2136 C 4938 2383 4938 2787 4795 3034 L 4220 4029 Z'
 
-function makePieSlicePath(cx: number, cy: number, r: number, pct: number): string {
+function makeLocalPieSlicePath(pct: number): string {
   if (pct >= 100) {
-    return `M ${cx - r} ${cy} A ${r} ${r} 0 1 0 ${cx + r} ${cy} A ${r} ${r} 0 1 0 ${cx - r} ${cy} Z`
+    return 'M -2000 -2000 L 8000 -2000 L 8000 8000 L -2000 8000 Z'
   }
   if (pct <= 0) return ''
+  const cx = 2868.5
+  const cy = 2585
+  const r = 6000
   const startAngle = -Math.PI / 2
   const sweepAngle = (pct / 100) * 2 * Math.PI
   const endAngle = startAngle + sweepAngle
@@ -85,28 +88,9 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
   return (
     <g ref={svgRef}>
       <defs>
-        {rawBlocks.map((_, index) => {
-          const colX = startX + index * (colW + vsW)
-          const cardId = `card-${index}`
-          const customCardPos = positions[cardId]
-          const curCardX = customCardPos?.x ?? colX
-          const curCardY = customCardPos?.y ?? cardY
-          const curCardW = customCardPos?.width ?? colW
-          const curCardH = customCardPos?.height ?? cardH
-          const hexW = curCardW * 0.76
-          const hexH = hexW * (5170 / 5737)
-          const hexX = curCardX + (curCardW - hexW) / 2
-          const hexY = curCardY + (curCardH - hexH) / 2
-          const scale = hexW / 5737
-
-          return (
-            <clipPath key={`clip-hex-${index}`} id={`clip-hex-ring-${index}`}>
-              <g transform={`translate(${hexX}, ${hexY}) scale(${scale})`}>
-                <path d={`${HEX_OUTER} ${HEX_INNER}`} clipRule="evenodd" />
-              </g>
-            </clipPath>
-          )
-        })}
+        <clipPath id="clip-hex-ring-local">
+          <path d={`${HEX_OUTER} ${HEX_INNER}`} clipRule="evenodd" />
+        </clipPath>
       </defs>
 
       {rawBlocks.map((block, index) => {
@@ -141,7 +125,6 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
           width: customCardPos?.width ?? defaultCardBbox.width,
           height: customCardPos?.height ?? defaultCardBbox.height,
         }
-        const cardBg = tplColors[cardId] || '#2c2b64'
         const cardStrokeColor = tplStrokeColors[cardId] || (isCardSelected ? '#4a90d9' : 'none')
         const cardStrokeWidth = tplStrokeWidths[cardId] ?? (isCardSelected ? 2.5 : 0)
 
@@ -153,9 +136,8 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
         const scale = hexW / 5737
         const cx = hexX + hexW / 2
         const cy = hexY + hexH / 2
-        const radius = hexW * 0.65
         const badgePct = parsePercent(block.badgePercent || block.percent, 50)
-        const pieSlicePath = makePieSlicePath(cx, cy, radius, badgePct)
+        const localPieSlicePath = makeLocalPieSlicePath(badgePct)
         const IconComponent = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
         const iconSize = Math.round(hexW * 0.24)
 
@@ -243,17 +225,17 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
                 />
               )}
 
-              {/* Background Light Gray Hexagon Ring */}
+              {/* Background Light Gray Hexagon Ring & Active Color Pie Slice */}
               <g transform={`translate(${hexX}, ${hexY}) scale(${scale})`}>
                 <path d={`${HEX_OUTER} ${HEX_INNER}`} fill="#f0f0f0" clipRule="evenodd" />
+                {badgePct > 0 && (
+                  <path
+                    d={localPieSlicePath}
+                    fill={brandPaletteColor}
+                    clipPath="url(#clip-hex-ring-local)"
+                  />
+                )}
               </g>
-
-              {/* Active Color Pie Slice clipped by Hexagon Ring */}
-              <path
-                d={pieSlicePath}
-                fill={brandPaletteColor}
-                clipPath={`url(#clip-hex-ring-${index})`}
-              />
 
               {/* Center Icon */}
               {IconComponent && (
