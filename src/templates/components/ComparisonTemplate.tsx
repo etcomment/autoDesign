@@ -136,8 +136,8 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
         const scale = hexW / 5737
         const cx = hexX + hexW / 2
         const cy = hexY + hexH / 2
-        const badgePct = parsePercent(block.badgePercent || block.percent, 50)
-        const localPieSlicePath = makeLocalPieSlicePath(badgePct)
+        const pctValue = parsePercent(block.percent ?? block.value ?? block.progress, index === 0 ? 95 : 50)
+        const localPieSlicePath = makeLocalPieSlicePath(pctValue)
         const IconComponent = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
         const iconSize = Math.round(hexW * 0.24)
 
@@ -155,7 +155,6 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
         const gaugeColor = tplColors[gaugeId] || brandPaletteColor
         const gaugeStrokeColor = tplStrokeColors[gaugeId] || (isGaugeSelected ? '#4a90d9' : 'none')
         const gaugeStrokeWidth = tplStrokeWidths[gaugeId] ?? (isGaugeSelected ? 2 : 0)
-        const gaugePct = parsePercent(block.progress || block.value, 75)
         const trackW = Math.max(30, gaugeBbox.width - 56)
 
         // 4. Description Card
@@ -228,7 +227,7 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
               {/* Background Light Gray Hexagon Ring & Active Color Pie Slice */}
               <g transform={`translate(${hexX}, ${hexY}) scale(${scale})`}>
                 <path d={`${HEX_OUTER} ${HEX_INNER}`} fill="#f0f0f0" clipRule="evenodd" />
-                {badgePct > 0 && (
+                {pctValue > 0 && (
                   <path
                     d={localPieSlicePath}
                     fill={brandPaletteColor}
@@ -254,7 +253,7 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
                 fontWeight={700}
                 fill={brandPaletteColor}
               >
-                {badgePct}%
+                {pctValue}%
               </text>
 
               {isCardSelected && renderHandles(cardBbox, cardId)}
@@ -271,9 +270,9 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
                 <rect x={gaugeBbox.x - 2} y={gaugeBbox.y - 2} width={gaugeBbox.width + 4} height={gaugeBbox.height + 4} rx={6} fill="none" stroke={gaugeStrokeColor} strokeWidth={gaugeStrokeWidth} />
               )}
               <rect x={gaugeBbox.x} y={gaugeBbox.y + (gaugeBbox.height - 14) / 2} width={trackW} height={14} rx={7} fill="#f0f0f0" />
-              <rect x={gaugeBbox.x} y={gaugeBbox.y + (gaugeBbox.height - 14) / 2} width={Math.max(0, (gaugePct / 100) * trackW)} height={14} rx={7} fill={gaugeColor} />
+              <rect x={gaugeBbox.x} y={gaugeBbox.y + (gaugeBbox.height - 14) / 2} width={Math.max(0, (pctValue / 100) * trackW)} height={14} rx={7} fill={gaugeColor} />
               <text x={gaugeBbox.x + trackW + 8} y={gaugeBbox.y + gaugeBbox.height / 2 + 5} fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill={gaugeColor}>
-                {gaugePct}%
+                {pctValue}%
               </text>
               {isGaugeSelected && renderHandles(gaugeBbox, gaugeId)}
             </g>
