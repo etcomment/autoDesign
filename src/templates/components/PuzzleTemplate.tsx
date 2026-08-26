@@ -4,33 +4,37 @@ import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
-import { randomMigsoColor } from '../../lib/theme'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
-const CELL_W = 260
-const CELL_H = 170
-const TAB_W = 50
-const TAB_D = 22
+const CELL_W = 160
+const CELL_H = 130
 
-function piecePath(
-  x: number,
-  y: number,
-  opts: { right?: boolean; bottom?: boolean; leftIndent?: boolean; topIndent?: boolean },
-): string {
+type Tab = { right?: boolean; bottom?: boolean; leftIndent?: boolean; topIndent?: boolean }
+
+function getTabForCell(row: number, col: number, totalRows: number, cols: number): Tab {
+  return {
+    right: col < cols - 1,
+    bottom: row < totalRows - 1,
+    leftIndent: col > 0,
+    topIndent: row > 0,
+  }
+}
+
+function gridPath(x: number, y: number, t: Tab): string {
   const r = x + CELL_W
   const b = y + CELL_H
   const midX = x + CELL_W / 2
   const midY = y + CELL_H / 2
-  const neckW = 20
-  const headR = 15
-  const neckR = 7
-  const tabD = 23
+  const neckW = 18
+  const headR = 14
+  const neckR = 6
 
   const hMid = midY
   const vMid = midX
 
   let d = `M ${x} ${y}`
 
-  if (opts.topIndent) {
+  if (t.topIndent) {
     d += ` L ${vMid - neckW / 2 - neckR} ${y}`
     d += ` A ${neckR} ${neckR} 0 0 1 ${vMid - neckW / 2} ${y + neckR}`
     d += ` A ${headR} ${headR} 0 1 0 ${vMid + neckW / 2} ${y + neckR}`
@@ -40,7 +44,7 @@ function piecePath(
     d += ` L ${r} ${y}`
   }
 
-  if (opts.right) {
+  if (t.right) {
     d += ` L ${r} ${hMid - neckW / 2 - neckR}`
     d += ` A ${neckR} ${neckR} 0 0 1 ${r + neckR} ${hMid - neckW / 2}`
     d += ` A ${headR} ${headR} 0 1 1 ${r + neckR} ${hMid + neckW / 2}`
@@ -50,7 +54,7 @@ function piecePath(
     d += ` L ${r} ${b}`
   }
 
-  if (opts.bottom) {
+  if (t.bottom) {
     d += ` L ${vMid + neckW / 2 + neckR} ${b}`
     d += ` A ${neckR} ${neckR} 0 0 1 ${vMid + neckW / 2} ${b + neckR}`
     d += ` A ${headR} ${headR} 0 1 1 ${vMid - neckW / 2} ${b + neckR}`
@@ -60,7 +64,7 @@ function piecePath(
     d += ` L ${x} ${b}`
   }
 
-  if (opts.leftIndent) {
+  if (t.leftIndent) {
     d += ` L ${x} ${hMid + neckW / 2 + neckR}`
     d += ` A ${neckR} ${neckR} 0 0 1 ${x + neckR} ${hMid + neckW / 2}`
     d += ` A ${headR} ${headR} 0 1 0 ${x + neckR} ${hMid - neckW / 2}`
@@ -72,12 +76,8 @@ function piecePath(
   return d
 }
 
-const PIECE_LAYOUTS = [
-  { tabs: { right: true, bottom: true } as const },
-  { tabs: { bottom: true, leftIndent: true } as const },
-  { tabs: { right: true, topIndent: true } as const },
-  { tabs: { leftIndent: true, topIndent: true } as const },
-]
+const DEFAULT_COLORS = ['#2c2b64', '#3466ce', '#ffc000', '#ff5338']
+const DEFAULT_ICONS = ['gear', 'chart', 'lightbulb', 'user']
 
 export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -89,79 +89,169 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
   const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const { pieces } = data
-  const W = 900
-  const gridX = (W - CELL_W * 2) / 2
-  const gridY = 40
+  const W = 1000
+  const cols = 2
+  const totalRows = 2
+  const gridW = cols * CELL_W
+  const startX = (W - gridW) / 2
+  const startY = 140
+
+  const getElementPos = (elementId: string, defaultRect: { x: number; y: number; width: number; height: number }) => {
+    const customPos = templateElementPositions[elementId]
+    return {
+      x: customPos ? customPos.x : defaultRect.x,
+      y: customPos ? customPos.y : defaultRect.y,
+      width: customPos?.width || defaultRect.width,
+      height: customPos?.height || defaultRect.height,
+    }
+  }
 
   return (
     <g ref={svgRef}>
-      {pieces.map((piece, index) => {
-        const layout = PIECE_LAYOUTS[index % PIECE_LAYOUTS.length]!
-        const col = index % 2
-        const row = Math.floor(index / 2)
-        const px = gridX + col * CELL_W
-        const py = gridY + row * CELL_H
-        const path = piecePath(px, py, layout.tabs)
+      {pieces.slice(0, 4).map((piece, index) => {
+        const row = Math.floor(index / cols)
+        const col = index % cols
+        const tabOpts = getTabForCell(row, col, totalRows, cols)
+        const px = startX + col * CELL_W
+        const py = startY + row * CELL_H
+        const path = gridPath(px, py, tabOpts)
 
-        const elementId = `piece-${index}`
-        const color = tplColors[elementId] ?? piece.color ?? randomMigsoColor(index)
-        const stroke = tplStrokeColors[elementId] || 'white'
-        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3.5 : 3)
-        const isSelected = selectedIds.has(elementId)
+        const defaultColor = piece.color || DEFAULT_COLORS[index] || MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
+        const pieceId = `piece-${index}`
+        const color = tplColors[pieceId] ?? defaultColor
+        const stroke = tplStrokeColors[pieceId] || 'white'
+        const strokeWidth = tplStrokeWidths[pieceId] ?? (selectedIds.has(pieceId) ? 3.5 : 2)
+        const isPieceSelected = selectedIds.has(pieceId)
 
-        const defaultRect = { x: px, y: py, width: CELL_W, height: CELL_H }
-        const customPos = templateElementPositions[elementId]
-        const bbox = {
-          x: customPos ? customPos.x : defaultRect.x,
-          y: customPos ? customPos.y : defaultRect.y,
-          width: customPos?.width || defaultRect.width,
-          height: customPos?.height || defaultRect.height,
-        }
-        const IconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] : undefined
-        const centerCx = bbox.x + bbox.width / 2
-        const centerCy = bbox.y + bbox.height / 2
-        const maxChars = Math.max(10, Math.floor((bbox.width - 60) / 8))
-        const titleLines = wrapTextByWidth(piece.title, maxChars)
-        const subtitleLines = piece.subtitle ? wrapTextByWidth(piece.subtitle, maxChars) : []
+        const pieceRect = getElementPos(pieceId, { x: px, y: py, width: CELL_W, height: CELL_H })
+        const centerCx = pieceRect.x + pieceRect.width / 2
+        const centerCy = pieceRect.y + pieceRect.height / 2
+
+        const iconName = piece.icon || DEFAULT_ICONS[index]
+        const IconComponent = iconName ? TEMPLATE_ICONS[iconName] || TEMPLATE_ICONS[iconName.toLowerCase()] : undefined
+
+        const isLeft = col === 0
+        const cardId = `card-${index}`
+        const defaultCardX = isLeft ? 60 : 700
+        const defaultCardY = py + 15
+        const cardRect = getElementPos(cardId, { x: defaultCardX, y: defaultCardY, width: 240, height: 100 })
+        const isCardSelected = selectedIds.has(cardId)
+        const cardColor = tplColors[cardId] ?? color
+
+        const connId = `conn-${index}`
+        const connLineY = cardRect.y + 16
+        const connPointX = isLeft ? cardRect.x + cardRect.width + 12 : cardRect.x - 12
+        const connStartX = isLeft ? connPointX + 12 : connPointX - 12
+        const connEndX = isLeft ? pieceRect.x - 10 : pieceRect.x + pieceRect.width + 10
+
+        const titleMaxChars = Math.max(10, Math.floor(cardRect.width / 10))
+        const subtitleMaxChars = Math.max(12, Math.floor(cardRect.width / 7.5))
+        const titleLines = wrapTextByWidth(piece.title, titleMaxChars)
+        const subtitleLines = piece.subtitle ? wrapTextByWidth(piece.subtitle, subtitleMaxChars) : []
 
         return (
-          <g key={elementId}>
+          <g key={`item-${index}`}>
+            {/* CONNECTEUR DYNAMIQUE */}
+            <g data-element-id={connId} opacity={0.9}>
+              <line
+                x1={connStartX}
+                y1={connLineY}
+                x2={connEndX}
+                y2={connLineY}
+                stroke={cardColor}
+                strokeWidth={2}
+                strokeDasharray="4 3"
+              />
+              <circle
+                cx={connPointX}
+                cy={connLineY}
+                r={4}
+                fill={cardColor}
+              />
+            </g>
+
+            {/* PIECE DE PUZZLE */}
             <g
-              data-element-id={elementId}
-              onMouseDown={e => startDrag(e, elementId, bbox)}
-              transform={getTransform(elementId, bbox)}
+              data-element-id={pieceId}
+              onMouseDown={e => startDrag(e, pieceId, pieceRect)}
+              transform={getTransform(pieceId, pieceRect)}
               style={{ cursor: 'pointer' }}
             >
-              <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
-
-              <circle cx={bbox.x + 36} cy={bbox.y + 44} r={16} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
+              <path
+                d={path}
+                fill={color}
+                stroke={isPieceSelected ? '#4a90d9' : stroke}
+                strokeWidth={strokeWidth}
+                strokeLinejoin="round"
+              />
+              <circle
+                cx={centerCx}
+                cy={centerCy}
+                r={22}
+                fill="rgba(255,255,255,0.2)"
+                stroke="rgba(255,255,255,0.8)"
+                strokeWidth={2}
+              />
               {IconComponent ? (
-                <g transform={`translate(${bbox.x + 28}, ${bbox.y + 36})`}>
-                  <IconComponent size={16} color="white" />
+                <g transform={`translate(${centerCx - 11}, ${centerCy - 11})`}>
+                  <IconComponent size={22} color="white" />
                 </g>
               ) : (
-                <text x={bbox.x + 36} y={bbox.y + 50} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill="white">
-                  {piece.number}
+                <text
+                  x={centerCx}
+                  y={centerCy + 6}
+                  textAnchor="middle"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={16}
+                  fontWeight={700}
+                  fill="white"
+                >
+                  {piece.number ?? index + 1}
                 </text>
               )}
+              {isPieceSelected && renderHandles(pieceRect, pieceId)}
+            </g>
 
-              <text x={centerCx + 10} y={centerCy + (subtitleLines.length > 0 ? -4 : 4) - (titleLines.length > 1 ? (titleLines.length - 1) * 6 : 0)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={700} fill="white">
-                {titleLines.map((line, lineIndex) => (
-                  <tspan key={lineIndex} x={centerCx + 10} dy={lineIndex === 0 ? 0 : 15}>
+            {/* CARTE DE TEXTE EXTERNE */}
+            <g
+              data-element-id={cardId}
+              onMouseDown={e => startDrag(e, cardId, cardRect)}
+              transform={getTransform(cardId, cardRect)}
+              style={{ cursor: 'pointer' }}
+            >
+              <text
+                x={isLeft ? cardRect.x + cardRect.width : cardRect.x}
+                y={cardRect.y + 16}
+                textAnchor={isLeft ? 'end' : 'start'}
+                fontFamily="Arial, sans-serif"
+                fontSize={18}
+                fontWeight="bold"
+                fill={cardColor}
+              >
+                {titleLines.map((line, lIdx) => (
+                  <tspan key={lIdx} x={isLeft ? cardRect.x + cardRect.width : cardRect.x} dy={lIdx === 0 ? 0 : 20}>
                     {line}
                   </tspan>
                 ))}
               </text>
-              {piece.subtitle && (
-                <text x={centerCx + 10} y={centerCy + titleLines.length * 15 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fill="rgba(255,255,255,0.85)">
-                  {subtitleLines.map((line, lineIndex) => (
-                    <tspan key={lineIndex} x={centerCx + 10} dy={lineIndex === 0 ? 0 : 13}>
+
+              {subtitleLines.length > 0 && (
+                <text
+                  x={isLeft ? cardRect.x + cardRect.width : cardRect.x}
+                  y={cardRect.y + 22 + titleLines.length * 20}
+                  textAnchor={isLeft ? 'end' : 'start'}
+                  fontFamily="Arial, sans-serif"
+                  fontSize={12}
+                  fill="#555555"
+                >
+                  {subtitleLines.map((line, lIdx) => (
+                    <tspan key={lIdx} x={isLeft ? cardRect.x + cardRect.width : cardRect.x} dy={lIdx === 0 ? 0 : 15}>
                       {line}
                     </tspan>
                   ))}
                 </text>
               )}
-              {isSelected && renderHandles(bbox, elementId)}
+              {isCardSelected && renderHandles(cardRect, cardId)}
             </g>
           </g>
         )
@@ -169,3 +259,4 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
     </g>
   )
 }
+
