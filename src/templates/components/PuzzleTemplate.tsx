@@ -193,7 +193,7 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
                 strokeWidth={2}
               />
               {IconComponent ? (
-                <g transform={`translate(${centerCx - 11}, ${centerCy - 11})`}>
+                <g data-icon="true" transform={`translate(${centerCx - 11}, ${centerCy - 11})`}>
                   <IconComponent size={22} color="white" />
                 </g>
               ) : (

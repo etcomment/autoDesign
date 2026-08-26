@@ -479,9 +479,10 @@ function addTextToSlide(
     fontFace: fontFamily,
     color: hexColor,
     align,
-    valign: 'middle',
+    valign: 'top',
     margin: 0,
-    wrap: false,
+    wrap: true,
+    autoFit: true,
     isTextBox: true,
   }
 
@@ -562,6 +563,17 @@ export async function generateCanvasPptx(): Promise<Blob> {
     }
     // Remove so children aren't drawn independently as unclipped rects
     g.remove()
+  }
+
+  // Export icon groups / containers (e.g. lucide icons, template icons) as unified single vector SVG images
+  const iconGroups = Array.from(svgRoot.querySelectorAll<SVGGraphicsElement>('svg.lucide, g.lucide, g[data-icon], g[data-slot="icon"]'))
+  for (const iconEl of iconGroups) {
+    if (isInteractiveElement(iconEl) || isInsideDefs(iconEl)) continue
+    const bounds = getAbsBounds(iconEl, svgRoot)
+    if (bounds && bounds.w > 0 && bounds.h > 0) {
+      await addElementAsImageToSlide(slide, iconEl, bounds, vb, layout, allDefs)
+    }
+    iconEl.remove()
   }
 
   const shapes = Array.from(svgRoot.querySelectorAll<SVGGraphicsElement>('rect, circle, ellipse, polygon, path, line'))
