@@ -143,3 +143,13 @@ export function createCssVariables(theme: Theme): Record<string, string> {
 
 export const STANDARD_COLORS = PRESET_COLORS
 export const MIGSO_COLORS = MIGSO_PALETTE
+
+// Couleur "aléatoire" stable de la palette MIGSO : déterministe par graine
+// (évite le scintillement à chaque rendu) mais sans cycle régulier i % length.
+export function randomMigsoColor(seed: number): string {
+  let a = (seed + 0x6d2b79f5) >>> 0
+  a = Math.imul(a ^ (a >>> 15), a | 1)
+  a ^= a + Math.imul(a ^ (a >>> 7), a | 61)
+  const r = ((a ^ (a >>> 14)) >>> 0) / 4294967296
+  return MIGSO_PALETTE[Math.floor(r * MIGSO_PALETTE.length)]!
+}

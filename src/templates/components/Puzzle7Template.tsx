@@ -4,7 +4,7 @@ import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { randomMigsoColor } from '../../lib/theme'
 
 const MAIN_W = 280
 const MAIN_H = 260
@@ -44,7 +44,7 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
       {/* Main Big Piece */}
       {mainPiece && (() => {
         const elementId = 'piece-0'
-        const color = tplColors[elementId] ?? mainPiece.color ?? MIGSO_PALETTE[0]!
+        const color = tplColors[elementId] ?? mainPiece.color ?? randomMigsoColor(0)
         const stroke = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : 'white')
         const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3.5 : 2.5)
         const isSelected = selectedIds.has(elementId)
@@ -107,7 +107,7 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
           height: customPos?.height || defaultRect.height,
         }
 
-        const color = tplColors[elementId] ?? piece.color ?? MIGSO_PALETTE[sideIdx % MIGSO_PALETTE.length]!
+        const color = tplColors[elementId] ?? piece.color ?? randomMigsoColor(sideIdx)
         const stroke = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : 'white')
         const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3.5 : 2)
         const isSelected = selectedIds.has(elementId)

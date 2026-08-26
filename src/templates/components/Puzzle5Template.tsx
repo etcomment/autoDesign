@@ -4,9 +4,8 @@ import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { randomMigsoColor } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE]
 
 function circularSegmentPath(
   cx: number,
@@ -55,7 +54,7 @@ export function Puzzle5Template({ data }: { data: PuzzleData }): ReactElement {
         const startAngle = index * angleStep - 90
         const endAngle = startAngle + angleStep
         const path = circularSegmentPath(cx, cy, innerR, outerR, startAngle, endAngle)
-        const defaultColor = piece.color || PALETTE[index % PALETTE.length]!
+        const defaultColor = piece.color || randomMigsoColor(index)
         const elementId = `piece-${index}`
         const color = tplColors[elementId] ?? defaultColor
         const stroke = tplStrokeColors[elementId] || 'white'

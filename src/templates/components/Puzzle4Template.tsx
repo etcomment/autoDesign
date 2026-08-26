@@ -4,9 +4,8 @@ import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import { randomMigsoColor } from '../../lib/theme'
 
-const PALETTE = [...MIGSO_PALETTE]
 const CELL_W = 160
 const CELL_H = 130
 const TAB_H = 40
@@ -66,7 +65,7 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
         const px = startX + col * CELL_W
         const py = startY + row * CELL_H
         const path = gridPath(px, py, tabOpts)
-        const defaultColor = piece.color || PALETTE[index % PALETTE.length]!
+        const defaultColor = piece.color || randomMigsoColor(index)
         const elementId = `piece-${index}`
         const color = tplColors[elementId] ?? defaultColor
         const stroke = tplStrokeColors[elementId] || 'white'
