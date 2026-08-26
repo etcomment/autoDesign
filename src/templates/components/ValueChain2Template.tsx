@@ -1,13 +1,27 @@
 import { useRef, type ReactElement } from 'react'
-import type { ValueChainData } from '../types'
+import type { ValueChainData, ValueChainActivity } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
-import { MIGSO_PALETTE } from '../../lib/theme'
 
-const SUPPORT_COLORS = ['#3b82f6', '#2563eb', '#1d4ed8', '#1e40af']
-const PRIMARY_COLORS = [...MIGSO_PALETTE, '#0284c7', '#0369a1', '#075985']
+const DEFAULT_PRIMARY_COLORS = ['#1a2249', '#2b63d9', '#ff5338', '#ffb100', '#48bb95']
+const DEFAULT_SUPPORT_COLORS = ['#7b9fd9', '#2b63d9', '#1e4ea8', '#152759']
+
+const DEFAULT_PRIMARY_ACTIVITIES = [
+  { title: 'Inbound Logistics', icon: 'truck' },
+  { title: 'Operations', icon: 'package' },
+  { title: 'Outbound Logistics', icon: 'truck' },
+  { title: 'Marketing And sales', icon: 'people' },
+  { title: 'Service', icon: 'handshake' },
+]
+
+const DEFAULT_SUPPORT_ACTIVITIES = [
+  { title: 'Firm infrastructure' },
+  { title: 'Human resource management' },
+  { title: 'Technology development' },
+  { title: 'Procurement' },
+]
 
 export function ValueChain2Template({ data }: { data: ValueChainData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -18,30 +32,227 @@ export function ValueChain2Template({ data }: { data: ValueChainData }): ReactEl
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const { support = [], primary = [] } = data
-  const startX = 40
-  const mainW = 700
-  const marginW = 100
+  const primaryData: ValueChainActivity[] = data.primary && data.primary.length > 0
+    ? data.primary
+    : DEFAULT_PRIMARY_ACTIVITIES.map((act, i) => ({
+        ...act,
+        color: DEFAULT_PRIMARY_COLORS[i % DEFAULT_PRIMARY_COLORS.length],
+      }))
+
+  const supportData: ValueChainActivity[] = data.support && data.support.length > 0
+    ? data.support
+    : DEFAULT_SUPPORT_ACTIVITIES.map((act, i) => ({
+        ...act,
+        color: DEFAULT_SUPPORT_COLORS[i % DEFAULT_SUPPORT_COLORS.length],
+      }))
+
+  const startX = 110
+  const mainW = 730
+  const marginW = 190
   const startY = 40
 
-  const supportCount = Math.max(1, support.length)
-  const primaryCount = Math.max(1, primary.length)
+  const primaryCount = Math.max(1, primaryData.length)
+  const supportCount = Math.max(1, supportData.length)
 
-  const supportH = 44
-  const supportGap = 6
+  const primaryH = 190
+  const primaryGap = 2
+  const primaryColW = (mainW - (primaryCount - 1) * primaryGap) / primaryCount
+
+  const supportTopY = startY + primaryH + 2
+  const supportH = 46
+  const supportGap = 2
   const totalSupportH = supportCount * supportH + (supportCount - 1) * supportGap
+  const totalH = primaryH + 2 + totalSupportH
 
-  const primaryTopY = startY + totalSupportH + 16
-  const primaryH = 170
-  const primaryColW = (mainW - (primaryCount - 1) * 8) / primaryCount
-  const totalH = totalSupportH + 16 + primaryH
+  const primaryCenterY = startY + primaryH / 2
+  const supportCenterX = startX + mainW / 2
+  const supportBottomY = supportTopY + totalSupportH + 24
+
+  const axisPrimaryId = 'axis-primary'
+  const customAxisPrimaryPos = positions[axisPrimaryId]
+  const defaultAxisPrimaryRect = { x: startX - 45, y: primaryCenterY, width: 30, height: primaryH }
+  const axisPrimaryBbox = {
+    x: customAxisPrimaryPos ? customAxisPrimaryPos.x : defaultAxisPrimaryRect.x,
+    y: customAxisPrimaryPos ? customAxisPrimaryPos.y : defaultAxisPrimaryRect.y,
+    width: customAxisPrimaryPos?.width || defaultAxisPrimaryRect.width,
+    height: customAxisPrimaryPos?.height || defaultAxisPrimaryRect.height,
+  }
+  const isAxisPrimarySelected = selectedIds.has(axisPrimaryId)
+  const axisPrimaryColor = tplColors[axisPrimaryId] || '#1a2249'
+
+  const axisSupportId = 'axis-support'
+  const customAxisSupportPos = positions[axisSupportId]
+  const defaultAxisSupportRect = { x: startX, y: supportBottomY - 14, width: mainW, height: 28 }
+  const axisSupportBbox = {
+    x: customAxisSupportPos ? customAxisSupportPos.x : defaultAxisSupportRect.x,
+    y: customAxisSupportPos ? customAxisSupportPos.y : defaultAxisSupportRect.y,
+    width: customAxisSupportPos?.width || defaultAxisSupportRect.width,
+    height: customAxisSupportPos?.height || defaultAxisSupportRect.height,
+  }
+  const isAxisSupportSelected = selectedIds.has(axisSupportId)
+  const axisSupportColor = tplColors[axisSupportId] || '#1a2249'
 
   return (
     <g ref={svgRef}>
-      {/* Support Activities (Horizontal Rows) */}
-      {support.map((act, index) => {
+      <g
+        data-element-id={axisPrimaryId}
+        onMouseDown={e => startDrag(e, axisPrimaryId, axisPrimaryBbox)}
+        transform={getTransform(axisPrimaryId, axisPrimaryBbox)}
+        style={{ cursor: 'pointer' }}
+      >
+        <text
+          x={axisPrimaryBbox.x}
+          y={axisPrimaryBbox.y}
+          textAnchor="middle"
+          fontFamily="Arial, sans-serif"
+          fontSize={17}
+          fontWeight={700}
+          fill={axisPrimaryColor}
+          transform={`rotate(-90, ${axisPrimaryBbox.x}, ${axisPrimaryBbox.y})`}
+        >
+          Primary activities
+        </text>
+        {isAxisPrimarySelected && renderHandles(axisPrimaryBbox, axisPrimaryId)}
+      </g>
+
+      <g
+        data-element-id={axisSupportId}
+        onMouseDown={e => startDrag(e, axisSupportId, axisSupportBbox)}
+        transform={getTransform(axisSupportId, axisSupportBbox)}
+        style={{ cursor: 'pointer' }}
+      >
+        {(() => {
+          const arrowLineY = axisSupportBbox.y + axisSupportBbox.height / 2
+          const leftLineEndX = axisSupportBbox.x + axisSupportBbox.width * 0.33
+          const rightLineStartX = axisSupportBbox.x + axisSupportBbox.width * 0.67
+          const rightLineEndX = axisSupportBbox.x + axisSupportBbox.width
+
+          return (
+            <g>
+              <line
+                x1={axisSupportBbox.x + 12}
+                y1={arrowLineY}
+                x2={leftLineEndX}
+                y2={arrowLineY}
+                stroke={axisSupportColor}
+                strokeWidth={5}
+                strokeLinecap="round"
+              />
+              <polygon
+                points={`${axisSupportBbox.x},${arrowLineY} ${axisSupportBbox.x + 14},${arrowLineY - 7} ${axisSupportBbox.x + 14},${arrowLineY + 7}`}
+                fill={axisSupportColor}
+              />
+
+              <text
+                x={axisSupportBbox.x + axisSupportBbox.width / 2}
+                y={arrowLineY + 5}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={15}
+                fontWeight={700}
+                letterSpacing="1px"
+                fill={axisSupportColor}
+              >
+                SUPPORT ACTIVITIES
+              </text>
+
+              <line
+                x1={rightLineStartX}
+                y1={arrowLineY}
+                x2={rightLineEndX - 12}
+                y2={arrowLineY}
+                stroke={axisSupportColor}
+                strokeWidth={5}
+                strokeLinecap="round"
+              />
+              <polygon
+                points={`${rightLineEndX},${arrowLineY} ${rightLineEndX - 14},${arrowLineY - 7} ${rightLineEndX - 14},${arrowLineY + 7}`}
+                fill={axisSupportColor}
+              />
+            </g>
+          )
+        })()}
+        {isAxisSupportSelected && renderHandles(axisSupportBbox, axisSupportId)}
+      </g>
+
+      {primaryData.map((act, index) => {
+        const elementId = `primary-${index}`
+        const x = startX + index * (primaryColW + primaryGap)
+        const defaultRect = { x, y: startY, width: primaryColW, height: primaryH }
+        const customPos = positions[elementId]
+        const bbox = {
+          x: customPos ? customPos.x : defaultRect.x,
+          y: customPos ? customPos.y : defaultRect.y,
+          width: customPos?.width || defaultRect.width,
+          height: customPos?.height || defaultRect.height,
+        }
+
+        const defaultColor = act.color || DEFAULT_PRIMARY_COLORS[index % DEFAULT_PRIMARY_COLORS.length]!
+        const color = tplColors[elementId] ?? defaultColor
+        const strokeColor = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2 : 0)
+        const isSelected = selectedIds.has(elementId)
+
+        const defaultIconKey = DEFAULT_PRIMARY_ACTIVITIES[index % DEFAULT_PRIMARY_ACTIVITIES.length]?.icon
+        const iconKey = act.icon || defaultIconKey
+        const IconComponent = iconKey ? TEMPLATE_ICONS[iconKey] : undefined
+
+        const textCenterX = bbox.x + bbox.width / 2
+        const maxChars = Math.max(6, Math.floor((bbox.width - 20) / 9))
+        const nameLines = wrapTextByWidth(act.title, maxChars)
+        const iconSize = 36
+        const iconY = bbox.y + 32
+        const textY = bbox.y + 115
+
+        return (
+          <g key={elementId}>
+            <g
+              data-element-id={elementId}
+              onMouseDown={e => startDrag(e, elementId, bbox)}
+              transform={getTransform(elementId, bbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect
+                x={bbox.x}
+                y={bbox.y}
+                width={bbox.width}
+                height={bbox.height}
+                fill={color}
+                stroke={strokeColor}
+                strokeWidth={strokeWidth}
+              />
+
+              {IconComponent && (
+                <g transform={`translate(${textCenterX - iconSize / 2}, ${iconY})`}>
+                  <IconComponent size={iconSize} color="#ffffff" />
+                </g>
+              )}
+
+              <text
+                x={textCenterX}
+                y={IconComponent ? textY : bbox.y + bbox.height / 2 + 5}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={15}
+                fontWeight={700}
+                fill="#ffffff"
+              >
+                {nameLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={textCenterX} dy={lineIndex === 0 ? 0 : 18}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+
+              {isSelected && renderHandles(bbox, elementId)}
+            </g>
+          </g>
+        )
+      })}
+
+      {supportData.map((act, index) => {
         const elementId = `support-${index}`
-        const y = startY + index * (supportH + supportGap)
+        const y = supportTopY + index * (supportH + supportGap)
         const defaultRect = { x: startX, y, width: mainW, height: supportH }
         const customPos = positions[elementId]
         const bbox = {
@@ -51,15 +262,17 @@ export function ValueChain2Template({ data }: { data: ValueChainData }): ReactEl
           height: customPos?.height || defaultRect.height,
         }
 
-        const defaultColor = act.color || SUPPORT_COLORS[index % SUPPORT_COLORS.length]!
+        const defaultColor = act.color || DEFAULT_SUPPORT_COLORS[index % DEFAULT_SUPPORT_COLORS.length]!
         const color = tplColors[elementId] ?? defaultColor
-        const strokeColor = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : '#e2e8f0')
-        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1)
+        const strokeColor = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : 'none')
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2 : 0)
         const isSelected = selectedIds.has(elementId)
         const IconComponent = act.icon ? TEMPLATE_ICONS[act.icon] : undefined
 
-        const maxChars = Math.max(10, Math.floor((bbox.width - 60) / 8))
+        const maxChars = Math.max(10, Math.floor((bbox.width - 60) / 9))
         const titleLines = wrapTextByWidth(act.title, maxChars)
+        const textCenterX = bbox.x + bbox.width / 2
+        const textCenterY = bbox.y + bbox.height / 2 + (titleLines.length > 1 ? -4 : 5)
 
         return (
           <g key={elementId}>
@@ -69,18 +282,33 @@ export function ValueChain2Template({ data }: { data: ValueChainData }): ReactEl
               transform={getTransform(elementId, bbox)}
               style={{ cursor: 'pointer' }}
             >
-              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill="white" stroke={strokeColor} strokeWidth={strokeWidth} />
-              <rect x={bbox.x} y={bbox.y} width={6} height={bbox.height} rx={3} fill={color} />
+              <rect
+                x={bbox.x}
+                y={bbox.y}
+                width={bbox.width}
+                height={bbox.height}
+                fill={color}
+                stroke={strokeColor}
+                strokeWidth={strokeWidth}
+              />
 
               {IconComponent && (
-                <g transform={`translate(${bbox.x + 16}, ${bbox.y + bbox.height / 2 - 8})`}>
-                  <IconComponent size={16} color={color} />
+                <g transform={`translate(${bbox.x + 20}, ${bbox.y + bbox.height / 2 - 10})`}>
+                  <IconComponent size={20} color="#ffffff" />
                 </g>
               )}
 
-              <text x={bbox.x + (IconComponent ? 40 : 20)} y={bbox.y + bbox.height / 2 + 5} fontFamily="Arial, sans-serif" fontSize={13} fontWeight={600} fill="#1a202c">
+              <text
+                x={textCenterX}
+                y={textCenterY}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={15}
+                fontWeight={700}
+                fill="#ffffff"
+              >
                 {titleLines.map((line, lineIndex) => (
-                  <tspan key={lineIndex} x={bbox.x + (IconComponent ? 40 : 20)} dy={lineIndex === 0 ? 0 : 13}>
+                  <tspan key={lineIndex} x={textCenterX} dy={lineIndex === 0 ? 0 : 16}>
                     {line}
                   </tspan>
                 ))}
@@ -92,81 +320,9 @@ export function ValueChain2Template({ data }: { data: ValueChainData }): ReactEl
         )
       })}
 
-      {/* Primary Activities (Vertical Columns with Chevron Arrows) */}
-      {primary.map((act, index) => {
-        const elementId = `primary-${index}`
-        const x = startX + index * (primaryColW + 8)
-        const defaultRect = { x, y: primaryTopY, width: primaryColW, height: primaryH }
-        const customPos = positions[elementId]
-        const bbox = {
-          x: customPos ? customPos.x : defaultRect.x,
-          y: customPos ? customPos.y : defaultRect.y,
-          width: customPos?.width || defaultRect.width,
-          height: customPos?.height || defaultRect.height,
-        }
-
-        const defaultColor = act.color || PRIMARY_COLORS[index % PRIMARY_COLORS.length]!
-        const color = tplColors[elementId] ?? defaultColor
-        const strokeColor = tplStrokeColors[elementId] || (selectedIds.has(elementId) ? '#4a90d9' : '#e2e8f0')
-        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 2.5 : 1.5)
-        const isSelected = selectedIds.has(elementId)
-        const IconComponent = act.icon ? TEMPLATE_ICONS[act.icon] : undefined
-
-        const centerCx = bbox.x + bbox.width / 2
-        const maxChars = Math.max(6, Math.floor((bbox.width - 20) / 8))
-        const nameLines = wrapTextByWidth(act.title, maxChars)
-        const descLines = act.subtitle ? wrapTextByWidth(act.subtitle, maxChars) : []
-
-        return (
-          <g key={elementId}>
-            <g
-              data-element-id={elementId}
-              onMouseDown={e => startDrag(e, elementId, bbox)}
-              transform={getTransform(elementId, bbox)}
-              style={{ cursor: 'pointer' }}
-            >
-              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill="white" stroke={strokeColor} strokeWidth={strokeWidth} />
-              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={6} rx={3} fill={color} />
-
-              <circle cx={centerCx} cy={bbox.y + 32} r={18} fill={color} />
-              {IconComponent ? (
-                <g transform={`translate(${centerCx - 9}, ${bbox.y + 23})`}>
-                  <IconComponent size={18} color="white" />
-                </g>
-              ) : (
-                <text x={centerCx} y={bbox.y + 37} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
-                  {index + 1}
-                </text>
-              )}
-
-              <text x={centerCx} y={bbox.y + 74} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#1a202c">
-                {nameLines.map((line, lineIndex) => (
-                  <tspan key={lineIndex} x={centerCx} dy={lineIndex === 0 ? 0 : 13}>
-                    {line}
-                  </tspan>
-                ))}
-              </text>
-
-              {act.subtitle && (
-                <text x={centerCx} y={bbox.y + 74 + nameLines.length * 13 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="#64748b">
-                  {descLines.map((line, lineIndex) => (
-                    <tspan key={lineIndex} x={centerCx} dy={lineIndex === 0 ? 0 : 11}>
-                      {line}
-                    </tspan>
-                  ))}
-                </text>
-              )}
-
-              {isSelected && renderHandles(bbox, elementId)}
-            </g>
-          </g>
-        )
-      })}
-
-      {/* Margin Right Wedge */}
       {(() => {
         const marginId = 'margin-wedge'
-        const mx = startX + mainW + 12
+        const mx = startX + mainW + 3
         const defaultRect = { x: mx, y: startY, width: marginW, height: totalH }
         const customPos = positions[marginId]
         const bbox = {
@@ -176,8 +332,8 @@ export function ValueChain2Template({ data }: { data: ValueChainData }): ReactEl
           height: customPos?.height || defaultRect.height,
         }
         const isSelected = selectedIds.has(marginId)
-        const wedgeColor = tplColors[marginId] || '#3b82f6'
-        const strokeColor = tplStrokeColors[marginId] || (isSelected ? '#4a90d9' : 'none')
+        const wedgeColor = tplColors[marginId] || '#f06a88'
+        const strokeColor = tplStrokeColors[marginId] || (isSelected ? '#2b63d9' : 'none')
         const strokeWidth = tplStrokeWidths[marginId] ?? (isSelected ? 2.5 : 0)
 
         const topX = bbox.x
@@ -197,9 +353,17 @@ export function ValueChain2Template({ data }: { data: ValueChainData }): ReactEl
             transform={getTransform(marginId, bbox)}
             style={{ cursor: 'pointer' }}
           >
-            <path d={pathD} fill={wedgeColor} opacity={0.9} stroke={strokeColor} strokeWidth={strokeWidth} />
-            <text x={bbox.x + bbox.width * 0.35} y={bbox.y + bbox.height / 2 + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={800} fill="white" transform={`rotate(90, ${bbox.x + bbox.width * 0.35}, ${bbox.y + bbox.height / 2 + 5})`}>
-              VALUE
+            <path d={pathD} fill={wedgeColor} stroke={strokeColor} strokeWidth={strokeWidth} />
+            <text
+              x={bbox.x + bbox.width * 0.38}
+              y={bbox.y + bbox.height / 2 + 6}
+              textAnchor="middle"
+              fontFamily="Arial, sans-serif"
+              fontSize={17}
+              fontWeight={700}
+              fill="#ffffff"
+            >
+              Values
             </text>
             {isSelected && renderHandles(bbox, marginId)}
           </g>

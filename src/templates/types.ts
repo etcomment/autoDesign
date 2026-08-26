@@ -515,6 +515,50 @@ export interface ValueChainData {
   support: ValueChainActivity[]
 }
 
+export interface ValueChain3Item {
+  id?: string
+  title: string
+  subtitle?: string
+  color?: string
+  icon?: string
+}
+
+export interface ValueChain3Data {
+  type: 'valueChain3'
+  title?: string
+  topBar?: string
+  bottomBar?: string
+  items?: ValueChain3Item[]
+  footerText?: string
+  primary?: ValueChainActivity[]
+  support?: ValueChainActivity[]
+}
+
+export interface ValueChain4Data {
+  type: 'valueChain4'
+  title?: string
+  upperLabel?: string
+  lowerLabel?: string
+  centerLabel?: string
+  rightLabel?: string
+  primary?: ValueChainActivity[]
+  support?: ValueChainActivity[]
+}
+
+export interface ValueChain5Item {
+  title: string
+  subtitle?: string
+  color?: string
+}
+
+export interface ValueChain5Data {
+  type: 'valueChain5'
+  title?: string
+  leftBlocks?: ValueChain5Item[]
+  centerBars?: ValueChain5Item[]
+  rightChevrons?: ValueChain5Item[]
+}
+
 export interface CircleSegment {
   number: string
   title: string
@@ -630,6 +674,9 @@ export type TemplateData =
   | Manufacturing8Data
   | ValueChainData
   | ValueChain2Data
+  | ValueChain3Data
+  | ValueChain4Data
+  | ValueChain5Data
   | CircleData
   | PieData
 

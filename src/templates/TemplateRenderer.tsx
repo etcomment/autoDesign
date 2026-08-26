@@ -36,6 +36,9 @@ import type {
   GoalsData,
   ManufacturingData,
   ValueChainData,
+  ValueChain3Data,
+  ValueChain4Data,
+  ValueChain5Data,
   CircleData,
   PieData,
 } from './types'
@@ -157,6 +160,9 @@ import { Manufacturing7Template } from './components/Manufacturing7Template'
 import { Manufacturing8Template } from './components/Manufacturing8Template'
 import { ValueChainTemplate } from './components/ValueChainTemplate'
 import { ValueChain2Template } from './components/ValueChain2Template'
+import { ValueChain3Template } from './components/ValueChain3Template'
+import { ValueChain4Template } from './components/ValueChain4Template'
+import { ValueChain5Template } from './components/ValueChain5Template'
 import { CircleTemplate } from './components/Circle2Template'
 import { PieChart1Template } from './components/PieChart1Template'
 import { PieChart2Template } from './components/PieChart2Template'
@@ -283,6 +289,9 @@ const TEMPLATE_MAP: Record<TemplateType, TemplateComponent> = {
   manufacturing8: ({ data }) => <Manufacturing8Template data={data as ManufacturingData} />,
   valueChain: ({ data }) => <ValueChainTemplate data={data as ValueChainData} />,
   valueChain2: ({ data }) => <ValueChain2Template data={data as ValueChainData} />,
+  valueChain3: ({ data }) => <ValueChain3Template data={data as ValueChain3Data} />,
+  valueChain4: ({ data }) => <ValueChain4Template data={data as ValueChain4Data} />,
+  valueChain5: ({ data }) => <ValueChain5Template data={data as ValueChain5Data} />,
   circle: ({ data }) => <CircleTemplate data={data as CircleData} />,
   pieChart1: ({ data }) => <PieChart1Template data={data as PieData} />,
   pieChart2: ({ data }) => <PieChart2Template data={data as PieData} />,

@@ -397,15 +397,67 @@ Ce document constitue la **source officielle et unique de la syntaxe DSL** pour 
   station "Conditionnement" "Emballage et expédition" icon:"package" #f59e0b
 ```
 
-### 2.16 ValueChain 1 à 2 (`@valueChain`, `@valueChain2`)
+### 2.16 ValueChain 1 à 5 (`@valueChain` à `@valueChain5`)
 
+#### ValueChain 1 & 2 (`@valueChain`, `@valueChain2`)
 ```dsl
 @valueChain "Chaîne de Valeur Entreprise"
-  activity "Logistique Interne" "Stockage et gestion des matières" icon:"archive" #3b82f6
-    style fill #3b82f6 fontColor #ffffff
-  activity "Production" "Transformation et assemblage" icon:"settings" #8b5cf6
-  activity "Marketing & Ventes" "Promotion et canaux de distribution" icon:"shopping-cart" #10b981
-  activity "Services après-vente" "Support et maintenance" icon:"headphones" #ec4899
+  primary "Logistique Interne" "Stockage et gestion" icon:"archive" #1a2249
+  primary "Production" "Transformation" icon:"settings" #2b63d9
+  primary "Logistique Externe" "Distribution" #ff5338
+  primary "Marketing & Ventes" "Promotion" #ffb100
+  primary "Services" "Support" #48bb95
+  support "Infrastructure" "IT & Systèmes" #1a2249
+  support "RH" "Gestion des talents" #2b63d9
+  support "R&D" "Innovation technique" #ff5338
+  support "Achats" "Approvisionnement" #ffb100
+```
+
+#### ValueChain 3 (`@valueChain3`)
+```dsl
+@valueChain3 "Supply Chain Process"
+  topBar "Product Design"
+  bottomBar "Marketing & Sales"
+  footerText "MIGSO-PCUBED content and words to be added here as required"
+  item "Logistics" #1a2249
+  item "Purchasing" #2b63d9
+  item "Manufacturing" #ff5338
+  item "Distribution" #ffb100
+  item "Service" #48bb95
+```
+
+#### ValueChain 4 (`@valueChain4`)
+```dsl
+@valueChain4 "IT Value Stream"
+  upperLabel "Value streams"
+  lowerLabel "Supporting activities"
+  centerLabel "Reference architecture"
+  rightLabel "Efficiency\n& Agility"
+  primary "Strategy to portfolio" "Plan" #57c5a0
+  primary "Requirement to deploy" "Build" #1a2249
+  primary "Request to fulfill" "Deliver" #57c5a0
+  primary "Detect to correct" "Run" #1a2249
+  support "Governance risk & compliance" #ffb100
+  support "Sourcing & vendor" #ffb100
+  support "Intelligence & reporting" #ffb100
+  support "Finance & assets" #ffb100
+  support "Resource & project" #ffb100
+```
+
+#### ValueChain 5 (`@valueChain5`)
+```dsl
+@valueChain5 "Horizontal Value Flow"
+  left "Inbound Stream" #1a2249
+  left "Core Processing" #2b63d9
+  left "Outbound Stream" #1a2249
+  bar "Strategy & Roadmap" #ff5338
+  bar "Operational Delivery" #ff5338
+  bar "Quality & Governance" #ff5338
+  bar "Asset Management" #ff5338
+  bar "Continuous Improvement" #ff5338
+  bar "Performance Tracking" #ff5338
+  chevron "Value Driver" "Q1-Q2" #ffb100
+  chevron "Customer Impact" "Q3-Q4" #48bb95
 ```
 
 ### 2.17 Iceberg 1 à 2 (`@iceberg`, `@iceberg2`)

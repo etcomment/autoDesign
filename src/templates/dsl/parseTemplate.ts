@@ -16,6 +16,10 @@ import type {
   GoalsData,
   ManufacturingData,
   ValueChainData,
+  ValueChain3Data,
+  ValueChain4Data,
+  ValueChain5Data,
+  ValueChain5Item,
   IcebergData,
   TemplateData,
   TemplateElementStyle,
@@ -31,6 +35,7 @@ import type {
   BudgetItem,
   ManufacturingStation,
   ValueChainActivity,
+  ValueChain3Item,
   IcebergSection,
   DecisionTreeNode,
   GoalsMetric,
@@ -40,6 +45,7 @@ import type {
   PieSlice,
   TemplateLane,
 } from '../types'
+import { MIGSO_PALETTE } from '../../lib/theme'
 
 function stripQuotes(s: string): string {
   return s.replace(/^["']|["']$/g, '').trim().replace(/\\n/g, '\n')
@@ -225,7 +231,7 @@ export function parseTemplateDsl(dsl: string): TemplateData | null {
       result = parseManufacturing(trimmed, header.title)
       break
     case 'valueChain':
-      result = parseValueChain(trimmed, header.title)
+      result = parseValueChain(trimmed, header.title, header.type)
       break
     case 'iceberg':
       result = parseIceberg(trimmed, header.title)
@@ -542,11 +548,12 @@ function parsePuzzle(dsl: string, headerTitle?: string): PuzzleData {
       const args = tokens.tokens.slice(1)
       const pieceTitle = stripQuotes(args[0]!)
       const trailing = extractTrailingArgs(args, 1)
+      const index = pieces.length
       pieces.push({
-        number: pieces.length + 1,
+        number: index + 1,
         title: pieceTitle,
         ...trailing,
-        color: trailing.color ?? '#4a90d9'
+        color: trailing.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!,
       })
       continue
     }
@@ -1020,38 +1027,152 @@ function parseManufacturing(dsl: string, headerTitle?: string): ManufacturingDat
   return { type: 'manufacturing', title, stations }
 }
 
-function parseValueChain(dsl: string, headerTitle?: string): ValueChainData {
+function parseValueChain(dsl: string, headerTitle?: string, headerType?: string): ValueChainData | ValueChain3Data | ValueChain4Data | ValueChain5Data {
   const lines = getLines(dsl)
   let title: string | undefined = headerTitle
+  let type = headerType || 'valueChain'
+  let topBar: string | undefined
+  let bottomBar: string | undefined
+  let footerText: string | undefined
+  let upperLabel: string | undefined
+  let lowerLabel: string | undefined
+  let centerLabel: string | undefined
+  let rightLabel: string | undefined
+  const items: ValueChain3Item[] = []
   const primary: ValueChainActivity[] = []
   const support: ValueChainActivity[] = []
+  const leftBlocks: ValueChain5Item[] = []
+  const centerBars: ValueChain5Item[] = []
+  const rightChevrons: ValueChain5Item[] = []
 
   for (const line of lines) {
     if (line.startsWith('@valueChain')) {
-      const m = /^@valueChain\d*\s+"?([^"]*)"?\s*$/.exec(line)
-      if (m && m[1]) title = stripQuotes(m[1])
+      const m = /^@valueChain(\d*)\s+"?([^"]*)"?\s*$/.exec(line)
+      if (m) {
+        if (m[1]) type = `valueChain${m[1]}`
+        if (m[2]) title = stripQuotes(m[2])
+      }
       continue
     }
-    var tokens = tokenizeLine(line)
+    const tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'topBar' && tokens.tokens.length >= 2) {
+      topBar = stripQuotes(tokens.tokens[1]!)
+      continue
+    }
+    if (tokens.tokens[0] === 'bottomBar' && tokens.tokens.length >= 2) {
+      bottomBar = stripQuotes(tokens.tokens[1]!)
+      continue
+    }
+    if (tokens.tokens[0] === 'footerText' && tokens.tokens.length >= 2) {
+      footerText = stripQuotes(tokens.tokens[1]!)
+      continue
+    }
+    if (tokens.tokens[0] === 'upperLabel' && tokens.tokens.length >= 2) {
+      upperLabel = stripQuotes(tokens.tokens[1]!)
+      continue
+    }
+    if (tokens.tokens[0] === 'lowerLabel' && tokens.tokens.length >= 2) {
+      lowerLabel = stripQuotes(tokens.tokens[1]!)
+      continue
+    }
+    if (tokens.tokens[0] === 'centerLabel' && tokens.tokens.length >= 2) {
+      centerLabel = stripQuotes(tokens.tokens[1]!)
+      continue
+    }
+    if (tokens.tokens[0] === 'rightLabel' && tokens.tokens.length >= 2) {
+      rightLabel = stripQuotes(tokens.tokens[1]!)
+      continue
+    }
+    if (tokens.tokens[0] === 'left' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
+      leftBlocks.push({
+        title: stripQuotes(args[0]!),
+        ...trailing,
+      })
+      continue
+    }
+    if (tokens.tokens[0] === 'bar' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
+      centerBars.push({
+        title: stripQuotes(args[0]!),
+        ...trailing,
+      })
+      continue
+    }
+    if (tokens.tokens[0] === 'chevron' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
+      rightChevrons.push({
+        title: stripQuotes(args[0]!),
+        ...trailing,
+      })
+      continue
+    }
+    if (tokens.tokens[0] === 'item' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
+      items.push({
+        title: stripQuotes(args[0]!),
+        ...trailing,
+      })
+      continue
+    }
     if (tokens.tokens[0] === 'primary' && tokens.tokens.length >= 2) {
       const args = tokens.tokens.slice(1)
       const trailing = extractTrailingArgs(args, 1)
       primary.push({
         title: stripQuotes(args[0]!),
-        ...trailing
+        ...trailing,
       })
       continue
     }
-    var tokens = tokenizeLine(line)
     if (tokens.tokens[0] === 'support' && tokens.tokens.length >= 2) {
       const args = tokens.tokens.slice(1)
       const trailing = extractTrailingArgs(args, 1)
       support.push({
         title: stripQuotes(args[0]!),
-        ...trailing
+        ...trailing,
       })
       continue
     }
+  }
+
+  if (type === 'valueChain5' || leftBlocks.length > 0 || centerBars.length > 0 || rightChevrons.length > 0) {
+    return {
+      type: 'valueChain5',
+      title,
+      leftBlocks: leftBlocks.length > 0 ? leftBlocks : undefined,
+      centerBars: centerBars.length > 0 ? centerBars : undefined,
+      rightChevrons: rightChevrons.length > 0 ? rightChevrons : undefined,
+    } as ValueChain5Data
+  }
+
+  if (type === 'valueChain4' || upperLabel || lowerLabel || (centerLabel && !topBar) || rightLabel) {
+    return {
+      type: 'valueChain4',
+      title,
+      upperLabel,
+      lowerLabel,
+      centerLabel,
+      rightLabel,
+      primary: primary.length > 0 ? primary : undefined,
+      support: support.length > 0 ? support : undefined,
+    } as ValueChain4Data
+  }
+
+  if (topBar || bottomBar || footerText || items.length > 0) {
+    return {
+      type: 'valueChain3',
+      title,
+      topBar,
+      bottomBar,
+      footerText,
+      items: items.length > 0 ? items : undefined,
+      primary: primary.length > 0 ? primary : undefined,
+      support: support.length > 0 ? support : undefined,
+    } as ValueChain3Data
   }
 
   return { type: 'valueChain', title, primary, support }
@@ -1170,10 +1291,17 @@ export function generateDslText(type: string, data: TemplateData): string {
   if (d.trackColor) out += `  track ${d.trackColor}${d.trackBgColor ? ' ' + d.trackBgColor : ''}\n`
   if (d.progress || d.progressColor) out += `  progress ${d.progress || ''}${d.progressColor ? ' ' + d.progressColor : ''}\n`
 
+  const list = (key: string) => (d[key] as Array<Record<string, unknown>> | undefined)
+
   if (d.leftTitle) out += `  left "${esc(d.leftTitle)}"\n`
   if (d.rightTitle) out += `  right "${esc(d.rightTitle)}"\n`
-
-  const list = (key: string) => (d[key] as Array<Record<string, unknown>> | undefined)
+  if (d.topBar) out += `  topBar "${esc(String(d.topBar))}"\n`
+  if (d.bottomBar) out += `  bottomBar "${esc(String(d.bottomBar))}"\n`
+  if (d.footerText) out += `  footerText "${esc(String(d.footerText))}"\n`
+  if (d.upperLabel) out += `  upperLabel "${esc(String(d.upperLabel))}"\n`
+  if (d.lowerLabel) out += `  lowerLabel "${esc(String(d.lowerLabel))}"\n`
+  if (d.centerLabel && !list('branches') && !list('nodes')) out += `  centerLabel "${esc(String(d.centerLabel))}"\n`
+  if (d.rightLabel) out += `  rightLabel "${esc(String(d.rightLabel))}"\n`
 
   const quarters = list('quarters')
   if (quarters?.length) out += `  quarters ${quarters.map((q: Record<string,unknown>) => q.label + (q.year ? ':' + q.year : '')).join(' ')}\n`
@@ -1214,8 +1342,10 @@ export function generateDslText(type: string, data: TemplateData): string {
     for (const it of items) {
       if ('left' in it || 'right' in it) {
         out += `  comp "${esc(it.label)}" "${esc(it.left ?? '')}" "${esc(it.right ?? '')}"${emitTrailingArgs(it)}\n`
-      } else {
+      } else if ('amount' in it || 'percentage' in it) {
         out += `  item "${esc(it.label)}" "${esc(it.amount ?? '')}" "${it.percentage ?? ''}%"${emitTrailingArgs(it)}\n`
+      } else {
+        out += `  item "${esc(it.title ?? it.label ?? '')}"${it.subtitle ? ' "' + esc(it.subtitle) + '"' : ''}${emitTrailingArgs(it)}\n`
       }
     }
   }
@@ -1294,6 +1424,15 @@ export function generateDslText(type: string, data: TemplateData): string {
 
   const supports = list('support')
   if (supports) for (const s of supports) out += '  support "' + esc(s.title) + '"' + (s.subtitle ? ' "' + esc(s.subtitle) + '"' : '') + emitTrailingArgs(s) + '\n'
+
+  const leftBlocks = list('leftBlocks')
+  if (leftBlocks) for (const l of leftBlocks) out += '  left "' + esc(String(l.title)) + '"' + (l.subtitle ? ' "' + esc(String(l.subtitle)) + '"' : '') + emitTrailingArgs(l) + '\n'
+
+  const centerBars = list('centerBars')
+  if (centerBars) for (const c of centerBars) out += '  bar "' + esc(String(c.title)) + '"' + (c.subtitle ? ' "' + esc(String(c.subtitle)) + '"' : '') + emitTrailingArgs(c) + '\n'
+
+  const rightChevrons = list('rightChevrons')
+  if (rightChevrons) for (const r of rightChevrons) out += '  chevron "' + esc(String(r.title)) + '"' + (r.subtitle ? ' "' + esc(String(r.subtitle)) + '"' : '') + emitTrailingArgs(r) + '\n'
 
   if (d.rootQuestion) out += '  question "' + esc(d.rootQuestion) + '"\n'
   if (d.centerGoal) out += '  center "' + esc(d.centerGoal) + '"\n'

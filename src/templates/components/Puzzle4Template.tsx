@@ -27,16 +27,55 @@ function gridPath(x: number, y: number, t: Tab): string {
   const b = y + CELL_H
   const midX = x + CELL_W / 2
   const midY = y + CELL_H / 2
-  const hs = midY - TAB_H / 2
-  const he = midY + TAB_H / 2
-  const vs = midX - TAB_H / 2
-  const ve = midX + TAB_H / 2
-  let d = 'M ' + x + ' ' + y
-  d += t.topIndent ? ' L ' + vs + ' ' + y + ' C ' + vs + ' ' + (y + TAB_D) + ' ' + ve + ' ' + (y + TAB_D) + ' ' + ve + ' ' + y + ' L ' + r + ' ' + y : ' L ' + r + ' ' + y
-  d += t.right ? ' L ' + r + ' ' + hs + ' C ' + (r + TAB_D) + ' ' + hs + ' ' + (r + TAB_D) + ' ' + he + ' ' + r + ' ' + he + ' L ' + r + ' ' + b : ' L ' + r + ' ' + b
-  d += t.bottom ? ' L ' + ve + ' ' + b + ' C ' + ve + ' ' + (b + TAB_D) + ' ' + vs + ' ' + (b + TAB_D) + ' ' + vs + ' ' + b + ' L ' + x + ' ' + b : ' L ' + x + ' ' + b
-  d += t.leftIndent ? ' L ' + x + ' ' + he + ' C ' + (x + TAB_D) + ' ' + he + ' ' + (x + TAB_D) + ' ' + hs + ' ' + x + ' ' + hs : ''
-  return d + ' Z'
+  const neckW = 18
+  const headR = 14
+  const neckR = 6
+
+  const hMid = midY
+  const vMid = midX
+
+  let d = `M ${x} ${y}`
+
+  if (t.topIndent) {
+    d += ` L ${vMid - neckW / 2 - neckR} ${y}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid - neckW / 2} ${y + neckR}`
+    d += ` A ${headR} ${headR} 0 1 0 ${vMid + neckW / 2} ${y + neckR}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid + neckW / 2 + neckR} ${y}`
+    d += ` L ${r} ${y}`
+  } else {
+    d += ` L ${r} ${y}`
+  }
+
+  if (t.right) {
+    d += ` L ${r} ${hMid - neckW / 2 - neckR}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${r + neckR} ${hMid - neckW / 2}`
+    d += ` A ${headR} ${headR} 0 1 1 ${r + neckR} ${hMid + neckW / 2}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${r} ${hMid + neckW / 2 + neckR}`
+    d += ` L ${r} ${b}`
+  } else {
+    d += ` L ${r} ${b}`
+  }
+
+  if (t.bottom) {
+    d += ` L ${vMid + neckW / 2 + neckR} ${b}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid + neckW / 2} ${b + neckR}`
+    d += ` A ${headR} ${headR} 0 1 1 ${vMid - neckW / 2} ${b + neckR}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid - neckW / 2 - neckR} ${b}`
+    d += ` L ${x} ${b}`
+  } else {
+    d += ` L ${x} ${b}`
+  }
+
+  if (t.leftIndent) {
+    d += ` L ${x} ${hMid + neckW / 2 + neckR}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${x + neckR} ${hMid + neckW / 2}`
+    d += ` A ${headR} ${headR} 0 1 0 ${x + neckR} ${hMid - neckW / 2}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${x} ${hMid - neckW / 2 - neckR}`
+    d += ` L ${x} ${y}`
+  }
+
+  d += ' Z'
+  return d
 }
 
 export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {

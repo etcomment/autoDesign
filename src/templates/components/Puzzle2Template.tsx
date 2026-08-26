@@ -19,18 +19,28 @@ function piecePathH(
   const r = x + CELL_W
   const b = y + CELL_H
   const mid = y + CELL_H / 2
-  const ts = mid - TAB_H / 2
-  const te = mid + TAB_H / 2
+  const neckW = 20
+  const headR = 15
+  const neckR = 7
 
-  let d = 'M ' + x + ' ' + y + ' L ' + r + ' ' + y
+  const hMid = mid
+
+  let d = `M ${x} ${y} L ${r} ${y}`
   if (opts.rightTab) {
-    d += ' L ' + r + ' ' + ts + ' C ' + (r + TAB_D) + ' ' + ts + ' ' + (r + TAB_D) + ' ' + te + ' ' + r + ' ' + te + ' L ' + r + ' ' + b
+    d += ` L ${r} ${hMid - neckW / 2 - neckR}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${r + neckR} ${hMid - neckW / 2}`
+    d += ` A ${headR} ${headR} 0 1 1 ${r + neckR} ${hMid + neckW / 2}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${r} ${hMid + neckW / 2 + neckR}`
+    d += ` L ${r} ${b}`
   } else {
-    d += ' L ' + r + ' ' + b
+    d += ` L ${r} ${b}`
   }
-  d += ' L ' + x + ' ' + b
+  d += ` L ${x} ${b}`
   if (opts.leftIndent) {
-    d += ' L ' + x + ' ' + te + ' C ' + (x + TAB_D) + ' ' + te + ' ' + (x + TAB_D) + ' ' + ts + ' ' + x + ' ' + ts
+    d += ` L ${x} ${hMid + neckW / 2 + neckR}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${x + neckR} ${hMid + neckW / 2}`
+    d += ` A ${headR} ${headR} 0 1 0 ${x + neckR} ${hMid - neckW / 2}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${x} ${hMid - neckW / 2 - neckR}`
   }
   d += ' Z'
   return d

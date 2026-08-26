@@ -20,33 +20,52 @@ function piecePath(
   const b = y + CELL_H
   const midX = x + CELL_W / 2
   const midY = y + CELL_H / 2
-  const ts = midY - TAB_W / 2
-  const te = midY + TAB_W / 2
-  const bs = midX - TAB_W / 2
-  const be = midX + TAB_W / 2
+  const neckW = 20
+  const headR = 15
+  const neckR = 7
+  const tabD = 23
 
-  let d = 'M ' + x + ' ' + y
+  const hMid = midY
+  const vMid = midX
+
+  let d = `M ${x} ${y}`
 
   if (opts.topIndent) {
-    d += ' L ' + bs + ' ' + y + ' C ' + bs + ' ' + (y + TAB_D) + ' ' + be + ' ' + (y + TAB_D) + ' ' + be + ' ' + y + ' L ' + r + ' ' + y
+    d += ` L ${vMid - neckW / 2 - neckR} ${y}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid - neckW / 2} ${y + neckR}`
+    d += ` A ${headR} ${headR} 0 1 0 ${vMid + neckW / 2} ${y + neckR}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid + neckW / 2 + neckR} ${y}`
+    d += ` L ${r} ${y}`
   } else {
-    d += ' L ' + r + ' ' + y
+    d += ` L ${r} ${y}`
   }
 
   if (opts.right) {
-    d += ' L ' + r + ' ' + ts + ' C ' + (r + TAB_D) + ' ' + ts + ' ' + (r + TAB_D) + ' ' + te + ' ' + r + ' ' + te + ' L ' + r + ' ' + b
+    d += ` L ${r} ${hMid - neckW / 2 - neckR}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${r + neckR} ${hMid - neckW / 2}`
+    d += ` A ${headR} ${headR} 0 1 1 ${r + neckR} ${hMid + neckW / 2}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${r} ${hMid + neckW / 2 + neckR}`
+    d += ` L ${r} ${b}`
   } else {
-    d += ' L ' + r + ' ' + b
+    d += ` L ${r} ${b}`
   }
 
   if (opts.bottom) {
-    d += ' L ' + be + ' ' + b + ' C ' + be + ' ' + (b + TAB_D) + ' ' + bs + ' ' + (b + TAB_D) + ' ' + bs + ' ' + b + ' L ' + x + ' ' + b
+    d += ` L ${vMid + neckW / 2 + neckR} ${b}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid + neckW / 2} ${b + neckR}`
+    d += ` A ${headR} ${headR} 0 1 1 ${vMid - neckW / 2} ${b + neckR}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid - neckW / 2 - neckR} ${b}`
+    d += ` L ${x} ${b}`
   } else {
-    d += ' L ' + x + ' ' + b
+    d += ` L ${x} ${b}`
   }
 
   if (opts.leftIndent) {
-    d += ' L ' + x + ' ' + te + ' C ' + (x + TAB_D) + ' ' + te + ' ' + (x + TAB_D) + ' ' + ts + ' ' + x + ' ' + ts
+    d += ` L ${x} ${hMid + neckW / 2 + neckR}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${x + neckR} ${hMid + neckW / 2}`
+    d += ` A ${headR} ${headR} 0 1 0 ${x + neckR} ${hMid - neckW / 2}`
+    d += ` A ${neckR} ${neckR} 0 0 1 ${x} ${hMid - neckW / 2 - neckR}`
+    d += ` L ${x} ${y}`
   }
 
   d += ' Z'

@@ -14,6 +14,7 @@ function circularSegmentPath(
   outerR: number,
   startAngle: number,
   endAngle: number,
+  tabDir = 1,
 ): string {
   const sRad = (startAngle * Math.PI) / 180
   const eRad = (endAngle * Math.PI) / 180
@@ -26,7 +27,32 @@ function circularSegmentPath(
   const x4 = cx + innerR * Math.cos(sRad)
   const y4 = cy + innerR * Math.sin(sRad)
   const largeArc = endAngle - startAngle > 180 ? 1 : 0
-  return `M ${x1} ${y1} A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerR} ${innerR} 0 ${largeArc} 0 ${x4} ${y4} Z`
+
+  const midR = (innerR + outerR) / 2
+  const tabR = 14
+  const tabOffset = 8
+  const tabDist = tabDir * 16
+
+  const radialMidX = cx + midR * Math.cos(eRad)
+  const radialMidY = cy + midR * Math.sin(eRad)
+  const tanX = -Math.sin(eRad) * tabDist
+  const tanY = Math.cos(eRad) * tabDist
+
+  const sRadX = cx + (midR - tabOffset) * Math.cos(eRad)
+  const sRadY = cy + (midR - tabOffset) * Math.sin(eRad)
+  const eRadX = cx + (midR + tabOffset) * Math.cos(eRad)
+  const eRadY = cy + (midR + tabOffset) * Math.sin(eRad)
+
+  return [
+    `M ${x1} ${y1}`,
+    `A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2} ${y2}`,
+    `L ${eRadX} ${eRadY}`,
+    `C ${eRadX + tanX * 0.4} ${eRadY + tanY * 0.4} ${radialMidX + tanX * 1.2} ${radialMidY + tanY * 1.2} ${radialMidX + tanX} ${radialMidY + tanY}`,
+    `C ${radialMidX + tanX * 0.8} ${radialMidY + tanY * 0.8} ${sRadX + tanX * 0.4} ${sRadY + tanY * 0.4} ${sRadX} ${sRadY}`,
+    `L ${x3} ${y3}`,
+    `A ${innerR} ${innerR} 0 ${largeArc} 0 ${x4} ${y4}`,
+    `Z`,
+  ].join(' ')
 }
 
 export function Puzzle5Template({ data }: { data: PuzzleData }): ReactElement {
