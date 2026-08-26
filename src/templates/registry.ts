@@ -988,8 +988,9 @@ export const TEMPLATES: TemplateDefinition[] = [
         {
           title: 'Brand 01',
           subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
-          percent: '25%',
+          percent: '95%',
           value: '25%',
+          icon: 'leaf',
           color: '#2c2b64',
         },
         {
@@ -997,7 +998,7 @@ export const TEMPLATES: TemplateDefinition[] = [
           subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
           percent: '50%',
           value: '90%',
-          icon: 'smartphone',
+          icon: 'mobile',
           color: '#ff5338',
         },
       ],
@@ -1879,8 +1880,9 @@ export const TEMPLATES: TemplateDefinition[] = [
         {
           title: 'Brand 01',
           subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
-          percent: '25%',
+          percent: '95%',
           value: '35%',
+          icon: 'leaf',
           color: '#2c2b64',
         },
         {
@@ -1888,7 +1890,7 @@ export const TEMPLATES: TemplateDefinition[] = [
           subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
           percent: '65%',
           value: '95%',
-          icon: 'smartphone',
+          icon: 'mobile',
           color: '#ff5338',
         },
         {

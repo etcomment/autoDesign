@@ -50,6 +50,7 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
           subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
           percent: '95%',
           value: '25%',
+          icon: 'leaf',
           color: '#2c2b64',
         },
         {
@@ -57,7 +58,7 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
           subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
           percent: '50%',
           value: '90%',
-          icon: 'smartphone',
+          icon: 'mobile',
           color: '#ff5338',
         },
       ]
@@ -222,23 +223,25 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
               {isHeaderSelected && renderHandles(headerBbox, headerId)}
             </g>
 
-            {/* Main Card with Rounded Hexagon Gauge */}
+            {/* Main Hexagon Gauge */}
             <g
               data-element-id={cardId}
               onMouseDown={e => startDrag(e, cardId, cardBbox)}
               transform={getTransform(cardId, cardBbox)}
               style={{ cursor: 'pointer' }}
             >
-              <rect
-                x={cardBbox.x}
-                y={cardBbox.y}
-                width={cardBbox.width}
-                height={cardBbox.height}
-                rx={0}
-                fill={cardBg}
-                stroke={cardStrokeColor}
-                strokeWidth={cardStrokeWidth}
-              />
+              {cardStrokeWidth > 0 && (
+                <rect
+                  x={cardBbox.x}
+                  y={cardBbox.y}
+                  width={cardBbox.width}
+                  height={cardBbox.height}
+                  fill="transparent"
+                  stroke={cardStrokeColor}
+                  strokeWidth={cardStrokeWidth}
+                  rx={4}
+                />
+              )}
 
               {/* Background Light Gray Hexagon Ring */}
               <g transform={`translate(${hexX}, ${hexY}) scale(${scale})`}>
@@ -265,7 +268,7 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
                 y={IconComponent ? cy + iconSize * 0.75 : cy + 7}
                 textAnchor="middle"
                 fontFamily="Arial, sans-serif"
-                fontSize={26}
+                fontSize={28}
                 fontWeight={700}
                 fill={brandPaletteColor}
               >

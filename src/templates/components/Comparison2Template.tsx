@@ -50,6 +50,7 @@ export function Comparison2Template({ data }: { data: Comparison2Data }): ReactE
           subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
           percent: '95%',
           value: '35%',
+          icon: 'leaf',
           color: '#2c2b64',
         },
         {
@@ -57,7 +58,7 @@ export function Comparison2Template({ data }: { data: Comparison2Data }): ReactE
           subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
           percent: '65%',
           value: '95%',
-          icon: 'smartphone',
+          icon: 'mobile',
           color: '#ff5338',
         },
         {
@@ -230,23 +231,25 @@ export function Comparison2Template({ data }: { data: Comparison2Data }): ReactE
               {isHeaderSelected && renderHandles(headerBbox, headerId)}
             </g>
 
-            {/* Main Card with Rounded Hexagon Gauge */}
+            {/* Main Hexagon Gauge */}
             <g
               data-element-id={cardId}
               onMouseDown={e => startDrag(e, cardId, cardBbox)}
               transform={getTransform(cardId, cardBbox)}
               style={{ cursor: 'pointer' }}
             >
-              <rect
-                x={cardBbox.x}
-                y={cardBbox.y}
-                width={cardBbox.width}
-                height={cardBbox.height}
-                rx={0}
-                fill={cardBg}
-                stroke={cardStrokeColor}
-                strokeWidth={cardStrokeWidth}
-              />
+              {cardStrokeWidth > 0 && (
+                <rect
+                  x={cardBbox.x}
+                  y={cardBbox.y}
+                  width={cardBbox.width}
+                  height={cardBbox.height}
+                  fill="transparent"
+                  stroke={cardStrokeColor}
+                  strokeWidth={cardStrokeWidth}
+                  rx={4}
+                />
+              )}
 
               {/* Background Light Gray Hexagon Ring */}
               <g transform={`translate(${hexX}, ${hexY}) scale(${scale})`}>
