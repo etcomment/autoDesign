@@ -51,24 +51,21 @@ export function Comparison2Template({ data }: { data: Comparison2Data }): ReactE
         {
           title: 'Brand 01',
           subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
-          percent: '95%',
-          value: '35%',
+          value: '95%',
           icon: 'leaf',
           color: '#2c2b64',
         },
         {
           title: 'Brand 02',
           subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
-          percent: '65%',
-          value: '95%',
+          value: '65%',
           icon: 'mobile',
           color: '#ff5338',
         },
         {
           title: 'Brand 03',
           subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
-          percent: '25%',
-          value: '75%',
+          value: '25%',
           icon: 'phone',
           color: '#f2cb13',
         },
@@ -144,7 +141,7 @@ export function Comparison2Template({ data }: { data: Comparison2Data }): ReactE
         const scale = hexW / 5737
         const cx = hexX + hexW / 2
         const cy = hexY + hexH / 2
-        const pctValue = parsePercent(block.percent ?? block.value ?? block.progress, index === 0 ? 95 : index === 1 ? 65 : 25)
+        const pctValue = parsePercent(block.value ?? block.val ?? block.percent ?? block.progress, index === 0 ? 95 : index === 1 ? 65 : 25)
         const localPieSlicePath = makeLocalPieSlicePath(pctValue)
         const IconComponent = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
         const iconSize = Math.round(hexW * 0.23)

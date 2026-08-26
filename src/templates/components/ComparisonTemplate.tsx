@@ -51,16 +51,14 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
         {
           title: 'Brand 01',
           subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
-          percent: '95%',
-          value: '25%',
+          value: '95%',
           icon: 'leaf',
           color: '#2c2b64',
         },
         {
           title: 'Brand 02',
           subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
-          percent: '50%',
-          value: '90%',
+          value: '50%',
           icon: 'mobile',
           color: '#ff5338',
         },
@@ -136,7 +134,7 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
         const scale = hexW / 5737
         const cx = hexX + hexW / 2
         const cy = hexY + hexH / 2
-        const pctValue = parsePercent(block.percent ?? block.value ?? block.progress, index === 0 ? 95 : 50)
+        const pctValue = parsePercent(block.value ?? block.val ?? block.percent ?? block.progress, index === 0 ? 95 : 50)
         const localPieSlicePath = makeLocalPieSlicePath(pctValue)
         const IconComponent = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
         const iconSize = Math.round(hexW * 0.24)

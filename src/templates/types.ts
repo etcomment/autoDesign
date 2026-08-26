@@ -454,6 +454,7 @@ export interface ComparisonBlock {
   color?: string
   icon?: string
   value?: string
+  val?: string
   percent?: string
   badgePercent?: string
   progress?: string
