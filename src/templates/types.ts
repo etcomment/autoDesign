@@ -152,34 +152,78 @@ export type Agenda4Data = AgendaData
 export interface Comparison2Data {
   type: 'comparison2'
   title?: string
-  seriesAName: string
-  seriesBName: string
-  dimensions: { label: string; seriesA: number; seriesB: number }[]
+  blocks?: ComparisonBlock[]
+  leftTitle?: string
+  rightTitle?: string
+  items?: ComparisonItem[]
+  seriesAName?: string
+  seriesBName?: string
+  dimensions?: { label: string; seriesA: number; seriesB: number }[]
 }
 
 export type Comparison3Data = ComparisonData
 export type Comparison4Data = ComparisonData
 
+export interface Comparison5Item {
+  text: string
+  icon?: string
+}
+
 export interface Comparison5Data {
   type: 'comparison5'
   title?: string
-  entries: { name: string; score: number; color?: string }[]
+  leftTitle?: string
+  rightTitle?: string
+  leftOption?: string
+  rightOption?: string
+  leftItems?: (string | Comparison5Item)[]
+  rightItems?: (string | Comparison5Item)[]
+  // Backward compatibility with legacy entries format if any
+  entries?: { name: string; score: number; color?: string }[]
+}
+
+export interface Comparison6Aspect {
+  label: string
+  leftPercent: number
+  rightPercent: number
+  color?: string
+  leftColor?: string
+  rightColor?: string
 }
 
 export interface Comparison6Data {
   type: 'comparison6'
   title?: string
-  leftTitle: string
-  rightTitle: string
-  leftItems: string[]
-  rightItems: string[]
+  leftTitle?: string
+  leftSubtitle?: string
+  rightTitle?: string
+  rightSubtitle?: string
+  aspects: Comparison6Aspect[]
+}
+
+export interface Comparison7Item {
+  title: string
+  subtitle?: string
+  icon?: string
+  color?: string
 }
 
 export interface Comparison7Data {
   type: 'comparison7'
   title?: string
-  pros: string[]
-  cons: string[]
+  leftTitle?: string
+  rightTitle?: string
+  pros: (string | Comparison7Item)[]
+  cons: (string | Comparison7Item)[]
+}
+
+export interface Comparison8Data {
+  type: 'comparison8'
+  title?: string
+  leftTitle: string
+  rightTitle: string
+  leftItems: string[]
+  rightItems: string[]
 }
 
 export type Manufacturing2Data = ManufacturingData
@@ -395,18 +439,33 @@ export interface ComparisonItem {
   label: string
   left: string
   right: string
+  subtitle?: string
+  description?: string
   color?: string
   icon?: string
   value?: string
   percent?: string
 }
 
+export interface ComparisonBlock {
+  title: string
+  subtitle?: string
+  description?: string
+  color?: string
+  icon?: string
+  value?: string
+  percent?: string
+  badgePercent?: string
+  progress?: string
+}
+
 export interface ComparisonData {
   type: 'comparison'
   title?: string
-  leftTitle: string
-  rightTitle: string
-  items: ComparisonItem[]
+  leftTitle?: string
+  rightTitle?: string
+  items?: ComparisonItem[]
+  blocks?: ComparisonBlock[]
 }
 
 export interface BrainData {
@@ -636,6 +695,7 @@ export type TemplateData =
   | Comparison5Data
   | Comparison6Data
   | Comparison7Data
+  | Comparison8Data
   | BrainData
   | Brain2Data
   | Brain3Data

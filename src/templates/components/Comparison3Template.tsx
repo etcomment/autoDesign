@@ -19,7 +19,7 @@ export function Comparison3Template({ data }: { data: ComparisonData }): ReactEl
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
-  const { leftTitle, rightTitle, items } = data
+  const { leftTitle = '', rightTitle = '', items = [] } = data || {}
   const W = 800
   const midX = W / 2
   const rowH = 48

@@ -29,6 +29,7 @@ import type {
   Comparison5Data,
   Comparison6Data,
   Comparison7Data,
+  Comparison8Data,
   BrainData,
   BudgetData,
   BusinessData,
@@ -122,6 +123,7 @@ import { Comparison4Template } from './components/Comparison4Template'
 import { Comparison5Template } from './components/Comparison5Template'
 import { Comparison6Template } from './components/Comparison6Template'
 import { Comparison7Template } from './components/Comparison7Template'
+import { Comparison8Template } from './components/Comparison8Template'
 import { BrainTemplate } from './components/BrainTemplate'
 import { Brain2Template } from './components/Brain2Template'
 import { Brain3Template } from './components/Brain3Template'
@@ -251,6 +253,7 @@ const TEMPLATE_MAP: Record<TemplateType, TemplateComponent> = {
   comparison5: ({ data }) => <Comparison5Template data={data as Comparison5Data} />,
   comparison6: ({ data }) => <Comparison6Template data={data as Comparison6Data} />,
   comparison7: ({ data }) => <Comparison7Template data={data as Comparison7Data} />,
+  comparison8: ({ data }) => <Comparison8Template data={data as Comparison8Data} />,
   brain: ({ data }) => <BrainTemplate data={data as BrainData} />,
   brain2: ({ data }) => <Brain2Template data={data as BrainData} />,
   brain3: ({ data }) => <Brain3Template data={data as BrainData} />,

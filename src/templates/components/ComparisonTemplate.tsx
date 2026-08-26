@@ -1,15 +1,24 @@
 import { useRef, type ReactElement } from 'react'
-import type { ComparisonData } from '../types'
+import type { ComparisonData, ComparisonBlock } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
-const LEFT_COLOR = MIGSO_PALETTE[0]!
-const RIGHT_COLOR = MIGSO_PALETTE[1]!
-const LEFT_BG = '#eff6ff'
-const RIGHT_BG = '#fef2f2'
+function getHexagonPath(cx: number, cy: number, radius: number): string {
+  const h = (radius * Math.sqrt(3)) / 2
+  const rHalf = radius * 0.5
+  return `M ${cx} ${cy - h} L ${cx - rHalf} ${cy - h} L ${cx - radius} ${cy} L ${cx - rHalf} ${cy + h} L ${cx + rHalf} ${cy + h} L ${cx + radius} ${cy} L ${cx + rHalf} ${cy - h} Z`
+}
+
+function parsePercent(val?: string | number, defaultVal: number = 50): number {
+  if (typeof val === 'number') return Math.max(0, Math.min(100, val))
+  if (!val) return defaultVal
+  const cleaned = String(val).replace(/[^0-9.]/g, '')
+  const num = parseFloat(cleaned)
+  return isNaN(num) ? defaultVal : Math.max(0, Math.min(100, num))
+}
 
 export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -20,174 +29,336 @@ export function ComparisonTemplate({ data }: { data: ComparisonData }): ReactEle
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
-  const { leftTitle, rightTitle, items } = data
-  const W = 900
-  const colW = 320
-  const labelW = 120
-  const dividerW = 40
-  const totalW = colW * 2 + labelW + dividerW
-  const tableX = (W - totalW) / 2
-  const headerH = 48
-  const rowH = 48
-  const tableY = 40
+  const rawBlocks: ComparisonBlock[] = data?.blocks && data.blocks.length > 0
+    ? data.blocks
+    : data?.leftTitle || data?.rightTitle
+      ? [
+          {
+            title: data.leftTitle || 'Brand 01',
+            subtitle: data.items?.[0]?.left || 'MIGSO-PCUBED content and words to\nbe added here as required',
+            percent: data.items?.[0]?.percent || '25%',
+            value: data.items?.[0]?.value || '25%',
+            color: data.items?.[0]?.color || '#2c2b64',
+          },
+          {
+            title: data.rightTitle || 'Brand 02',
+            subtitle: data.items?.[0]?.right || 'MIGSO-PCUBED content and words to\nbe added here as required',
+            percent: data.items?.[1]?.percent || '50%',
+            value: data.items?.[1]?.value || '90%',
+            icon: data.items?.[1]?.icon || 'smartphone',
+            color: data.items?.[1]?.color || '#ff5338',
+          },
+        ]
+      : [
+          {
+            title: 'Brand 01',
+            subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
+            percent: '25%',
+            value: '25%',
+            color: '#2c2b64',
+          },
+          {
+            title: 'Brand 02',
+            subtitle: 'MIGSO-PCUBED content and words to\nbe added here as required',
+            percent: '50%',
+            value: '90%',
+            icon: 'smartphone',
+            color: '#ff5338',
+          },
+        ]
 
-  const leftColX = tableX
-  const labelColX = leftColX + colW
-  const rightColX = labelColX + labelW + dividerW
+  const count = Math.max(1, rawBlocks.length)
+  const W = 960
+  const vsW = 70
+  const totalVsW = (count - 1) * vsW
+  const marginX = 40
+  const availableW = W - marginX * 2 - totalVsW
+  const colW = Math.max(160, Math.min(360, availableW / count))
+  const totalW = count * colW + totalVsW
+  const startX = (W - totalW) / 2
+
+  const headerH = 32
+  const headerY = 30
+  const cardY = 72
+  const cardH = count === 2 ? 300 : count === 3 ? 250 : 220
+  const gaugeY = cardY + cardH + 16
+  const gaugeH = 28
+  const descY = gaugeY + gaugeH + 14
+  const descH = 60
 
   return (
     <g ref={svgRef}>
-      {(() => {
-        const headerLeftId = 'header-left'
-        const defaultBbox = { x: leftColX, y: tableY, width: colW, height: headerH }
-        const customPos = positions[headerLeftId]
-        const bbox = {
-          x: customPos?.x ?? defaultBbox.x,
-          y: customPos?.y ?? defaultBbox.y,
-          width: customPos?.width ?? defaultBbox.width,
-          height: customPos?.height ?? defaultBbox.height,
+      {rawBlocks.map((block, index) => {
+        const colX = startX + index * (colW + vsW)
+        const brandPaletteColor = block.color || MIGSO_PALETTE[index % MIGSO_PALETTE.length] || '#2c2b64'
+        const isFirstDarkBrand = index === 0 && (!block.color || block.color === '#2c2b64' || block.color === '#23255a')
+
+        // 1. Header (Brand Name)
+        const headerId = `header-${index}`
+        const isHeaderSelected = selectedIds.has(headerId)
+        const defaultHeaderBbox = { x: colX, y: headerY, width: colW, height: headerH }
+        const customHeaderPos = positions[headerId]
+        const headerBbox = {
+          x: customHeaderPos?.x ?? defaultHeaderBbox.x,
+          y: customHeaderPos?.y ?? defaultHeaderBbox.y,
+          width: customHeaderPos?.width ?? defaultHeaderBbox.width,
+          height: customHeaderPos?.height ?? defaultHeaderBbox.height,
         }
-        const isSelected = selectedIds.has(headerLeftId)
-        const color = tplColors[headerLeftId] || LEFT_COLOR
-        const strokeColor = tplStrokeColors[headerLeftId] || (isSelected ? '#4a90d9' : 'none')
-        const strokeWidth = tplStrokeWidths[headerLeftId] ?? (isSelected ? 2.5 : 0)
-        const maxChars = Math.max(8, Math.floor(bbox.width / 10))
-        const titleLines = wrapTextByWidth(leftTitle, maxChars)
+        const headerColor = tplColors[headerId] || '#23255a'
+        const headerStrokeColor = tplStrokeColors[headerId] || (isHeaderSelected ? '#4a90d9' : 'none')
+        const headerStrokeWidth = tplStrokeWidths[headerId] ?? (isHeaderSelected ? 2 : 0)
+        const titleChars = Math.max(8, Math.floor(headerBbox.width / 10))
+        const titleLines = wrapTextByWidth(block.title || `Brand 0${index + 1}`, titleChars)
+
+        // 2. Main Card Box
+        const cardId = `card-${index}`
+        const isCardSelected = selectedIds.has(cardId)
+        const defaultCardBbox = { x: colX, y: cardY, width: colW, height: cardH }
+        const customCardPos = positions[cardId]
+        const cardBbox = {
+          x: customCardPos?.x ?? defaultCardBbox.x,
+          y: customCardPos?.y ?? defaultCardBbox.y,
+          width: customCardPos?.width ?? defaultCardBbox.width,
+          height: customCardPos?.height ?? defaultCardBbox.height,
+        }
+        const cardBg = tplColors[cardId] || '#23255a'
+        const cardStrokeColor = tplStrokeColors[cardId] || (isCardSelected ? '#4a90d9' : 'none')
+        const cardStrokeWidth = tplStrokeWidths[cardId] ?? (isCardSelected ? 2.5 : 0)
+
+        // Hexagon inside Card
+        const cx = cardBbox.x + cardBbox.width / 2
+        const cy = cardBbox.y + cardBbox.height / 2
+        const hexR = Math.min(cardBbox.width, cardBbox.height) * 0.38
+        const hexStrokeW = Math.max(14, Math.round(hexR * 0.18))
+        const hexPath = getHexagonPath(cx, cy, hexR)
+        const badgePct = parsePercent(block.badgePercent || block.percent, 50)
+        const arcColor = isFirstDarkBrand ? '#ffffff' : brandPaletteColor
+        const IconComponent = block.icon ? TEMPLATE_ICONS[block.icon] : undefined
+        const iconSize = Math.round(hexR * 0.38)
+
+        // 3. Bottom Horizontal Gauge
+        const gaugeId = `gauge-${index}`
+        const isGaugeSelected = selectedIds.has(gaugeId)
+        const defaultGaugeBbox = { x: colX, y: gaugeY, width: colW, height: gaugeH }
+        const customGaugePos = positions[gaugeId]
+        const gaugeBbox = {
+          x: customGaugePos?.x ?? defaultGaugeBbox.x,
+          y: customGaugePos?.y ?? defaultGaugeBbox.y,
+          width: customGaugePos?.width ?? defaultGaugeBbox.width,
+          height: customGaugePos?.height ?? defaultGaugeBbox.height,
+        }
+        const gaugeColor = tplColors[gaugeId] || (isFirstDarkBrand ? '#23255a' : brandPaletteColor)
+        const gaugeStrokeColor = tplStrokeColors[gaugeId] || (isGaugeSelected ? '#4a90d9' : 'none')
+        const gaugeStrokeWidth = tplStrokeWidths[gaugeId] ?? (isGaugeSelected ? 2 : 0)
+        const gaugePct = parsePercent(block.progress || block.value || block.percent, isFirstDarkBrand ? 25 : 90)
+        const trackW = Math.max(30, gaugeBbox.width - 56)
+
+        // 4. Description Card
+        const descId = `desc-${index}`
+        const isDescSelected = selectedIds.has(descId)
+        const defaultDescBbox = { x: colX, y: descY, width: colW, height: descH }
+        const customDescPos = positions[descId]
+        const descBbox = {
+          x: customDescPos?.x ?? defaultDescBbox.x,
+          y: customDescPos?.y ?? defaultDescBbox.y,
+          width: customDescPos?.width ?? defaultDescBbox.width,
+          height: customDescPos?.height ?? defaultDescBbox.height,
+        }
+        const descColor = tplColors[descId] || '#475569'
+        const descStrokeColor = tplStrokeColors[descId] || (isDescSelected ? '#4a90d9' : 'none')
+        const descStrokeWidth = tplStrokeWidths[descId] ?? (isDescSelected ? 2 : 0)
+        const maxDescChars = Math.max(10, Math.floor(descBbox.width / 7.5))
+        const descLines = wrapTextByWidth(block.subtitle || block.description || '', maxDescChars)
 
         return (
-          <g
-            key={headerLeftId}
-            data-element-id={headerLeftId}
-            onMouseDown={e => startDrag(e, headerLeftId, bbox)}
-            transform={getTransform(headerLeftId, bbox)}
-            style={{ cursor: 'pointer' }}
-          >
-            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill={color} stroke={strokeColor} strokeWidth={strokeWidth} />
-            <text x={bbox.x + bbox.width / 2} y={bbox.y + bbox.height / 2 + (titleLines.length > 1 ? -4 : 5)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={700} fill="white">
-              {titleLines.map((line, lineIndex) => (
-                <tspan key={lineIndex} x={bbox.x + bbox.width / 2} dy={lineIndex === 0 ? 0 : 14}>
-                  {line}
-                </tspan>
-              ))}
-            </text>
-            {isSelected && renderHandles(bbox, headerLeftId)}
+          <g key={`brand-${index}`}>
+            {/* Header */}
+            <g
+              data-element-id={headerId}
+              onMouseDown={e => startDrag(e, headerId, headerBbox)}
+              transform={getTransform(headerId, headerBbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              {headerStrokeWidth > 0 && (
+                <rect x={headerBbox.x} y={headerBbox.y} width={headerBbox.width} height={headerBbox.height} rx={4} fill="none" stroke={headerStrokeColor} strokeWidth={headerStrokeWidth} />
+              )}
+              <text
+                x={headerBbox.x + headerBbox.width / 2}
+                y={headerBbox.y + headerBbox.height / 2 + (titleLines.length > 1 ? -4 : 6)}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={18}
+                fontWeight={800}
+                fill={headerColor}
+              >
+                {titleLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={headerBbox.x + headerBbox.width / 2} dy={lineIndex === 0 ? 0 : 18}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+              {isHeaderSelected && renderHandles(headerBbox, headerId)}
+            </g>
+
+            {/* Main Card with Hexagon */}
+            <g
+              data-element-id={cardId}
+              onMouseDown={e => startDrag(e, cardId, cardBbox)}
+              transform={getTransform(cardId, cardBbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect
+                x={cardBbox.x}
+                y={cardBbox.y}
+                width={cardBbox.width}
+                height={cardBbox.height}
+                rx={4}
+                fill={cardBg}
+                stroke={cardStrokeColor}
+                strokeWidth={cardStrokeWidth}
+              />
+
+              {/* Background Hexagon Track */}
+              {!isFirstDarkBrand && (
+                <path
+                  d={hexPath}
+                  fill="none"
+                  stroke="rgba(241, 245, 249, 0.9)"
+                  strokeWidth={hexStrokeW}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              )}
+
+              {/* Active Hexagon Arc */}
+              <path
+                d={hexPath}
+                fill="none"
+                stroke={arcColor}
+                strokeWidth={hexStrokeW}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                pathLength={100}
+                strokeDasharray={`${badgePct} 100`}
+              />
+
+              {/* Center Icon & Percentage */}
+              {IconComponent && (
+                <g transform={`translate(${cx - iconSize / 2}, ${cy - (badgePct ? iconSize * 0.9 : iconSize / 2)})`}>
+                  <IconComponent size={iconSize} color={arcColor} />
+                </g>
+              )}
+
+              {badgePct > 0 && !isFirstDarkBrand && (
+                <text
+                  x={cx}
+                  y={IconComponent ? cy + iconSize * 0.7 : cy + 8}
+                  textAnchor="middle"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={Math.round(hexR * 0.24)}
+                  fontWeight={800}
+                  fill={arcColor}
+                >
+                  {badgePct}%
+                </text>
+              )}
+
+              {isCardSelected && renderHandles(cardBbox, cardId)}
+            </g>
+
+            {/* Bottom Horizontal Gauge */}
+            <g
+              data-element-id={gaugeId}
+              onMouseDown={e => startDrag(e, gaugeId, gaugeBbox)}
+              transform={getTransform(gaugeId, gaugeBbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              {gaugeStrokeWidth > 0 && (
+                <rect x={gaugeBbox.x - 2} y={gaugeBbox.y - 2} width={gaugeBbox.width + 4} height={gaugeBbox.height + 4} rx={6} fill="none" stroke={gaugeStrokeColor} strokeWidth={gaugeStrokeWidth} />
+              )}
+              <rect x={gaugeBbox.x} y={gaugeBbox.y + (gaugeBbox.height - 18) / 2} width={trackW} height={18} rx={9} fill="#f1f5f9" />
+              <rect x={gaugeBbox.x} y={gaugeBbox.y + (gaugeBbox.height - 18) / 2} width={Math.max(0, (gaugePct / 100) * trackW)} height={18} rx={9} fill={gaugeColor} />
+              <text x={gaugeBbox.x + trackW + 8} y={gaugeBbox.y + gaugeBbox.height / 2 + 5} fontFamily="Arial, sans-serif" fontSize={15} fontWeight={800} fill={gaugeColor}>
+                {gaugePct}%
+              </text>
+              {isGaugeSelected && renderHandles(gaugeBbox, gaugeId)}
+            </g>
+
+            {/* Description Text */}
+            <g
+              data-element-id={descId}
+              onMouseDown={e => startDrag(e, descId, descBbox)}
+              transform={getTransform(descId, descBbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              {descStrokeWidth > 0 && (
+                <rect x={descBbox.x} y={descBbox.y} width={descBbox.width} height={descBbox.height} rx={4} fill="none" stroke={descStrokeColor} strokeWidth={descStrokeWidth} />
+              )}
+              <text
+                x={descBbox.x + descBbox.width / 2}
+                y={descBbox.y + 14}
+                textAnchor="middle"
+                fontFamily="Arial, sans-serif"
+                fontSize={13}
+                fontWeight={500}
+                fill={descColor}
+              >
+                {descLines.map((line, lineIndex) => (
+                  <tspan key={lineIndex} x={descBbox.x + descBbox.width / 2} dy={lineIndex === 0 ? 0 : 16}>
+                    {line}
+                  </tspan>
+                ))}
+              </text>
+              {isDescSelected && renderHandles(descBbox, descId)}
+            </g>
           </g>
         )
-      })()}
+      })}
 
-      {(() => {
-        const headerRightId = 'header-right'
-        const defaultBbox = { x: rightColX, y: tableY, width: colW, height: headerH }
-        const customPos = positions[headerRightId]
-        const bbox = {
-          x: customPos?.x ?? defaultBbox.x,
-          y: customPos?.y ?? defaultBbox.y,
-          width: customPos?.width ?? defaultBbox.width,
-          height: customPos?.height ?? defaultBbox.height,
+      {/* VS Separators */}
+      {Array.from({ length: count - 1 }, (_, index) => {
+        const vsId = `vs-${index}`
+        const isVsSelected = selectedIds.has(vsId)
+        const vsStrokeColor = tplStrokeColors[vsId] || (isVsSelected ? '#4a90d9' : 'none')
+        const vsStrokeWidth = tplStrokeWidths[vsId] ?? (isVsSelected ? 2 : 0)
+        const colX = startX + index * (colW + vsW)
+        const vsX = colX + colW + (vsW - 50) / 2
+        const defaultVsBbox = { x: vsX, y: cardY + cardH / 2 - 25, width: 50, height: 50 }
+        const customVsPos = positions[vsId]
+        const vsBbox = {
+          x: customVsPos?.x ?? defaultVsBbox.x,
+          y: customVsPos?.y ?? defaultVsBbox.y,
+          width: customVsPos?.width ?? defaultVsBbox.width,
+          height: customVsPos?.height ?? defaultVsBbox.height,
         }
-        const isSelected = selectedIds.has(headerRightId)
-        const color = tplColors[headerRightId] || RIGHT_COLOR
-        const strokeColor = tplStrokeColors[headerRightId] || (isSelected ? '#4a90d9' : 'none')
-        const strokeWidth = tplStrokeWidths[headerRightId] ?? (isSelected ? 2.5 : 0)
-        const maxChars = Math.max(8, Math.floor(bbox.width / 10))
-        const titleLines = wrapTextByWidth(rightTitle, maxChars)
 
         return (
           <g
-            key={headerRightId}
-            data-element-id={headerRightId}
-            onMouseDown={e => startDrag(e, headerRightId, bbox)}
-            transform={getTransform(headerRightId, bbox)}
+            key={vsId}
+            data-element-id={vsId}
+            onMouseDown={e => startDrag(e, vsId, vsBbox)}
+            transform={getTransform(vsId, vsBbox)}
             style={{ cursor: 'pointer' }}
           >
-            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill={color} stroke={strokeColor} strokeWidth={strokeWidth} />
-            <text x={bbox.x + bbox.width / 2} y={bbox.y + bbox.height / 2 + (titleLines.length > 1 ? -4 : 5)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={700} fill="white">
-              {titleLines.map((line, lineIndex) => (
-                <tspan key={lineIndex} x={bbox.x + bbox.width / 2} dy={lineIndex === 0 ? 0 : 14}>
-                  {line}
-                </tspan>
-              ))}
-            </text>
-            {isSelected && renderHandles(bbox, headerRightId)}
-          </g>
-        )
-      })()}
-
-      <text x={labelColX + labelW / 2 + dividerW / 2} y={tableY + headerH / 2 + 6} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={800} fill="#94a3b8">
-        VS
-      </text>
-
-      {items.map((item, index) => {
-        const elementId = `item-${index}`
-        const isSelected = selectedIds.has(elementId)
-        const rowY = tableY + headerH + index * rowH
-        const isEven = index % 2 === 0
-        const defaultBbox = { x: leftColX, y: rowY, width: totalW, height: rowH }
-
-        const customPos = positions[elementId]
-        const bbox = {
-          x: customPos?.x ?? defaultBbox.x,
-          y: customPos?.y ?? defaultBbox.y,
-          width: customPos?.width ?? defaultBbox.width,
-          height: customPos?.height ?? defaultBbox.height,
-        }
-        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
-        const strokeWidth = tplStrokeWidths[elementId] ?? (isSelected ? 2 : 0)
-        const IconComponent = item.icon ? TEMPLATE_ICONS[item.icon] : undefined
-
-        const maxSideChars = Math.max(8, Math.floor(colW / 9))
-        const leftLines = wrapTextByWidth(item.left, maxSideChars)
-        const rightLines = wrapTextByWidth(item.right, maxSideChars)
-        const labelLines = wrapTextByWidth(item.label, Math.max(6, Math.floor(labelW / 8)))
-
-        return (
-          <g
-            key={elementId}
-            data-element-id={elementId}
-            onMouseDown={e => startDrag(e, elementId, bbox)}
-            transform={getTransform(elementId, bbox)}
-            style={{ cursor: 'pointer' }}
-          >
-            <rect x={bbox.x} y={bbox.y} width={colW} height={bbox.height} fill={isEven ? LEFT_BG : 'white'} stroke={strokeColor} strokeWidth={strokeWidth} />
-            <rect x={bbox.x + colW + labelW + dividerW} y={bbox.y} width={colW} height={bbox.height} fill={isEven ? RIGHT_BG : 'white'} stroke={strokeColor} strokeWidth={strokeWidth} />
-            <rect x={bbox.x + colW + dividerW / 2} y={bbox.y} width={labelW} height={bbox.height} rx={4} fill={isEven ? '#f8fafc' : '#f1f5f9'} />
-
-            {IconComponent && (
-              <g transform={`translate(${bbox.x + colW + dividerW / 2 + 8}, ${bbox.y + bbox.height / 2 - 8})`}>
-                <IconComponent size={16} color="#64748b" />
-              </g>
+            {vsStrokeWidth > 0 && (
+              <rect x={vsBbox.x} y={vsBbox.y} width={vsBbox.width} height={vsBbox.height} rx={4} fill="none" stroke={vsStrokeColor} strokeWidth={vsStrokeWidth} />
             )}
-
-            <text x={bbox.x + colW / 2} y={bbox.y + bbox.height / 2 + (leftLines.length > 1 ? -4 : 5)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={500} fill={LEFT_COLOR}>
-              {leftLines.map((line, lineIndex) => (
-                <tspan key={lineIndex} x={bbox.x + colW / 2} dy={lineIndex === 0 ? 0 : 13}>
-                  {line}
-                </tspan>
-              ))}
+            <text
+              x={vsBbox.x + vsBbox.width / 2}
+              y={vsBbox.y + vsBbox.height / 2 + 11}
+              textAnchor="middle"
+              fontFamily="Arial, sans-serif"
+              fontSize={34}
+              fontWeight={900}
+              fill="#23255a"
+            >
+              VS
             </text>
-
-            <text x={bbox.x + colW + labelW + dividerW + colW / 2} y={bbox.y + bbox.height / 2 + (rightLines.length > 1 ? -4 : 5)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={500} fill={RIGHT_COLOR}>
-              {rightLines.map((line, lineIndex) => (
-                <tspan key={lineIndex} x={bbox.x + colW + labelW + dividerW + colW / 2} dy={lineIndex === 0 ? 0 : 13}>
-                  {line}
-                </tspan>
-              ))}
-            </text>
-
-            <text x={bbox.x + colW + dividerW / 2 + labelW / 2 + (IconComponent ? 8 : 0)} y={bbox.y + bbox.height / 2 + (labelLines.length > 1 ? -4 : 5)} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#475569">
-              {labelLines.map((line, lineIndex) => (
-                <tspan key={lineIndex} x={bbox.x + colW + dividerW / 2 + labelW / 2 + (IconComponent ? 8 : 0)} dy={lineIndex === 0 ? 0 : 12}>
-                  {line}
-                </tspan>
-              ))}
-            </text>
-
-            <line x1={bbox.x} y1={bbox.y + bbox.height} x2={bbox.x + bbox.width} y2={bbox.y + bbox.height} stroke="#e2e8f0" strokeWidth={1} />
-
-            {isSelected && renderHandles(bbox, elementId)}
+            {isVsSelected && renderHandles(vsBbox, vsId)}
           </g>
         )
       })}
     </g>
   )
 }
+

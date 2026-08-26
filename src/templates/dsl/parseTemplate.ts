@@ -32,6 +32,9 @@ import type {
   TableRow,
   AgendaItem,
   ComparisonItem,
+  ComparisonBlock,
+  Comparison6Aspect,
+  Comparison7Item,
   BudgetItem,
   ManufacturingStation,
   ValueChainActivity,
@@ -689,17 +692,20 @@ function parseAgenda(dsl: string, headerTitle?: string): AgendaData {
 
   return { type: 'agenda', title, items }
 }
-
 function parseComparison(dsl: string, headerTitle?: string, headerType: string = 'comparison'): any {
   const lines = getLines(dsl)
   let title: string | undefined = headerTitle
   let leftTitle = ''
+  let leftSubtitle = ''
   let rightTitle = ''
+  let rightSubtitle = ''
+  const blocks: ComparisonBlock[] = []
   const items: ComparisonItem[] = []
-  const leftItems: string[] = []
-  const rightItems: string[] = []
-  const pros: string[] = []
-  const cons: string[] = []
+  const leftItems: any[] = []
+  const rightItems: any[] = []
+  const aspects: Comparison6Aspect[] = []
+  const pros: Comparison7Item[] = []
+  const cons: Comparison7Item[] = []
 
   for (const line of lines) {
     if (line.startsWith('@comparison')) {
@@ -707,25 +713,93 @@ function parseComparison(dsl: string, headerTitle?: string, headerType: string =
       if (m && m[1]) title = stripQuotes(m[1])
       continue
     }
-    const leftMatch = /^(?:leftTitle|left)\s+"([^"]*)"\s*$/.exec(line)
-    if (leftMatch) { leftTitle = leftMatch[1]!; continue }
 
-    const rightMatch = /^(?:rightTitle|right)\s+"([^"]*)"\s*$/.exec(line)
-    if (rightMatch) { rightTitle = rightMatch[1]!; continue }
+    const leftSubMatch = /^(?:leftSubtitle)\s+"([^"]*)"\s*$/.exec(line)
+    if (leftSubMatch) { leftSubtitle = leftSubMatch[1]!; continue }
 
-    const leftItemMatch = /^(?:leftItem|left_item)\s+"([^"]*)"\s*$/.exec(line)
-    if (leftItemMatch) { leftItems.push(leftItemMatch[1]!); continue }
+    const rightSubMatch = /^(?:rightSubtitle)\s+"([^"]*)"\s*$/.exec(line)
+    if (rightSubMatch) { rightSubtitle = rightSubMatch[1]!; continue }
 
-    const rightItemMatch = /^(?:rightItem|right_item)\s+"([^"]*)"\s*$/.exec(line)
-    if (rightItemMatch) { rightItems.push(rightItemMatch[1]!); continue }
+    const leftItemMatch = /^(?:leftItem|left_item|leftOptionItem)\s+"([^"]*)"(?:\s+icon:(\w+))?\s*$/.exec(line)
+    if (leftItemMatch) {
+      leftItems.push(leftItemMatch[2] ? { text: leftItemMatch[1]!, icon: leftItemMatch[2] } as any : leftItemMatch[1]!)
+      continue
+    }
 
-    const proMatch = /^(?:pro|pros)\s+"([^"]*)"\s*$/.exec(line)
-    if (proMatch) { pros.push(proMatch[1]!); continue }
-
-    const conMatch = /^(?:con|cons)\s+"([^"]*)"\s*$/.exec(line)
-    if (conMatch) { cons.push(conMatch[1]!); continue }
+    const rightItemMatch = /^(?:rightItem|right_item|rightOptionItem)\s+"([^"]*)"(?:\s+icon:(\w+))?\s*$/.exec(line)
+    if (rightItemMatch) {
+      rightItems.push(rightItemMatch[2] ? { text: rightItemMatch[1]!, icon: rightItemMatch[2] } as any : rightItemMatch[1]!)
+      continue
+    }
 
     const tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'left' && tokens.tokens.length >= 2) {
+      leftTitle = stripQuotes(tokens.tokens[1]!)
+      if (tokens.tokens[2] && !tokens.tokens[2].startsWith('#') && !tokens.tokens[2].startsWith('icon:')) {
+        leftSubtitle = stripQuotes(tokens.tokens[2])
+      }
+      continue
+    }
+
+    if (tokens.tokens[0] === 'right' && tokens.tokens.length >= 2) {
+      rightTitle = stripQuotes(tokens.tokens[1]!)
+      if (tokens.tokens[2] && !tokens.tokens[2].startsWith('#') && !tokens.tokens[2].startsWith('icon:')) {
+        rightSubtitle = stripQuotes(tokens.tokens[2])
+      }
+      continue
+    }
+
+    if (tokens.tokens[0] === 'aspect' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 3)
+      const label = stripQuotes(args[0]!)
+      const leftPctStr = args[1] ? stripQuotes(args[1]!).replace('%', '') : '50'
+      const rightPctStr = args[2] ? stripQuotes(args[2]!).replace('%', '') : '50'
+      const leftPct = parseFloat(leftPctStr) || 0
+      const rightPct = parseFloat(rightPctStr) || 0
+      aspects.push({
+        label,
+        leftPercent: leftPct,
+        rightPercent: rightPct,
+        ...trailing,
+      })
+      continue
+    }
+
+    if ((tokens.tokens[0] === 'pro' || tokens.tokens[0] === 'pros') && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
+      pros.push({
+        title: stripQuotes(args[0]!),
+        ...trailing,
+      })
+      continue
+    }
+
+    if ((tokens.tokens[0] === 'con' || tokens.tokens[0] === 'cons') && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
+      cons.push({
+        title: stripQuotes(args[0]!),
+        ...trailing,
+      })
+      continue
+    }
+
+    if ((tokens.tokens[0] === 'brand' || tokens.tokens[0] === 'block') && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const trailing = extractTrailingArgs(args, 1)
+      const firstArg = stripQuotes(args[0]!)
+      const secondArg = args.length > 1 && !args[1]!.includes(':') && !args[1]!.startsWith('#') ? stripQuotes(args[1]!) : undefined
+      const sub = secondArg || trailing.subtitle
+      blocks.push({
+        ...trailing,
+        title: firstArg,
+        ...(sub ? { subtitle: sub } : {}),
+      })
+      continue
+    }
+
     if (tokens.tokens[0] === 'comp' && tokens.tokens.length >= 4) {
       const args = tokens.tokens.slice(1)
       const trailing = extractTrailingArgs(args, 3)
@@ -739,14 +813,31 @@ function parseComparison(dsl: string, headerTitle?: string, headerType: string =
     }
   }
 
-  if (headerType === 'comparison6' || leftItems.length > 0 || rightItems.length > 0) {
+  if (headerType === 'comparison5') {
+    return {
+      type: 'comparison5',
+      title,
+      leftOption: leftTitle || 'Option 01',
+      rightOption: rightTitle || 'Option 02',
+      leftItems: leftItems.length > 0 ? leftItems : ['Item 1', 'Item 2'],
+      rightItems: rightItems.length > 0 ? rightItems : ['Item 1', 'Item 2'],
+    }
+  }
+
+  if (headerType === 'comparison6' || aspects.length > 0) {
     return {
       type: 'comparison6',
       title,
-      leftTitle: leftTitle || 'Plan A',
-      rightTitle: rightTitle || 'Plan B',
-      leftItems: leftItems.length > 0 ? leftItems : ['Item 1', 'Item 2'],
-      rightItems: rightItems.length > 0 ? rightItems : ['Item 1', 'Item 2'],
+      leftTitle: leftTitle || 'Option 01',
+      leftSubtitle: leftSubtitle || 'MIGSO-PCUBED content and words to be added here as required',
+      rightTitle: rightTitle || 'Option 02',
+      rightSubtitle: rightSubtitle || 'MIGSO-PCUBED content and words to be added here as required',
+      aspects: aspects.length > 0 ? aspects : [
+        { label: 'Aspect 01', leftPercent: 75, rightPercent: 50 },
+        { label: 'Aspect 02', leftPercent: 25, rightPercent: 100 },
+        { label: 'Aspect 03', leftPercent: 100, rightPercent: 25 },
+        { label: 'Aspect 04', leftPercent: 50, rightPercent: 75 },
+      ],
     }
   }
 
@@ -754,12 +845,55 @@ function parseComparison(dsl: string, headerTitle?: string, headerType: string =
     return {
       type: 'comparison7',
       title,
-      pros: pros.length > 0 ? pros : ['Avantage 1', 'Avantage 2'],
-      cons: cons.length > 0 ? cons : ['Inconvénient 1', 'Inconvénient 2'],
+      leftTitle: leftTitle || 'PROS',
+      rightTitle: rightTitle || 'CONS',
+      pros: pros.length > 0 ? pros : [
+        { title: 'MIGSO-PCUBED content and words to be added here as required' },
+        { title: 'MIGSO-PCUBED content and words to be added here as required' },
+        { title: 'MIGSO-PCUBED content and words to be added here as required' },
+        { title: 'MIGSO-PCUBED content and words to be added here as required' },
+        { title: 'MIGSO-PCUBED content and words to be added here as required' },
+      ],
+      cons: cons.length > 0 ? cons : [
+        { title: 'MIGSO-PCUBED content and words to be added here as required' },
+        { title: 'MIGSO-PCUBED content and words to be added here as required' },
+        { title: 'MIGSO-PCUBED content and words to be added here as required' },
+        { title: 'MIGSO-PCUBED content and words to be added here as required' },
+        { title: 'MIGSO-PCUBED content and words to be added here as required' },
+      ],
     }
   }
 
-  return { type: 'comparison', title, leftTitle, rightTitle, items }
+  if (headerType === 'comparison8' || leftItems.length > 0 || rightItems.length > 0) {
+    return {
+      type: 'comparison8',
+      title,
+      leftTitle: leftTitle || 'Plan A',
+      rightTitle: rightTitle || 'Plan B',
+      leftItems: leftItems.length > 0 ? leftItems : ['Cloud hosting', 'Auto-scaling', 'CDN included', 'SSL cert', 'Daily backups'],
+      rightItems: rightItems.length > 0 ? rightItems : ['On-premise', 'Manual scaling', 'No CDN', 'Own cert', 'Weekly backups'],
+    }
+  }
+
+  if (headerType === 'comparison2') {
+    return {
+      type: 'comparison2',
+      title,
+      blocks: blocks.length > 0 ? blocks : undefined,
+      leftTitle: leftTitle || undefined,
+      rightTitle: rightTitle || undefined,
+      items: items.length > 0 ? items : undefined,
+    }
+  }
+
+  return {
+    type: 'comparison',
+    title,
+    blocks: blocks.length > 0 ? blocks : undefined,
+    leftTitle: leftTitle || undefined,
+    rightTitle: rightTitle || undefined,
+    items: items.length > 0 ? items : undefined,
+  }
 }
 
 function parseBusiness(dsl: string, headerTitle?: string): BusinessData {
@@ -1329,8 +1463,10 @@ export function generateDslText(type: string, data: TemplateData): string {
 
   const list = (key: string) => (d[key] as Array<Record<string, unknown>> | undefined)
 
-  if (d.leftTitle) out += `  left "${esc(d.leftTitle)}"\n`
-  if (d.rightTitle) out += `  right "${esc(d.rightTitle)}"\n`
+  if (d.leftTitle) out += `  left "${esc(String(d.leftTitle))}"${d.leftSubtitle ? ' "' + esc(String(d.leftSubtitle)) + '"' : ''}\n`
+  if (d.rightTitle) out += `  right "${esc(String(d.rightTitle))}"${d.rightSubtitle ? ' "' + esc(String(d.rightSubtitle)) + '"' : ''}\n`
+  if (d.leftOption) out += `  left "${esc(String(d.leftOption))}"\n`
+  if (d.rightOption) out += `  right "${esc(String(d.rightOption))}"\n`
   if (d.topBar) out += `  topBar "${esc(String(d.topBar))}"\n`
   if (d.bottomBar) out += `  bottomBar "${esc(String(d.bottomBar))}"\n`
   if (d.footerText) out += `  footerText "${esc(String(d.footerText))}"\n`
@@ -1338,6 +1474,57 @@ export function generateDslText(type: string, data: TemplateData): string {
   if (d.lowerLabel) out += `  lowerLabel "${esc(String(d.lowerLabel))}"\n`
   if (d.centerLabel && !list('branches') && !list('nodes')) out += `  centerLabel "${esc(String(d.centerLabel))}"\n`
   if (d.rightLabel) out += `  rightLabel "${esc(String(d.rightLabel))}"\n`
+
+  const aspects = list('aspects')
+  if (aspects) {
+    for (const a of aspects) {
+      out += `  aspect "${esc(String(a.label))}" ${a.leftPercent ?? 0}% ${a.rightPercent ?? 0}%${emitTrailingArgs(a)}\n`
+    }
+  }
+
+  const pros = list('pros')
+  if (pros) {
+    for (const p of pros) {
+      if (typeof p === 'string') {
+        out += `  pro "${esc(p)}"\n`
+      } else {
+        out += `  pro "${esc(String(p.title || ''))}"${p.subtitle ? ' "' + esc(String(p.subtitle)) + '"' : ''}${emitTrailingArgs(p)}\n`
+      }
+    }
+  }
+
+  const cons = list('cons')
+  if (cons) {
+    for (const c of cons) {
+      if (typeof c === 'string') {
+        out += `  con "${esc(c)}"\n`
+      } else {
+        out += `  con "${esc(String(c.title || ''))}"${c.subtitle ? ' "' + esc(String(c.subtitle)) + '"' : ''}${emitTrailingArgs(c)}\n`
+      }
+    }
+  }
+
+  const leftItems = list('leftItems')
+  if (leftItems) {
+    for (const it of leftItems) {
+      if (typeof it === 'string') {
+        out += `  leftItem "${esc(it)}"\n`
+      } else {
+        out += `  leftItem "${esc(String(it.text || it.title || ''))}"${it.icon ? ` icon:${esc(String(it.icon))}` : ''}\n`
+      }
+    }
+  }
+
+  const rightItems = list('rightItems')
+  if (rightItems) {
+    for (const it of rightItems) {
+      if (typeof it === 'string') {
+        out += `  rightItem "${esc(it)}"\n`
+      } else {
+        out += `  rightItem "${esc(String(it.text || it.title || ''))}"${it.icon ? ` icon:${esc(String(it.icon))}` : ''}\n`
+      }
+    }
+  }
 
   const quarters = list('quarters')
   if (quarters?.length) out += `  quarters ${quarters.map((q: Record<string,unknown>) => q.label + (q.year ? ':' + q.year : '')).join(' ')}\n`
@@ -1356,7 +1543,15 @@ export function generateDslText(type: string, data: TemplateData): string {
   if (steps) for (const s of steps) out += `  step "${esc(s.title)}"${s.subtitle ? ' "' + esc(s.subtitle) + '"' : ''}${emitTrailingArgs(s)}\n`
 
   const blocks = list('blocks')
-  if (blocks) for (const b of blocks) out += `  block "${esc(b.number)}" "${esc(b.title)}"${b.subtitle ? ' "' + esc(b.subtitle) + '"' : ''}${emitTrailingArgs(b)}\n`
+  if (blocks) {
+    for (const b of blocks) {
+      if (b.number) {
+        out += `  block "${esc(String(b.number))}" "${esc(String(b.title))}"${b.subtitle ? ' "' + esc(String(b.subtitle)) + '"' : ''}${emitTrailingArgs(b)}\n`
+      } else {
+        out += `  brand "${esc(String(b.title))}"${b.subtitle ? ' "' + esc(String(b.subtitle)) + '"' : ''}${emitTrailingArgs(b)}\n`
+      }
+    }
+  }
 
   const pieces = list('pieces')
   if (pieces) for (const p of pieces) out += `  piece "${esc(p.title)}"${p.subtitle ? ' "' + esc(p.subtitle) + '"' : ''}${emitTrailingArgs(p)}\n`
