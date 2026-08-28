@@ -58,7 +58,7 @@ export function makePuzzlePiecePath(
     d += ` L ${midX + neckW / 2 + neckR} ${y + size}`
     d += ` C ${midX + neckW * 0.8} ${y + size + sgn * tabDepth * 0.1} ${midX + headR * 1.4} ${y + size + sgn * tabDepth * 1.05} ${midX} ${y + size + sgn * tabDepth}`
     d += ` C ${midX - headR * 1.4} ${y + size + sgn * tabDepth * 1.05} ${midX - neckW * 0.8} ${y + size + sgn * tabDepth * 0.1} ${midX - neckW / 2 - neckR} ${y + size}`
-    d += ` L ${x} ${y}`
+    d += ` L ${x} ${y + size}`
   }
 
   if (leftTab === 'none') {
@@ -152,30 +152,56 @@ function computePieceLayouts(pieces: PuzzlePiece[]): PieceLayout[] {
     ]
   }
 
-  // Dynamic layout for any N != 4
-  const cols = count <= 3 ? count : count <= 6 ? 3 : 4
-  const rows = Math.ceil(count / cols)
-  const pieceSize = Math.min(140, Math.floor(360 / Math.max(cols, rows)))
-  const totalW = cols * pieceSize
-  const totalH = rows * pieceSize
+  // Progressive square growth: (4, 9, 16, 25)
+  // Layer 0 (1): (0,0)
+  // Layer 1 (4): (1,0), (1,1), (0,1)
+  // Layer 2 (9): (2,0), (2,1), (2,2), (1,2), (0,2)
+  // Layer 3 (16): (3,0), (3,1), (3,2), (3,3), (2,3), (1,3), (0,3)
+  // Layer 4 (25): (4,0), (4,1), (4,2), (4,3), (4,4), (3,4), (2,4), (1,4), (0,4)
+  const allCoords: [number, number][] = [[0, 0]]
+  for (let k = 1; k <= 5; k++) {
+    for (let r = 0; r < k; r++) {
+      allCoords.push([k, r])
+    }
+    allCoords.push([k, k])
+    for (let c = k - 1; c >= 0; c--) {
+      allCoords.push([c, k])
+    }
+  }
+
+  const coords = allCoords.slice(0, count)
+  const maxC = Math.max(...coords.map(p => p[0])) + 1
+  const maxR = Math.max(...coords.map(p => p[1])) + 1
+  const pieceSize = Math.min(145, Math.floor(380 / Math.max(maxC, maxR)))
+  const totalW = maxC * pieceSize
+  const totalH = maxR * pieceSize
   const startX = 500 - totalW / 2
   const startY = 270 - totalH / 2
 
+  const coordSet = new Set(coords.map(([c, r]) => `${c},${r}`))
+
   return pieces.map((data, idx) => {
-    const col = idx % cols
-    const row = Math.floor(idx / cols)
-    const px = startX + col * pieceSize
-    const py = startY + row * pieceSize
+    const [c, r] = coords[idx]!
+    const px = startX + c * pieceSize
+    const py = startY + r * pieceSize
 
-    const top: 'none' | 'out' | 'in' = row === 0 ? 'none' : 'in'
-    const right: 'none' | 'out' | 'in' = col === cols - 1 || idx === count - 1 ? 'none' : 'out'
-    const bottom: 'none' | 'out' | 'in' = row === rows - 1 || idx + cols >= count ? 'none' : 'out'
-    const left: 'none' | 'out' | 'in' = col === 0 ? 'none' : 'in'
+    const hasTop = coordSet.has(`${c},${r - 1}`)
+    const hasRight = coordSet.has(`${c + 1},${r}`)
+    const hasBottom = coordSet.has(`${c},${r + 1}`)
+    const hasLeft = coordSet.has(`${c - 1},${r}`)
 
-    const isLeft = col < cols / 2
+    // Interlocking rule:
+    //   Horizontal shared edge (c,r)–(c+1,r): right(c,r) = r%2===0?'out':'in', left(c+1,r) = opposite ✓
+    //   Vertical shared edge (c,r)–(c,r+1): bottom(c,r) = c%2===0?'out':'in', top(c,r+1) = opposite ✓
+    //   Exterior free sides always have a pignon toward the outside ('out').
+    const top: 'none' | 'out' | 'in' = hasTop ? (c % 2 === 0 ? 'in' : 'out') : 'out'
+    const right: 'none' | 'out' | 'in' = hasRight ? (r % 2 === 0 ? 'out' : 'in') : 'out'
+    const bottom: 'none' | 'out' | 'in' = hasBottom ? (c % 2 === 0 ? 'out' : 'in') : 'out'
+    const left: 'none' | 'out' | 'in' = hasLeft ? (r % 2 === 0 ? 'in' : 'out') : 'out'
+
+    const isLeft = c < maxC / 2
     const defaultCardX = isLeft ? 50 : 790
-    const rowInSide = isLeft ? row : row
-    const defaultCardY = Math.max(60, startY + rowInSide * (pieceSize + 20) + 10)
+    const defaultCardY = Math.max(50, startY + r * (pieceSize + 15))
 
     return {
       index: idx,
@@ -243,6 +269,7 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
         }
 
         const cardBadgeColor = tplColors[cardElementId] ?? color
+        const scale = pieceBbox.width / 145
         const path = makePuzzlePiecePath(
           pieceBbox.x,
           pieceBbox.y,
@@ -251,6 +278,9 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
           layout.right,
           layout.bottom,
           layout.left,
+          Math.round(24 * scale),
+          Math.round(18 * scale),
+          Math.round(6 * scale),
         )
 
         const centerCx = pieceBbox.x + pieceBbox.width / 2
@@ -292,16 +322,16 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
                 strokeLinejoin="round"
               />
               {IconComponent ? (
-                <g transform={`translate(${centerCx - 18}, ${centerCy - 18})`}>
-                  <IconComponent size={36} color="white" />
+                <g transform={`translate(${centerCx - Math.round(18 * scale)}, ${centerCy - Math.round(18 * scale)})`}>
+                  <IconComponent size={Math.round(36 * scale)} color="white" />
                 </g>
               ) : (
                 <text
                   x={centerCx}
-                  y={centerCy + 16}
+                  y={centerCy + Math.round(16 * scale)}
                   textAnchor="middle"
                   fontFamily="Arial, Segoe UI, sans-serif"
-                  fontSize={Math.max(20, Math.floor(pieceBbox.width * 0.33))}
+                  fontSize={Math.max(16, Math.floor(pieceBbox.width * 0.33))}
                   fontWeight={700}
                   fill="white"
                 >

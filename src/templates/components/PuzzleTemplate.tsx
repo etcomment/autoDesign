@@ -90,30 +90,47 @@ function computePieceLayouts(pieces: PuzzlePiece[]): PieceLayout[] {
     ]
   }
 
-  // Dynamic layout for any N != 4
-  const cols = count <= 3 ? count : count <= 6 ? 3 : 4
-  const rows = Math.ceil(count / cols)
-  const pieceSize = Math.min(140, Math.floor(360 / Math.max(cols, rows)))
-  const totalW = cols * pieceSize
-  const totalH = rows * pieceSize
+  // Progressive square growth: (4, 9, 16, 25)
+  const allCoords: [number, number][] = [[0, 0]]
+  for (let k = 1; k <= 5; k++) {
+    for (let r = 0; r < k; r++) {
+      allCoords.push([k, r])
+    }
+    allCoords.push([k, k])
+    for (let c = k - 1; c >= 0; c--) {
+      allCoords.push([c, k])
+    }
+  }
+
+  const coords = allCoords.slice(0, count)
+  const maxC = Math.max(...coords.map(p => p[0])) + 1
+  const maxR = Math.max(...coords.map(p => p[1])) + 1
+  const pieceSize = Math.min(145, Math.floor(380 / Math.max(maxC, maxR)))
+  const totalW = maxC * pieceSize
+  const totalH = maxR * pieceSize
   const startX = 500 - totalW / 2
   const startY = 270 - totalH / 2
 
+  const coordSet = new Set(coords.map(([c, r]) => `${c},${r}`))
+
   return pieces.map((data, idx) => {
-    const col = idx % cols
-    const row = Math.floor(idx / cols)
-    const px = startX + col * pieceSize
-    const py = startY + row * pieceSize
+    const [c, r] = coords[idx]!
+    const px = startX + c * pieceSize
+    const py = startY + r * pieceSize
 
-    const top: 'none' | 'out' | 'in' = row === 0 ? 'none' : 'in'
-    const right: 'none' | 'out' | 'in' = col === cols - 1 || idx === count - 1 ? 'none' : 'out'
-    const bottom: 'none' | 'out' | 'in' = row === rows - 1 || idx + cols >= count ? 'none' : 'out'
-    const left: 'none' | 'out' | 'in' = col === 0 ? 'none' : 'in'
+    const hasTop = coordSet.has(`${c},${r - 1}`)
+    const hasRight = coordSet.has(`${c + 1},${r}`)
+    const hasBottom = coordSet.has(`${c},${r + 1}`)
+    const hasLeft = coordSet.has(`${c - 1},${r}`)
 
-    const isLeft = col < cols / 2
+    const top: 'none' | 'out' | 'in' = hasTop ? (c % 2 === 0 ? 'in' : 'out') : 'out'
+    const right: 'none' | 'out' | 'in' = hasRight ? (r % 2 === 0 ? 'out' : 'in') : 'out'
+    const bottom: 'none' | 'out' | 'in' = hasBottom ? (c % 2 === 0 ? 'out' : 'in') : 'out'
+    const left: 'none' | 'out' | 'in' = hasLeft ? (r % 2 === 0 ? 'in' : 'out') : 'out'
+
+    const isLeft = c < maxC / 2
     const defaultCardX = isLeft ? 50 : 790
-    const rowInSide = isLeft ? row : row
-    const defaultCardY = Math.max(60, startY + rowInSide * (pieceSize + 20) + 10)
+    const defaultCardY = Math.max(50, startY + r * (pieceSize + 15))
 
     return {
       index: idx,
@@ -181,6 +198,7 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
         }
 
         const cardBadgeColor = tplColors[cardElementId] ?? color
+        const scale = pieceBbox.width / 145
         const path = makePuzzlePiecePath(
           pieceBbox.x,
           pieceBbox.y,
@@ -189,6 +207,9 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
           layout.right,
           layout.bottom,
           layout.left,
+          Math.round(24 * scale),
+          Math.round(18 * scale),
+          Math.round(6 * scale),
         )
 
         const centerCx = pieceBbox.x + pieceBbox.width / 2
@@ -230,16 +251,16 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
                 strokeLinejoin="round"
               />
               {IconComponent ? (
-                <g transform={`translate(${centerCx - 18}, ${centerCy - 18})`}>
-                  <IconComponent size={36} color="white" />
+                <g transform={`translate(${centerCx - Math.round(18 * scale)}, ${centerCy - Math.round(18 * scale)})`}>
+                  <IconComponent size={Math.round(36 * scale)} color="white" />
                 </g>
               ) : (
                 <text
                   x={centerCx}
-                  y={centerCy + 16}
+                  y={centerCy + Math.round(16 * scale)}
                   textAnchor="middle"
                   fontFamily="Arial, Segoe UI, sans-serif"
-                  fontSize={Math.max(20, Math.floor(pieceBbox.width * 0.33))}
+                  fontSize={Math.max(16, Math.floor(pieceBbox.width * 0.33))}
                   fontWeight={700}
                   fill="white"
                 >
