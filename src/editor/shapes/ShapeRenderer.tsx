@@ -78,14 +78,13 @@ export function ShapeRenderer({ shape, isSelected }: ShapeRendererProps) {
   if (type === 'icon' && shape.iconName) {
     const Icon = TEMPLATE_ICONS[shape.iconName]
     if (Icon) {
-      const iconSize = Math.min(w, h) * 0.7
+      const iconSize = Math.min(w, h) * 0.85
+      const iconColor = style.stroke && style.stroke !== 'none' && style.stroke !== 'transparent' ? style.stroke : '#2c2b64'
       return (
         <g transform={`rotate(${shape.rotation || 0}, ${x + w / 2}, ${y + h / 2})`}>
           <rect x={x} y={y} width={w} height={h} fill={style.fill} stroke="none" opacity={0} cursor="pointer" />
           <g transform={`translate(${x + w / 2 - iconSize / 2}, ${y + h / 2 - iconSize / 2})`}>
-            <g stroke={style.stroke} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round">
-              <Icon size={iconSize} color={style.stroke} />
-            </g>
+            <Icon size={iconSize} color={iconColor} />
           </g>
           {showHandles && (
             <>
