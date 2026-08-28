@@ -147,11 +147,9 @@ import { Business11Template } from './components/Business11Template'
 import { DecisionTreeTemplate } from './components/DecisionTreeTemplate'
 import { Decision2Template } from './components/Decision2Template'
 import { GoalsTemplate } from './components/GoalsTemplate'
-import { Goals1Template } from './components/Goals1Template'
 import { Goals2Template } from './components/Goals2Template'
 import { Goals3Template } from './components/Goals3Template'
 import { Goals4Template } from './components/Goals4Template'
-import { Goals5Template } from './components/Goals5Template'
 import { ManufacturingTemplate } from './components/ManufacturingTemplate'
 import { Manufacturing2Template } from './components/Manufacturing2Template'
 import { Manufacturing3Template } from './components/Manufacturing3Template'
@@ -277,11 +275,9 @@ const TEMPLATE_MAP: Record<TemplateType, TemplateComponent> = {
   decisionTree: ({ data }) => <DecisionTreeTemplate data={data as DecisionTreeData} />,
   decision2: ({ data }) => <Decision2Template data={data as DecisionTreeData} />,
   goals: ({ data }) => <GoalsTemplate data={data as GoalsData} />,
-  goals1: ({ data }) => <Goals1Template data={data as GoalsData} />,
   goals2: ({ data }) => <Goals2Template data={data as GoalsData} />,
   goals3: ({ data }) => <Goals3Template data={data as GoalsData} />,
   goals4: ({ data }) => <Goals4Template data={data as GoalsData} />,
-  goals5: ({ data }) => <Goals5Template data={data as GoalsData} />,
   manufacturing: ({ data }) => <ManufacturingTemplate data={data as ManufacturingData} />,
   manufacturing2: ({ data }) => <Manufacturing2Template data={data as ManufacturingData} />,
   manufacturing3: ({ data }) => <Manufacturing3Template data={data as ManufacturingData} />,

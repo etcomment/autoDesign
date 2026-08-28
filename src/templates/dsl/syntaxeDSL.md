@@ -82,8 +82,6 @@ Ce document constitue la **source officielle et unique de la syntaxe DSL** pour 
 
 ```dsl
 @roadmap4
-  start "START"
-  finish "FINISH"
   quarters Q1:2026 Q2:2026 Q3:2026 Q4:2026
   milestone:Q1 "Alpha Release" "Internal testing"
   milestone:Q2 "Beta Launch" "Private preview"

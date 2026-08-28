@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react'
+import { Check, Ban } from 'lucide-react'
 import { theme } from '../lib/theme'
 
 export interface ColorGridProps {
@@ -14,22 +14,32 @@ export function ColorGrid({ label, colors, value, onSelect }: ColorGridProps) {
       <label style={styles.label}>{label}</label>
       <div style={styles.grid}>
         {colors.map(color => {
-          const isSelected = value === color
+          const isTransparent = color === 'transparent' || color === 'none'
+          const isSelected = value === color || (isTransparent && (!value || value === 'transparent' || value === 'none'))
           return (
             <button
               key={color}
               type="button"
               style={{
                 ...styles.swatch,
-                backgroundColor: color,
+                backgroundColor: isTransparent ? '#ffffff' : color,
+                backgroundImage: isTransparent
+                  ? 'linear-gradient(45deg, #e2e8f0 25%, transparent 25%), linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e2e8f0 75%), linear-gradient(-45deg, transparent 75%, #e2e8f0 75%)'
+                  : undefined,
+                backgroundSize: isTransparent ? '8px 8px' : undefined,
+                backgroundPosition: isTransparent ? '0 0, 0 4px, 4px -4px, -4px 0px' : undefined,
                 boxShadow: isSelected ? `0 0 0 2px ${theme.color.bgPanel}, 0 0 0 4px ${theme.color.accent}` : `inset 0 0 0 1px ${theme.color.border}`,
               }}
               onClick={() => onSelect(color)}
-              title={color}
-              aria-label={`${label}: ${color}`}
+              title={isTransparent ? 'Transparent' : color}
+              aria-label={`${label}: ${isTransparent ? 'Transparent' : color}`}
               aria-pressed={isSelected}
             >
-              {isSelected && <Check size={12} color={getContrastColor(color)} style={styles.check} />}
+              {isSelected ? (
+                <Check size={12} color={isTransparent ? '#e11d48' : getContrastColor(color)} style={styles.check} />
+              ) : isTransparent ? (
+                <Ban size={11} color="#94a3b8" />
+              ) : null}
             </button>
           )
         })}
@@ -39,6 +49,7 @@ export function ColorGrid({ label, colors, value, onSelect }: ColorGridProps) {
 }
 
 function getContrastColor(color: string): string {
+  if (color === 'transparent' || color === 'none') return '#1a1a2e'
   const hex = color.replace('#', '')
   if (hex.length !== 6) return theme.color.textOnPrimary
   const r = parseInt(hex.slice(0, 2), 16)

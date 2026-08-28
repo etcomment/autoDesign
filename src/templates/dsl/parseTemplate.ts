@@ -1152,14 +1152,20 @@ function parseGoals(dsl: string, headerTitle?: string): GoalsData {
     const centerMatch = /^center\s+"([^"]*)"\s*$/.exec(line)
     if (centerMatch) { centerGoal = centerMatch[1]!; continue }
 
-    var tokens = tokenizeLine(line)
-    if (tokens.tokens[0] === 'metric' && tokens.tokens.length >= 4) {
+    const tokens = tokenizeLine(line)
+    const keyword = tokens.tokens[0]
+    if ((keyword === 'metric' || keyword === 'goal' || keyword === 'step') && tokens.tokens.length >= 2) {
       const args = tokens.tokens.slice(1)
-      const trailing = extractTrailingArgs(args, 3)
+      const trailing = extractTrailingArgs(args, args.length >= 4 ? 3 : 2)
+      const label = stripQuotes(args[0]!)
+      const valOrDesc = args.length >= 2 ? stripQuotes(args[1]!) : ''
+      const target = args.length >= 3 ? stripQuotes(args[2]!) : undefined
       metrics.push({
-        label: stripQuotes(args[0]!),
-        value: trailing.value ?? stripQuotes(args[1]!),
-        target: stripQuotes(args[2]!),
+        label,
+        value: trailing.value ?? valOrDesc,
+        target,
+        subtitle: valOrDesc,
+        description: valOrDesc,
         color: trailing.color,
         icon: trailing.icon,
         percent: trailing.percent,

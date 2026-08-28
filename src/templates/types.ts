@@ -258,11 +258,9 @@ export type Budget5Data = BudgetData
 
 export type Decision2Data = DecisionTreeData
 
-export type Goals1Data = GoalsData
 export type Goals2Data = GoalsData
 export type Goals3Data = GoalsData
 export type Goals4Data = GoalsData
-export type Goals5Data = GoalsData
 
 export interface StrategyBlock {
   number: string
@@ -529,8 +527,10 @@ export interface DecisionTreeData {
 export interface GoalsMetric {
   label: string
   value: string
-  target: string
+  target?: string
   change?: string
+  subtitle?: string
+  description?: string
   color?: string
   icon?: string
   percent?: string
@@ -720,11 +720,9 @@ export type TemplateData =
   | DecisionTreeData
   | Decision2Data
   | GoalsData
-  | Goals1Data
   | Goals2Data
   | Goals3Data
   | Goals4Data
-  | Goals5Data
   | ManufacturingData
   | Manufacturing2Data
   | Manufacturing3Data

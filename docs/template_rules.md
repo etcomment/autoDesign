@@ -132,3 +132,104 @@ cartes, jalons, etc.).
 * **Segments dynamiques** : Les segments horizontaux de la timeline s'activent et héritent de la couleur du jalon d'origine de chaque segment (ou de `track`). Les segments futurs restent en gris clair inactif (`#d9dee4`).
 * **Héritage sur quarters vides** : Les points/quarters sans jalon propre héritent automatiquement de la couleur du jalon qui les précède.
 
+- - -
+
+## 7. Checklist Unitaire de Conformité (Baseline Qualité)
+
+Cette checklist est la **grille d'audit unitaire** que chaque composant de template doit valider point par point. Chaque élément correspond à une règle unique et vérifiable.
+
+---
+
+### 1. 🎨 Transparence & Cadrage Global
+- [ ] Aucun `<rect>` de fond blanc ou opaque n'est présent (canvas 100% transparent).
+- [ ] Aucun titre global de slide n'est codé en dur dans le SVG (ex: pas de `<text>Brain Template</text>`).
+- [ ] Aucun sous-titre de page ou en-tête statique n'est inclus dans le SVG.
+- [ ] Aucun pied de page ou logo global n'est codé en dur dans le composant.
+
+---
+
+### 2. 🧩 Conformité DSL & Données
+- [ ] Aucun mot-clé ou directive DSL inutile n'est déclaré dans `registry.ts` (ex: pas de `startLabel` ou `finishLabel` fantômes s'ils ne sont pas dessinés).
+- [ ] Tous les champs fournis par le DSL et pertinents au template sont rendus (`title`, `subtitle`, `date`, `val`, `pct`, `lane`, etc.).
+- [ ] Le composant fonctionne sans crash si `milestones`, `items`, `lanes` ou `quarters` sont vides ou non définis.
+- [ ] Les dates ou quarters non renseignés disposent d'un fallback visuel ou logique propre.
+
+---
+
+### 3. 📐 Géométrie, Capacité & Espacement (N-Éléments)
+- [ ] Les espacements entre éléments sont calculés dynamiquement en fonction du nombre réel d'éléments ($N$).
+- [ ] Les éléments ne subissent aucun chevauchement accidentel ou indésirable (hors designs où le chevauchement est expressément prévu, ex: diagrammes de Venn, cercles concentriques, chevrons imbriqués).
+- [ ] Le diagramme reste visuellement équilibré si la liste ne contient que 1 ou 2 éléments.
+- [ ] Une borne de sécurité (`Math.max(1, count)`) est utilisée pour éviter les divisions par zéro.
+
+---
+
+### 4. 📝 Découpage Textuel & Multi-Lignes
+- [ ] Aucun titre ou description n'est tronqué avec un `.slice()` brutal qui coupe les phrases.
+- [ ] Les textes longs sont découpés avec `wrapTextByWidth` de manière proportionnelle à la largeur du bloc.
+- [ ] Chaque ligne calculée est rendue dans un `<tspan>` distinct avec un `dy` adapté (ex: 20px pour les titres, 16px pour les descriptions).
+- [ ] Les coordonnées horizontales `x` de chaque `<tspan>` sont explicitement définies pour éviter les décalages d'alignement.
+- [ ] Les sauts de ligne explicites `\n` contenus dans les données sont respectés et convertis en lignes distinctes.
+
+---
+
+### 5. ↕️ Auto-Resize des Textes (Agrandissement & Réduction)
+- [ ] La boîte / carte conserve sa taille minimale standard pour les textes courts et moyens.
+- [ ] Le seuil de déclenchement de l'agrandissement est calibré (la carte ne grandit que lorsque le texte excède réellement sa capacité standard, ex: à partir de 7 lignes).
+- [ ] La hauteur de la carte s'agrandit automatiquement et proportionnellement au nombre de lignes supplémentaires.
+- [ ] La carte **réduit immédiatement** à sa taille nominale dès que des lignes de texte sont supprimées.
+- [ ] Les éléments voisins ou connecteurs s'ajustent pour préserver la lisibilité lorsque la hauteur varie.
+
+---
+
+### 6. 🖱️ Interactivité, Sélection & Déplacement (Canvas)
+- [ ] La racine du SVG est encapsulée dans un `<g ref={svgRef}>`.
+- [ ] Le hook `useTemplateDragResize(svgRef)` est instancié.
+- [ ] Chaque élément interactif possède un attribut `data-element-id` unique.
+- [ ] L'événement `onMouseDown={e => startDrag(e, id, rect)}` est branché sur chaque élément déplaçable.
+- [ ] Le curseur CSS est configuré avec `style={{ cursor: 'pointer' }}` sur les éléments interactifs.
+- [ ] Le feedback visuel de sélection est actif (`selectedIds.has(id)` modifie le contour ou la bordure).
+- [ ] Les poignées de redimensionnement `{selectedIds.has(id) && renderHandles(rect, id)}` sont rendues.
+
+---
+
+### 7. 🔗 Connecteurs & Ancrages Dynamiques
+- [ ] Aucune coordonnée de ligne ou flèche de liaison n'est codée en dur.
+- [ ] Les extrémités des connecteurs sont calculées en temps réel à partir de `getR(...)` des éléments source et cible.
+- [ ] Quand un élément est déplacé au curseur, son connecteur suit instantanément le mouvement sans se décrocher.
+- [ ] Quand un élément grandit ou rétrécit en hauteur/largeur, l'ancrage du connecteur reste positionné exactement sur la zone cible (ex: pointe de flèche).
+
+---
+
+### 8. 🌈 Cascade des Couleurs
+- [ ] Priorité 1 : La couleur modifiée par l'utilisateur dans le panneau latéral (`templateElementColors[id]`) est prioritaire.
+- [ ] Priorité 2 : Si non modifiée par l'UI, la couleur explicitement spécifiée dans le DSL (`item.color`) est appliquée.
+- [ ] Priorité 3 : À défaut, la couleur par défaut issue de `MIGSO_PALETTE` (ou de la phase/lane associée) est utilisée.
+- [ ] Les couleurs de contour (`templateStrokeColors[id]`) et épaisseurs (`templateStrokeWidths[id]`) sont prises en compte si personnalisées.
+
+---
+
+### 9. 💾 Synchronisation avec le Store Zustand
+- [ ] Une fonction `getR(id)` fusionne les positions par défaut calculées et les positions stockées dans `pos[id]`.
+- [ ] Les dimensions par défaut sont synchronisées dans le store sans créer de cycle de re-render infini.
+- [ ] Les modifications de position manuelle de l'utilisateur sont conservées lors des re-renders.
+
+---
+
+### 10. ⚡ Qualité Technique & Tests
+- [ ] Aucun mot-clé `any` n'est utilisé dans le fichier TypeScript (strict typing).
+- [ ] Chaque élément de liste mappé possède une prop `key` unique et stable.
+- [ ] Aucun warning React ou SVG n'apparaît dans la console (ex: props invalides, `NaN` dans les attributs `d`, `x`, `y`).
+- [ ] Le projet compile sans erreur (`npm run build`).
+- [ ] Tous les tests unitaires associés passent avec succès (`npm test`).
+
+---
+
+### 11. 🎛️ Panneau Propriétés & Édition Bidirectionnelle des Textes
+- [ ] Le préfixe de chaque élément sélectionnable (`card-`, `desc-`, `bubble-`, `step-`, `milestone-`, `block-`, `node-`, etc.) est répertorié dans `templateElementUtils.ts` (`collectionKeys` et `elementLabel`).
+- [ ] La sélection d'un élément dans le canvas peuple immédiatement le panneau de propriétés avec son libellé exact et ses textes actuels (Titre, Description/Sous-titre, Date, Valeur).
+- [ ] La saisie ou modification d'un champ dans le panneau de propriétés met à jour le store `templateData` en temps réel.
+- [ ] Le rendu SVG répercute instantanément le nouveau texte saisi depuis le panneau de propriétés.
+- [ ] L'auto-resize du SVG réagit immédiatement aux modifications textuelles effectuées depuis le panneau de propriétés.
+
+

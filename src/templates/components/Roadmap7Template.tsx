@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, type ReactElement, type ComponentType } from 'react'
-import type { RoadmapData, TemplateMilestone } from '../types'
+import type { RoadmapData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { MIGSO_PALETTE } from '../../lib/theme'
@@ -12,14 +12,6 @@ interface Rect {
   y: number
   width: number
   height: number
-}
-
-interface MilestonePresentation {
-  dateLabel: string
-  bubbleValue: string
-  cardTitle: string
-  cardDescription: string
-  color: string
 }
 
 function resolveDynamicIcon(iconName?: string, size = 20, color = '#ffffff'): ReactElement | null {
@@ -42,36 +34,6 @@ function resolveDynamicIcon(iconName?: string, size = 20, color = '#ffffff'): Re
   return null
 }
 
-function extractMilestonePresentation(milestone: TemplateMilestone, index: number): MilestonePresentation {
-  const dateLabel = milestone.date ?? milestone.quarter ?? String(2023 + index)
-  
-  let bubbleValue = milestone.value ?? milestone.percent
-  let cardTitle = milestone.title || `Étape ${index + 1}`
-  let cardDescription = milestone.subtitle || ''
-
-  if (!bubbleValue) {
-    if (milestone.subtitle && (/^[\d.,%€$kKM+-]+$/.test(milestone.subtitle.trim()) || milestone.subtitle.trim().length <= 5)) {
-      bubbleValue = milestone.subtitle.trim()
-      cardDescription = milestone.title !== dateLabel ? milestone.title : ''
-      if (cardDescription) {
-        cardTitle = `Étape ${index + 1}`
-      }
-    } else {
-      bubbleValue = String(index + 1)
-    }
-  }
-
-  const color = milestone.color ?? milestone.style?.fill ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
-
-  return {
-    dateLabel,
-    bubbleValue,
-    cardTitle,
-    cardDescription,
-    color,
-  }
-}
-
 function retrieveElementRect(elementId: string, customPositions: Record<string, Rect>, defaultLayout: Map<string, Rect>): Rect {
   const storedRect = customPositions[elementId]
   const defaultRect = defaultLayout.get(elementId)
@@ -92,7 +54,7 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
   const moveElement = useTemplateStore(state => state.moveTemplateElement)
   const resizeElement = useTemplateStore(state => state.resizeTemplateElement)
 
-  const { milestones } = data
+  const { milestones = [] } = data
   const milestoneCount = Math.max(1, milestones.length)
 
   const canvasWidth = 1000
@@ -156,7 +118,6 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
     return layoutMap
   }, [milestones, milestoneCount, verticalSpacing, topVerticalPosition, timelineX, dateLabelRightEdgeX, dateLabelWidth, bubbleCenterX, bubbleRadius, textStartX, textWidth])
 
-  // Synchronisation avec le store Zustand (avec détection du changement de N)
   const prevNRef = useRef(milestoneCount)
   useEffect(() => {
     const countChanged = prevNRef.current !== milestoneCount
@@ -214,14 +175,17 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
         const bubbleRect = calculatedRects.get(bubbleElementId)!
         const descriptionRect = calculatedRects.get(descriptionElementId)!
 
-        const presentation = extractMilestonePresentation(milestone, index)
-        const elementColor = customColors[bubbleElementId] ?? presentation.color
+        const dateLabel = milestone.date ?? milestone.quarter ?? ''
+        const bubbleValue = milestone.value ?? milestone.percent ?? String(index + 1)
+        const cardTitle = milestone.title || ''
+        const cardDescription = milestone.subtitle || ''
+        const elementColor = customColors[bubbleElementId] ?? milestone.color ?? milestone.style?.fill ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
+
         const strokeColor = customStrokeColors[bubbleElementId]
         const strokeWidth = customStrokeWidths[bubbleElementId] ?? 0
 
         const isDateSelected = selectedElementIds.has(dateElementId)
         const isDotSelected = selectedElementIds.has(dotElementId)
-        const isConnectionSelected = selectedElementIds.has(connectionElementId)
         const isBubbleSelected = selectedElementIds.has(bubbleElementId)
         const isDescriptionSelected = selectedElementIds.has(descriptionElementId)
 
@@ -253,10 +217,10 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
           connectorPoints = `${connectionRect.x},${connectionRect.y + connectionRect.height / 2} ${connectionRect.x + connectionRect.width},${connectionRect.y} ${connectionRect.x + connectionRect.width},${connectionRect.y + connectionRect.height}`
         }
 
-        const dateLines = wrapTextByWidth(presentation.dateLabel, Math.max(8, Math.floor(dateRect.width / 10)))
-        const titleLines = wrapTextByWidth(presentation.cardTitle, Math.max(10, Math.floor(descriptionRect.width / 10)))
-        const descriptionLines = presentation.cardDescription
-          ? wrapTextByWidth(presentation.cardDescription, Math.max(12, Math.floor(descriptionRect.width / 7.5)))
+        const dateLines = dateLabel ? wrapTextByWidth(dateLabel, Math.max(8, Math.floor(dateRect.width / 10))) : []
+        const titleLines = cardTitle ? wrapTextByWidth(cardTitle, Math.max(10, Math.floor(descriptionRect.width / 10))) : []
+        const descriptionLines = cardDescription
+          ? wrapTextByWidth(cardDescription, Math.max(12, Math.floor(descriptionRect.width / 7.5)))
           : []
 
         const dateFontSize = milestoneCount <= 4 ? 18 : 15
@@ -265,33 +229,65 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
         const bubbleFontSize = Math.min(24, Math.max(12, Math.floor(bubbleRect.width * 0.34)))
 
         const dynamicIconElement = resolveDynamicIcon(milestone.icon, Math.floor(bubbleRect.width * 0.38), '#ffffff')
-        const hasBothIconAndValue = Boolean(dynamicIconElement && presentation.bubbleValue)
+        const hasBothIconAndValue = Boolean(dynamicIconElement && milestone.value)
+
+        const contentHeight = 16 + (titleLines.length > 0 ? titleLines.length * 20 : 0) + (descriptionLines.length > 0 ? descriptionLines.length * 17 + 6 : 0) + 10
+        const effectiveDescRect: Rect = {
+          ...descriptionRect,
+          height: Math.max(descriptionRect.height, contentHeight),
+        }
+
+        const dateFill = customColors[dateElementId] ?? 'transparent'
+        const dateStroke = customStrokeColors[dateElementId] ?? 'none'
+        const dateStrokeWidth = customStrokeWidths[dateElementId] ?? (dateStroke !== 'none' && dateStroke !== 'transparent' ? 2 : 0)
+        const hasDateBg = dateFill !== 'transparent' && dateFill !== 'none'
+        const hasDateBorder = dateStroke !== 'transparent' && dateStroke !== 'none' && dateStrokeWidth > 0
+
+        const descFill = customColors[descriptionElementId] ?? 'transparent'
+        const descStroke = customStrokeColors[descriptionElementId] ?? 'none'
+        const descStrokeWidth = customStrokeWidths[descriptionElementId] ?? (descStroke !== 'none' && descStroke !== 'transparent' ? 2 : 0)
+        const hasDescBg = descFill !== 'transparent' && descFill !== 'none'
+        const hasDescBorder = descStroke !== 'transparent' && descStroke !== 'none' && descStrokeWidth > 0
 
         return (
           <g key={`milestone-${index}`}>
-            <g
-              data-element-id={dateElementId}
-              onMouseDown={event => startDrag(event, dateElementId, dateRect)}
-              transform={getTransform(dateElementId, dateRect)}
-              style={{ cursor: 'pointer' }}
-            >
-              <text
-                x={dateRect.x + dateRect.width}
-                y={dateRect.y + dateRect.height / 2 - ((dateLines.length - 1) * 11) + 5}
-                textAnchor="end"
-                fontFamily="Arial, sans-serif"
-                fontSize={dateFontSize}
-                fontWeight={700}
-                fill={customColors[dateElementId] ?? '#2c2b64'}
+            {dateLabel && (
+              <g
+                data-element-id={dateElementId}
+                onMouseDown={event => startDrag(event, dateElementId, dateRect)}
+                transform={getTransform(dateElementId, dateRect)}
+                style={{ cursor: 'pointer' }}
               >
-                {dateLines.map((line, lineIndex) => (
-                  <tspan key={lineIndex} x={dateRect.x + dateRect.width} dy={lineIndex === 0 ? 0 : 22}>
-                    {line}
-                  </tspan>
-                ))}
-              </text>
-              {isDateSelected && renderHandles(dateRect, dateElementId)}
-            </g>
+                {(hasDateBg || hasDateBorder) && (
+                  <rect
+                    x={dateRect.x}
+                    y={dateRect.y}
+                    width={dateRect.width}
+                    height={dateRect.height}
+                    rx={4}
+                    fill={dateFill}
+                    stroke={dateStroke}
+                    strokeWidth={dateStrokeWidth}
+                  />
+                )}
+                <text
+                  x={dateRect.x + dateRect.width - (hasDateBg || hasDateBorder ? 10 : 0)}
+                  y={dateRect.y + dateRect.height / 2 - ((dateLines.length - 1) * 11) + 5}
+                  textAnchor="end"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={dateFontSize}
+                  fontWeight={700}
+                  fill={customColors[`${dateElementId}-text`] ?? (hasDateBg ? '#ffffff' : (customColors[dateElementId] ?? '#2c2b64'))}
+                >
+                  {dateLines.map((line, lineIndex) => (
+                    <tspan key={lineIndex} x={dateRect.x + dateRect.width - (hasDateBg || hasDateBorder ? 10 : 0)} dy={lineIndex === 0 ? 0 : 22}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+                {isDateSelected && renderHandles(dateRect, dateElementId)}
+              </g>
+            )}
 
             <g
               data-element-id={dotElementId}
@@ -310,18 +306,12 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
               {isDotSelected && renderHandles(dotRect, dotElementId)}
             </g>
 
-            <g
-              data-element-id={connectionElementId}
-              onMouseDown={event => startDrag(event, connectionElementId, connectionRect)}
-              transform={getTransform(connectionElementId, connectionRect)}
-              style={{ cursor: 'pointer' }}
-            >
+            <g data-element-id={connectionElementId}>
               <polygon
                 points={connectorPoints}
                 fill={customColors[connectionElementId] ?? elementColor}
                 opacity={0.85}
               />
-              {isConnectionSelected && renderHandles(connectionRect, connectionElementId)}
             </g>
 
             <g
@@ -335,8 +325,8 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
                 cy={bubbleCenterYPosition}
                 r={bubbleCurrentRadius}
                 fill={elementColor}
-                stroke={strokeColor || (isBubbleSelected ? '#2c2b64' : '#ffffff')}
-                strokeWidth={isBubbleSelected ? 3 : (strokeWidth || 2)}
+                stroke={strokeColor || '#ffffff'}
+                strokeWidth={strokeWidth || 2}
               />
 
               {hasBothIconAndValue ? (
@@ -353,7 +343,7 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
                     fontWeight={700}
                     fill={customColors[`${bubbleElementId}-text`] ?? '#ffffff'}
                   >
-                    {presentation.bubbleValue}
+                    {bubbleValue}
                   </text>
                 </>
               ) : dynamicIconElement ? (
@@ -370,51 +360,68 @@ export function Roadmap7Template({ data }: { data: RoadmapData }): ReactElement 
                   fontWeight={700}
                   fill={customColors[`${bubbleElementId}-text`] ?? '#ffffff'}
                 >
-                  {presentation.bubbleValue}
+                  {bubbleValue}
                 </text>
               )}
               {isBubbleSelected && renderHandles(bubbleRect, bubbleElementId)}
             </g>
 
-            <g
-              data-element-id={descriptionElementId}
-              onMouseDown={event => startDrag(event, descriptionElementId, descriptionRect)}
-              transform={getTransform(descriptionElementId, descriptionRect)}
-              style={{ cursor: 'pointer' }}
-            >
-              <text
-                x={descriptionRect.x}
-                y={descriptionRect.y + 16}
-                fontFamily="Arial, sans-serif"
-                fontSize={titleFontSize}
-                fontWeight={700}
-                fill={customColors[`${descriptionElementId}-title`] ?? '#2c2b64'}
+            {(cardTitle || cardDescription || hasDescBg || hasDescBorder) && (
+              <g
+                data-element-id={descriptionElementId}
+                onMouseDown={event => startDrag(event, descriptionElementId, effectiveDescRect)}
+                transform={getTransform(descriptionElementId, effectiveDescRect)}
+                style={{ cursor: 'pointer' }}
               >
-                {titleLines.map((line, lineIndex) => (
-                  <tspan key={lineIndex} x={descriptionRect.x} dy={lineIndex === 0 ? 0 : 20}>
-                    {line}
-                  </tspan>
-                ))}
-              </text>
+                {(hasDescBg || hasDescBorder) && (
+                  <rect
+                    x={effectiveDescRect.x - 8}
+                    y={effectiveDescRect.y}
+                    width={effectiveDescRect.width + 16}
+                    height={effectiveDescRect.height}
+                    rx={6}
+                    fill={descFill}
+                    stroke={descStroke}
+                    strokeWidth={descStrokeWidth}
+                  />
+                )}
 
-              {descriptionLines.length > 0 && (
-                <text
-                  x={descriptionRect.x}
-                  y={descriptionRect.y + 16 + titleLines.length * 20 + 2}
-                  fontFamily="Arial, sans-serif"
-                  fontSize={descriptionFontSize}
-                  fontWeight={400}
-                  fill={customColors[`${descriptionElementId}-subtitle`] ?? '#5f6368'}
-                >
-                  {descriptionLines.map((line, lineIndex) => (
-                    <tspan key={lineIndex} x={descriptionRect.x} dy={lineIndex === 0 ? 0 : 17}>
-                      {line}
-                    </tspan>
-                  ))}
-                </text>
-              )}
-              {isDescriptionSelected && renderHandles(descriptionRect, descriptionElementId)}
-            </g>
+                {titleLines.length > 0 && (
+                  <text
+                    x={effectiveDescRect.x}
+                    y={effectiveDescRect.y + 16}
+                    fontFamily="Arial, sans-serif"
+                    fontSize={titleFontSize}
+                    fontWeight={700}
+                    fill={customColors[`${descriptionElementId}-title`] ?? '#2c2b64'}
+                  >
+                    {titleLines.map((line, lineIndex) => (
+                      <tspan key={lineIndex} x={effectiveDescRect.x} dy={lineIndex === 0 ? 0 : 20}>
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+                )}
+
+                {descriptionLines.length > 0 && (
+                  <text
+                    x={effectiveDescRect.x}
+                    y={effectiveDescRect.y + 16 + (titleLines.length > 0 ? titleLines.length * 20 + 2 : 0)}
+                    fontFamily="Arial, sans-serif"
+                    fontSize={descriptionFontSize}
+                    fontWeight={400}
+                    fill={customColors[`${descriptionElementId}-subtitle`] ?? '#5f6368'}
+                  >
+                    {descriptionLines.map((line, lineIndex) => (
+                      <tspan key={lineIndex} x={effectiveDescRect.x} dy={lineIndex === 0 ? 0 : 17}>
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+                )}
+                {isDescriptionSelected && renderHandles(effectiveDescRect, descriptionElementId)}
+              </g>
+            )}
           </g>
         )
       })}

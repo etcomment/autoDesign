@@ -38,7 +38,7 @@ export function TemplateElementProperties() {
   const primaryRot = templateElementRotations[primaryId] ?? 0
   const primaryFill = templateColors[primaryId] ?? ''
   const primaryStroke = templateStrokeColors[primaryId] ?? ''
-  const primaryStrokeWidth = templateStrokeWidths[primaryId] ?? 1
+  const primaryStrokeWidth = templateStrokeWidths[primaryId] ?? (primaryStroke && primaryStroke !== 'transparent' && primaryStroke !== 'none' ? 2 : 0)
   let groupPos = primaryPos
   if (isMulti) {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
@@ -63,22 +63,37 @@ export function TemplateElementProperties() {
   let currentPercentage = ''
 
   if (templateData) {
+    const tData = templateData as Record<string, unknown>
+    const effectiveCollectionKey = (parsed.collectionKey && tData[parsed.collectionKey])
+      ? parsed.collectionKey
+      : tData.metrics
+        ? 'metrics'
+        : tData.milestones
+          ? 'milestones'
+          : parsed.collectionKey
+
     if (parsed.isMainTitle && typeof templateData.title === 'string') {
       currentTitle = templateData.title
-    } else if (parsed.isStartBanner && typeof (templateData as Record<string, unknown>).startLabel === 'string') {
-      currentTitle = (templateData as Record<string, unknown>).startLabel as string
-    } else if (parsed.isFinishBanner && typeof (templateData as Record<string, unknown>).finishLabel === 'string') {
-      currentTitle = (templateData as Record<string, unknown>).finishLabel as string
-    } else if (parsed.collectionKey && !isNaN(parsed.index)) {
-      const items = (templateData as unknown as Record<string, unknown>)[parsed.collectionKey] as Record<string, unknown>[] | undefined
+    } else if (parsed.isStartBanner && typeof tData.startLabel === 'string') {
+      currentTitle = tData.startLabel as string
+    } else if (parsed.isFinishBanner && typeof tData.finishLabel === 'string') {
+      currentTitle = tData.finishLabel as string
+    } else if (effectiveCollectionKey && !isNaN(parsed.index)) {
+      const items = tData[effectiveCollectionKey] as Record<string, unknown>[] | undefined
       if (items) {
         const item = items[parsed.index] ?? (parsed.index > 0 ? items[parsed.index - 1] : undefined)
         if (item) {
-          if (parsed.prefix === 'circle') {
-            currentTitle = String(item.value ?? item.date ?? item.quarter ?? item.label ?? item.title ?? 'YOUR\nTITLE')
+          if (parsed.prefix === 'circle' || parsed.prefix === 'bubble') {
+            currentTitle = String(item.value ?? item.title ?? item.label ?? '')
+            currentSubtitle = String(item.subtitle ?? item.description ?? '')
+          } else if (parsed.prefix === 'date') {
+            currentTitle = String(item.date ?? item.quarter ?? item.label ?? item.title ?? '')
+            currentSubtitle = String(item.subtitle ?? item.description ?? '')
+          } else if (parsed.prefix === 'year') {
+            currentTitle = String(item.label ?? item.quarter ?? item.date ?? '')
           } else {
             currentTitle = String(item.label ?? item.title ?? item.name ?? item.text ?? '')
-            currentSubtitle = String(item.subtitle ?? item.description ?? '')
+            currentSubtitle = String(item.description ?? item.subtitle ?? item.value ?? '')
             currentAmount = String(item.amount ?? '')
             currentPercentage = item.percentage != null ? String(item.percentage) : ''
           }
@@ -89,6 +104,14 @@ export function TemplateElementProperties() {
 
   const handleFieldChange = (field: string, value: string) => {
     if (!templateData) return
+    const tData = templateData as Record<string, unknown>
+    const effectiveCollectionKey = (parsed.collectionKey && tData[parsed.collectionKey])
+      ? parsed.collectionKey
+      : tData.metrics
+        ? 'metrics'
+        : tData.milestones
+          ? 'milestones'
+          : parsed.collectionKey
 
     if (parsed.isMainTitle && field === 'title') {
       updateTemplateData({ ...templateData, title: value })
@@ -103,8 +126,8 @@ export function TemplateElementProperties() {
       return
     }
 
-    if (parsed.collectionKey && !isNaN(parsed.index)) {
-      const items = (templateData as unknown as Record<string, unknown>)[parsed.collectionKey] as Record<string, unknown>[] | undefined
+    if (effectiveCollectionKey && !isNaN(parsed.index)) {
+      const items = tData[effectiveCollectionKey] as Record<string, unknown>[] | undefined
       if (!items) return
 
       let targetIndex = parsed.index
@@ -117,10 +140,27 @@ export function TemplateElementProperties() {
 
       const newItems = items.map((item, i) => {
         if (i !== targetIndex) return item
+        if (effectiveCollectionKey === 'metrics') {
+          if (field === 'title') {
+            return { ...item, label: coerced }
+          }
+          if (field === 'subtitle') {
+            return { ...item, description: coerced, subtitle: coerced }
+          }
+        }
         if (parsed.prefix === 'circle' && field === 'title') {
           return { ...item, value: coerced }
         }
-        if (parsed.collectionKey === 'lanes' && field === 'title') {
+        if (parsed.prefix === 'bubble' && field === 'title' && item.value !== undefined) {
+          return { ...item, value: coerced }
+        }
+        if (parsed.prefix === 'date' && field === 'title') {
+          return { ...item, date: coerced }
+        }
+        if (parsed.prefix === 'year' && field === 'title') {
+          return { ...item, label: coerced }
+        }
+        if (effectiveCollectionKey === 'lanes' && field === 'title') {
           return { ...item, label: coerced }
         }
         return { ...item, [field]: coerced }
@@ -128,7 +168,7 @@ export function TemplateElementProperties() {
 
       updateTemplateData({
         ...templateData,
-        [parsed.collectionKey]: newItems,
+        [effectiveCollectionKey]: newItems,
       } as never)
     }
   }
@@ -317,7 +357,19 @@ export function TemplateElementProperties() {
           <ColorField
             label="Contour (Stroke)"
             value={primaryStroke}
-            onChange={(c) => elements.forEach(id => updateTemplateStrokeColor(id, c))}
+            onChange={(c) => {
+              elements.forEach(id => {
+                updateTemplateStrokeColor(id, c)
+                if (c && c !== 'transparent' && c !== 'none') {
+                  const currentWidth = templateStrokeWidths[id] ?? 0
+                  if (currentWidth <= 0) {
+                    updateTemplateStrokeWidth(id, 2)
+                  }
+                } else if (c === 'transparent' || c === 'none') {
+                  updateTemplateStrokeWidth(id, 0)
+                }
+              })
+            }}
           />
           <label style={fieldStyles.sectionLabel}>Épaisseur de contour</label>
           <div style={styles.rangeRow}>

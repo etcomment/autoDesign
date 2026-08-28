@@ -120,15 +120,21 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
   const defaultPositions = useMemo(() => {
     const map = new Map<string, Rect>()
 
-    milestones.forEach((_, i) => {
+    milestones.forEach((ms, i) => {
       const pinX = startX + (pinIndices[i] ?? 0) * spacing
       const above = i % 2 === 0
       const cardW = 230
-      const cardH = 140
+
+      const maxTitleChars = Math.max(8, Math.floor(cardW / 11))
+      const maxSubChars = Math.max(10, Math.floor(cardW / 7.5))
+      const titleLines = wrapTextByWidth(ms.title || `Milestone ${i + 1}`, maxTitleChars)
+      const subLines = ms.subtitle ? wrapTextByWidth(ms.subtitle, maxSubChars) : []
+      const textContentBottom = 30 + titleLines.length * 20 + (subLines.length > 0 ? subLines.length * 16 : 0)
+      const neededH = textContentBottom + 10
+      const cardH = Math.max(140, neededH)
       const cardY = above ? 50 : timelineY + 60
 
-      // 10px space between the arrow tip and the vertical line:
-      const leftArrow = i % 2 === 0 // arrow on the left
+      const leftArrow = i % 2 === 0
       const cardX = leftArrow ? pinX + 16 + 10 : pinX - cardW - 16 - 10
 
       map.set(`card-${i}`, { x: cardX, y: cardY, width: cardW, height: cardH })
@@ -161,7 +167,6 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
 
     years.forEach((_, i) => {
       const cx = startX + i * spacing
-      // Check if there is a milestone attached to this year
       const msIdx = pinIndices.indexOf(i)
       const isBottomMilestone = msIdx >= 0 && msIdx % 2 === 1
       const yearY = isBottomMilestone ? timelineY - 45 : timelineY + 20
@@ -178,6 +183,10 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
       if (!pos[id]) {
         moveEl(id, { x: rect.x, y: rect.y })
         resizeEl(id, { width: rect.width, height: rect.height })
+      } else if (id.startsWith('card-')) {
+        if (pos[id].height !== rect.height) {
+          resizeEl(id, { width: pos[id].width, height: rect.height })
+        }
       }
     }
   }, [defaultPositions, pos, moveEl, resizeEl])
@@ -189,7 +198,7 @@ export function Roadmap3Template({ data }: { data: RoadmapData }): ReactElement 
       x: p?.x ?? d.x,
       y: p?.y ?? d.y,
       width: p?.width || d.width,
-      height: p?.height || d.height,
+      height: id.startsWith('card-') ? d.height : (p?.height || d.height),
     }
   }
 

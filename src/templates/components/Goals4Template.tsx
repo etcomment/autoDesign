@@ -1,117 +1,344 @@
-import { useRef, type ReactElement } from 'react'
+import { useEffect, useMemo, useRef, type ReactElement, type ComponentType } from 'react'
 import type { GoalsData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { MIGSO_PALETTE } from '../../lib/theme'
 import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
 import * as LucideIcons from 'lucide-react'
 
-function getDynamicIcon(iconName?: string) {
-  if (!iconName) return null
-  const clean = iconName.trim()
-  const templateFn = TEMPLATE_ICONS[clean] || TEMPLATE_ICONS[clean.toLowerCase()]
-  if (templateFn) return templateFn
+interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
 
-  const pascalName = clean.charAt(0).toUpperCase() + clean.slice(1)
-  const LucideFn = (LucideIcons as Record<string, any>)[pascalName] || (LucideIcons as Record<string, any>)[clean] || (LucideIcons as Record<string, any>)[clean.toUpperCase()]
-  if (LucideFn) {
-    return (props: { size?: number; color?: string }) => <LucideFn size={props.size ?? 16} color={props.color ?? '#333'} />
+function resolveDynamicIcon(iconName?: string, size = 18, color = '#ffffff'): ReactElement | null {
+  if (!iconName) return null
+  const cleanedName = iconName.trim()
+
+  const templateIconFunction = TEMPLATE_ICONS[cleanedName] || TEMPLATE_ICONS[cleanedName.toLowerCase()]
+  if (templateIconFunction) {
+    return templateIconFunction({ size, color })
   }
+
+  const pascalCaseName = cleanedName.charAt(0).toUpperCase() + cleanedName.slice(1)
+  const lucideIconMap = LucideIcons as unknown as Record<string, ComponentType<{ size?: number; color?: string; className?: string }>>
+  const LucideIconComponent = lucideIconMap[pascalCaseName] || lucideIconMap[cleanedName] || lucideIconMap[cleanedName.toUpperCase()]
+
+  if (LucideIconComponent) {
+    return <LucideIconComponent size={size} color={color} />
+  }
+
   return null
 }
+
+function retrieveElementRect(elementId: string, customPositions: Record<string, Rect>, defaultLayout: Map<string, Rect>): Rect {
+  const storedRect = customPositions[elementId]
+  const defaultRect = defaultLayout.get(elementId)
+  if (defaultRect) {
+    return storedRect ? { ...storedRect, width: storedRect.width || defaultRect.width, height: storedRect.height || defaultRect.height } : defaultRect
+  }
+  return storedRect || { x: 0, y: 0, width: 0, height: 0 }
+}
+
+function createArcPath(cx: number, cy: number, rOuter: number, rInner: number, startAngleDeg: number, endAngleDeg: number): string {
+  const startRad = (startAngleDeg * Math.PI) / 180
+  const endRad = (endAngleDeg * Math.PI) / 180
+
+  const x1 = cx + rOuter * Math.cos(startRad)
+  const y1 = cy + rOuter * Math.sin(startRad)
+  const x2 = cx + rOuter * Math.cos(endRad)
+  const y2 = cy + rOuter * Math.sin(endRad)
+
+  const x3 = cx + rInner * Math.cos(endRad)
+  const y3 = cy + rInner * Math.sin(endRad)
+  const x4 = cx + rInner * Math.cos(startRad)
+  const y4 = cy + rInner * Math.sin(startRad)
+
+  const largeArcFlag = Math.abs(endAngleDeg - startAngleDeg) > 180 ? 1 : 0
+
+  return `M ${x1} ${y1} A ${rOuter} ${rOuter} 0 ${largeArcFlag} 1 ${x2} ${y2} L ${x3} ${y3} A ${rInner} ${rInner} 0 ${largeArcFlag} 0 ${x4} ${y4} Z`
+}
+
+const QUADRANT_CONFIGS = [
+  { startAngle: 180, endAngle: 270, badgeAngle: 225, textX: 60, textY: 130, isRight: false, defaultColor: '#ea580c' },
+  { startAngle: 270, endAngle: 360, badgeAngle: 315, textX: 720, textY: 130, isRight: true, defaultColor: '#2c2b64' },
+  { startAngle: 90, endAngle: 180, badgeAngle: 135, textX: 60, textY: 420, isRight: false, defaultColor: '#eab308' },
+  { startAngle: 0, endAngle: 90, badgeAngle: 45, textX: 720, textY: 420, isRight: true, defaultColor: '#2563eb' },
+]
 
 export function Goals4Template({ data }: { data: GoalsData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
-  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const positions = useTemplateStore(s => s.templateElementPositions)
-  const tplColors = useTemplateStore(s => s.templateElementColors)
-  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
-  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const selectedElementIds = useTemplateStore(state => state.selectedTemplateElementIds)
+  const customColors = useTemplateStore(state => state.templateElementColors)
+  const customStrokeColors = useTemplateStore(state => state.templateStrokeColors)
+  const customStrokeWidths = useTemplateStore(state => state.templateStrokeWidths)
+  const customPositions = useTemplateStore(state => state.templateElementPositions)
+  const moveElement = useTemplateStore(state => state.moveTemplateElement)
+  const resizeElement = useTemplateStore(state => state.resizeTemplateElement)
 
-  const { metrics } = data
-  const barMaxW = 420
-  const barH = 38
-  const gap = 34
-  const startX = 260
-  const startY = 70
+  const { metrics = [] } = data
+  const count = Math.min(4, Math.max(1, metrics.length))
+
+  const targetCenterX = 490
+  const targetCenterY = 300
+  const outerRingRadius = 155
+  const outerRingInnerRadius = 143
+
+  const defaultLayoutMap = useMemo(() => {
+    const layoutMap = new Map<string, Rect>()
+
+    layoutMap.set('target', {
+      x: targetCenterX - outerRingRadius - 20,
+      y: targetCenterY - outerRingRadius - 20,
+      width: (outerRingRadius + 20) * 2,
+      height: (outerRingRadius + 20) * 2,
+    })
+
+    metrics.slice(0, 4).forEach((_, index) => {
+      const config = QUADRANT_CONFIGS[index]!
+      const badgeRad = (config.badgeAngle * Math.PI) / 180
+      const badgeX = targetCenterX + Math.cos(badgeRad) * outerRingRadius
+      const badgeY = targetCenterY + Math.sin(badgeRad) * outerRingRadius
+
+      layoutMap.set(`badge-${index}`, {
+        x: badgeX - 22,
+        y: badgeY - 22,
+        width: 44,
+        height: 44,
+      })
+
+      layoutMap.set(`text-${index}`, {
+        x: config.textX,
+        y: config.textY,
+        width: 220,
+        height: 85,
+      })
+    })
+
+    return layoutMap
+  }, [metrics, targetCenterX, targetCenterY, outerRingRadius])
+
+  const prevNRef = useRef(count)
+  useEffect(() => {
+    const countChanged = prevNRef.current !== count
+    prevNRef.current = count
+    for (const [elementId, defaultRect] of defaultLayoutMap.entries()) {
+      if (countChanged || !customPositions[elementId]) {
+        moveElement(elementId, { x: defaultRect.x, y: defaultRect.y })
+        resizeElement(elementId, { width: defaultRect.width, height: defaultRect.height })
+      }
+    }
+  }, [count, defaultLayoutMap, customPositions, moveElement, resizeElement])
+
+  const calculatedRects = useMemo(() => {
+    const rects = new Map<string, Rect>()
+    for (const elementId of defaultLayoutMap.keys()) {
+      rects.set(elementId, retrieveElementRect(elementId, customPositions, defaultLayoutMap))
+    }
+    return rects
+  }, [defaultLayoutMap, customPositions])
+
+  const targetRect = calculatedRects.get('target') ?? {
+    x: targetCenterX - outerRingRadius - 20,
+    y: targetCenterY - outerRingRadius - 20,
+    width: (outerRingRadius + 20) * 2,
+    height: (outerRingRadius + 20) * 2,
+  }
+  const isTargetSelected = selectedElementIds.has('target')
 
   return (
     <g ref={svgRef}>
-      {metrics.slice(0, 6).map((metric, i) => {
-        const elementId = `bar-${i}`
-        const targetNum = parseFloat(metric.target.replace(/[^0-9.]/g, '')) || 100
-        const valueNum = parseFloat(metric.value.replace(/[^0-9.]/g, '')) || 0
-        const pct = Math.min(valueNum / targetNum, 1)
+      <g
+        data-element-id="target"
+        onMouseDown={event => startDrag(event, 'target', targetRect)}
+        transform={getTransform('target', targetRect)}
+        style={{ cursor: 'pointer' }}
+      >
+        <circle cx={targetCenterX} cy={targetCenterY} r={124} fill="#52b788" />
+        <circle cx={targetCenterX} cy={targetCenterY} r={94} fill="#ffffff" />
+        <circle cx={targetCenterX} cy={targetCenterY} r={78} fill="#52b788" />
+        <circle cx={targetCenterX} cy={targetCenterY} r={48} fill="#ffffff" />
+        <circle cx={targetCenterX} cy={targetCenterY} r={32} fill="#52b788" />
 
-        const defaultBbox = { x: startX, y: startY + i * (barH + gap), width: barMaxW, height: barH }
-        const customPos = positions[elementId]
-        const bbox = {
-          x: customPos?.x ?? defaultBbox.x,
-          y: customPos?.y ?? defaultBbox.y,
-          width: customPos?.width ?? defaultBbox.width,
-          height: customPos?.height ?? defaultBbox.height,
+        {QUADRANT_CONFIGS.slice(0, 4).map((config, index) => {
+          const segmentColor = customColors[`segment-${index}`] ?? config.defaultColor
+          return (
+            <path
+              key={`segment-${index}`}
+              d={createArcPath(targetCenterX, targetCenterY, outerRingRadius, outerRingInnerRadius, config.startAngle, config.endAngle)}
+              fill={segmentColor}
+            />
+          )
+        })}
+
+        <g opacity={0.25}>
+          <polygon points={`${targetCenterX},${targetCenterY} ${targetCenterX - 110},${targetCenterY - 110} ${targetCenterX - 80},${targetCenterY - 140}`} fill="#ea580c" />
+          <polygon points={`${targetCenterX},${targetCenterY} ${targetCenterX + 110},${targetCenterY - 110} ${targetCenterX + 140},${targetCenterY - 80}`} fill="#2c2b64" />
+          <polygon points={`${targetCenterX},${targetCenterY} ${targetCenterX - 110},${targetCenterY + 110} ${targetCenterX - 80},${targetCenterY + 140}`} fill="#eab308" />
+          <polygon points={`${targetCenterX},${targetCenterY} ${targetCenterX + 110},${targetCenterY + 110} ${targetCenterX + 140},${targetCenterY + 80}`} fill="#2563eb" />
+        </g>
+
+        <g transform={`translate(${targetCenterX}, ${targetCenterY})`}>
+          <g transform="rotate(-35)">
+            <line x1={0} y1={0} x2={85} y2={0} stroke="#4a3b32" strokeWidth={8} strokeLinecap="round" />
+            <polygon points="65,-14 95,0 65,14" fill="#ea580c" />
+          </g>
+          <g transform="rotate(80)">
+            <line x1={0} y1={0} x2={80} y2={0} stroke="#3e2723" strokeWidth={8} strokeLinecap="round" />
+            <polygon points="60,-14 90,0 60,14" fill="#2563eb" />
+          </g>
+          <g transform="rotate(-165)">
+            <line x1={0} y1={0} x2={78} y2={0} stroke="#4e342e" strokeWidth={8} strokeLinecap="round" />
+            <polygon points="58,-14 88,0 58,14" fill="#2c2b64" />
+          </g>
+        </g>
+
+        {isTargetSelected && renderHandles(targetRect, 'target')}
+      </g>
+
+      {metrics.slice(0, 4).map((metric, index) => {
+        const badgeElementId = `badge-${index}`
+        const textElementId = `text-${index}`
+
+        const badgeRect = calculatedRects.get(badgeElementId)!
+        const textRect = calculatedRects.get(textElementId)!
+
+        const isBadgeSelected = selectedElementIds.has(badgeElementId)
+        const isTextSelected = selectedElementIds.has(textElementId)
+
+        const config = QUADRANT_CONFIGS[index]!
+        const elementColor = customColors[badgeElementId] ?? metric.color ?? config.defaultColor ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
+
+        const badgeStrokeColor = customStrokeColors[badgeElementId]
+        const badgeStrokeWidth = customStrokeWidths[badgeElementId] ?? (badgeStrokeColor ? 2 : 0)
+
+        const textFill = customColors[textElementId] ?? 'transparent'
+        const textStroke = customStrokeColors[textElementId] ?? 'none'
+        const textStrokeWidth = customStrokeWidths[textElementId] ?? (textStroke !== 'none' && textStroke !== 'transparent' ? 2 : 0)
+        const hasTextBg = textFill !== 'transparent' && textFill !== 'none'
+        const hasTextBorder = textStroke !== 'transparent' && textStroke !== 'none' && textStrokeWidth > 0
+
+        const badgeCenterX = badgeRect.x + badgeRect.width / 2
+        const badgeCenterY = badgeRect.y + badgeRect.height / 2
+        const badgeRadius = badgeRect.width / 2
+
+        const displayTitle = metric.label || `Your title 0${index + 1}`
+        const displayDesc = metric.description || metric.subtitle || metric.value || 'MIGSO-PCUBED content and words to be added here as required'
+
+        const titleLines = wrapTextByWidth(displayTitle, Math.max(10, Math.floor(textRect.width / 10)))
+        const descLines = wrapTextByWidth(displayDesc, Math.max(12, Math.floor(textRect.width / 7.5)))
+
+        const contentHeight = 12 + titleLines.length * 20 + descLines.length * 17 + 8
+        const effectiveTextRect: Rect = {
+          ...textRect,
+          height: Math.max(textRect.height, contentHeight),
         }
 
-        const barWidth = pct * bbox.width
-        const defaultFill = pct >= 0.8 ? '#2ecc71' : pct >= 0.5 ? '#f39c12' : '#e74c3c'
-        const fillColor = tplColors[elementId] ?? metric.color ?? defaultFill
-        const isSelected = selectedIds.has(elementId)
-        const stroke = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
-        const strokeWidth = tplStrokeWidths[elementId] !== undefined ? tplStrokeWidths[elementId] : (isSelected ? 2.5 : 0)
-
-        const maxChars = 24
-        const labelLines = wrapTextByWidth(metric.label, maxChars)
-        const IconFn = getDynamicIcon(metric.icon)
+        const dynamicIconElement = resolveDynamicIcon(metric.icon, Math.floor(badgeRect.width * 0.46), '#ffffff')
 
         return (
-          <g key={i}>
-            {/* Label on the left */}
-            <g transform={`translate(${bbox.x - 18}, ${bbox.y + bbox.height / 2})`}>
-              {IconFn && (
-                <g transform="translate(-24, -8)">
-                  <IconFn size={16} color={fillColor} />
+          <g key={`goal4-item-${index}`}>
+            <g
+              data-element-id={badgeElementId}
+              onMouseDown={event => startDrag(event, badgeElementId, badgeRect)}
+              transform={getTransform(badgeElementId, badgeRect)}
+              style={{ cursor: 'pointer' }}
+            >
+              <circle
+                cx={badgeCenterX}
+                cy={badgeCenterY}
+                r={badgeRadius}
+                fill={elementColor}
+                stroke={badgeStrokeColor || '#ffffff'}
+                strokeWidth={badgeStrokeWidth || 2.5}
+              />
+
+              {dynamicIconElement ? (
+                <g transform={`translate(${badgeCenterX - (badgeRect.width * 0.46) / 2}, ${badgeCenterY - (badgeRect.width * 0.46) / 2})`}>
+                  {dynamicIconElement}
                 </g>
+              ) : (
+                <text
+                  x={badgeCenterX}
+                  y={badgeCenterY + 5}
+                  textAnchor="middle"
+                  fontFamily="Arial, sans-serif"
+                  fontSize={14}
+                  fontWeight={700}
+                  fill={customColors[`${badgeElementId}-text`] ?? '#ffffff'}
+                >
+                  {String(index + 1).padStart(2, '0')}
+                </text>
               )}
-              <text x={0} y={4 - (labelLines.length - 1) * 6} textAnchor="end" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="#1e293b">
-                {labelLines.map((line, li) => (
-                  <tspan key={li} x={0} dy={li === 0 ? 0 : 13}>
+
+              {isBadgeSelected && renderHandles(badgeRect, badgeElementId)}
+            </g>
+
+            <g
+              data-element-id={textElementId}
+              onMouseDown={event => startDrag(event, textElementId, effectiveTextRect)}
+              transform={getTransform(textElementId, effectiveTextRect)}
+              style={{ cursor: 'pointer' }}
+            >
+              {(hasTextBg || hasTextBorder) && (
+                <rect
+                  x={effectiveTextRect.x}
+                  y={effectiveTextRect.y}
+                  width={effectiveTextRect.width}
+                  height={effectiveTextRect.height}
+                  rx={6}
+                  fill={textFill}
+                  stroke={textStroke}
+                  strokeWidth={textStrokeWidth}
+                />
+              )}
+
+              <text
+                x={config.isRight ? effectiveTextRect.x : effectiveTextRect.x + effectiveTextRect.width}
+                y={effectiveTextRect.y + 18}
+                textAnchor={config.isRight ? 'start' : 'end'}
+                fontFamily="Arial, sans-serif"
+                fontSize={16}
+                fontWeight={700}
+                fill={customColors[`${textElementId}-title`] ?? elementColor}
+              >
+                {titleLines.map((line, lineIndex) => (
+                  <tspan
+                    key={lineIndex}
+                    x={config.isRight ? effectiveTextRect.x : effectiveTextRect.x + effectiveTextRect.width}
+                    dy={lineIndex === 0 ? 0 : 20}
+                  >
                     {line}
                   </tspan>
                 ))}
               </text>
-            </g>
 
-            {/* Interactive Progress Bar */}
-            <g
-              data-element-id={elementId}
-              onMouseDown={e => startDrag(e, elementId, bbox)}
-              transform={getTransform(elementId, bbox)}
-              style={{ cursor: 'pointer' }}
-            >
-              {/* Background track */}
-              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill="#f1f5f9" stroke="#e2e8f0" strokeWidth={1} />
-
-              {/* Progress fill */}
-              <rect x={bbox.x} y={bbox.y} width={barWidth} height={bbox.height} rx={8} fill={fillColor} opacity={0.9} stroke={stroke} strokeWidth={strokeWidth} />
-
-              {/* Percentage label */}
-              <text x={bbox.x + barWidth / 2} y={bbox.y + bbox.height / 2 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={800} fill="white">
-                {Math.round(pct * 100)}%
+              <text
+                x={config.isRight ? effectiveTextRect.x : effectiveTextRect.x + effectiveTextRect.width}
+                y={effectiveTextRect.y + 18 + titleLines.length * 20 + 2}
+                textAnchor={config.isRight ? 'start' : 'end'}
+                fontFamily="Arial, sans-serif"
+                fontSize={13}
+                fontWeight={400}
+                fill={customColors[`${textElementId}-desc`] ?? '#5f6368'}
+              >
+                {descLines.map((line, lineIndex) => (
+                  <tspan
+                    key={lineIndex}
+                    x={config.isRight ? effectiveTextRect.x : effectiveTextRect.x + effectiveTextRect.width}
+                    dy={lineIndex === 0 ? 0 : 17}
+                  >
+                    {line}
+                  </tspan>
+                ))}
               </text>
 
-              {isSelected && renderHandles(bbox, elementId)}
+              {isTextSelected && renderHandles(effectiveTextRect, textElementId)}
             </g>
-
-            {/* Value / Target on the right */}
-            <text x={bbox.x + bbox.width + 16} y={bbox.y + bbox.height / 2 + 4} textAnchor="start" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#64748b">
-              {metric.value} / {metric.target}
-              {metric.change && (
-                <tspan dx={8} fontWeight={700} fill={metric.change.startsWith('+') ? '#16a34a' : '#dc2626'}>
-                  {metric.change}
-                </tspan>
-              )}
-            </text>
           </g>
         )
       })}
