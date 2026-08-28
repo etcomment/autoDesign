@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react'
+import { MIGSO_ICONS_DATA } from './migsoIconsData'
 
 interface IconProps { size?: number; color?: string; fill?: string }
 
@@ -549,6 +550,22 @@ export function WaterDropIcon({ size = 24, color = '#555' }: IconProps): ReactEl
   )
 }
 
+export function createMigsoIconRenderer(path: string): (props: IconProps) => ReactElement {
+  return function MigsoIcon({ size = 24, color = '#2c2b64', fill }: IconProps): ReactElement {
+    const effectiveFill = fill ?? color
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+        style={{ display: 'inline-block', verticalAlign: 'middle' }}
+      >
+        <path d={path} fill={effectiveFill} />
+      </svg>
+    )
+  }
+}
+
 export const TEMPLATE_ICONS: Record<string, (props: IconProps) => ReactElement> = {
   user: UserIcon,
   chart: ChartIcon,
@@ -601,3 +618,10 @@ export const TEMPLATE_ICONS: Record<string, (props: IconProps) => ReactElement> 
   recycle: RecycleIcon,
   waterDrop: WaterDropIcon,
 }
+
+for (const iconDef of MIGSO_ICONS_DATA) {
+  const renderer = createMigsoIconRenderer(iconDef.path)
+  TEMPLATE_ICONS[iconDef.id] = renderer
+  TEMPLATE_ICONS[iconDef.name] = renderer
+}
+
