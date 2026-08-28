@@ -650,15 +650,15 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'puzzle',
     label: 'puzzle',
-    description: 'Cercle de 4 quadrants puzzle imbriqués avec cartes de texte externes.',
+    description: 'Puzzle 2x2 carré (Slide 180) à 4 pièces avec pignons extérieurs et cartes descriptives reliées.',
     category: 'Puzzles',
     defaultData: {
       type: 'puzzle',
       pieces: [
-        { number: 1, title: 'Improve', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#1a2249' },
-        { number: 2, title: 'Innovation', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#2b63d9' },
-        { number: 3, title: 'Management', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#ff5338' },
-        { number: 4, title: 'Identify', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#ffb100' },
+        { number: '1', title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#2c2b64' },
+        { number: '2', title: 'Innovation', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#3466ce' },
+        { number: '3', title: 'Management', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ff4d30' },
+        { number: '4', title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703' },
       ],
     },
   },
@@ -695,17 +695,15 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'puzzle4',
     label: 'puzzle4',
-    description: 'Grille 3x2 de pièces de puzzle imbriquées.',
+    description: 'Puzzle 2x2 carré (Slide 180) à 4 pièces avec pignons extérieurs et cartes descriptives reliées.',
     category: 'Puzzles',
     defaultData: {
       type: 'puzzle',
       pieces: [
-        { number: 1, title: 'Discovery', subtitle: 'User interviews', color: '#1a2249' },
-        { number: 2, title: 'Strategy', subtitle: 'Roadmap planning', color: '#2b63d9' },
-        { number: 3, title: 'Design', subtitle: 'UI/UX mockups', color: '#ff5338' },
-        { number: 4, title: 'Develop', subtitle: 'Sprint execution', color: '#ffb100' },
-        { number: 5, title: 'Test', subtitle: 'QA validation', color: '#48bb95' },
-        { number: 6, title: 'Launch', subtitle: 'Go-to-market', color: '#1a2249' },
+        { number: '1', title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#2c2b64' },
+        { number: '2', title: 'Innovation', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#3466ce' },
+        { number: '3', title: 'Management', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ff4d30' },
+        { number: '4', title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703' },
       ],
     },
   },

@@ -1,76 +1,77 @@
 import { useRef, type ReactElement } from 'react'
-import type { PuzzleData } from '../types'
+import type { PuzzleData, PuzzlePiece } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
-import { randomMigsoColor } from '../../lib/theme'
 
-const CELL_W = 160
-const CELL_H = 130
-const TAB_H = 40
-const TAB_D = 18
+const PIECE_SIZE = 145
+const PUZZLE_X = 355
+const PUZZLE_Y = 135
 
-type Tab = { right?: boolean; bottom?: boolean; leftIndent?: boolean; topIndent?: boolean }
+const DEFAULT_PIECES: PuzzlePiece[] = [
+  { number: 1, title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#2c2b64' },
+  { number: 2, title: 'Innovation', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#3466ce' },
+  { number: 3, title: 'Management', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ff4d30' },
+  { number: 4, title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703' },
+]
 
-function getTabForCell(row: number, col: number, totalRows: number, cols: number): Tab {
-  return {
-    right: col < cols - 1,
-    bottom: row < totalRows - 1,
-    leftIndent: col > 0,
-    topIndent: row > 0,
-  }
-}
-
-function gridPath(x: number, y: number, t: Tab): string {
-  const r = x + CELL_W
-  const b = y + CELL_H
-  const midX = x + CELL_W / 2
-  const midY = y + CELL_H / 2
-  const neckW = 18
-  const headR = 14
-  const neckR = 6
-
-  const hMid = midY
-  const vMid = midX
-
+export function makePuzzlePiecePath(
+  x: number,
+  y: number,
+  size: number,
+  topTab: 'none' | 'out' | 'in',
+  rightTab: 'none' | 'out' | 'in',
+  bottomTab: 'none' | 'out' | 'in',
+  leftTab: 'none' | 'out' | 'in',
+  neckW = 24,
+  headR = 18,
+  neckR = 6,
+): string {
+  const tabDepth = headR * 1.8
   let d = `M ${x} ${y}`
 
-  if (t.topIndent) {
-    d += ` L ${vMid - neckW / 2 - neckR} ${y}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid - neckW / 2} ${y + neckR}`
-    d += ` A ${headR} ${headR} 0 1 0 ${vMid + neckW / 2} ${y + neckR}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid + neckW / 2 + neckR} ${y}`
-    d += ` L ${r} ${y}`
+  if (topTab === 'none') {
+    d += ` L ${x + size} ${y}`
   } else {
-    d += ` L ${r} ${y}`
+    const sgn = topTab === 'out' ? -1 : 1
+    const midX = x + size / 2
+    d += ` L ${midX - neckW / 2 - neckR} ${y}`
+    d += ` C ${midX - neckW * 0.8} ${y + sgn * tabDepth * 0.1} ${midX - headR * 1.4} ${y + sgn * tabDepth * 1.05} ${midX} ${y + sgn * tabDepth}`
+    d += ` C ${midX + headR * 1.4} ${y + sgn * tabDepth * 1.05} ${midX + neckW * 0.8} ${y + sgn * tabDepth * 0.1} ${midX + neckW / 2 + neckR} ${y}`
+    d += ` L ${x + size} ${y}`
   }
 
-  if (t.right) {
-    d += ` L ${r} ${hMid - neckW / 2 - neckR}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${r + neckR} ${hMid - neckW / 2}`
-    d += ` A ${headR} ${headR} 0 1 1 ${r + neckR} ${hMid + neckW / 2}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${r} ${hMid + neckW / 2 + neckR}`
-    d += ` L ${r} ${b}`
+  if (rightTab === 'none') {
+    d += ` L ${x + size} ${y + size}`
   } else {
-    d += ` L ${r} ${b}`
+    const sgn = rightTab === 'out' ? 1 : -1
+    const midY = y + size / 2
+    d += ` L ${x + size} ${midY - neckW / 2 - neckR}`
+    d += ` C ${x + size + sgn * tabDepth * 0.1} ${midY - neckW * 0.8} ${x + size + sgn * tabDepth * 1.05} ${midY - headR * 1.4} ${x + size + sgn * tabDepth} ${midY}`
+    d += ` C ${x + size + sgn * tabDepth * 1.05} ${midY + headR * 1.4} ${x + size + sgn * tabDepth * 0.1} ${midY + neckW * 0.8} ${x + size} ${midY + neckW / 2 + neckR}`
+    d += ` L ${x + size} ${y + size}`
   }
 
-  if (t.bottom) {
-    d += ` L ${vMid + neckW / 2 + neckR} ${b}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid + neckW / 2} ${b + neckR}`
-    d += ` A ${headR} ${headR} 0 1 1 ${vMid - neckW / 2} ${b + neckR}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid - neckW / 2 - neckR} ${b}`
-    d += ` L ${x} ${b}`
+  if (bottomTab === 'none') {
+    d += ` L ${x} ${y + size}`
   } else {
-    d += ` L ${x} ${b}`
+    const sgn = bottomTab === 'out' ? 1 : -1
+    const midX = x + size / 2
+    d += ` L ${midX + neckW / 2 + neckR} ${y + size}`
+    d += ` C ${midX + neckW * 0.8} ${y + size + sgn * tabDepth * 0.1} ${midX + headR * 1.4} ${y + size + sgn * tabDepth * 1.05} ${midX} ${y + size + sgn * tabDepth}`
+    d += ` C ${midX - headR * 1.4} ${y + size + sgn * tabDepth * 1.05} ${midX - neckW * 0.8} ${y + size + sgn * tabDepth * 0.1} ${midX - neckW / 2 - neckR} ${y + size}`
+    d += ` L ${x} ${y + size}`
   }
 
-  if (t.leftIndent) {
-    d += ` L ${x} ${hMid + neckW / 2 + neckR}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${x + neckR} ${hMid + neckW / 2}`
-    d += ` A ${headR} ${headR} 0 1 0 ${x + neckR} ${hMid - neckW / 2}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${x} ${hMid - neckW / 2 - neckR}`
+  if (leftTab === 'none') {
+    d += ` L ${x} ${y}`
+  } else {
+    const sgn = leftTab === 'out' ? -1 : 1
+    const midY = y + size / 2
+    d += ` L ${x} ${midY + neckW / 2 + neckR}`
+    d += ` C ${x + sgn * tabDepth * 0.1} ${midY + neckW * 0.8} ${x + sgn * tabDepth * 1.05} ${midY + headR * 1.4} ${x + sgn * tabDepth} ${midY}`
+    d += ` C ${x + sgn * tabDepth * 1.05} ${midY - headR * 1.4} ${x + sgn * tabDepth * 0.1} ${midY - neckW * 0.8} ${x} ${midY - neckW / 2 - neckR}`
     d += ` L ${x} ${y}`
   }
 
@@ -87,83 +88,197 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
-  const { pieces } = data
-  const W = 700
-  const cols = 3
-  const totalRows = Math.ceil(pieces.length / cols)
-  const gridW = cols * CELL_W
-  const startX = (W - gridW) / 2
-  const startY = 40
+  const piecesList = data.pieces?.length ? data.pieces : DEFAULT_PIECES
+  const p1Data = piecesList[0] || DEFAULT_PIECES[0]!
+  const p2Data = piecesList[1] || DEFAULT_PIECES[1]!
+  const p3Data = piecesList[2] || DEFAULT_PIECES[2]!
+  const p4Data = piecesList[3] || DEFAULT_PIECES[3]!
+
+  const pieceConfigs = [
+    {
+      index: 0,
+      data: p1Data,
+      x: PUZZLE_X,
+      y: PUZZLE_Y,
+      top: 'none' as const,
+      right: 'in' as const,
+      bottom: 'in' as const,
+      left: 'out' as const,
+      cardX: 50,
+      cardY: PUZZLE_Y + 12,
+      lineStart: { x1: 240, y1: PUZZLE_Y + 30 },
+      lineEnd: { x2: PUZZLE_X - 30, y2: PUZZLE_Y + 30 },
+    },
+    {
+      index: 1,
+      data: p2Data,
+      x: PUZZLE_X + PIECE_SIZE,
+      y: PUZZLE_Y,
+      top: 'out' as const,
+      right: 'none' as const,
+      bottom: 'in' as const,
+      left: 'out' as const,
+      cardX: 790,
+      cardY: PUZZLE_Y + 12,
+      lineStart: { x1: PUZZLE_X + 2 * PIECE_SIZE, y1: PUZZLE_Y + 30 },
+      lineEnd: { x2: 760, y2: PUZZLE_Y + 30 },
+    },
+    {
+      index: 2,
+      data: p3Data,
+      x: PUZZLE_X + PIECE_SIZE,
+      y: PUZZLE_Y + PIECE_SIZE,
+      top: 'out' as const,
+      right: 'out' as const,
+      bottom: 'none' as const,
+      left: 'in' as const,
+      cardX: 790,
+      cardY: PUZZLE_Y + PIECE_SIZE + 17,
+      lineStart: { x1: PUZZLE_X + 2 * PIECE_SIZE + 30, y1: PUZZLE_Y + PIECE_SIZE + 35 },
+      lineEnd: { x2: 760, y2: PUZZLE_Y + PIECE_SIZE + 35 },
+    },
+    {
+      index: 3,
+      data: p4Data,
+      x: PUZZLE_X,
+      y: PUZZLE_Y + PIECE_SIZE,
+      top: 'out' as const,
+      right: 'out' as const,
+      bottom: 'out' as const,
+      left: 'none' as const,
+      cardX: 50,
+      cardY: PUZZLE_Y + PIECE_SIZE + 17,
+      lineStart: { x1: 240, y1: PUZZLE_Y + PIECE_SIZE + 35 },
+      lineEnd: { x2: PUZZLE_X, y2: PUZZLE_Y + PIECE_SIZE + 35 },
+    },
+  ]
 
   return (
     <g ref={svgRef}>
-      {pieces.map((piece, index) => {
-        const row = Math.floor(index / cols)
-        const col = index % cols
-        const tabOpts = getTabForCell(row, col, totalRows, cols)
-        const px = startX + col * CELL_W
-        const py = startY + row * CELL_H
-        const path = gridPath(px, py, tabOpts)
-        const defaultColor = piece.color || randomMigsoColor(index)
-        const elementId = `piece-${index}`
+      {pieceConfigs.map(cfg => {
+        const piece = cfg.data
+        const elementId = `piece-${cfg.index}`
+        const defaultColor = piece.color || DEFAULT_PIECES[cfg.index]?.color || '#2c2b64'
         const color = tplColors[elementId] ?? defaultColor
-        const stroke = tplStrokeColors[elementId] || 'white'
-        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3.5 : 3)
+        const stroke = tplStrokeColors[elementId] || 'transparent'
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3 : 0)
         const isSelected = selectedIds.has(elementId)
-        const trueWidth = CELL_W + (tabOpts.right ? TAB_D : 0)
-        const trueHeight = CELL_H + (tabOpts.bottom ? TAB_D : 0)
-        const defaultRect = { x: px, y: py, width: trueWidth, height: trueHeight }
+
+        const defaultBbox = { x: cfg.x, y: cfg.y, width: PIECE_SIZE, height: PIECE_SIZE }
         const customPos = templateElementPositions[elementId]
         const bbox = {
-          x: customPos ? customPos.x : defaultRect.x,
-          y: customPos ? customPos.y : defaultRect.y,
-          width: customPos?.width || defaultRect.width,
-          height: customPos?.height || defaultRect.height,
+          x: customPos ? customPos.x : defaultBbox.x,
+          y: customPos ? customPos.y : defaultBbox.y,
+          width: customPos?.width || defaultBbox.width,
+          height: customPos?.height || defaultBbox.height,
         }
+
+        const path = makePuzzlePiecePath(bbox.x, bbox.y, bbox.width, cfg.top, cfg.right, cfg.bottom, cfg.left)
         const centerCx = bbox.x + bbox.width / 2
         const centerCy = bbox.y + bbox.height / 2
         const IconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] : undefined
-        const maxChars = Math.max(8, Math.floor((bbox.width - 40) / 8))
-        const titleLines = wrapTextByWidth(piece.title, maxChars)
-        const subtitleLines = piece.subtitle ? wrapTextByWidth(piece.subtitle, maxChars) : []
+
+        const cardElementId = `card-${cfg.index}`
+        const isCardSelected = selectedIds.has(cardElementId)
+        const customCardPos = templateElementPositions[cardElementId]
+        const cardBbox = {
+          x: customCardPos ? customCardPos.x : cfg.cardX,
+          y: customCardPos ? customCardPos.y : cfg.cardY,
+          width: customCardPos?.width || 160,
+          height: customCardPos?.height || 140,
+        }
+
+        const cardBadgeColor = tplColors[cardElementId] ?? color
+        const subtitleLines = piece.subtitle ? piece.subtitle.split('\n').flatMap(l => wrapTextByWidth(l, 22)) : []
 
         return (
           <g key={elementId}>
+            {/* Connector dashed line */}
+            <line
+              x1={cfg.lineStart.x1}
+              y1={cfg.lineStart.y1}
+              x2={cfg.lineEnd.x2}
+              y2={cfg.lineEnd.y2}
+              stroke={color}
+              strokeWidth={4}
+              strokeDasharray="6 4"
+            />
+
+            {/* Puzzle Piece */}
             <g
               data-element-id={elementId}
               onMouseDown={e => startDrag(e, elementId, bbox)}
               transform={getTransform(elementId, bbox)}
               style={{ cursor: 'pointer' }}
             >
-              <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={strokeWidth} strokeLinejoin="round" />
-              <circle cx={centerCx} cy={centerCy - 20} r={14} fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.7)" strokeWidth={2} />
+              <path
+                d={path}
+                fill={color}
+                stroke={isSelected ? '#4a90d9' : stroke}
+                strokeWidth={isSelected ? 3 : strokeWidth}
+              />
               {IconComponent ? (
-                <g transform={`translate(${centerCx - 7}, ${centerCy - 27})`}>
-                  <IconComponent size={14} color="white" />
+                <g transform={`translate(${centerCx - 18}, ${centerCy - 18})`}>
+                  <IconComponent size={36} color="white" />
                 </g>
               ) : (
-                <text x={centerCx} y={centerCy - 15} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill="white">
-                  {piece.number}
+                <text
+                  x={centerCx}
+                  y={centerCy + 16}
+                  textAnchor="middle"
+                  fontFamily="Arial, Segoe UI, sans-serif"
+                  fontSize={48}
+                  fontWeight={700}
+                  fill="white"
+                >
+                  {piece.number !== undefined ? piece.number : cfg.index + 1}
                 </text>
               )}
-              <text x={centerCx} y={centerCy + 10} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
-                {titleLines.map((line, lineIndex) => (
-                  <tspan key={lineIndex} x={centerCx} dy={lineIndex === 0 ? 0 : 13}>
-                    {line}
-                  </tspan>
-                ))}
-              </text>
-              {piece.subtitle && (
-                <text x={centerCx} y={centerCy + 10 + titleLines.length * 13 + 3} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={10} fill="rgba(255,255,255,0.85)">
-                  {subtitleLines.map((line, lineIndex) => (
-                    <tspan key={lineIndex} x={centerCx} dy={lineIndex === 0 ? 0 : 11}>
-                      {line}
-                    </tspan>
-                  ))}
-                </text>
-              )}
-              {isSelected && renderHandles(bbox, elementId)}
             </g>
+
+            {/* Side Text Card */}
+            <g
+              data-element-id={cardElementId}
+              onMouseDown={e => startDrag(e, cardElementId, cardBbox)}
+              transform={getTransform(cardElementId, cardBbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect
+                x={cardBbox.x}
+                y={cardBbox.y}
+                width={cardBbox.width}
+                height={36}
+                rx={3}
+                fill={cardBadgeColor}
+                stroke={isCardSelected ? '#4a90d9' : 'none'}
+                strokeWidth={isCardSelected ? 2 : 0}
+              />
+              <text
+                x={cardBbox.x + 12}
+                y={cardBbox.y + 24}
+                fontFamily="Arial, Segoe UI, sans-serif"
+                fontSize={16}
+                fontWeight={700}
+                fill="white"
+              >
+                {piece.title}
+              </text>
+              {subtitleLines.map((line, lIdx) => (
+                <text
+                  key={lIdx}
+                  x={cardBbox.x + 6}
+                  y={cardBbox.y + 56 + lIdx * 18}
+                  fontFamily="Arial, Segoe UI, sans-serif"
+                  fontSize={12}
+                  fill="#334155"
+                >
+                  {line}
+                </text>
+              ))}
+            </g>
+
+            {isSelected && renderHandles(bbox, elementId)}
+            {isCardSelected && renderHandles(cardBbox, cardElementId)}
           </g>
         )
       })}

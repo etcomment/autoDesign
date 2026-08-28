@@ -341,7 +341,7 @@ export interface Process5Data {
 }
 
 export interface PuzzlePiece {
-  number: number
+  number: number | string
   title: string
   subtitle?: string
   color?: string
