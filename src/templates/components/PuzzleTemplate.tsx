@@ -4,11 +4,8 @@ import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
+import { MIGSO_PALETTE } from '../../lib/theme'
 import { makePuzzlePiecePath } from './Puzzle4Template'
-
-const PIECE_SIZE = 145
-const PUZZLE_X = 355
-const PUZZLE_Y = 135
 
 const DEFAULT_PIECES: PuzzlePiece[] = [
   { number: 1, title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#2c2b64' },
@@ -16,6 +13,123 @@ const DEFAULT_PIECES: PuzzlePiece[] = [
   { number: 3, title: 'Management', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ff4d30' },
   { number: 4, title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703' },
 ]
+
+interface PieceLayout {
+  index: number
+  data: PuzzlePiece
+  defaultPieceX: number
+  defaultPieceY: number
+  pieceSize: number
+  top: 'none' | 'out' | 'in'
+  right: 'none' | 'out' | 'in'
+  bottom: 'none' | 'out' | 'in'
+  left: 'none' | 'out' | 'in'
+  defaultCardX: number
+  defaultCardY: number
+}
+
+function computePieceLayouts(pieces: PuzzlePiece[]): PieceLayout[] {
+  const count = pieces.length
+  if (count === 4) {
+    const S = 145
+    const PUZZLE_X = 355
+    const PUZZLE_Y = 135
+    return [
+      {
+        index: 0,
+        data: pieces[0]!,
+        defaultPieceX: PUZZLE_X,
+        defaultPieceY: PUZZLE_Y,
+        pieceSize: S,
+        top: 'none',
+        right: 'out',
+        bottom: 'in',
+        left: 'out',
+        defaultCardX: 50,
+        defaultCardY: PUZZLE_Y + 12,
+      },
+      {
+        index: 1,
+        data: pieces[1]!,
+        defaultPieceX: PUZZLE_X + S,
+        defaultPieceY: PUZZLE_Y,
+        pieceSize: S,
+        top: 'out',
+        right: 'none',
+        bottom: 'out',
+        left: 'in',
+        defaultCardX: 790,
+        defaultCardY: PUZZLE_Y + 12,
+      },
+      {
+        index: 2,
+        data: pieces[2]!,
+        defaultPieceX: PUZZLE_X + S,
+        defaultPieceY: PUZZLE_Y + S,
+        pieceSize: S,
+        top: 'in',
+        right: 'out',
+        bottom: 'none',
+        left: 'out',
+        defaultCardX: 790,
+        defaultCardY: PUZZLE_Y + S + 17,
+      },
+      {
+        index: 3,
+        data: pieces[3]!,
+        defaultPieceX: PUZZLE_X,
+        defaultPieceY: PUZZLE_Y + S,
+        pieceSize: S,
+        top: 'out',
+        right: 'in',
+        bottom: 'out',
+        left: 'none',
+        defaultCardX: 50,
+        defaultCardY: PUZZLE_Y + S + 17,
+      },
+    ]
+  }
+
+  // Dynamic layout for any N != 4
+  const cols = count <= 3 ? count : count <= 6 ? 3 : 4
+  const rows = Math.ceil(count / cols)
+  const pieceSize = Math.min(140, Math.floor(360 / Math.max(cols, rows)))
+  const totalW = cols * pieceSize
+  const totalH = rows * pieceSize
+  const startX = 500 - totalW / 2
+  const startY = 270 - totalH / 2
+
+  return pieces.map((data, idx) => {
+    const col = idx % cols
+    const row = Math.floor(idx / cols)
+    const px = startX + col * pieceSize
+    const py = startY + row * pieceSize
+
+    const top: 'none' | 'out' | 'in' = row === 0 ? 'none' : 'in'
+    const right: 'none' | 'out' | 'in' = col === cols - 1 || idx === count - 1 ? 'none' : 'out'
+    const bottom: 'none' | 'out' | 'in' = row === rows - 1 || idx + cols >= count ? 'none' : 'out'
+    const left: 'none' | 'out' | 'in' = col === 0 ? 'none' : 'in'
+
+    const isLeft = col < cols / 2
+    const defaultCardX = isLeft ? 50 : 790
+    const rowInSide = isLeft ? row : row
+    const defaultCardY = Math.max(60, startY + rowInSide * (pieceSize + 20) + 10)
+
+    return {
+      index: idx,
+      data,
+      defaultPieceX: px,
+      defaultPieceY: py,
+      pieceSize,
+      top,
+      right,
+      bottom,
+      left,
+      defaultCardX,
+      defaultCardY,
+    }
+  })
+}
 
 export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -27,116 +141,75 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
   const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const piecesList = data.pieces?.length ? data.pieces : DEFAULT_PIECES
-  const p1Data = piecesList[0] || DEFAULT_PIECES[0]!
-  const p2Data = piecesList[1] || DEFAULT_PIECES[1]!
-  const p3Data = piecesList[2] || DEFAULT_PIECES[2]!
-  const p4Data = piecesList[3] || DEFAULT_PIECES[3]!
-
-  const pieceConfigs = [
-    {
-      index: 0,
-      data: p1Data,
-      x: PUZZLE_X,
-      y: PUZZLE_Y,
-      top: 'none' as const,
-      right: 'out' as const,
-      bottom: 'in' as const,
-      left: 'out' as const,
-      cardX: 50,
-      cardY: PUZZLE_Y + 12,
-      lineStart: { x1: 240, y1: PUZZLE_Y + 30 },
-      lineEnd: { x2: PUZZLE_X - 30, y2: PUZZLE_Y + 30 },
-    },
-    {
-      index: 1,
-      data: p2Data,
-      x: PUZZLE_X + PIECE_SIZE,
-      y: PUZZLE_Y,
-      top: 'out' as const,
-      right: 'none' as const,
-      bottom: 'out' as const,
-      left: 'in' as const,
-      cardX: 790,
-      cardY: PUZZLE_Y + 12,
-      lineStart: { x1: PUZZLE_X + 2 * PIECE_SIZE, y1: PUZZLE_Y + 30 },
-      lineEnd: { x2: 760, y2: PUZZLE_Y + 30 },
-    },
-    {
-      index: 2,
-      data: p3Data,
-      x: PUZZLE_X + PIECE_SIZE,
-      y: PUZZLE_Y + PIECE_SIZE,
-      top: 'in' as const,
-      right: 'out' as const,
-      bottom: 'none' as const,
-      left: 'out' as const,
-      cardX: 790,
-      cardY: PUZZLE_Y + PIECE_SIZE + 17,
-      lineStart: { x1: PUZZLE_X + 2 * PIECE_SIZE + 30, y1: PUZZLE_Y + PIECE_SIZE + 35 },
-      lineEnd: { x2: 760, y2: PUZZLE_Y + PIECE_SIZE + 35 },
-    },
-    {
-      index: 3,
-      data: p4Data,
-      x: PUZZLE_X,
-      y: PUZZLE_Y + PIECE_SIZE,
-      top: 'out' as const,
-      right: 'in' as const,
-      bottom: 'out' as const,
-      left: 'none' as const,
-      cardX: 50,
-      cardY: PUZZLE_Y + PIECE_SIZE + 17,
-      lineStart: { x1: 240, y1: PUZZLE_Y + PIECE_SIZE + 35 },
-      lineEnd: { x2: PUZZLE_X, y2: PUZZLE_Y + PIECE_SIZE + 35 },
-    },
-  ]
+  const layouts = computePieceLayouts(piecesList)
 
   return (
     <g ref={svgRef}>
-      {pieceConfigs.map(cfg => {
-        const piece = cfg.data
-        const elementId = `piece-${cfg.index}`
-        const defaultColor = piece.color || DEFAULT_PIECES[cfg.index]?.color || '#2c2b64'
+      {layouts.map(layout => {
+        const piece = layout.data
+        const elementId = `piece-${layout.index}`
+        const cardElementId = `card-${layout.index}`
+
+        const defaultColor = piece.color || MIGSO_PALETTE[layout.index % MIGSO_PALETTE.length] || '#2c2b64'
         const color = tplColors[elementId] ?? defaultColor
         const stroke = tplStrokeColors[elementId] || '#ffffff'
         const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3 : 2.5)
         const isSelected = selectedIds.has(elementId)
+        const isCardSelected = selectedIds.has(cardElementId)
 
-        const defaultBbox = { x: cfg.x, y: cfg.y, width: PIECE_SIZE, height: PIECE_SIZE }
-        const customPos = templateElementPositions[elementId]
-        const bbox = {
-          x: customPos ? customPos.x : defaultBbox.x,
-          y: customPos ? customPos.y : defaultBbox.y,
-          width: customPos?.width || defaultBbox.width,
-          height: customPos?.height || defaultBbox.height,
+        // Dynamic Position from Store or Layout
+        const customPiecePos = templateElementPositions[elementId]
+        const pieceBbox = {
+          x: customPiecePos ? customPiecePos.x : layout.defaultPieceX,
+          y: customPiecePos ? customPiecePos.y : layout.defaultPieceY,
+          width: customPiecePos?.width || layout.pieceSize,
+          height: customPiecePos?.height || layout.pieceSize,
         }
 
-        const path = makePuzzlePiecePath(bbox.x, bbox.y, bbox.width, cfg.top, cfg.right, cfg.bottom, cfg.left)
-        const centerCx = bbox.x + bbox.width / 2
-        const centerCy = bbox.y + bbox.height / 2
-        const IconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] : undefined
-
-        const cardElementId = `card-${cfg.index}`
-        const isCardSelected = selectedIds.has(cardElementId)
+        // Subtitle wrapping & Dynamic Card Height (Rule 4 & 5)
         const customCardPos = templateElementPositions[cardElementId]
+        const cardWidth = customCardPos?.width || 160
+        const subtitleLines = piece.subtitle
+          ? piece.subtitle.split('\n').flatMap(l => wrapTextByWidth(l, Math.max(12, Math.floor(cardWidth / 7.5))))
+          : []
+        const nominalCardHeight = 36 + (subtitleLines.length > 0 ? 16 + subtitleLines.length * 18 : 0)
         const cardBbox = {
-          x: customCardPos ? customCardPos.x : cfg.cardX,
-          y: customCardPos ? customCardPos.y : cfg.cardY,
-          width: customCardPos?.width || 160,
-          height: customCardPos?.height || 140,
+          x: customCardPos ? customCardPos.x : layout.defaultCardX,
+          y: customCardPos ? customCardPos.y : layout.defaultCardY,
+          width: cardWidth,
+          height: customCardPos?.height || Math.max(80, nominalCardHeight),
         }
 
         const cardBadgeColor = tplColors[cardElementId] ?? color
-        const subtitleLines = piece.subtitle ? piece.subtitle.split('\n').flatMap(l => wrapTextByWidth(l, 22)) : []
+        const path = makePuzzlePiecePath(
+          pieceBbox.x,
+          pieceBbox.y,
+          pieceBbox.width,
+          layout.top,
+          layout.right,
+          layout.bottom,
+          layout.left,
+        )
+
+        const centerCx = pieceBbox.x + pieceBbox.width / 2
+        const centerCy = pieceBbox.y + pieceBbox.height / 2
+        const IconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] : undefined
+
+        // Elastic Dynamic Connectors (Rule 2 & 7)
+        const isLeftCard = cardBbox.x < pieceBbox.x
+        const lineX1 = isLeftCard ? cardBbox.x + cardBbox.width : pieceBbox.x + pieceBbox.width
+        const lineY1 = isLeftCard ? cardBbox.y + 18 : pieceBbox.y + pieceBbox.height / 2
+        const lineX2 = isLeftCard ? pieceBbox.x : cardBbox.x
+        const lineY2 = isLeftCard ? pieceBbox.y + pieceBbox.height / 2 : cardBbox.y + 18
 
         return (
           <g key={elementId}>
-            {/* Connector dashed line */}
+            {/* Dynamic elastic dashed connector */}
             <line
-              x1={cfg.lineStart.x1}
-              y1={cfg.lineStart.y1}
-              x2={cfg.lineEnd.x2}
-              y2={cfg.lineEnd.y2}
+              x1={lineX1}
+              y1={lineY1}
+              x2={lineX2}
+              y2={lineY2}
               stroke={color}
               strokeWidth={4}
               strokeDasharray="6 4"
@@ -145,8 +218,8 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
             {/* Puzzle Piece */}
             <g
               data-element-id={elementId}
-              onMouseDown={e => startDrag(e, elementId, bbox)}
-              transform={getTransform(elementId, bbox)}
+              onMouseDown={e => startDrag(e, elementId, pieceBbox)}
+              transform={getTransform(elementId, pieceBbox)}
               style={{ cursor: 'pointer' }}
             >
               <path
@@ -166,16 +239,16 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
                   y={centerCy + 16}
                   textAnchor="middle"
                   fontFamily="Arial, Segoe UI, sans-serif"
-                  fontSize={48}
+                  fontSize={Math.max(20, Math.floor(pieceBbox.width * 0.33))}
                   fontWeight={700}
                   fill="white"
                 >
-                  {piece.number !== undefined ? piece.number : cfg.index + 1}
+                  {piece.number !== undefined ? piece.number : layout.index + 1}
                 </text>
               )}
             </g>
 
-            {/* Side Text Card */}
+            {/* Side Text Card with Auto-resize */}
             <g
               data-element-id={cardElementId}
               onMouseDown={e => startDrag(e, cardElementId, cardBbox)}
@@ -216,7 +289,7 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
               ))}
             </g>
 
-            {isSelected && renderHandles(bbox, elementId)}
+            {isSelected && renderHandles(pieceBbox, elementId)}
             {isCardSelected && renderHandles(cardBbox, cardElementId)}
           </g>
         )

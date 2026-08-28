@@ -66,11 +66,13 @@ export function TemplateElementProperties() {
     const tData = templateData as Record<string, unknown>
     const effectiveCollectionKey = (parsed.collectionKey && tData[parsed.collectionKey])
       ? parsed.collectionKey
-      : tData.metrics
-        ? 'metrics'
-        : tData.milestones
-          ? 'milestones'
-          : parsed.collectionKey
+      : tData.pieces
+        ? 'pieces'
+        : tData.metrics
+          ? 'metrics'
+          : tData.milestones
+            ? 'milestones'
+            : parsed.collectionKey
 
     if (parsed.isMainTitle && typeof templateData.title === 'string') {
       currentTitle = templateData.title
@@ -107,11 +109,13 @@ export function TemplateElementProperties() {
     const tData = templateData as Record<string, unknown>
     const effectiveCollectionKey = (parsed.collectionKey && tData[parsed.collectionKey])
       ? parsed.collectionKey
-      : tData.metrics
-        ? 'metrics'
-        : tData.milestones
-          ? 'milestones'
-          : parsed.collectionKey
+      : tData.pieces
+        ? 'pieces'
+        : tData.metrics
+          ? 'metrics'
+          : tData.milestones
+            ? 'milestones'
+            : parsed.collectionKey
 
     if (parsed.isMainTitle && field === 'title') {
       updateTemplateData({ ...templateData, title: value })
