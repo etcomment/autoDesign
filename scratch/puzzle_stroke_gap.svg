@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="560" viewBox="0 0 1000 560" style="background:#ffffff;">
+  <path d="M 355 135 L 500 135 L 500 189.5 C 503.24 188.3 534.02 182.3 532.4 207.5 C 534.02 232.7 503.24 226.7 500 225.5 L 500 280 L 445.5 280 C 446.7 276.76 452.7 245.98 427.5 247.6 C 402.3 245.98 408.3 276.76 409.5 280 L 355 280 L 355 225.5 C 351.76 226.7 320.98 232.7 322.6 207.5 C 320.98 182.3 351.76 188.3 355 189.5 L 355 135 Z" fill="#2c2b64" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round" />
+  <path d="M 500 135 L 554.5 135 C 553.3 131.76 547.3 100.97999999999999 572.5 102.6 C 597.7 100.97999999999999 591.7 131.76 590.5 135 L 645 135 L 645 280 L 590.5 280 C 591.7 283.24 597.7 314.02 572.5 312.4 C 547.3 314.02 553.3 283.24 554.5 280 L 500 280 L 500 225.5 C 503.24 226.7 534.02 232.7 532.4 207.5 C 534.02 182.3 503.24 188.3 500 189.5 L 500 135 Z" fill="#3466ce" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round" />
+  <path d="M 500 280 L 554.5 280 C 553.3 283.24 547.3 314.02 572.5 312.4 C 597.7 314.02 591.7 283.24 590.5 280 L 645 280 L 645 334.5 C 648.24 333.3 679.02 327.3 677.4 352.5 C 679.02 377.7 648.24 371.7 645 370.5 L 645 425 L 500 425 L 500 370.5 C 496.76 371.7 465.98 377.7 467.6 352.5 C 465.98 327.3 496.76 333.3 500 334.5 L 500 280 Z" fill="#ff4d30" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round" />
+  <path d="M 355 280 L 409.5 280 C 408.3 276.76 402.3 245.98 427.5 247.6 C 452.7 245.98 446.7 276.76 445.5 280 L 500 280 L 500 334.5 C 496.76 333.3 465.98 327.3 467.6 352.5 C 465.98 377.7 496.76 371.7 500 370.5 L 500 425 L 445.5 425 C 446.7 428.24 452.7 459.02 427.5 457.4 C 402.3 459.02 408.3 428.24 409.5 425 L 355 425 L 355 280 Z" fill="#ffb703" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round" />
+  
+  <text x="427.5" y="223.5" font-size="48" font-weight="bold" fill="#ffffff" text-anchor="middle" font-family="Arial">1</text>
+  <text x="572.5" y="223.5" font-size="48" font-weight="bold" fill="#ffffff" text-anchor="middle" font-family="Arial">2</text>
+  <text x="572.5" y="368.5" font-size="48" font-weight="bold" fill="#ffffff" text-anchor="middle" font-family="Arial">3</text>
+  <text x="427.5" y="368.5" font-size="48" font-weight="bold" fill="#ffffff" text-anchor="middle" font-family="Arial">4</text>
+</svg>

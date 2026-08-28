@@ -101,8 +101,8 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
       x: PUZZLE_X,
       y: PUZZLE_Y,
       top: 'none' as const,
-      right: 'in' as const,
-      bottom: 'out' as const,
+      right: 'out' as const,
+      bottom: 'in' as const,
       left: 'out' as const,
       cardX: 50,
       cardY: PUZZLE_Y + 12,
@@ -116,8 +116,8 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
       y: PUZZLE_Y,
       top: 'out' as const,
       right: 'none' as const,
-      bottom: 'in' as const,
-      left: 'out' as const,
+      bottom: 'out' as const,
+      left: 'in' as const,
       cardX: 790,
       cardY: PUZZLE_Y + 12,
       lineStart: { x1: PUZZLE_X + 2 * PIECE_SIZE, y1: PUZZLE_Y + 30 },
@@ -128,10 +128,10 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
       data: p3Data,
       x: PUZZLE_X + PIECE_SIZE,
       y: PUZZLE_Y + PIECE_SIZE,
-      top: 'out' as const,
+      top: 'in' as const,
       right: 'out' as const,
       bottom: 'none' as const,
-      left: 'in' as const,
+      left: 'out' as const,
       cardX: 790,
       cardY: PUZZLE_Y + PIECE_SIZE + 17,
       lineStart: { x1: PUZZLE_X + 2 * PIECE_SIZE + 30, y1: PUZZLE_Y + PIECE_SIZE + 35 },
@@ -142,8 +142,8 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
       data: p4Data,
       x: PUZZLE_X,
       y: PUZZLE_Y + PIECE_SIZE,
-      top: 'in' as const,
-      right: 'out' as const,
+      top: 'out' as const,
+      right: 'in' as const,
       bottom: 'out' as const,
       left: 'none' as const,
       cardX: 50,
@@ -160,8 +160,8 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
         const elementId = `piece-${cfg.index}`
         const defaultColor = piece.color || DEFAULT_PIECES[cfg.index]?.color || '#2c2b64'
         const color = tplColors[elementId] ?? defaultColor
-        const stroke = tplStrokeColors[elementId] || 'transparent'
-        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3 : 0)
+        const stroke = tplStrokeColors[elementId] || '#ffffff'
+        const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3 : 2.5)
         const isSelected = selectedIds.has(elementId)
 
         const defaultBbox = { x: cfg.x, y: cfg.y, width: PIECE_SIZE, height: PIECE_SIZE }
@@ -216,6 +216,7 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
                 fill={color}
                 stroke={isSelected ? '#4a90d9' : stroke}
                 strokeWidth={isSelected ? 3 : strokeWidth}
+                strokeLinejoin="round"
               />
               {IconComponent ? (
                 <g transform={`translate(${centerCx - 18}, ${centerCy - 18})`}>
