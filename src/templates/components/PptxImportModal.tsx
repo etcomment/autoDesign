@@ -121,8 +121,8 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
       } else {
         throw new Error('Veuillez sélectionner un fichier PowerPoint valide (.pptx ou .potx).')
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Erreur lors de la lecture du fichier PowerPoint.')
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Erreur lors de la lecture du fichier PowerPoint.')
     } finally {
       setIsLoading(false)
     }
