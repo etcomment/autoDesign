@@ -1,6 +1,9 @@
 import { useState, useRef, type ChangeEvent } from 'react'
 import { X, Check, FileUp, Sparkles, AlertCircle, RefreshCw } from 'lucide-react'
 import { useTemplateStore } from '../store'
+import { parseImportedSvg } from '../import/svgImport'
+import { generateImportedComponentSource, downloadGeneratedComponent, sanitizeImportedName } from '../import/generateImportedComponent'
+import type { ImportedTemplateData } from '../types'
 import { PptxRenderer } from 'pptx-svg'
 import wasmUrl from 'pptx-svg/wasm?url'
 import { useIsMobile } from '../../hooks/useIsMobile'
@@ -15,6 +18,7 @@ interface ExtractedSlidePreview {
   category: string
   svgString: string
   shapesCount: number
+  chromeRemoved: number
   colors: string[]
   sampleText: string
 }
@@ -93,7 +97,9 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
             .filter(f => f && f.startsWith('#') && f !== '#ffffff' && f !== '#000000') as string[]
           
           const colors = Array.from(new Set(fillNodes)).slice(0, 6)
-          const shapesCount = doc.querySelectorAll('g[data-ooxml-id], path, rect, circle, ellipse').length
+          const parsedSlide = parseImportedSvg(svg)
+          const shapesCount = parsedSlide.items.length
+          const chromeRemoved = parsedSlide.removedChrome.length
 
           if (i === 0 && textNodes.length > 0 && textNodes[0]) {
             globalCategory = textNodes[0].substring(0, 20)
@@ -104,6 +110,7 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
             category: textNodes[0]?.substring(0, 20) || 'Slide',
             svgString: svg,
             shapesCount,
+            chromeRemoved,
             colors,
             sampleText: textSample || `Diapositive ${i + 1}`
           })
@@ -121,21 +128,61 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
     }
   }
 
+  const buildImportedRecord = () => {
+    const activePreview = previews[selectedSlideIdx]
+    if (!activePreview) return null
+    const slide = parseImportedSvg(activePreview.svgString)
+    const data: ImportedTemplateData = {
+      type: 'imported',
+      importedItems: slide.items.map(item => {
+        const lines = item.text.split('\n').filter(l => l.length > 0)
+        const title = lines.length > 0 ? lines.reduce((longest, line) => (line.length > longest.length ? line : longest), lines[0]!) : undefined
+        const subtitle = lines.filter(line => line !== title).join(' ') || undefined
+        return {
+          ooxmlId: item.ooxmlId,
+          title,
+          subtitle,
+        }
+      }),
+    }
+    const store = useTemplateStore.getState()
+    const base = sanitizeImportedName(templateName)
+    let name = base
+    let suffix = 2
+    while (store.importedTemplates[name]) {
+      name = `${base}${suffix}`
+      suffix++
+    }
+    return {
+      name,
+      label: `${templateName} (slide ${activePreview.slideNumber})`,
+      category: categoryName || 'Import',
+      description: `Template importé depuis PowerPoint (slide ${activePreview.slideNumber}, ${slide.items.length} éléments, ${activePreview.chromeRemoved} éléments de chrome retirés)`,
+      slide,
+      data: { ...data, type: name },
+    }
+  }
+
   const handleValidateImport = () => {
     if (previews.length === 0) return
+    const record = buildImportedRecord()
+    if (!record) return
 
-    const cleanName = templateName.toLowerCase().replace(/[^a-z0-9]/g, '')
-
-    useTemplateStore.setState(s => ({
-      ...s,
-      selectedTemplateType: cleanName,
-    }))
+    useTemplateStore.getState().addImportedTemplate(record)
+    useTemplateStore.getState().selectTemplate(record.name)
 
     setIsSuccess(true)
     setTimeout(() => {
       setIsSuccess(false)
       onClose()
     }, 1200)
+  }
+
+  const handleDownloadComponent = () => {
+    const record = buildImportedRecord()
+    if (!record) return
+    const source = generateImportedComponentSource(record.name, record.slide, record.data)
+    downloadGeneratedComponent(`${record.name.charAt(0).toUpperCase()}${record.name.slice(1)}Template.tsx`, source)
   }
 
   const activePreview = previews[selectedSlideIdx]
@@ -245,7 +292,7 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
                           Slide {prev.slideNumber}: {prev.sampleText.slice(0, 18) || 'Sans titre'}
                         </span>
                         <span style={styles.badge}>
-                          {prev.shapesCount} éléments
+                          {prev.shapesCount} éléments{prev.chromeRemoved > 0 ? ` · ${prev.chromeRemoved} chrome` : ''}
                         </span>
                       </button>
                     ))}
@@ -302,10 +349,16 @@ export function PptxImportModal({ isOpen, onClose }: PptxImportModalProps) {
             Fermer
           </button>
           {file && previews.length > 0 && (
-            <button onClick={handleValidateImport} style={styles.validateBtn}>
-              <Check size={16} />
-              <span>{isSuccess ? 'Importation Validée !' : 'Valider'}</span>
-            </button>
+            <>
+              <button onClick={handleDownloadComponent} style={styles.cancelBtn} title="Télécharger le composant .tsx généré">
+                <FileUp size={16} />
+                <span>.tsx</span>
+              </button>
+              <button onClick={handleValidateImport} style={styles.validateBtn}>
+                <Check size={16} />
+                <span>{isSuccess ? 'Importation Validée !' : 'Valider'}</span>
+              </button>
+            </>
           )}
         </div>
       </div>

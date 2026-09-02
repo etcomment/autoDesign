@@ -647,6 +647,19 @@ export interface PieData {
   slices: PieSlice[]
 }
 
+export interface ImportedItemData {
+  ooxmlId: string
+  title?: string
+  subtitle?: string
+  color?: string
+}
+
+export interface ImportedTemplateData {
+  type: string
+  title?: string
+  importedItems: ImportedItemData[]
+}
+
 export type TemplateData =
   | RoadmapData
   | Roadmap15Data
@@ -738,6 +751,7 @@ export type TemplateData =
   | ValueChain5Data
   | CircleData
   | PieData
+  | ImportedTemplateData
 
 export type TemplateType = | 'testlayout60' | string
 

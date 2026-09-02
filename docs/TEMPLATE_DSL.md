@@ -515,3 +515,26 @@ Pour la quasi-totalité des éléments de liste (`milestone`, `step`, `block`, `
   slice "Part 03" 20 "Troisième segment" pct:"20%" #ff5338
   slice "Part 04" 30 "Quatrième segment" pct:"30%" #f2cb13
 ```
+
+---
+
+### 3.21 Templates Importés (`imported*`)
+
+Templates générés depuis une slide PowerPoint (.pptx/.potx) via l'import vectoriel
+(pptx-svg). Chaque élément de la slide devient un `item` identifié par son
+`data-ooxml-id` ; le rendu vectoriel exact est conservé, seuls les textes et
+couleurs sont pilotables par le DSL.
+
+**Variantes supportées** : tout type préfixé `imported` (ex: `importedRoadmapSlide12`).
+
+#### Syntaxe et sous-commandes :
+* `item "ooxmlId" ["Titre"] ["Sous-titre"] [#HEX]` : élément importé (identifiant
+  technique + textes de substitution + couleur de surcharge).
+
+#### Exemple
+```
+@importedRoadmapSlide12
+  item "shape-1" "Vision" "Direction stratégique" #2c2b64
+  item "shape-2" "Exécution"
+  item "shape-3"
+```
