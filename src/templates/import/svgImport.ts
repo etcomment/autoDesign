@@ -341,6 +341,75 @@ function combineTransforms(...transforms: Array<string | null>): string {
   return transforms.filter(t => t && t.trim().length > 0).join(' ').trim()
 }
 
+// pptx-svg émet parfois des attributs dupliqués (font-size en double sur les
+// runs en exposant) => XML invalide rejeté par DOMParser. On déduplique en
+// gardant la dernière occurrence.
+function deduplicateTagAttributes(tag: string): string {
+  const open = tag.indexOf(' ')
+  if (open === -1) return tag
+  const gt = tag.lastIndexOf('>')
+  const attrs = tag.slice(open, gt)
+  const attrRe = /([a-zA-Z-]+)\s*=\s*("[^"]*"|'[^']*')/g
+  const matches: Array<{ name: string; start: number; end: number }> = []
+  let match: RegExpExecArray | null
+  while ((match = attrRe.exec(attrs)) !== null) {
+    matches.push({ name: match[1]!.toLowerCase(), start: match.index, end: match.index + match[0].length })
+  }
+  const lastIndex = new Map<string, number>()
+  for (const entry of matches) lastIndex.set(entry.name, entry.start)
+  const remove = new Set<number>()
+  for (const entry of matches) {
+    if (lastIndex.get(entry.name) !== entry.start) remove.add(entry.start)
+  }
+  if (remove.size === 0) return tag
+  let cleaned = ''
+  let cursor = 0
+  for (const entry of matches) {
+    if (!remove.has(entry.start)) continue
+    cleaned += attrs.slice(cursor, entry.start)
+    cursor = entry.end
+  }
+  cleaned += attrs.slice(cursor)
+  return tag.slice(0, open) + cleaned + tag.slice(gt)
+}
+
+function sanitizeInvalidSvg(svg: string): string {
+  let out = ''
+  let i = 0
+  while (i < svg.length) {
+    if (svg[i] !== '<') {
+      out += svg[i]!
+      i++
+      continue
+    }
+    let j = i + 1
+    let quote: string | null = null
+    while (j < svg.length) {
+      const c = svg[j]!
+      if (quote) {
+        if (c === quote) quote = null
+      } else if (c === '"' || c === "'") {
+        quote = c
+      } else if (c === '>') {
+        break
+      }
+      j++
+    }
+    out += deduplicateTagAttributes(svg.slice(i, j + 1))
+    i = j + 1
+  }
+  return out
+}
+
+function tryParseSvg(svgString: string): Document | null {
+  const doc = new DOMParser().parseFromString(svgString, 'image/svg+xml')
+  const root = doc.documentElement
+  if (!root) return null
+  if (root.getElementsByTagName('parsererror').length > 0) return null
+  if (root.localName?.toLowerCase() !== 'svg') return null
+  return doc
+}
+
 interface Fragment {
   ooxmlId?: string
   markup: string
@@ -448,13 +517,14 @@ function clusterIntoItems(fragments: Fragment[], slideHeight: number): ImportedI
 }
 
 export function parseImportedSvg(svgString: string): ImportedSlideSvg {
-  const doc = new DOMParser().parseFromString(svgString, 'image/svg+xml')
-  const root = doc.documentElement
-  const parseFailed = root.getElementsByTagName('parsererror').length > 0
-  const notSvg = root.localName?.toLowerCase() !== 'svg'
-  if (!root || parseFailed || notSvg) {
+  let doc = tryParseSvg(svgString)
+  if (!doc) {
+    doc = tryParseSvg(sanitizeInvalidSvg(svgString))
+  }
+  if (!doc) {
     throw new Error('SVG invalide')
   }
+  const root = doc.documentElement
 
   const { width, height } = readSize(root)
   const scale = IMPORTED_TEMPLATE_WIDTH / width
