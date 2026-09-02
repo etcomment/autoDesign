@@ -9,7 +9,7 @@ export interface ImportedItem {
   fill?: string
 }
 
-export type RemovedChromeKind = 'background' | 'title' | 'footer' | 'known'
+export type RemovedChromeKind = 'background' | 'title' | 'footer' | 'known' | 'artifact'
 
 export interface RemovedChromeEntry {
   kind: RemovedChromeKind
@@ -32,6 +32,10 @@ const CHROME_BACKGROUND_AREA_RATIO = 0.85
 const CHROME_TITLE_MAX_Y_RATIO = 0.2
 const CHROME_TITLE_MIN_WIDTH_RATIO = 0.6
 const CHROME_FOOTER_MIN_Y_RATIO = 0.88
+const ARTIFACT_MAX_RIGHT_RATIO = 0.2
+const ARTIFACT_MAX_BOTTOM_RATIO = 0.25
+const ARTIFACT_MAX_WIDTH_RATIO = 0.12
+const ARTIFACT_MAX_HEIGHT_RATIO = 0.12
 const CARD_VERTICAL_OVERLAP_RATIO = 0.5
 const CARD_HORIZONTAL_OVERLAP_RATIO = 0.3
 const CARD_VERTICAL_GAP_RATIO = 0.02
@@ -579,6 +583,14 @@ export function parseImportedSvg(svgString: string): ImportedSlideSvg {
       kind = 'title'
     } else if (fragment.box.y / scaledHeight >= CHROME_FOOTER_MIN_Y_RATIO) {
       kind = 'footer'
+    } else if (
+      !hasText &&
+      fragment.box.x + fragment.box.width <= ARTIFACT_MAX_RIGHT_RATIO * IMPORTED_TEMPLATE_WIDTH &&
+      fragment.box.y + fragment.box.height <= ARTIFACT_MAX_BOTTOM_RATIO * scaledHeight &&
+      fragment.box.width <= ARTIFACT_MAX_WIDTH_RATIO * IMPORTED_TEMPLATE_WIDTH &&
+      fragment.box.height <= ARTIFACT_MAX_HEIGHT_RATIO * scaledHeight
+    ) {
+      kind = 'artifact'
     }
     if (kind) {
       removedChrome.push({ kind, ooxmlId: fragment.ooxmlId ?? '', text: fragment.text })

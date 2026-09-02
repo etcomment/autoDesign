@@ -97,6 +97,26 @@ describe('parseImportedSvg', () => {
     expect(slide.items.every(item => !item.text.includes('EXAMPLE TEMPLATES'))).toBe(true)
   })
 
+  it('retire l\'artefact décoratif du coin haut gauche', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540">
+      <line x1="43" y1="88" x2="100" y2="88" stroke="rgb(44,43,100)" stroke-width="8.2"/>
+      <g><rect x="260" y="180" width="600" height="48" fill="#3366cc"/><text x="280" y="210" font-size="16">Contenu</text></g>
+    </svg>`
+    const slide = parseImportedSvg(svg)
+    expect(slide.removedChrome.filter(c => c.kind === 'artifact')).toHaveLength(1)
+    expect(slide.items).toHaveLength(1)
+    expect(slide.items[0]!.text).toBe('Contenu')
+  })
+
+  it('ne retire pas le contenu légitime du coin haut gauche', () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540">
+      <g><rect x="40" y="40" width="500" height="200" fill="#3366cc"/><text x="60" y="120" font-size="20">Bloc coin</text></g>
+    </svg>`
+    const slide = parseImportedSvg(svg)
+    expect(slide.removedChrome.filter(c => c.kind === 'artifact')).toHaveLength(0)
+    expect(slide.items).toHaveLength(1)
+  })
+
   it('rejette un SVG invalide', () => {
     expect(() => parseImportedSvg('pas un svg')).toThrow()
   })
