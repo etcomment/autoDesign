@@ -46,8 +46,8 @@ describe('Puzzle2Template', () => {
     expect((html.match(/data-element-id="dot-/g) ?? []).length).toBe(6)
     expect((html.match(/data-element-id="card-/g) ?? []).length).toBe(6)
     expect((html.match(/data-icon/g) ?? []).length).toBe(6)
-    expect(html).toContain('>Cinquième</text>')
-    expect(html).toContain('>Sixième</text>')
+    expect(html).toContain('Cinquième')
+    expect(html).toContain('Sixième')
   })
 
   it('gère 2 et 3 pièces avec cartes et points complets', () => {
@@ -84,5 +84,40 @@ describe('Puzzle2Template', () => {
     const data = { type: 'puzzle2', pieces } as unknown as PuzzleData
     const html = renderToString(<Puzzle2Template data={data} />)
     expect((html.match(/data-icon/g) ?? []).length).toBe(4)
+  })
+
+  it('respecte les règles de transparence absolue sans rect de fond ni titre global', () => {
+    const data = { type: 'puzzle2', pieces: basePieces } as unknown as PuzzleData
+    const html = renderToString(<Puzzle2Template data={data} />)
+    expect(html.startsWith('<g>')).toBe(true)
+    expect(html).not.toContain('<rect')
+    expect(html).not.toContain('Brain')
+    expect(html).not.toContain('Puzzle 2')
+  })
+
+  it('ne crash pas si la liste de pieces est vide ou non definie', () => {
+    const emptyData = { type: 'puzzle2', pieces: [] } as unknown as PuzzleData
+    const htmlEmpty = renderToString(<Puzzle2Template data={emptyData} />)
+    expect(htmlEmpty).toBe('<g></g>')
+
+    const undefinedData = { type: 'puzzle2' } as unknown as PuzzleData
+    const htmlUndefined = renderToString(<Puzzle2Template data={undefinedData} />)
+    expect(htmlUndefined).toBe('<g></g>')
+  })
+
+  it('decoupe les titres et sous-titres longs avec tspan et coordonnees x explicites', () => {
+    const longPieces = [
+      {
+        number: 1,
+        title: 'Titre Extrêmement Long Qui Doit Passer Sur Plusieurs Lignes Obligatoirement',
+        subtitle: 'Une description détaillée qui doit elle aussi être découpée en plusieurs lignes distinctes',
+        color: '#2c2b64',
+      },
+    ]
+    const data = { type: 'puzzle2', pieces: longPieces } as unknown as PuzzleData
+    const html = renderToString(<Puzzle2Template data={data} />)
+    expect((html.match(/<tspan/g) ?? []).length).toBeGreaterThan(3)
+    expect(html).toContain('dy="0"')
+    expect(html).toContain('dy="18"')
   })
 })

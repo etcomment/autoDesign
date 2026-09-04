@@ -20,9 +20,11 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
+  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
-  const pieces = data.pieces
+  const pieces = data?.pieces || []
 
   const getElementPos = (elementId: string, defaultRect: { x: number; y: number; width: number; height: number }) => {
     const customPos = templateElementPositions[elementId]
@@ -45,13 +47,26 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
         const centerCx = pieceRect.x + pieceRect.width / 2
         const centerCy = pieceRect.y + pieceRect.height / 2
 
+        const pieceStroke = isPieceSelected ? '#4a90d9' : (tplStrokeColors[pieceId] || 'none')
+        const pieceStrokeWidth = isPieceSelected ? 2 : (tplStrokeWidths[pieceId] ?? 0)
+
         const iconComponent = piece.icon ? resolveTemplateIcon(piece.icon) : undefined
 
         const cardId = `card-${index}`
-        const cardRect = getElementPos(cardId, layout.cardRect)
+        const titleMaxChars = Math.max(10, Math.floor(layout.cardRect.width / 10))
+        const titleLines = piece.title ? wrapTextByWidth(piece.title, titleMaxChars) : []
+        const subtitleLines = piece.subtitle ? wrapTextByWidth(piece.subtitle, SUBTITLE_MAX_CHARS) : []
+
+        const titleLineHeight = 18
+        const totalTitleHeight = Math.max(1, titleLines.length) * titleLineHeight
+        const totalSubtitleHeight = subtitleLines.length * CARD_BODY_LINE_HEIGHT
+        const requiredCardHeight = 24 + totalTitleHeight + totalSubtitleHeight + 10
+        const dynamicCardHeight = Math.max(layout.cardRect.height, requiredCardHeight)
+
+        const baseCardRect = { ...layout.cardRect, height: dynamicCardHeight }
+        const cardRect = getElementPos(cardId, baseCardRect)
         const isCardSelected = selectedIds.has(cardId)
         const cardColor = tplColors[cardId] ?? color
-        const subtitleLines = piece.subtitle ? wrapTextByWidth(piece.subtitle, SUBTITLE_MAX_CHARS) : []
 
         const isCardMoved = Boolean(templateElementPositions[cardId])
         const titleX = isCardMoved
@@ -59,8 +74,8 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
           : layout.titleX
         const titleY = isCardMoved ? cardRect.y + 18 : layout.titleY
         const bodyY = isCardMoved
-          ? (layout.textAnchor === 'middle' ? cardRect.y + 36 : cardRect.y + 42)
-          : layout.bodyY
+          ? cardRect.y + 20 + totalTitleHeight
+          : layout.titleY + totalTitleHeight + (layout.textAnchor === 'middle' ? 2 : 4)
 
         const dotId = `dot-${index}`
         const dotRect = getElementPos(dotId, layout.dotRect)
@@ -92,8 +107,8 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
                 d={layout.path}
                 fill={color}
                 fillRule="evenodd"
-                stroke={isPieceSelected ? '#4a90d9' : 'none'}
-                strokeWidth={isPieceSelected ? 2 : 0}
+                stroke={pieceStroke}
+                strokeWidth={pieceStrokeWidth}
                 strokeLinejoin="round"
               />
               {iconComponent ? (
@@ -131,7 +146,15 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
                 fontWeight="bold"
                 fill={cardColor}
               >
-                {piece.title}
+                {titleLines.map((line, lineIdx) => (
+                  <tspan
+                    key={lineIdx}
+                    x={titleX}
+                    dy={lineIdx === 0 ? 0 : titleLineHeight}
+                  >
+                    {line}
+                  </tspan>
+                ))}
               </text>
               {subtitleLines.length > 0 && (
                 <text
