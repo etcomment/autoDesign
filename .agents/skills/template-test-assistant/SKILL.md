@@ -22,41 +22,38 @@ Chaque critère doit faire l'objet d'une question posée à l'utilisateur, qui t
 ### 2. Déroulement question par question
 Pour chaque critère défini dans `docs/template_rules.md`, poser **une seule question à la fois** :
 
-1. **Règle absolue : Fond transparent & aucun titre/entête global**
+1. **Section 1 : Transparence & Cadrage Global**
    - Question : Le fond du diagramme est-il bien 100% transparent (aucun rect blanc en arrière-plan) et sans aucun titre/entête/logo fixe au-dessus ?
-   - Attendre la réponse : Si validé -> cocher `[x]`. Si KO -> noter le problème et corriger.
 
-2. **Interactivité : Sélection des pièces/jalons/cartes**
-   - Question : En cliquant sur l'élément (corps de la forme, texte ou icône), est-il bien sélectionné avec ses poignées de sélection ?
-   - Attendre la réponse.
+2. **Section 2 : Conformité DSL & Données**
+   - Question : Les icônes déclarées via la syntaxe DSL (`icon:nom`), les titres et les sous-titres s'affichent-ils correctement, et le template résiste-t-il aux données manquantes ?
 
-3. **Interactivité : Déplacement (Drag)**
-   - Question : En déplaçant l'élément à la souris, l'intégralité de la forme (fond SVG, icône, numéro, texte) bouge-t-elle de manière synchronisée ?
-   - Attendre la réponse.
+3. **Section 3 : Géométrie, Capacité & Espacement (N-Éléments)**
+   - Question : En testant avec peu d'éléments (2-3) puis beaucoup (6-10), le template s'adapte-t-il proprement sans crash, sans réduction artificielle et sans chevauchement indésirable ?
 
-4. **Interactivité : Redimensionnement (Resize)**
-   - Question : Les poignées de redimensionnement permettent-elles de modifier la taille correctement sans déformation anormale ?
-   - Attendre la réponse.
+4. **Section 4 : Découpage Textuel & Multi-Lignes**
+   - Question : Les textes longs sont-ils proprement découpés avec un retour à la ligne adapté (pas de texte tronqué au milieu, espacement vertical régulier) ?
 
-5. **Connecteurs / Éléments reliés (si applicable)**
-   - Question : Les lignes ou connecteurs suivent-ils dynamiquement le mouvement des éléments reliés ?
-   - Attendre la réponse.
+5. **Section 5 : Auto-Resize des Textes (Agrandissement & Réduction)**
+   - Question : Lorsqu'on saisit une description longue (ex: 4 à 6 lignes), la carte s'allonge-t-elle automatiquement vers le bas pour accueillir le texte, et rétrécit-elle immédiatement si des lignes sont effacées ?
 
-6. **Résistance au nombre d'éléments ("N éléments")**
-   - Question : En testant avec moins d'éléments (ex: 2 ou 3) puis plus d'éléments (ex: 5 ou 6), le template s'adapte-t-il proprement sans crash ni superposition illisible ?
-   - Attendre la réponse.
+6. **Section 6 : Interactivité, Sélection & Déplacement (Canvas)**
+   - Question : Le clic sélectionne-t-il l'élément avec son cadre et ses poignées (toujours au premier plan), et le drag à la souris déplace-t-il l'élément de manière fluide ?
 
-7. **Icônes & DSL**
-   - Question : Les icônes déclarées via la syntaxe DSL (`icon:nom`) s'affichent-elles correctement et l'autocomplétion des icônes fonctionne-t-elle ?
-   - Attendre la réponse.
+7. **Section 7 : Connecteurs & Ancrages Dynamiques**
+   - Question (si applicable) : Les lignes ou connecteurs suivent-ils dynamiquement le mouvement des éléments reliés ? (Note : à marquer N/A si le template n'en a pas).
 
-8. **Palette de couleurs et thèmes**
-   - Question : Les couleurs respectent-elles l'ordre de priorité (personnalisation panel > DSL > palette MIGSO) ?
-   - Attendre la réponse.
+8. **Section 8 : Cascade des Couleurs**
+   - Question : La priorité des couleurs fonctionne-t-elle correctement (couleur changée dans le panneau de droite > couleur déclarée dans le DSL > palette par défaut MIGSO) ?
 
-9. **Export PPTX / SVG**
-   - Question : L'export (PPTX ou SVG) génère-t-il un rendu fidèle au canvas ?
-   - Attendre la réponse.
+9. **Section 9 : Synchronisation avec le Store Zustand**
+   - Question : Les positions personnalisées sont-elles conservées après re-render et réinitialisées proprement si le nombre d'éléments change ?
+
+10. **Section 10 : Qualité Technique & Export (PPTX / SVG)**
+    - Question : L'export (PPTX et SVG) produit-il un rendu fidèle au canvas sans coupure, sans cadres de sélection parasites et avec des polices lisibles ?
+
+11. **Section 11 : Panneau Propriétés & Édition Bidirectionnelle des Textes**
+    - Question : En sélectionnant un élément, le panneau latéral de droite affiche-t-il bien ses informations (titre, description) et la modification d'un champ met-elle à jour le canvas en temps réel ?
 
 ### 3. Gestion des anomalies
 - Dès que l'utilisateur signale un problème sur un critère :
