@@ -181,7 +181,7 @@ export async function getContentSvg(): Promise<string> {
   if (gridRect) gridRect.remove()
 
   // Remove selection marquee or interactive handles
-  clonedGroup.querySelectorAll('[stroke-dasharray="4 2"], .handle, rect[fill*="rgba(74, 144, 217"]').forEach(el => el.remove())
+  clonedGroup.querySelectorAll('[stroke-dasharray="4 2"], [stroke-dasharray="4 4"], .handle, [data-handle], rect[fill*="rgba(74, 144, 217"]').forEach(el => el.remove())
 
   // Remove data-shape-id if present
   clonedGroup.querySelectorAll('[data-shape-id]').forEach(el => {

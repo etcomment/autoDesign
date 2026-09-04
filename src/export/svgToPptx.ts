@@ -159,9 +159,10 @@ function getAbsBounds(el: SVGGraphicsElement, svgRoot: SVGSVGElement): AbsBounds
   pt.y = ly + lh / 2
   const center = pt.matrixTransform(ctm)
 
-  const scale = Math.hypot(ctm.a, ctm.b)
-  const absW = lw * scale
-  const absH = lh * scale
+  const scaleX = Math.hypot(ctm.a, ctm.b)
+  const scaleY = Math.hypot(ctm.c, ctm.d)
+  const absW = lw * scaleX
+  const absH = lh * scaleY
   const absX = center.x - absW / 2
   const absY = center.y - absH / 2
 
@@ -321,6 +322,8 @@ function addPolygonToSlide(
 }
 
 async function getElementAsSvgImage(el: SVGGraphicsElement, bbox: DOMRect | SVGRect, defsString: string): Promise<string> {
+  const cloned = el.cloneNode(true) as SVGGraphicsElement
+  cloned.removeAttribute('transform')
   const sw = parseFloat(el.getAttribute('stroke-width') || window.getComputedStyle(el).strokeWidth || '0')
   const strokePad = isNaN(sw) ? 0 : sw / 2
   const pad = 4 + strokePad
@@ -328,7 +331,7 @@ async function getElementAsSvgImage(el: SVGGraphicsElement, bbox: DOMRect | SVGR
   const vbY = bbox.y - pad
   const vbW = bbox.width + pad * 2
   const vbH = bbox.height + pad * 2
-  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" width="${vbW}" height="${vbH}">${defsString}${el.outerHTML}</svg>`
+  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" width="${vbW}" height="${vbH}">${defsString}${cloned.outerHTML}</svg>`
   
   // PptxGenJS v3.7+ natively supports data:image/svg+xml.
   // PowerPoint will embed this as a true vector SVG file inside the PPTX media folder.
@@ -350,17 +353,12 @@ async function addElementAsImageToSlide(
     if (bbox.width <= 0 || bbox.height <= 0) return
     const svgDataUri = await getElementAsSvgImage(el, bbox, defsString)
     
-    let ctmScale = 1
-    try {
-      const ctm = el.getCTM()
-      if (ctm) ctmScale = Math.hypot(ctm.a, ctm.b)
-    } catch {}
-
     const sw = parseFloat(el.getAttribute('stroke-width') || window.getComputedStyle(el).strokeWidth || '0')
     const strokePad = isNaN(sw) ? 0 : sw / 2
-    const padAbs = (4 + strokePad) * ctmScale
-    const padW = padAbs * layout.scaleX
-    const padH = padAbs * layout.scaleY
+    const padScaleX = bounds.w / (bbox.width || 1)
+    const padScaleY = bounds.h / (bbox.height || 1)
+    const padW = (4 + strokePad) * padScaleX * layout.scaleX
+    const padH = (4 + strokePad) * padScaleY * layout.scaleY
     const imgOpts: PptxGenJS.ImageProps = {
       data: svgDataUri,
       x: toSlideX(bounds.x, vb, layout) - padW,
@@ -494,8 +492,10 @@ function addTextToSlide(
 }
 
 function isInteractiveElement(el: Element): boolean {
+  const dash = el.getAttribute('stroke-dasharray')
   return (
-    el.getAttribute('stroke-dasharray') === '4 2' ||
+    dash === '4 2' ||
+    dash === '4 4' ||
     el.classList.contains('handle') ||
     el.getAttribute('data-handle') !== null ||
     el.getAttribute('fill') === 'url(#grid)'
