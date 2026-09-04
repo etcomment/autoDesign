@@ -159,9 +159,10 @@ function getAbsBounds(el: SVGGraphicsElement, svgRoot: SVGSVGElement): AbsBounds
   pt.y = ly + lh / 2
   const center = pt.matrixTransform(ctm)
 
-  const scale = Math.hypot(ctm.a, ctm.b)
-  const absW = lw * scale
-  const absH = lh * scale
+  const scaleX = Math.hypot(ctm.a, ctm.b)
+  const scaleY = Math.hypot(ctm.c, ctm.d)
+  const absW = lw * scaleX
+  const absH = lh * scaleY
   const absX = center.x - absW / 2
   const absY = center.y - absH / 2
 
@@ -321,6 +322,8 @@ function addPolygonToSlide(
 }
 
 async function getElementAsSvgImage(el: SVGGraphicsElement, bbox: DOMRect | SVGRect, defsString: string): Promise<string> {
+  const cloned = el.cloneNode(true) as SVGGraphicsElement
+  cloned.removeAttribute('transform')
   const sw = parseFloat(el.getAttribute('stroke-width') || window.getComputedStyle(el).strokeWidth || '0')
   const strokePad = isNaN(sw) ? 0 : sw / 2
   const pad = 4 + strokePad
@@ -328,7 +331,7 @@ async function getElementAsSvgImage(el: SVGGraphicsElement, bbox: DOMRect | SVGR
   const vbY = bbox.y - pad
   const vbW = bbox.width + pad * 2
   const vbH = bbox.height + pad * 2
-  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" width="${vbW}" height="${vbH}">${defsString}${el.outerHTML}</svg>`
+  const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" width="${vbW}" height="${vbH}">${defsString}${cloned.outerHTML}</svg>`
   
   // PptxGenJS v3.7+ natively supports data:image/svg+xml.
   // PowerPoint will embed this as a true vector SVG file inside the PPTX media folder.
@@ -350,17 +353,12 @@ async function addElementAsImageToSlide(
     if (bbox.width <= 0 || bbox.height <= 0) return
     const svgDataUri = await getElementAsSvgImage(el, bbox, defsString)
     
-    let ctmScale = 1
-    try {
-      const ctm = el.getCTM()
-      if (ctm) ctmScale = Math.hypot(ctm.a, ctm.b)
-    } catch {}
-
     const sw = parseFloat(el.getAttribute('stroke-width') || window.getComputedStyle(el).strokeWidth || '0')
     const strokePad = isNaN(sw) ? 0 : sw / 2
-    const padAbs = (4 + strokePad) * ctmScale
-    const padW = padAbs * layout.scaleX
-    const padH = padAbs * layout.scaleY
+    const padScaleX = bounds.w / (bbox.width || 1)
+    const padScaleY = bounds.h / (bbox.height || 1)
+    const padW = (4 + strokePad) * padScaleX * layout.scaleX
+    const padH = (4 + strokePad) * padScaleY * layout.scaleY
     const imgOpts: PptxGenJS.ImageProps = {
       data: svgDataUri,
       x: toSlideX(bounds.x, vb, layout) - padW,
@@ -455,19 +453,34 @@ function addTextToSlide(
 
   if (!bounds) return
 
-  const x = toSlideX(bounds.x, vb, layout)
+  const rawW = toSlideW(bounds.w, layout)
+  const rawH = toSlideH(bounds.h, layout)
+  const extraW = Math.max(0.15, rawW * 0.15)
+  const w = Math.max(0.2, rawW + extraW)
+  const h = Math.max(0.15, rawH + 0.1)
+
+  let x = toSlideX(bounds.x, vb, layout)
+  if (textAnchor === 'middle') {
+    x -= extraW / 2
+  } else if (textAnchor === 'end') {
+    x -= extraW
+  }
   const y = toSlideY(bounds.y, vb, layout)
-  const w = Math.max(0.2, toSlideW(bounds.w, layout))
-  const h = Math.max(0.15, toSlideH(bounds.h, layout))
-  const pptxFontSize = Math.max(6, Math.round(fontSizePx * ctmScale * layout.scaleX * 72))
+
+  const pptxFontSize = Math.max(6, Math.round(fontSizePx * ctmScale * 0.75))
 
   let align: PptxGenJS.HAlign = 'left'
   if (textAnchor === 'middle') align = 'center'
   else if (textAnchor === 'end') align = 'right'
 
+  const fontWeightRaw = el.getAttribute('font-weight') || computed.fontWeight || 'normal'
+  const isBold = fontWeightRaw === 'bold' || parseInt(fontWeightRaw) >= 600
+  const fontStyleRaw = el.getAttribute('font-style') || computed.fontStyle || 'normal'
+  const isItalic = fontStyleRaw === 'italic' || fontStyleRaw === 'oblique'
+
   const tspans = Array.from(el.querySelectorAll('tspan'))
   const textValue: string | PptxGenJS.TextProps[] = tspans.length > 1
-    ? tspans.map((ts, i) => ({ text: ts.textContent || '', options: { breakLine: i < tspans.length - 1 } }))
+    ? tspans.map((ts, i) => ({ text: ts.textContent || '', options: { breakLine: i < tspans.length - 1, bold: isBold, italic: isItalic } }))
     : content
 
   const textProps: PptxGenJS.TextPropsOptions = {
@@ -478,6 +491,8 @@ function addTextToSlide(
     fontSize: pptxFontSize,
     fontFace: fontFamily,
     color: hexColor,
+    bold: isBold,
+    italic: isItalic,
     align,
     valign: 'top',
     margin: 0,
@@ -494,8 +509,10 @@ function addTextToSlide(
 }
 
 function isInteractiveElement(el: Element): boolean {
+  const dash = el.getAttribute('stroke-dasharray')
   return (
-    el.getAttribute('stroke-dasharray') === '4 2' ||
+    dash === '4 2' ||
+    dash === '4 4' ||
     el.classList.contains('handle') ||
     el.getAttribute('data-handle') !== null ||
     el.getAttribute('fill') === 'url(#grid)'

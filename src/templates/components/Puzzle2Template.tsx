@@ -1,81 +1,19 @@
-import { useRef, type ReactElement } from 'react'
+import { useRef, createElement, type ReactElement } from 'react'
 import type { PuzzleData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
-import { TEMPLATE_ICONS } from '../shared/icons'
+import { resolveTemplateIcon } from '../shared/icons'
 import { MIGSO_PALETTE } from '../../lib/theme'
+import {
+  DOT_RADIUS,
+  CARD_BODY_LINE_HEIGHT,
+  computePuzzle2PieceLayout,
+} from '../shared/puzzle2Geometry'
 
-const CELL_W = 150
-const CELL_H = 130
-
-type Tab = { right?: boolean; bottom?: boolean; leftIndent?: boolean; topIndent?: boolean }
-
-function piecePathStaggered(x: number, y: number, t: Tab): string {
-  const r = x + CELL_W
-  const b = y + CELL_H
-  const midX = x + CELL_W / 2
-  const midY = y + CELL_H / 2
-  const neckW = 18
-  const headR = 14
-  const neckR = 6
-
-  const hMid = midY
-  const vMid = midX
-
-  let d = `M ${x} ${y}`
-
-  if (t.topIndent) {
-    d += ` L ${vMid - neckW / 2 - neckR} ${y}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid - neckW / 2} ${y + neckR}`
-    d += ` A ${headR} ${headR} 0 1 0 ${vMid + neckW / 2} ${y + neckR}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid + neckW / 2 + neckR} ${y}`
-    d += ` L ${r} ${y}`
-  } else {
-    d += ` L ${r} ${y}`
-  }
-
-  if (t.right) {
-    d += ` L ${r} ${hMid - neckW / 2 - neckR}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${r + neckR} ${hMid - neckW / 2}`
-    d += ` A ${headR} ${headR} 0 1 1 ${r + neckR} ${hMid + neckW / 2}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${r} ${hMid + neckW / 2 + neckR}`
-    d += ` L ${r} ${b}`
-  } else {
-    d += ` L ${r} ${b}`
-  }
-
-  if (t.bottom) {
-    d += ` L ${vMid + neckW / 2 + neckR} ${b}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid + neckW / 2} ${b + neckR}`
-    d += ` A ${headR} ${headR} 0 1 1 ${vMid - neckW / 2} ${b + neckR}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid - neckW / 2 - neckR} ${b}`
-    d += ` L ${x} ${b}`
-  } else {
-    d += ` L ${x} ${b}`
-  }
-
-  if (t.leftIndent) {
-    d += ` L ${x} ${hMid + neckW / 2 + neckR}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${x + neckR} ${hMid + neckW / 2}`
-    d += ` A ${headR} ${headR} 0 1 0 ${x + neckR} ${hMid - neckW / 2}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${x} ${hMid - neckW / 2 - neckR}`
-    d += ` L ${x} ${y}`
-  }
-
-  d += ' Z'
-  return d
-}
-
-const PIECE_CONFIGS: { xOffset: number; yOffset: number; tabs: Tab }[] = [
-  { xOffset: 250, yOffset: 80, tabs: { right: true, bottom: true } },
-  { xOffset: 350, yOffset: 175, tabs: { right: true, bottom: true, leftIndent: true, topIndent: true } },
-  { xOffset: 450, yOffset: 80, tabs: { right: true, bottom: true, leftIndent: true, topIndent: true } },
-  { xOffset: 550, yOffset: 175, tabs: { leftIndent: true, topIndent: true } },
-]
-
-const DEFAULT_COLORS_P2 = ['#2c2b64', '#3466ce', '#ff5338', '#ffc000']
-const DEFAULT_ICONS_P2 = ['clock', 'gear', 'briefcase', 'user']
+const TITLE_FONT_SIZE = 16.7
+const BODY_FONT_SIZE = 14.6
+const SUBTITLE_MAX_CHARS = 21
 
 export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -86,71 +24,114 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
-  const { pieces } = data
+  const pieces = data?.pieces || []
 
-  const getElementPos = (elementId: string, defaultRect: { x: number; y: number; width: number; height: number }) => {
+  const getElementPos = (
+    elementId: string,
+    defaultRect: { x: number; y: number; width: number; height: number },
+    deltaY: number = 0
+  ) => {
     const customPos = templateElementPositions[elementId]
+    if (!customPos) return defaultRect
     return {
-      x: customPos ? customPos.x : defaultRect.x,
-      y: customPos ? customPos.y : defaultRect.y,
-      width: customPos?.width || defaultRect.width,
-      height: customPos?.height || defaultRect.height,
+      x: customPos.x,
+      y: customPos.y - deltaY,
+      width: customPos.width || defaultRect.width,
+      height: Math.max(customPos.height || 0, defaultRect.height),
     }
   }
 
+  const selectedOverlays: Array<{ id: string; rect: { x: number; y: number; width: number; height: number }; isPiece?: boolean }> = []
+
   return (
     <g ref={svgRef}>
-      {pieces.slice(0, 4).map((piece, index) => {
-        const config = PIECE_CONFIGS[index % PIECE_CONFIGS.length]!
-        const px = config.xOffset
-        const py = config.yOffset
-        const path = piecePathStaggered(px, py, config.tabs)
-
-        const defaultColor = piece.color || DEFAULT_COLORS_P2[index] || MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
+      {pieces.map((piece, index) => {
+        const layout = computePuzzle2PieceLayout(index, pieces.length)
         const pieceId = `piece-${index}`
-        const color = tplColors[pieceId] ?? defaultColor
-        const stroke = tplStrokeColors[pieceId] || 'white'
-        const strokeWidth = tplStrokeWidths[pieceId] ?? (selectedIds.has(pieceId) ? 3.5 : 2)
+        const color = tplColors[pieceId] ?? piece.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
         const isPieceSelected = selectedIds.has(pieceId)
-
-        const pieceRect = getElementPos(pieceId, { x: px, y: py, width: CELL_W, height: CELL_H })
+        const pieceRect = getElementPos(pieceId, layout.box)
         const centerCx = pieceRect.x + pieceRect.width / 2
         const centerCy = pieceRect.y + pieceRect.height / 2
 
-        const iconName = piece.icon || DEFAULT_ICONS_P2[index]
-        const IconComponent = iconName ? TEMPLATE_ICONS[iconName] || TEMPLATE_ICONS[iconName.toLowerCase()] : undefined
+        const customStrokeColor = tplStrokeColors[pieceId]
+        const customStrokeWidth = tplStrokeWidths[pieceId]
+        const hasCustomWidth = customStrokeWidth !== undefined && customStrokeWidth > 0
+        const hasCustomColor = Boolean(customStrokeColor && customStrokeColor !== 'none' && customStrokeColor !== 'transparent')
 
-        const isLeft = index < 2
-        const isTop = index % 2 === 0
+        let pieceStroke = 'none'
+        let pieceStrokeWidth = 0
+        if (hasCustomColor) {
+          pieceStroke = customStrokeColor!
+          pieceStrokeWidth = customStrokeWidth ?? 2
+        } else if (hasCustomWidth) {
+          pieceStroke = '#333333'
+          pieceStrokeWidth = customStrokeWidth!
+        }
+
+        const dx = pieceRect.x - layout.box.x
+        const dy = pieceRect.y - layout.box.y
+        const scaleX = layout.box.width > 0 ? pieceRect.width / layout.box.width : 1
+        const scaleY = layout.box.height > 0 ? pieceRect.height / layout.box.height : 1
+
+        let pieceTransform: string | undefined
+        if (scaleX !== 1 || scaleY !== 1) {
+          pieceTransform = `translate(${pieceRect.x}, ${pieceRect.y}) scale(${scaleX}, ${scaleY}) translate(${-layout.box.x}, ${-layout.box.y})`
+        } else if (dx !== 0 || dy !== 0) {
+          pieceTransform = `translate(${dx}, ${dy})`
+        }
+
+        const iconComponent = piece.icon ? resolveTemplateIcon(piece.icon) : undefined
+
         const cardId = `card-${index}`
-        const defaultCardX = isLeft ? 50 : 720
-        const defaultCardY = isTop ? 75 : 235
-        const cardRect = getElementPos(cardId, { x: defaultCardX, y: defaultCardY, width: 230, height: 95 })
+        const titleMaxChars = Math.max(10, Math.floor(layout.cardRect.width / 10))
+        const titleLines = piece.title ? wrapTextByWidth(piece.title, titleMaxChars) : []
+        const subtitleLines = piece.subtitle ? wrapTextByWidth(piece.subtitle, SUBTITLE_MAX_CHARS) : []
+
+        const titleLineHeight = 18
+        const totalTitleHeight = Math.max(1, titleLines.length) * titleLineHeight
+        const totalSubtitleHeight = subtitleLines.length * CARD_BODY_LINE_HEIGHT
+        const requiredCardHeight = 24 + totalTitleHeight + totalSubtitleHeight + 10
+        const dynamicCardHeight = Math.max(layout.cardRect.height, requiredCardHeight)
+        const deltaHeight = Math.max(0, dynamicCardHeight - layout.cardRect.height)
+        const upwardShift = layout.isTop ? deltaHeight : 0
+
+        const baseCardY = layout.cardRect.y - upwardShift
+        const baseCardRect = { ...layout.cardRect, y: baseCardY, height: dynamicCardHeight }
+        const cardRect = getElementPos(cardId, baseCardRect, upwardShift)
         const isCardSelected = selectedIds.has(cardId)
         const cardColor = tplColors[cardId] ?? color
 
-        const dotId = `dot-${index}`
-        const dotX = isLeft ? cardRect.x + cardRect.width + 12 : cardRect.x - 12
-        const dotY = cardRect.y + 16
+        const isCardMoved = Boolean(templateElementPositions[cardId])
+        const titleX = isCardMoved
+          ? (layout.textAnchor === 'middle' ? cardRect.x + cardRect.width / 2 : cardRect.x + 4)
+          : layout.titleX
+        const titleY = cardRect.y + 18
+        const bodyY = cardRect.y + 20 + totalTitleHeight
 
-        const titleMaxChars = Math.max(10, Math.floor(cardRect.width / 10))
-        const subtitleMaxChars = Math.max(12, Math.floor(cardRect.width / 7.5))
-        const titleLines = wrapTextByWidth(piece.title, titleMaxChars)
-        const subtitleLines = piece.subtitle ? wrapTextByWidth(piece.subtitle, subtitleMaxChars) : []
+        const dotId = `dot-${index}`
+        const dotRect = getElementPos(dotId, layout.dotRect)
+        const isDotSelected = selectedIds.has(dotId)
+        const dotColor = tplColors[dotId] ?? cardColor
+        const isDotMoved = Boolean(templateElementPositions[dotId])
+        const dotCx = isDotMoved ? dotRect.x + dotRect.width / 2 : layout.dot.x
+        const dotCy = isDotMoved ? dotRect.y + dotRect.height / 2 : layout.dot.y
+
+        if (isDotSelected) selectedOverlays.push({ id: dotId, rect: dotRect })
+        if (isPieceSelected) selectedOverlays.push({ id: pieceId, rect: pieceRect, isPiece: true })
+        if (isCardSelected) selectedOverlays.push({ id: cardId, rect: cardRect })
 
         return (
           <g key={`item-p2-${index}`}>
-            {/* POINT D'INDICATION */}
-            <g data-element-id={dotId}>
-              <circle
-                cx={dotX}
-                cy={dotY}
-                r={6}
-                fill={cardColor}
-              />
+            <g
+              data-element-id={dotId}
+              onMouseDown={e => startDrag(e, dotId, dotRect)}
+              transform={getTransform(dotId, dotRect)}
+              style={{ cursor: 'pointer' }}
+            >
+              <circle cx={dotCx} cy={dotCy} r={DOT_RADIUS} fill={dotColor} />
             </g>
 
-            {/* PIECE DE PUZZLE */}
             <g
               data-element-id={pieceId}
               onMouseDown={e => startDrag(e, pieceId, pieceRect)}
@@ -158,41 +139,34 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
               style={{ cursor: 'pointer' }}
             >
               <path
-                d={path}
+                d={layout.path}
+                transform={pieceTransform}
                 fill={color}
-                stroke={isPieceSelected ? '#4a90d9' : stroke}
-                strokeWidth={strokeWidth}
+                fillRule="evenodd"
+                stroke={pieceStroke}
+                strokeWidth={pieceStrokeWidth}
                 strokeLinejoin="round"
               />
-              <circle
-                cx={centerCx}
-                cy={centerCy}
-                r={22}
-                fill="rgba(255,255,255,0.2)"
-                stroke="rgba(255,255,255,0.8)"
-                strokeWidth={2}
-              />
-              {IconComponent ? (
-                <g data-icon="true" transform={`translate(${centerCx - 11}, ${centerCy - 11})`}>
-                  <IconComponent size={22} color="white" />
+              {iconComponent ? (
+                <g data-icon="true" pointerEvents="none" transform={`translate(${centerCx - 24}, ${centerCy - 24})`}>
+                  {createElement(iconComponent, { size: 48, color: 'white' })}
                 </g>
               ) : (
                 <text
                   x={centerCx}
-                  y={centerCy + 6}
+                  y={centerCy + 7}
                   textAnchor="middle"
                   fontFamily="Arial, sans-serif"
-                  fontSize={16}
-                  fontWeight={700}
+                  fontSize={20}
+                  fontWeight="bold"
                   fill="white"
+                  pointerEvents="none"
                 >
                   {piece.number ?? index + 1}
                 </text>
               )}
-              {isPieceSelected && renderHandles(pieceRect, pieceId)}
             </g>
 
-            {/* CARTE DE TEXTE EXTERNE */}
             <g
               data-element-id={cardId}
               onMouseDown={e => startDrag(e, cardId, cardRect)}
@@ -200,43 +174,67 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
               style={{ cursor: 'pointer' }}
             >
               <text
-                x={isLeft ? cardRect.x + cardRect.width : cardRect.x}
-                y={cardRect.y + 16}
-                textAnchor={isLeft ? 'end' : 'start'}
+                x={titleX}
+                y={titleY}
+                textAnchor={layout.textAnchor}
                 fontFamily="Arial, sans-serif"
-                fontSize={18}
+                fontSize={TITLE_FONT_SIZE}
                 fontWeight="bold"
                 fill={cardColor}
               >
-                {titleLines.map((line, lIdx) => (
-                  <tspan key={lIdx} x={isLeft ? cardRect.x + cardRect.width : cardRect.x} dy={lIdx === 0 ? 0 : 20}>
+                {titleLines.map((line, lineIdx) => (
+                  <tspan
+                    key={lineIdx}
+                    x={titleX}
+                    dy={lineIdx === 0 ? 0 : titleLineHeight}
+                  >
                     {line}
                   </tspan>
                 ))}
               </text>
-
               {subtitleLines.length > 0 && (
                 <text
-                  x={isLeft ? cardRect.x + cardRect.width : cardRect.x}
-                  y={cardRect.y + 22 + titleLines.length * 20}
-                  textAnchor={isLeft ? 'end' : 'start'}
+                  x={titleX}
+                  y={bodyY}
+                  textAnchor={layout.textAnchor}
                   fontFamily="Arial, sans-serif"
-                  fontSize={12}
-                  fill="#555555"
+                  fontSize={BODY_FONT_SIZE}
+                  fill="black"
                 >
-                  {subtitleLines.map((line, lIdx) => (
-                    <tspan key={lIdx} x={isLeft ? cardRect.x + cardRect.width : cardRect.x} dy={lIdx === 0 ? 0 : 15}>
+                  {subtitleLines.map((line, lineIdx) => (
+                    <tspan
+                      key={lineIdx}
+                      x={titleX}
+                      dy={lineIdx === 0 ? 0 : CARD_BODY_LINE_HEIGHT}
+                    >
                       {line}
                     </tspan>
                   ))}
                 </text>
               )}
-              {isCardSelected && renderHandles(cardRect, cardId)}
             </g>
           </g>
         )
       })}
+      {selectedOverlays.map(item => (
+        <g key={`overlay-${item.id}`}>
+          {item.isPiece && (
+            <rect
+              data-selection-box="true"
+              x={item.rect.x}
+              y={item.rect.y}
+              width={item.rect.width}
+              height={item.rect.height}
+              fill="none"
+              stroke="#4a90d9"
+              strokeWidth={1.5}
+              strokeDasharray="4 4"
+              pointerEvents="none"
+            />
+          )}
+          {renderHandles(item.rect, item.id)}
+        </g>
+      ))}
     </g>
   )
 }
-

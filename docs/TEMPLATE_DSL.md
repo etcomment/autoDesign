@@ -504,8 +504,33 @@ Pour la quasi-totalité des éléments de liste (`milestone`, `step`, `block`, `
 
 **Variantes supportées** : `pieChart`, `pieChart2`, `pieChart3`, `pieChart4`, `pieChart5`.
 
+Composants : `PieChart1Template.tsx` à `PieChart5Template.tsx`, géométrie partagée dans
+`src/templates/shared/pieGeometry.ts` (`donutSlicePath`, `donutSliceGapPath` — la technique
+`asin(gap/2/r)` garantit un espace de largeur constante entre les parts des anneaux).
+
 #### Syntaxe et sous-commandes :
-* `slice "Libellé" <valeur> ["Description"] [pct:"x%"] [#HEX]` : Une part du camembert. La `<valeur>` numérique détermine la taille de l'angle.
+* `slice "Libellé" <valeur%> ["Description"] [pct:"x%"] [icon:Nom] [#HEX]` : une part du camembert.
+
+Champs :
+| Champ | Obligatoire | Rôle |
+| --- | --- | --- |
+| `Libellé` | oui | Texte affiché dans la part (et la légende) |
+| `<valeur%>` | non | **Pourcentage littéral** de la part (voir sémantique ci-dessous) |
+| `"Description"` | non | Sous-titre de la part |
+| `pct:"x%"` | non | Pourcentage affiché (libellé) |
+| `icon:Nom` | non | Nom d'icône Lucide (parsé mais non rendu par PieChart1-5) |
+| `#HEX` | non | Couleur de la part ; sinon palette MIGSO (`MIGSO_PALETTE`) cyclée par index |
+
+#### Sémantique exacte de `value`
+La `value` est un **pourcentage littéral** (0-100), pas un poids à normaliser : l'angle
+couvert par la part vaut `value/100 × 2π` radians (fonction `sliceBounds` de
+`pieGeometry.ts`). Conséquences :
+* Somme de `value` = 100 → cercle complet.
+* Somme < 100 → cercle incomplet (l'espace restant n'est pas attribué).
+* Parts sans `value` (ou `value` ≤ 0) : elles se **partagent également le reste** jusqu'à 100 %.
+* Première part démarrant à `-π/2` (haut du cercle, sens horaire).
+* Le parser accepte un titre dans l'en-tête (`@pieChart5 "Titre"`) mais les composants
+  PieChart1-5 ne l'affichent pas : le rendu est sans bandeau de titre.
 
 #### Exemple : Camembert de Répartition (`@pieChart5`)
 ```
@@ -514,4 +539,43 @@ Pour la quasi-totalité des éléments de liste (`milestone`, `step`, `block`, `
   slice "Part 02" 35 "Deuxième segment" pct:"35%" #3366cc
   slice "Part 03" 20 "Troisième segment" pct:"20%" #ff5338
   slice "Part 04" 30 "Quatrième segment" pct:"30%" #f2cb13
+```
+
+---
+
+### 3.21 Templates Importés (`imported*`)
+
+Templates générés depuis une slide PowerPoint (.pptx/.potx) via le moteur d'import
+vectoriel (pptx-svg). Chaque élément de la slide devient un `item` identifié par son
+`data-ooxml-id` ; le rendu vectoriel exact est conservé, seuls les textes et
+couleurs sont pilotables par le DSL. Voir [IMPORT_ENGINE.md](./IMPORT_ENGINE.md)
+pour le pipeline complet.
+
+**Variantes supportées** : le parser accepte **tout type commençant par `imported`**
+(ex: `importedRoadmapSlide12`, `importedPieSlide12`, `importedX`...). Le nom est attribué
+à l'import via `sanitizeImportedName` (`src/templates/import/generateImportedComponent.ts`)
+qui garantit un identifiant alphanumérique préfixé `imported`.
+
+#### Syntaxe et sous-commandes :
+* `item "ooxmlId" ["Titre"] ["Sous-titre"] [#HEX]` : élément importé (identifiant
+  technique + textes de substitution + couleur de surcharge).
+
+Champs :
+| Champ | Obligatoire | Rôle |
+| --- | --- | --- |
+| `ooxmlId` | oui | Identifiant technique de l'élément (ou `shape-N` si absent du SVG) |
+| `Titre` | non | Remplace le premier `<text>` de l'élément au rendu |
+| `Sous-titre` | non | Remplace le deuxième `<text>` de l'élément |
+| `#HEX` (ou `color:`) | non | Surcharge la couleur de remplissage (attributs `fill` non `url()`/`none`) |
+
+Les modificateurs `val:`, `pct:`, `icon:`, `date:`, `lane:` sont tolérés par le parser
+mais ignorés au rendu. La sérialisation inverse (`generateDslText`) réémet les champs
+`item` en préservant titre, sous-titre et couleur (aller-retour DSL ↔ données sans perte).
+
+#### Exemple
+```
+@importedRoadmapSlide12
+  item "shape-1" "Vision" "Direction stratégique" #2c2b64
+  item "shape-2" "Exécution"
+  item "shape-3"
 ```

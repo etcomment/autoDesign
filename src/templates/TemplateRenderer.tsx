@@ -42,6 +42,7 @@ import type {
   ValueChain5Data,
   CircleData,
   PieData,
+  ImportedTemplateData,
 } from './types'
 import { useTemplateStore } from './store'
 
@@ -164,6 +165,7 @@ import { ValueChain3Template } from './components/ValueChain3Template'
 import { ValueChain4Template } from './components/ValueChain4Template'
 import { ValueChain5Template } from './components/ValueChain5Template'
 import { CircleTemplate } from './components/Circle2Template'
+import { ImportedSvgTemplate } from './components/ImportedSvgTemplate'
 import { PieChart1Template } from './components/PieChart1Template'
 import { PieChart2Template } from './components/PieChart2Template'
 import { PieChart3Template } from './components/PieChart3Template'
@@ -304,11 +306,12 @@ export function TemplateRenderer(): ReactElement | null {
   const templateData = useTemplateStore(s => s.templateData)
   const isTemplateHidden = useTemplateStore(s => s.isTemplateHidden)
   const hiddenTemplateElementIds = useTemplateStore(s => s.hiddenTemplateElementIds)
+  const importedTemplate = useTemplateStore(s => (activeTemplate ? s.importedTemplates[activeTemplate] : undefined))
 
   if (!activeTemplate || !templateData || isTemplateHidden) return null
 
   const Component = TEMPLATE_MAP[activeTemplate]
-  if (!Component) return null
+  if (!Component && !importedTemplate) return null
 
   const hideRules = Array.from(hiddenTemplateElementIds)
     .map(id => {
@@ -327,7 +330,11 @@ export function TemplateRenderer(): ReactElement | null {
   return (
     <g pointerEvents="all">
       {hideRules ? <style>{hideRules}</style> : null}
-      <Component data={templateData} />
+      {Component ? (
+        <Component data={templateData} />
+      ) : (
+        <ImportedSvgTemplate slide={importedTemplate!.slide} data={templateData as ImportedTemplateData} />
+      )}
     </g>
   )
 }

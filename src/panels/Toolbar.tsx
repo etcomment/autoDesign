@@ -93,9 +93,16 @@ export function Toolbar({
     clearSelection()
   }
 
-  const handleExportSvg = () => {
+  const prepareForExport = async () => {
+    useDiagramStore.getState().clearSelection()
+    useTemplateStore.getState().clearTemplateElementSelection()
+    await new Promise(resolve => setTimeout(resolve, 50))
+  }
+
+  const handleExportSvg = async () => {
+    await prepareForExport()
     try {
-      downloadContentSvg()
+      await downloadContentSvg()
     } catch {
       return
     }
@@ -103,18 +110,21 @@ export function Toolbar({
   }
 
   const handleExportPng = async () => {
+    await prepareForExport()
     const blob = await generateCanvasPng()
     downloadBlob(blob, 'diagram.png')
     setExportOpen(false)
   }
 
   const handleExportJpg = async () => {
+    await prepareForExport()
     const blob = await generateCanvasJpg()
     downloadBlob(blob, 'diagram.jpg')
     setExportOpen(false)
   }
 
   const handleExportPptx = async () => {
+    await prepareForExport()
     await downloadCanvasPptx()
     setExportOpen(false)
   }

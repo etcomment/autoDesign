@@ -99,8 +99,8 @@ export function elementLabel(elementId: string): string {
     milestone: 'Jalon', circle: 'Cercle Jaune', block: 'Bloc', step: 'Étape', piece: 'Pièce',
     level: 'Niveau', section: 'Section', metric: 'Métrique', row: 'Ligne',
     item: 'Élément', node: 'Nœud', station: 'Station', branch: 'Branche',
-    primary: 'Activité', support: 'Support', card: 'Carte Jalon', desc: 'Description Jalon', bubble: 'Bulle Jalon',
-    date: 'Date Jalon', year: 'Année / Trimestre', arrow: 'Flèche Objectif', badge: 'Badge Objectif', target: 'Cible',
+    primary: 'Activité', support: 'Support', card: 'Carte', desc: 'Description Jalon', bubble: 'Bulle Jalon',
+    dot: 'Point', date: 'Date Jalon', year: 'Année / Trimestre', arrow: 'Flèche Objectif', badge: 'Badge Objectif', target: 'Cible',
     timeline: 'Chronologie', start: 'Début', finish: 'Fin', chevron: 'Chevron',
   }
   const label = labels[parsed.prefix] ?? parsed.prefix

@@ -44,6 +44,8 @@ import type {
   GoalsMetric,
   CircleData,
   CircleSegment,
+  ImportedItemData,
+  ImportedTemplateData,
   PieData,
   PieSlice,
   TemplateLane,
@@ -249,6 +251,12 @@ export function parseTemplateDsl(dsl: string): TemplateData | null {
 
   if (result) {
     (result as unknown as Record<string, unknown>).type = header.type
+  }
+  if (!result && baseType.startsWith('imported')) {
+    result = parseImportedTemplate(trimmed, header.title)
+    if (result) {
+      (result as unknown as Record<string, unknown>).type = header.type
+    }
   }
   return result
 }
@@ -1454,6 +1462,34 @@ function parsePieChart(dsl: string, headerTitle?: string): PieData {
   return { type: 'pieChart', title, slices }
 }
 
+// Templates importés depuis PowerPoint : `item "ooxmlId" "Titre" ["Sous-titre"] [#HEX]`
+function parseImportedTemplate(dsl: string, headerTitle?: string): ImportedTemplateData {
+  const lines = getLines(dsl)
+  let title: string | undefined = headerTitle
+  const importedItems: ImportedItemData[] = []
+
+  for (const line of lines) {
+    const tokens = tokenizeLine(line)
+    if (tokens.tokens[0] === 'item' && tokens.tokens.length >= 2) {
+      const args = tokens.tokens.slice(1)
+      const isTrailing = (arg: string) => arg.startsWith('#') || /^(val|pct|icon|date|lane|color):/.test(arg)
+      let positionalCount = 0
+      while (positionalCount < args.length && positionalCount < 3 && !isTrailing(args[positionalCount]!)) {
+        positionalCount++
+      }
+      const trailing = extractTrailingArgs(args, positionalCount)
+      importedItems.push({
+        ooxmlId: stripQuotes(args[0]!),
+        title: positionalCount >= 2 ? stripQuotes(args[1]!) : undefined,
+        subtitle: positionalCount >= 3 ? stripQuotes(args[2]!) : undefined,
+        color: trailing.color,
+      })
+    }
+  }
+
+  return { type: 'imported', title, importedItems }
+}
+
 export function generateDslText(type: string, data: TemplateData): string {
   const d = data as unknown as Record<string, unknown>
   const esc = escapeField
@@ -1599,6 +1635,17 @@ export function generateDslText(type: string, data: TemplateData): string {
       if (s.pct) line += ` pct:"${esc(s.pct)}"`
       if (s.icon) line += ` icon:${esc(s.icon)}`
       if (s.color) line += ` ${s.color}`
+      out += line + '\n'
+    }
+  }
+
+  const importedItems = list('importedItems')
+  if (importedItems) {
+    for (const it of importedItems) {
+      let line = `  item "${esc(it.ooxmlId)}"`
+      if (it.title) line += ` "${esc(it.title)}"`
+      if (it.subtitle) line += ` "${esc(it.subtitle)}"`
+      if (it.color) line += ` ${it.color}`
       out += line + '\n'
     }
   }

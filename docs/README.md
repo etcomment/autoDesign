@@ -9,9 +9,10 @@ Bienvenue dans la documentation technique et métier d'autoDesign, l'éditeur de
 Documentation du système de templates d'autoDesign (18 templates prêts à l'emploi).
 
 | Document | Description |
-|---|---|
+| --- | --- |
 | [TEMPLATE_SYSTEM.md](./TEMPLATE_SYSTEM.md) | Vue d'ensemble du système : architecture, store, panneaux, comment ajouter un template |
 | [TEMPLATE_DSL.md](./TEMPLATE_DSL.md) | Syntaxe et architecture du DSL `@roadmap` pour créer des roadmaps textuellement |
+| [IMPORT_ENGINE.md](./IMPORT_ENGINE.md) | Moteur d'import vectoriel PPTX → templates segmentés (pipeline, chrome, clusterisation, page admin) |
 | [ROADMAP_TEMPLATE.md](./ROADMAP_TEMPLATE.md) | Documentation détaillée des templates Roadmap et Product Roadmap |
 
 ---

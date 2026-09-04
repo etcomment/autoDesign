@@ -9,9 +9,22 @@ export function TemplatePanel() {
   const activeTemplate = useTemplateStore(s => s.activeTemplate)
   const selectTemplate = useTemplateStore(s => s.selectTemplate)
   const clearTemplate = useTemplateStore(s => s.clearTemplate)
+  const importedTemplates = useTemplateStore(s => s.importedTemplates)
 
   const categories = getTemplatesByCategory()
-  const categoryNames = [...categories.keys()]
+  const merged = new Map(categories)
+  for (const record of Object.values(importedTemplates)) {
+    const list = merged.get(record.category) ?? []
+    list.push({
+      type: record.name,
+      label: record.label,
+      category: record.category,
+      description: record.description,
+      defaultData: record.data,
+    })
+    merged.set(record.category, list)
+  }
+  const categoryNames = [...merged.keys()]
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     () => new Set(categoryNames.length > 0 ? [categoryNames[0]!] : [])
   )
@@ -28,7 +41,7 @@ export function TemplatePanel() {
   return (
     <Panel title="Templates" badge={categoryNames.length}>
       {categoryNames.map((category) => {
-        const templates = categories.get(category)!
+        const templates = merged.get(category)!
         const isExpanded = expandedCategories.has(category)
         return (
           <div key={category} style={styles.category}>

@@ -13,6 +13,8 @@ import { Toolbar } from './panels/Toolbar'
 import { SubgraphStylePanel } from './panels/SubgraphStylePanel'
 import { LayersPanel } from './panels/LayersPanel'
 import { PptxImportModal } from './templates/components/PptxImportModal'
+import { AdminPage } from './admin/AdminPage'
+import { useHashRoute } from './hooks/useHashRoute'
 import { useDiagramStore } from './store/diagramStore'
 import { useTemplateStore } from './templates/store'
 import { useIsMobile } from './hooks/useIsMobile'
@@ -260,6 +262,12 @@ export function App() {
   const handleZoomReset = useCallback(() => {
     setViewBox({ ...viewBox, scale: 1 })
   }, [viewBox, setViewBox])
+
+  const isAdminRoute = useHashRoute('#admin')
+
+  if (isAdminRoute) {
+    return <AdminPage />
+  }
 
   const sidebarTabs: TabItem[] = [
     { id: 'forms', label: 'Formes', icon: <Shapes size={14} /> },

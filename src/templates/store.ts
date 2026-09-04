@@ -2,10 +2,22 @@ import { create } from 'zustand'
 import type { TemplateData, TemplateType } from './types'
 import { getTemplateByType } from './registry'
 import { generateDslText } from './dsl/parseTemplate'
+import type { ImportedSlideSvg } from './import/svgImport'
+import type { ImportedTemplateData } from './types'
+
+export interface ImportedTemplateRecord {
+  readonly name: string
+  readonly label: string
+  readonly category: string
+  readonly description: string
+  readonly slide: ImportedSlideSvg
+  readonly data: ImportedTemplateData
+}
 
 interface TemplateStore {
   readonly activeTemplate: TemplateType | null
   readonly templateData: TemplateData | null
+  readonly importedTemplates: Record<string, ImportedTemplateRecord>
   readonly isTemplateHidden: boolean
   readonly selectedTemplateElementIds: ReadonlySet<string>
   readonly templateElementColors: Record<string, string>
@@ -20,6 +32,8 @@ interface TemplateStore {
 
   selectTemplate: (type: TemplateType) => void
   selectTemplateWithData: (type: TemplateType, data: TemplateData) => void
+  addImportedTemplate: (record: ImportedTemplateRecord) => void
+  removeImportedTemplate: (name: string) => void
   clearTemplate: () => void
   toggleTemplateHidden: () => void
   toggleTemplateElementHidden: (id: string) => void
@@ -41,6 +55,7 @@ interface TemplateStore {
 export const useTemplateStore = create<TemplateStore>((set, get) => ({
   activeTemplate: null,
   templateData: null,
+  importedTemplates: {},
   isTemplateHidden: false,
   hiddenTemplateElementIds: new Set(),
   selectedTemplateElementIds: new Set(),
@@ -54,6 +69,25 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
   dslText: '',
 
   selectTemplate: (type) => {
+    const imported = get().importedTemplates[type]
+    if (imported) {
+      set({
+        activeTemplate: type,
+        templateData: imported.data,
+        isTemplateHidden: false,
+        hiddenTemplateElementIds: new Set(),
+        dslText: generateDslText(type, imported.data),
+        selectedTemplateElementIds: new Set(),
+        templateElementColors: {},
+        templateStrokeColors: {},
+        templateStrokeWidths: {},
+        templateElementPositions: {},
+        templateElementRotations: {},
+        templateGroups: {},
+        templateElementGroupIds: {},
+      })
+      return
+    }
     const def = getTemplateByType(type)
     const data = def?.defaultData ?? null
     set({
@@ -91,6 +125,18 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
     })
   },
 
+  addImportedTemplate: (record) => {
+    set(s => ({ importedTemplates: { ...s.importedTemplates, [record.name]: record } }))
+  },
+
+  removeImportedTemplate: (name) => {
+    set(s => {
+      const next = { ...s.importedTemplates }
+      delete next[name]
+      return { importedTemplates: next }
+    })
+  },
+
   clearTemplate: () => {
     set({
       activeTemplate: null,
@@ -122,7 +168,27 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
   },
 
   updateTemplateData: (data) => {
-    set({ templateData: data })
+    const currentData = get().templateData as Record<string, unknown> | null
+    const nextData = data as unknown as Record<string, unknown> | null
+    const getCount = (d: Record<string, unknown> | null) => {
+      if (!d) return 0
+      let total = 0
+      for (const val of Object.values(d)) {
+        if (Array.isArray(val)) total += val.length
+      }
+      return total
+    }
+    const typeChanged = currentData?.type !== nextData?.type
+    const countChanged = getCount(currentData) !== getCount(nextData)
+    if (typeChanged || countChanged) {
+      set({
+        templateData: data,
+        templateElementPositions: {},
+        selectedTemplateElementIds: new Set(),
+      })
+    } else {
+      set({ templateData: data })
+    }
   },
 
   selectTemplateElement: (id) => {

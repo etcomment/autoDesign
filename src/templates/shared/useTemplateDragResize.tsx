@@ -315,7 +315,6 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
       const pos = templateElementPositions[sid] || renderedRectsRef.current.get(sid) || (sid === id ? rect : { x: 0, y: 0, width: 40, height: 40 })
       allStartRects[sid] = { ...pos }
       allStartRotations[sid] = templateElementRotations[sid] || 0
-      initElement(sid, pos)
       minX = Math.min(minX, pos.x)
       minY = Math.min(minY, pos.y)
       maxX = Math.max(maxX, pos.x + pos.width)
@@ -372,7 +371,7 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
     }
     window.addEventListener('mousemove', stableOnMouseMove)
     window.addEventListener('mouseup', stableOnMouseUp)
-  }, [toSvgPoint, stableOnMouseMove, stableOnMouseUp, selectedIds, templateElementPositions, initElement])
+  }, [toSvgPoint, stableOnMouseMove, stableOnMouseUp, selectedIds, templateElementPositions])
 
   const startDrag = useCallback((e: React.MouseEvent, id: string, rect: Rect) => {
     startInteraction(e, id, rect, 'drag')
@@ -438,7 +437,7 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
     const activeRot = currentRotation ?? (templateElementRotations[id] || 0)
 
     return (
-      <g pointerEvents="all">
+      <g data-selection-handles="true" pointerEvents="all">
         {selectedIds.size > 1 && (
           <rect
             x={renderRect.x}

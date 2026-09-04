@@ -2,6 +2,12 @@
 
 Le système de templates d'autoDesign fournit **18 diagrammes structurés prêts à l'emploi**. Chaque template est un composant React qui s'affiche dans le Canvas SVG aux côtés des diagrammes Mermaid. Les templates exposent des éléments interactifs (drag, resize, sélection de couleur) via un store Zustand partagé.
 
+> Note : depuis l'ajout de la catégorie **Pie Charts** (`pieChart1` à `pieChart5`) et des
+> **templates importés** de PowerPoint (`imported*`, générés à la volée par le moteur
+> d'import), la liste des 18 templates ci-dessous ne reflète plus l'intégralité du registre.
+> Voir [TEMPLATE_DSL.md](./TEMPLATE_DSL.md) (sections 3.20 et 3.21) et
+> [IMPORT_ENGINE.md](./IMPORT_ENGINE.md).
+
 ---
 
 ## Liste complète des 18 templates

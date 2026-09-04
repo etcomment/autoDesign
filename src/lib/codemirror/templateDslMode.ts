@@ -1,4 +1,5 @@
 import { StreamLanguage, type StreamParser } from '@codemirror/language'
+import { iconCompletionSource } from './iconAutocomplete'
 
 const DIRECTIVE_KEYWORDS = new Set([
   'start', 'finish', 'progress', 'quarters', 'lanes', 'style', 'columns',
@@ -48,3 +49,6 @@ const templateDslParser: StreamParser<Record<string, never>> = {
 }
 
 export const templateDslLanguage = StreamLanguage.define(templateDslParser)
+export const templateDslAutocomplete = templateDslLanguage.data.of({
+  autocomplete: iconCompletionSource,
+})
