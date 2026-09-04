@@ -1,6 +1,7 @@
 import type { Diagnostic } from '@codemirror/lint'
 import { parseMermaid } from '../../mermaid/parseMermaid'
 import { parseTemplateDsl } from '../../templates/dsl/parseTemplate'
+import { TEMPLATE_ICONS } from '../../templates/shared/icons'
 import type { CodeEditorLanguage } from '../../ui/CodeEditor'
 
 export function computeDiagnostics(language: CodeEditorLanguage, text: string): Diagnostic[] {
@@ -49,23 +50,43 @@ function computeMermaidDiagnostics(text: string): Diagnostic[] {
 
 function computeTemplateDiagnostics(text: string): Diagnostic[] {
   const data = parseTemplateDsl(text)
-  if (data) return []
+  if (!data) {
+    const firstContentLine = text
+      .split('\n')
+      .findIndex(line => line.trim() && !line.trim().startsWith('//'))
 
-  const firstContentLine = text
-    .split('\n')
-    .findIndex(line => line.trim() && !line.trim().startsWith('//'))
+    const from = firstContentLine === -1 ? 0 : offsetOfLine(text, firstContentLine)
+    const to = firstContentLine === -1 ? Math.min(8, text.length) : offsetOfLine(text, firstContentLine + 1)
 
-  const from = firstContentLine === -1 ? 0 : offsetOfLine(text, firstContentLine)
-  const to = firstContentLine === -1 ? Math.min(8, text.length) : offsetOfLine(text, firstContentLine + 1)
+    return [
+      {
+        from,
+        to: Math.max(from + 1, to),
+        severity: 'error',
+        message: 'DSL invalide : la première ligne doit être un en-tête @type ou @typeN "titre"',
+      },
+    ]
+  }
 
-  return [
-    {
-      from,
-      to: Math.max(from + 1, to),
-      severity: 'error',
-      message: 'DSL invalide : la première ligne doit être un en-tête @type ou @typeN "titre"',
-    },
-  ]
+  return collectUnknownIconDiagnostics(text)
+}
+
+function collectUnknownIconDiagnostics(text: string): Diagnostic[] {
+  const diagnostics: Diagnostic[] = []
+  const iconPattern = /icon:\s*"?([A-Za-z0-9_-]+)"?/g
+  let match: RegExpExecArray | null
+  while ((match = iconPattern.exec(text))) {
+    const iconName = match[1]!
+    if (!TEMPLATE_ICONS[iconName] && !TEMPLATE_ICONS[iconName.toLowerCase()]) {
+      diagnostics.push({
+        from: match.index,
+        to: match.index + match[0].length,
+        severity: 'warning',
+        message: `Icône inconnue : "${iconName}" — copiez un nom valide depuis le panneau d'icônes`,
+      })
+    }
+  }
+  return diagnostics
 }
 
 function offsetOfLine(text: string, lineIndex: number): number {

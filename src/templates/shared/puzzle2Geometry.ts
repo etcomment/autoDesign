@@ -35,3 +35,12 @@ export const CARD_TITLE_Y_BOTTOM = 412.5
 export const CARD_BODY_Y_TOP = 163.5
 export const CARD_BODY_Y_BOTTOM = 436.5
 export const CARD_BODY_LINE_HEIGHT = 13.5
+
+export function translatePiecePath(path: string, deltaX: number): string {
+  let coordinateIndex = 0
+  return path.replace(/(-?\d+\.?\d*)/g, value => {
+    const delta = coordinateIndex % 2 === 0 ? deltaX : 0
+    coordinateIndex++
+    return (parseFloat(value) + delta).toFixed(2).replace(/\.00$/, '')
+  })
+}
