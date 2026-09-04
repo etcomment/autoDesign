@@ -315,7 +315,6 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
       const pos = templateElementPositions[sid] || renderedRectsRef.current.get(sid) || (sid === id ? rect : { x: 0, y: 0, width: 40, height: 40 })
       allStartRects[sid] = { ...pos }
       allStartRotations[sid] = templateElementRotations[sid] || 0
-      initElement(sid, pos)
       minX = Math.min(minX, pos.x)
       minY = Math.min(minY, pos.y)
       maxX = Math.max(maxX, pos.x + pos.width)

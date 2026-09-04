@@ -26,13 +26,18 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
 
   const pieces = data?.pieces || []
 
-  const getElementPos = (elementId: string, defaultRect: { x: number; y: number; width: number; height: number }) => {
+  const getElementPos = (
+    elementId: string,
+    defaultRect: { x: number; y: number; width: number; height: number },
+    deltaY: number = 0
+  ) => {
     const customPos = templateElementPositions[elementId]
+    if (!customPos) return defaultRect
     return {
-      x: customPos ? customPos.x : defaultRect.x,
-      y: customPos ? customPos.y : defaultRect.y,
-      width: customPos?.width || defaultRect.width,
-      height: customPos?.height || defaultRect.height,
+      x: customPos.x,
+      y: customPos.y - deltaY,
+      width: customPos.width || defaultRect.width,
+      height: Math.max(customPos.height || 0, defaultRect.height),
     }
   }
 
@@ -77,22 +82,20 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
         const requiredCardHeight = 24 + totalTitleHeight + totalSubtitleHeight + 10
         const dynamicCardHeight = Math.max(layout.cardRect.height, requiredCardHeight)
         const deltaHeight = Math.max(0, dynamicCardHeight - layout.cardRect.height)
+        const upwardShift = layout.isTop ? deltaHeight : 0
 
-        const baseCardY = layout.isTop ? layout.cardRect.y - deltaHeight : layout.cardRect.y
+        const baseCardY = layout.cardRect.y - upwardShift
         const baseCardRect = { ...layout.cardRect, y: baseCardY, height: dynamicCardHeight }
-        const cardRect = getElementPos(cardId, baseCardRect)
+        const cardRect = getElementPos(cardId, baseCardRect, upwardShift)
         const isCardSelected = selectedIds.has(cardId)
         const cardColor = tplColors[cardId] ?? color
 
         const isCardMoved = Boolean(templateElementPositions[cardId])
-        const baseTitleY = layout.isTop ? layout.titleY - deltaHeight : layout.titleY
         const titleX = isCardMoved
           ? (layout.textAnchor === 'middle' ? cardRect.x + cardRect.width / 2 : cardRect.x + 4)
           : layout.titleX
-        const titleY = isCardMoved ? cardRect.y + 18 : baseTitleY
-        const bodyY = isCardMoved
-          ? cardRect.y + 20 + totalTitleHeight
-          : baseTitleY + totalTitleHeight + (layout.textAnchor === 'middle' ? 2 : 4)
+        const titleY = cardRect.y + 18
+        const bodyY = cardRect.y + 20 + totalTitleHeight
 
         const dotId = `dot-${index}`
         const dotRect = getElementPos(dotId, layout.dotRect)

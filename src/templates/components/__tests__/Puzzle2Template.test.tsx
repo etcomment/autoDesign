@@ -235,5 +235,40 @@ describe('Puzzle2Template', () => {
     const yVal = parseFloat(titleText?.getAttribute('y') || '0')
     expect(yVal).toBeLessThan(80)
   })
+
+  it('fait grandir la carte vers le haut meme si une position etait memorisee dans le store (mode live)', () => {
+    const piecesWithLongText = [
+      {
+        number: 1,
+        title: 'Recherche Initiale',
+        subtitle: 'Ligne un\nLigne deux\nLigne trois\nLigne quatre\nLigne cinq\nLigne six',
+      },
+      {
+        number: 2,
+        title: 'Court',
+        subtitle: 'Texte court',
+      },
+    ]
+    const data = { type: 'puzzle2', pieces: piecesWithLongText } as unknown as PuzzleData
+    useTemplateStore.setState({
+      templateElementPositions: {
+        'card-0': { x: 410, y: 80.8, width: 180, height: 75 },
+      },
+      selectedTemplateElementIds: new Set(),
+    })
+
+    const { container } = render(
+      <svg>
+        <Puzzle2Template data={data} />
+      </svg>
+    )
+
+    const cardGroup = container.querySelector('[data-element-id="card-0"]')
+    const titleText = cardGroup?.querySelector('text')
+    expect(titleText).not.toBeNull()
+    const yVal = parseFloat(titleText?.getAttribute('y') || '0')
+    expect(yVal).toBeLessThan(80)
+  })
 })
+
 
