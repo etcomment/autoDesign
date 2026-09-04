@@ -36,6 +36,8 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
     }
   }
 
+  const selectedOverlays: Array<{ id: string; rect: { x: number; y: number; width: number; height: number }; isPiece?: boolean }> = []
+
   return (
     <g ref={svgRef}>
       {pieces.map((piece, index) => {
@@ -97,6 +99,10 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
         const dotCx = isDotMoved ? dotRect.x + dotRect.width / 2 : layout.dot.x
         const dotCy = isDotMoved ? dotRect.y + dotRect.height / 2 : layout.dot.y
 
+        if (isDotSelected) selectedOverlays.push({ id: dotId, rect: dotRect })
+        if (isPieceSelected) selectedOverlays.push({ id: pieceId, rect: pieceRect, isPiece: true })
+        if (isCardSelected) selectedOverlays.push({ id: cardId, rect: cardRect })
+
         return (
           <g key={`item-p2-${index}`}>
             <g
@@ -106,7 +112,6 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
               style={{ cursor: 'pointer' }}
             >
               <circle cx={dotCx} cy={dotCy} r={DOT_RADIUS} fill={dotColor} />
-              {isDotSelected && renderHandles(dotRect, dotId)}
             </g>
 
             <g
@@ -142,21 +147,6 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
                   {piece.number ?? index + 1}
                 </text>
               )}
-              {isPieceSelected && (
-                <rect
-                  data-selection-box="true"
-                  x={pieceRect.x}
-                  y={pieceRect.y}
-                  width={pieceRect.width}
-                  height={pieceRect.height}
-                  fill="none"
-                  stroke="#4a90d9"
-                  strokeWidth={1.5}
-                  strokeDasharray="4 4"
-                  pointerEvents="none"
-                />
-              )}
-              {isPieceSelected && renderHandles(pieceRect, pieceId)}
             </g>
 
             <g
@@ -204,11 +194,29 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
                   ))}
                 </text>
               )}
-              {isCardSelected && renderHandles(cardRect, cardId)}
             </g>
           </g>
         )
       })}
+      {selectedOverlays.map(item => (
+        <g key={`overlay-${item.id}`}>
+          {item.isPiece && (
+            <rect
+              data-selection-box="true"
+              x={item.rect.x}
+              y={item.rect.y}
+              width={item.rect.width}
+              height={item.rect.height}
+              fill="none"
+              stroke="#4a90d9"
+              strokeWidth={1.5}
+              strokeDasharray="4 4"
+              pointerEvents="none"
+            />
+          )}
+          {renderHandles(item.rect, item.id)}
+        </g>
+      ))}
     </g>
   )
 }

@@ -165,7 +165,7 @@ describe('Puzzle2Template', () => {
     const iconGroup = piece.querySelector('[data-icon="true"]')!
     expect(iconGroup.getAttribute('transform')).toContain('translate(368.3')
 
-    const selectionBox = piece.querySelector('rect[stroke-dasharray="4 4"]')
+    const selectionBox = container.querySelector('rect[stroke-dasharray="4 4"]')
     expect(selectionBox).not.toBeNull()
     expect(selectionBox?.getAttribute('x')).toBe('297')
     expect(selectionBox?.getAttribute('y')).toBe('195.9')
