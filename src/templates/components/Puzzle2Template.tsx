@@ -48,7 +48,19 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
         const centerCy = pieceRect.y + pieceRect.height / 2
 
         const pieceStroke = isPieceSelected ? '#4a90d9' : (tplStrokeColors[pieceId] || 'none')
-        const pieceStrokeWidth = isPieceSelected ? 2 : (tplStrokeWidths[pieceId] ?? 0)
+        const pieceStrokeWidth = isPieceSelected ? 3 : (tplStrokeWidths[pieceId] ?? 0)
+
+        const dx = pieceRect.x - layout.box.x
+        const dy = pieceRect.y - layout.box.y
+        const scaleX = layout.box.width > 0 ? pieceRect.width / layout.box.width : 1
+        const scaleY = layout.box.height > 0 ? pieceRect.height / layout.box.height : 1
+
+        let pieceTransform: string | undefined
+        if (scaleX !== 1 || scaleY !== 1) {
+          pieceTransform = `translate(${pieceRect.x}, ${pieceRect.y}) scale(${scaleX}, ${scaleY}) translate(${-layout.box.x}, ${-layout.box.y})`
+        } else if (dx !== 0 || dy !== 0) {
+          pieceTransform = `translate(${dx}, ${dy})`
+        }
 
         const iconComponent = piece.icon ? resolveTemplateIcon(piece.icon) : undefined
 
@@ -105,6 +117,7 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
             >
               <path
                 d={layout.path}
+                transform={pieceTransform}
                 fill={color}
                 fillRule="evenodd"
                 stroke={pieceStroke}
@@ -112,7 +125,7 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
                 strokeLinejoin="round"
               />
               {iconComponent ? (
-                <g data-icon="true" transform={`translate(${centerCx - 24}, ${centerCy - 24})`}>
+                <g data-icon="true" pointerEvents="none" transform={`translate(${centerCx - 24}, ${centerCy - 24})`}>
                   {createElement(iconComponent, { size: 48, color: 'white' })}
                 </g>
               ) : (
@@ -124,9 +137,23 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
                   fontSize={20}
                   fontWeight="bold"
                   fill="white"
+                  pointerEvents="none"
                 >
                   {piece.number ?? index + 1}
                 </text>
+              )}
+              {isPieceSelected && (
+                <rect
+                  x={pieceRect.x}
+                  y={pieceRect.y}
+                  width={pieceRect.width}
+                  height={pieceRect.height}
+                  fill="none"
+                  stroke="#4a90d9"
+                  strokeWidth={1.5}
+                  strokeDasharray="4 4"
+                  pointerEvents="none"
+                />
               )}
               {isPieceSelected && renderHandles(pieceRect, pieceId)}
             </g>

@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { renderToString } from 'react-dom/server'
+import { render, fireEvent } from '@testing-library/react'
 import { Puzzle2Template } from '../Puzzle2Template'
+import { useTemplateStore } from '../../store'
 import type { PuzzleData } from '../../types'
 import { PIECE_PATHS, DOT_CENTERS, translatePiecePath, PIECE_BOXES } from '../../shared/puzzle2Geometry'
 
@@ -119,5 +121,53 @@ describe('Puzzle2Template', () => {
     expect((html.match(/<tspan/g) ?? []).length).toBeGreaterThan(3)
     expect(html).toContain('dy="0"')
     expect(html).toContain('dy="18"')
+  })
+
+  it('verifie la selection de piece-0 lors d un clic', () => {
+    const data = { type: 'puzzle2', pieces: basePieces } as unknown as PuzzleData
+    useTemplateStore.setState({ selectedTemplateElementIds: new Set() })
+
+    const { container } = render(
+      <svg>
+        <Puzzle2Template data={data} />
+      </svg>
+    )
+
+    const piece = container.querySelector('[data-element-id="piece-0"]')!
+    const path = piece.querySelector('path')!
+    fireEvent.mouseDown(path, { clientX: 300, clientY: 200 })
+    fireEvent.mouseUp(window)
+
+    const selected = useTemplateStore.getState().selectedTemplateElementIds
+    expect(selected.has('piece-0')).toBe(true)
+  })
+
+  it('deplace la piece de puzzle complete avec son chemin et son icone lorsque positionnee dans le store', () => {
+    const piecesWithIcon = [{ ...basePieces[0]!, icon: 'clock' }, ...basePieces.slice(1)]
+    const data = { type: 'puzzle2', pieces: piecesWithIcon } as unknown as PuzzleData
+    useTemplateStore.setState({
+      templateElementPositions: {
+        'piece-0': { x: 297, y: 195.9, width: 190.6, height: 190.6 },
+      },
+      selectedTemplateElementIds: new Set(['piece-0']),
+    })
+
+    const { container } = render(
+      <svg>
+        <Puzzle2Template data={data} />
+      </svg>
+    )
+
+    const piece = container.querySelector('[data-element-id="piece-0"]')!
+    const path = piece.querySelector('path')!
+    expect(path.getAttribute('transform')).toBe('translate(50, 30)')
+
+    const iconGroup = piece.querySelector('[data-icon="true"]')!
+    expect(iconGroup.getAttribute('transform')).toContain('translate(368.3')
+
+    const selectionBox = piece.querySelector('rect[stroke-dasharray="4 4"]')
+    expect(selectionBox).not.toBeNull()
+    expect(selectionBox?.getAttribute('x')).toBe('297')
+    expect(selectionBox?.getAttribute('y')).toBe('195.9')
   })
 })
