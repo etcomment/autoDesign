@@ -463,9 +463,14 @@ function addTextToSlide(
   if (textAnchor === 'middle') align = 'center'
   else if (textAnchor === 'end') align = 'right'
 
+  const fontWeightRaw = el.getAttribute('font-weight') || computed.fontWeight || 'normal'
+  const isBold = fontWeightRaw === 'bold' || parseInt(fontWeightRaw) >= 600
+  const fontStyleRaw = el.getAttribute('font-style') || computed.fontStyle || 'normal'
+  const isItalic = fontStyleRaw === 'italic' || fontStyleRaw === 'oblique'
+
   const tspans = Array.from(el.querySelectorAll('tspan'))
   const textValue: string | PptxGenJS.TextProps[] = tspans.length > 1
-    ? tspans.map((ts, i) => ({ text: ts.textContent || '', options: { breakLine: i < tspans.length - 1 } }))
+    ? tspans.map((ts, i) => ({ text: ts.textContent || '', options: { breakLine: i < tspans.length - 1, bold: isBold, italic: isItalic } }))
     : content
 
   const textProps: PptxGenJS.TextPropsOptions = {
@@ -476,6 +481,8 @@ function addTextToSlide(
     fontSize: pptxFontSize,
     fontFace: fontFamily,
     color: hexColor,
+    bold: isBold,
+    italic: isItalic,
     align,
     valign: 'top',
     margin: 0,
