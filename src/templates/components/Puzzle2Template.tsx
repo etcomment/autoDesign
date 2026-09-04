@@ -1,92 +1,38 @@
-import { useRef, type ReactElement } from 'react'
+import { useRef, createElement, type ReactElement } from 'react'
 import type { PuzzleData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
 import { MIGSO_PALETTE } from '../../lib/theme'
+import {
+  PIECE_PATHS,
+  PIECE_BOXES,
+  ICON_PATHS,
+  ICON_CENTERS,
+  DOT_CENTERS,
+  DOT_RADIUS,
+  CARD_TITLE_X_LEFT,
+  CARD_TITLE_X_RIGHT,
+  CARD_TITLE_Y_TOP,
+  CARD_TITLE_Y_BOTTOM,
+  CARD_BODY_Y_TOP,
+  CARD_BODY_Y_BOTTOM,
+  CARD_BODY_LINE_HEIGHT,
+} from '../shared/puzzle2Geometry'
 
-const CELL_W = 150
-const CELL_H = 130
-
-type Tab = { right?: boolean; bottom?: boolean; leftIndent?: boolean; topIndent?: boolean }
-
-function piecePathStaggered(x: number, y: number, t: Tab): string {
-  const r = x + CELL_W
-  const b = y + CELL_H
-  const midX = x + CELL_W / 2
-  const midY = y + CELL_H / 2
-  const neckW = 18
-  const headR = 14
-  const neckR = 6
-
-  const hMid = midY
-  const vMid = midX
-
-  let d = `M ${x} ${y}`
-
-  if (t.topIndent) {
-    d += ` L ${vMid - neckW / 2 - neckR} ${y}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid - neckW / 2} ${y + neckR}`
-    d += ` A ${headR} ${headR} 0 1 0 ${vMid + neckW / 2} ${y + neckR}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid + neckW / 2 + neckR} ${y}`
-    d += ` L ${r} ${y}`
-  } else {
-    d += ` L ${r} ${y}`
-  }
-
-  if (t.right) {
-    d += ` L ${r} ${hMid - neckW / 2 - neckR}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${r + neckR} ${hMid - neckW / 2}`
-    d += ` A ${headR} ${headR} 0 1 1 ${r + neckR} ${hMid + neckW / 2}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${r} ${hMid + neckW / 2 + neckR}`
-    d += ` L ${r} ${b}`
-  } else {
-    d += ` L ${r} ${b}`
-  }
-
-  if (t.bottom) {
-    d += ` L ${vMid + neckW / 2 + neckR} ${b}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid + neckW / 2} ${b + neckR}`
-    d += ` A ${headR} ${headR} 0 1 1 ${vMid - neckW / 2} ${b + neckR}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${vMid - neckW / 2 - neckR} ${b}`
-    d += ` L ${x} ${b}`
-  } else {
-    d += ` L ${x} ${b}`
-  }
-
-  if (t.leftIndent) {
-    d += ` L ${x} ${hMid + neckW / 2 + neckR}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${x + neckR} ${hMid + neckW / 2}`
-    d += ` A ${headR} ${headR} 0 1 0 ${x + neckR} ${hMid - neckW / 2}`
-    d += ` A ${neckR} ${neckR} 0 0 1 ${x} ${hMid - neckW / 2 - neckR}`
-    d += ` L ${x} ${y}`
-  }
-
-  d += ' Z'
-  return d
-}
-
-const PIECE_CONFIGS: { xOffset: number; yOffset: number; tabs: Tab }[] = [
-  { xOffset: 250, yOffset: 80, tabs: { right: true, bottom: true } },
-  { xOffset: 350, yOffset: 175, tabs: { right: true, bottom: true, leftIndent: true, topIndent: true } },
-  { xOffset: 450, yOffset: 80, tabs: { right: true, bottom: true, leftIndent: true, topIndent: true } },
-  { xOffset: 550, yOffset: 175, tabs: { leftIndent: true, topIndent: true } },
-]
-
-const DEFAULT_COLORS_P2 = ['#2c2b64', '#3466ce', '#ff5338', '#ffc000']
-const DEFAULT_ICONS_P2 = ['clock', 'gear', 'briefcase', 'user']
+const TITLE_FONT_SIZE = 16.7
+const BODY_FONT_SIZE = 14.6
+const SUBTITLE_MAX_CHARS = 21
 
 export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
   const tplColors = useTemplateStore(s => s.templateElementColors)
-  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
-  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
-  const { pieces } = data
+  const pieces = data.pieces.slice(0, 4)
 
   const getElementPos = (elementId: string, defaultRect: { x: number; y: number; width: number; height: number }) => {
     const customPos = templateElementPositions[elementId]
@@ -100,132 +46,67 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
 
   return (
     <g ref={svgRef}>
-      {pieces.slice(0, 4).map((piece, index) => {
-        const config = PIECE_CONFIGS[index % PIECE_CONFIGS.length]!
-        const px = config.xOffset
-        const py = config.yOffset
-        const path = piecePathStaggered(px, py, config.tabs)
-
-        const defaultColor = piece.color || DEFAULT_COLORS_P2[index] || MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
+      {pieces.map((piece, index) => {
+        const box = PIECE_BOXES[index]!
         const pieceId = `piece-${index}`
-        const color = tplColors[pieceId] ?? defaultColor
-        const stroke = tplStrokeColors[pieceId] || 'white'
-        const strokeWidth = tplStrokeWidths[pieceId] ?? (selectedIds.has(pieceId) ? 3.5 : 2)
+        const color = tplColors[pieceId] ?? piece.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
         const isPieceSelected = selectedIds.has(pieceId)
-
-        const pieceRect = getElementPos(pieceId, { x: px, y: py, width: CELL_W, height: CELL_H })
+        const pieceRect = getElementPos(pieceId, box)
         const centerCx = pieceRect.x + pieceRect.width / 2
         const centerCy = pieceRect.y + pieceRect.height / 2
 
-        const iconName = piece.icon || DEFAULT_ICONS_P2[index]
-        const IconComponent = iconName ? TEMPLATE_ICONS[iconName] || TEMPLATE_ICONS[iconName.toLowerCase()] : undefined
+        const iconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] ?? TEMPLATE_ICONS[piece.icon.toLowerCase()] : undefined
+        const ResolvedIcon = iconComponent
 
-        const isLeft = index < 2
-        const isTop = index % 2 === 0
+        const isLeft = index === 0 || index === 1
+        const isTop = index === 0 || index === 2
+        const titleX = isLeft ? CARD_TITLE_X_LEFT : CARD_TITLE_X_RIGHT
+        const titleY = isTop ? CARD_TITLE_Y_TOP : CARD_TITLE_Y_BOTTOM
+        const bodyY = isTop ? CARD_BODY_Y_TOP : CARD_BODY_Y_BOTTOM
         const cardId = `card-${index}`
-        const defaultCardX = isLeft ? 50 : 720
-        const defaultCardY = isTop ? 75 : 235
-        const cardRect = getElementPos(cardId, { x: defaultCardX, y: defaultCardY, width: 230, height: 95 })
+        const cardRect = getElementPos(cardId, { x: titleX - 4, y: titleY - 18, width: 204, height: 80 })
         const isCardSelected = selectedIds.has(cardId)
         const cardColor = tplColors[cardId] ?? color
+        const subtitleLines = piece.subtitle ? wrapTextByWidth(piece.subtitle, SUBTITLE_MAX_CHARS) : []
 
         const dotId = `dot-${index}`
-        const dotX = isLeft ? cardRect.x + cardRect.width + 12 : cardRect.x - 12
-        const dotY = cardRect.y + 16
-
-        const titleMaxChars = Math.max(10, Math.floor(cardRect.width / 10))
-        const subtitleMaxChars = Math.max(12, Math.floor(cardRect.width / 7.5))
-        const titleLines = wrapTextByWidth(piece.title, titleMaxChars)
-        const subtitleLines = piece.subtitle ? wrapTextByWidth(piece.subtitle, subtitleMaxChars) : []
+        const dot = DOT_CENTERS[index]!
+        const dotRect = getElementPos(dotId, { x: dot.x - DOT_RADIUS, y: dot.y - DOT_RADIUS, width: DOT_RADIUS * 2, height: DOT_RADIUS * 2 })
+        const isDotSelected = selectedIds.has(dotId)
+        const dotColor = tplColors[dotId] ?? cardColor
 
         return (
           <g key={`item-p2-${index}`}>
-            {/* POINT D'INDICATION */}
-            <g data-element-id={dotId}>
-              <circle
-                cx={dotX}
-                cy={dotY}
-                r={6}
-                fill={cardColor}
-              />
+            <g data-element-id={dotId} onMouseDown={e => startDrag(e, dotId, dotRect)} transform={getTransform(dotId, dotRect)} style={{ cursor: 'pointer' }}>
+              <circle cx={dot.x} cy={dot.y} r={DOT_RADIUS} fill={dotColor} />
+              {isDotSelected && renderHandles(dotRect, dotId)}
             </g>
 
-            {/* PIECE DE PUZZLE */}
             <g
               data-element-id={pieceId}
               onMouseDown={e => startDrag(e, pieceId, pieceRect)}
               transform={getTransform(pieceId, pieceRect)}
               style={{ cursor: 'pointer' }}
             >
-              <path
-                d={path}
-                fill={color}
-                stroke={isPieceSelected ? '#4a90d9' : stroke}
-                strokeWidth={strokeWidth}
-                strokeLinejoin="round"
-              />
-              <circle
-                cx={centerCx}
-                cy={centerCy}
-                r={22}
-                fill="rgba(255,255,255,0.2)"
-                stroke="rgba(255,255,255,0.8)"
-                strokeWidth={2}
-              />
-              {IconComponent ? (
-                <g data-icon="true" transform={`translate(${centerCx - 11}, ${centerCy - 11})`}>
-                  <IconComponent size={22} color="white" />
+              <path d={PIECE_PATHS[index]!} fill={color} fillRule="evenodd" stroke={isPieceSelected ? '#4a90d9' : 'none'} strokeWidth={isPieceSelected ? 2 : 0} strokeLinejoin="round" />
+              {iconComponent ? (
+                <g data-icon="true" transform={`translate(${centerCx - 24}, ${centerCy - 24})`}>
+                  {createElement(iconComponent, { size: 48, color: 'white' })}
                 </g>
               ) : (
-                <text
-                  x={centerCx}
-                  y={centerCy + 6}
-                  textAnchor="middle"
-                  fontFamily="Arial, sans-serif"
-                  fontSize={16}
-                  fontWeight={700}
-                  fill="white"
-                >
-                  {piece.number ?? index + 1}
-                </text>
+                <path d={ICON_PATHS[index]!} fill="white" />
               )}
               {isPieceSelected && renderHandles(pieceRect, pieceId)}
             </g>
 
-            {/* CARTE DE TEXTE EXTERNE */}
-            <g
-              data-element-id={cardId}
-              onMouseDown={e => startDrag(e, cardId, cardRect)}
-              transform={getTransform(cardId, cardRect)}
-              style={{ cursor: 'pointer' }}
-            >
-              <text
-                x={isLeft ? cardRect.x + cardRect.width : cardRect.x}
-                y={cardRect.y + 16}
-                textAnchor={isLeft ? 'end' : 'start'}
-                fontFamily="Arial, sans-serif"
-                fontSize={18}
-                fontWeight="bold"
-                fill={cardColor}
-              >
-                {titleLines.map((line, lIdx) => (
-                  <tspan key={lIdx} x={isLeft ? cardRect.x + cardRect.width : cardRect.x} dy={lIdx === 0 ? 0 : 20}>
-                    {line}
-                  </tspan>
-                ))}
+            <g data-element-id={cardId} onMouseDown={e => startDrag(e, cardId, cardRect)} transform={getTransform(cardId, cardRect)} style={{ cursor: 'pointer' }}>
+              <text x={titleX} y={titleY} fontFamily="Arial, sans-serif" fontSize={TITLE_FONT_SIZE} fontWeight="bold" fill={cardColor}>
+                {piece.title}
               </text>
-
               {subtitleLines.length > 0 && (
-                <text
-                  x={isLeft ? cardRect.x + cardRect.width : cardRect.x}
-                  y={cardRect.y + 22 + titleLines.length * 20}
-                  textAnchor={isLeft ? 'end' : 'start'}
-                  fontFamily="Arial, sans-serif"
-                  fontSize={12}
-                  fill="#555555"
-                >
-                  {subtitleLines.map((line, lIdx) => (
-                    <tspan key={lIdx} x={isLeft ? cardRect.x + cardRect.width : cardRect.x} dy={lIdx === 0 ? 0 : 15}>
+                <text x={titleX} y={bodyY} fontFamily="Arial, sans-serif" fontSize={BODY_FONT_SIZE} fill="black">
+                  {subtitleLines.map((line, lineIdx) => (
+                    <tspan key={lineIdx} x={titleX} dy={lineIdx === 0 ? 0 : CARD_BODY_LINE_HEIGHT}>
                       {line}
                     </tspan>
                   ))}
@@ -239,4 +120,3 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
     </g>
   )
 }
-
