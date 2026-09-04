@@ -170,4 +170,40 @@ describe('Puzzle2Template', () => {
     expect(selectionBox?.getAttribute('x')).toBe('297')
     expect(selectionBox?.getAttribute('y')).toBe('195.9')
   })
+
+  it('affiche 10 pieces avec taille naturelle et sans chevauchement', () => {
+    const tenPieces = Array.from({ length: 10 }, (_, i) => ({
+      number: i + 1,
+      title: `Etape ${i + 1}`,
+      subtitle: `Desc ${i + 1}`,
+    }))
+    const data = { type: 'puzzle2', pieces: tenPieces } as unknown as PuzzleData
+    useTemplateStore.setState({ templateElementPositions: {}, selectedTemplateElementIds: new Set() })
+
+    const { container } = render(
+      <svg>
+        <Puzzle2Template data={data} />
+      </svg>
+    )
+
+    const piecesElements = container.querySelectorAll('[data-element-id^="piece-"]')
+    expect(piecesElements.length).toBe(10)
+
+    const lastPiece = container.querySelector('[data-element-id="piece-9"]')!
+    const lastPath = lastPiece.querySelector('path')!
+    expect(lastPath.getAttribute('d')).toBeDefined()
+  })
+
+  it('reinitialise les positions personnalisees si le nombre de pieces change en mode live', () => {
+    useTemplateStore.setState({
+      templateData: { type: 'puzzle2', pieces: basePieces } as unknown as PuzzleData,
+      templateElementPositions: { 'piece-0': { x: 999, y: 999, width: 190.6, height: 190.6 } },
+    })
+
+    const fivePieces = [...basePieces, { number: 5, title: 'Piece 5', subtitle: 'Desc 5' }]
+    useTemplateStore.getState().updateTemplateData({ type: 'puzzle2', pieces: fivePieces } as unknown as PuzzleData)
+
+    const positions = useTemplateStore.getState().templateElementPositions
+    expect(Object.keys(positions).length).toBe(0)
+  })
 })

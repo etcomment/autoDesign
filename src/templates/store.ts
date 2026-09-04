@@ -168,7 +168,23 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
   },
 
   updateTemplateData: (data) => {
-    set({ templateData: data })
+    const currentData = get().templateData as Record<string, unknown> | null
+    const getCount = (d: Record<string, unknown> | null) => {
+      if (!d) return 0
+      const list = (d.pieces ?? d.items ?? d.steps ?? d.lanes ?? d.nodes ?? d.segments ?? d.milestones) as unknown[] | undefined
+      return Array.isArray(list) ? list.length : 0
+    }
+    const prevCount = getCount(currentData)
+    const nextCount = getCount(data as unknown as Record<string, unknown>)
+    if (prevCount !== nextCount) {
+      set({
+        templateData: data,
+        templateElementPositions: {},
+        selectedTemplateElementIds: new Set(),
+      })
+    } else {
+      set({ templateData: data })
+    }
   },
 
   selectTemplateElement: (id) => {

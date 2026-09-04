@@ -36,10 +36,11 @@ export const CARD_BODY_Y_TOP = 163.5
 export const CARD_BODY_Y_BOTTOM = 436.5
 export const CARD_BODY_LINE_HEIGHT = 13.5
 
-export function translatePiecePath(path: string, deltaX: number): string {
+export function translatePiecePath(path: string, deltaX: number, deltaY: number = 0): string {
+  if (deltaX === 0 && deltaY === 0) return path
   let coordinateIndex = 0
   return path.replace(/(-?\d+\.?\d*)/g, value => {
-    const delta = coordinateIndex % 2 === 0 ? deltaX : 0
+    const delta = coordinateIndex % 2 === 0 ? deltaX : deltaY
     coordinateIndex++
     return (parseFloat(value) + delta).toFixed(2).replace(/\.00$/, '')
   })
@@ -100,40 +101,46 @@ export function computePuzzle2PieceLayout(index: number, totalPieces: number): P
   const pieceWidth = 190.6
   const pieceHeight = 190.6
   const chainWidth = (totalPieces - 1) * stepX + pieceWidth
-  const scale = chainWidth > 920 ? 920 / chainWidth : 1
-  const startX = Math.max(10, (1000 - chainWidth * scale) / 2)
+  const startX = Math.max(50, (1000 - chainWidth) / 2)
 
-  const pieceX = startX + index * stepX * scale
+  const pieceX = startX + index * stepX
   const isTop = index % 2 === 0
   const pieceY = isTop ? 165.8 : 266.3
   const box: Puzzle2GeometryBox = {
     x: pieceX,
     y: pieceY,
-    width: pieceWidth * scale,
-    height: pieceHeight * scale,
+    width: pieceWidth,
+    height: pieceHeight,
   }
 
   let basePath: string
-  let deltaX: number
+  let refX: number
+  let refY: number
   if (index === 0) {
     basePath = PIECE_PATHS[0]
-    deltaX = pieceX - 247.0
+    refX = 247.0
+    refY = 165.9
+  } else if (index === totalPieces - 1 && !isTop) {
+    basePath = PIECE_PATHS[3]
+    refX = 550.7
+    refY = 265.7
   } else if (isTop) {
     basePath = PIECE_PATHS[2]
-    deltaX = pieceX - 449.3
-  } else if (index === totalPieces - 1) {
-    basePath = PIECE_PATHS[3]
-    deltaX = pieceX - 550.7
+    refX = 449.3
+    refY = 165.7
   } else {
     basePath = PIECE_PATHS[1]
-    deltaX = pieceX - 347.9
+    refX = 347.9
+    refY = 266.9
   }
 
-  const path = deltaX !== 0 ? translatePiecePath(basePath, deltaX) : basePath
-  const centerCx = pieceX + (pieceWidth * scale) / 2
-  const centerCy = pieceY + (pieceHeight * scale) / 2
+  const deltaX = pieceX - refX
+  const deltaY = pieceY - refY
+  const path = translatePiecePath(basePath, deltaX, deltaY)
+  const centerCx = pieceX + pieceWidth / 2
+  const centerCy = pieceY + pieceHeight / 2
 
-  const cardWidth = Math.min(180, Math.max(110, (stepX * 2 - 15) * scale))
+  const cardWidth = 180
   const cardHeight = 75
   const cardX = centerCx - cardWidth / 2
 
