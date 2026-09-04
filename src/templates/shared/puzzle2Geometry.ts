@@ -58,6 +58,7 @@ export interface Puzzle2PieceComputedLayout {
   cardRect: Puzzle2GeometryBox
   dot: { x: number; y: number }
   dotRect: Puzzle2GeometryBox
+  isTop: boolean
 }
 
 export function computePuzzle2PieceLayout(index: number, totalPieces: number): Puzzle2PieceComputedLayout {
@@ -94,6 +95,7 @@ export function computePuzzle2PieceLayout(index: number, totalPieces: number): P
       cardRect,
       dot,
       dotRect,
+      isTop,
     }
   }
 
@@ -187,5 +189,6 @@ export function computePuzzle2PieceLayout(index: number, totalPieces: number): P
     cardRect,
     dot,
     dotRect,
+    isTop,
   }
 }
