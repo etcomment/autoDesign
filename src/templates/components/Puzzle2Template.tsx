@@ -8,7 +8,6 @@ import { MIGSO_PALETTE } from '../../lib/theme'
 import {
   PIECE_PATHS,
   PIECE_BOXES,
-  ICON_PATHS,
   DOT_CENTERS,
   DOT_RADIUS,
   CARD_TITLE_X_LEFT,
@@ -92,7 +91,9 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
                   {createElement(iconComponent, { size: 48, color: 'white' })}
                 </g>
               ) : (
-                <path d={ICON_PATHS[index]!} fill="white" />
+                <text x={centerCx} y={centerCy + 7} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={20} fontWeight="bold" fill="white">
+                  {piece.number ?? index + 1}
+                </text>
               )}
               {isPieceSelected && renderHandles(pieceRect, pieceId)}
             </g>
