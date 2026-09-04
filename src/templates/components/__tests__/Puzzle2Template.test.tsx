@@ -269,6 +269,28 @@ describe('Puzzle2Template', () => {
     const yVal = parseFloat(titleText?.getAttribute('y') || '0')
     expect(yVal).toBeLessThan(80)
   })
+
+  it('affiche la couleur et l\'épaisseur de contour personnalisées en temps réel même lorsque la pièce est sélectionnée', () => {
+    const data = { type: 'puzzle2', pieces: basePieces } as unknown as PuzzleData
+    useTemplateStore.setState({
+      selectedTemplateElementIds: new Set(['piece-0']),
+      templateStrokeColors: { 'piece-0': '#e63946' },
+      templateStrokeWidths: { 'piece-0': 5 },
+    })
+
+    const { container } = render(
+      <svg>
+        <Puzzle2Template data={data} />
+      </svg>
+    )
+
+    const pieceGroup = container.querySelector('[data-element-id="piece-0"]')
+    const path = pieceGroup?.querySelector('path')
+    expect(path).not.toBeNull()
+    expect(path?.getAttribute('stroke')).toBe('#e63946')
+    expect(path?.getAttribute('stroke-width')).toBe('5')
+  })
 })
+
 
 

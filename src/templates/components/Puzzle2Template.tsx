@@ -54,8 +54,20 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
         const centerCx = pieceRect.x + pieceRect.width / 2
         const centerCy = pieceRect.y + pieceRect.height / 2
 
-        const pieceStroke = isPieceSelected ? '#4a90d9' : (tplStrokeColors[pieceId] || 'none')
-        const pieceStrokeWidth = isPieceSelected ? 3 : (tplStrokeWidths[pieceId] ?? 0)
+        const customStrokeColor = tplStrokeColors[pieceId]
+        const customStrokeWidth = tplStrokeWidths[pieceId]
+        const hasCustomWidth = customStrokeWidth !== undefined && customStrokeWidth > 0
+        const hasCustomColor = Boolean(customStrokeColor && customStrokeColor !== 'none' && customStrokeColor !== 'transparent')
+
+        let pieceStroke = 'none'
+        let pieceStrokeWidth = 0
+        if (hasCustomColor) {
+          pieceStroke = customStrokeColor!
+          pieceStrokeWidth = customStrokeWidth ?? 2
+        } else if (hasCustomWidth) {
+          pieceStroke = '#333333'
+          pieceStrokeWidth = customStrokeWidth!
+        }
 
         const dx = pieceRect.x - layout.box.x
         const dy = pieceRect.y - layout.box.y

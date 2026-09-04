@@ -371,7 +371,7 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
     }
     window.addEventListener('mousemove', stableOnMouseMove)
     window.addEventListener('mouseup', stableOnMouseUp)
-  }, [toSvgPoint, stableOnMouseMove, stableOnMouseUp, selectedIds, templateElementPositions, initElement])
+  }, [toSvgPoint, stableOnMouseMove, stableOnMouseUp, selectedIds, templateElementPositions])
 
   const startDrag = useCallback((e: React.MouseEvent, id: string, rect: Rect) => {
     startInteraction(e, id, rect, 'drag')
