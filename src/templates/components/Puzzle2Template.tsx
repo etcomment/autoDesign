@@ -9,7 +9,6 @@ import {
   PIECE_PATHS,
   PIECE_BOXES,
   ICON_PATHS,
-  ICON_CENTERS,
   DOT_CENTERS,
   DOT_RADIUS,
   CARD_TITLE_X_LEFT,
@@ -56,7 +55,6 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
         const centerCy = pieceRect.y + pieceRect.height / 2
 
         const iconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] ?? TEMPLATE_ICONS[piece.icon.toLowerCase()] : undefined
-        const ResolvedIcon = iconComponent
 
         const isLeft = index === 0 || index === 1
         const isTop = index === 0 || index === 2
