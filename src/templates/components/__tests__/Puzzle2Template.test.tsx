@@ -34,24 +34,37 @@ describe('Puzzle2Template', () => {
     expect(html).not.toContain(`d="${PIECE_PATHS[3]}" style="display:none"`)
   })
 
-  it('étend les pièces au-delà de 4 vers la droite selon la même logique', () => {
+  it('gère N pièces avec leurs cartes, points et icônes correspondantes', () => {
     const pieces = [
       ...basePieces.map((p, i) => ({ ...p!, icon: ['clock', 'gear', 'briefcase', 'people'][i] })),
-      { number: 5, title: 'Cinquième', color: '#5cc29d', icon: 'clock' },
+      { number: 5, title: 'Cinquième', color: '#5cc29d', icon: 'rocket' },
       { number: 6, title: 'Sixième', color: '#f27798', icon: 'gear' },
     ]
     const data = { type: 'puzzle2', pieces } as unknown as PuzzleData
     const html = renderToString(<Puzzle2Template data={data} />)
-    const topSpacing = PIECE_BOXES[2]!.x - PIECE_BOXES[0]!.x
-    const bottomSpacing = PIECE_BOXES[3]!.x - PIECE_BOXES[1]!.x
-    expect(html).toContain(`d="${translatePiecePath(PIECE_PATHS[0]!, 2 * topSpacing)}"`)
-    expect(html).toContain(`d="${translatePiecePath(PIECE_PATHS[1]!, 2 * bottomSpacing)}"`)
-    expect((html.match(/data-element-id="dot-/g) ?? []).length).toBe(4)
-    expect(html).not.toContain('>Cinquième</text>')
+    expect((html.match(/data-element-id="piece-/g) ?? []).length).toBe(6)
+    expect((html.match(/data-element-id="dot-/g) ?? []).length).toBe(6)
+    expect((html.match(/data-element-id="card-/g) ?? []).length).toBe(6)
     expect((html.match(/data-icon/g) ?? []).length).toBe(6)
+    expect(html).toContain('>Cinquième</text>')
+    expect(html).toContain('>Sixième</text>')
   })
 
-  it('rend les positions extraites pour points et cartes', () => {
+  it('gère 2 et 3 pièces avec cartes et points complets', () => {
+    const data2 = { type: 'puzzle2', pieces: basePieces.slice(0, 2) } as unknown as PuzzleData
+    const html2 = renderToString(<Puzzle2Template data={data2} />)
+    expect((html2.match(/data-element-id="piece-/g) ?? []).length).toBe(2)
+    expect((html2.match(/data-element-id="dot-/g) ?? []).length).toBe(2)
+    expect((html2.match(/data-element-id="card-/g) ?? []).length).toBe(2)
+
+    const data3 = { type: 'puzzle2', pieces: basePieces.slice(0, 3) } as unknown as PuzzleData
+    const html3 = renderToString(<Puzzle2Template data={data3} />)
+    expect((html3.match(/data-element-id="piece-/g) ?? []).length).toBe(3)
+    expect((html3.match(/data-element-id="dot-/g) ?? []).length).toBe(3)
+    expect((html3.match(/data-element-id="card-/g) ?? []).length).toBe(3)
+  })
+
+  it('rend les positions extraites pour points et cartes à 4 pièces', () => {
     const data = { type: 'puzzle2', pieces: basePieces } as unknown as PuzzleData
     const html = renderToString(<Puzzle2Template data={data} />)
     const dot = DOT_CENTERS[0]!
@@ -59,5 +72,17 @@ describe('Puzzle2Template', () => {
     expect(html).toContain('16.7')
     expect(html).toContain('14.6')
     expect(html).toContain(`d="${PIECE_PATHS[0]}"`)
+  })
+
+  it('résout les icônes Lucide et les variantes kebab-case', () => {
+    const pieces = [
+      { ...basePieces[0]!, icon: 'rocket' },
+      { ...basePieces[1]!, icon: 'pie-chart' },
+      { ...basePieces[2]!, icon: 'server' },
+      { ...basePieces[3]!, icon: 'credit-card' },
+    ]
+    const data = { type: 'puzzle2', pieces } as unknown as PuzzleData
+    const html = renderToString(<Puzzle2Template data={data} />)
+    expect((html.match(/data-icon/g) ?? []).length).toBe(4)
   })
 })

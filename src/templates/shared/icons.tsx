@@ -1,4 +1,5 @@
-import type { ReactElement } from 'react'
+import { createElement, type ReactElement, type ComponentType } from 'react'
+import * as LucideIcons from 'lucide-react'
 import { MIGSO_ICONS_DATA } from './migsoIconsData'
 
 interface IconProps { size?: number; color?: string; fill?: string }
@@ -566,7 +567,7 @@ export function createMigsoIconRenderer(path: string): (props: IconProps) => Rea
   }
 }
 
-export const TEMPLATE_ICONS: Record<string, (props: IconProps) => ReactElement> = {
+const BASE_TEMPLATE_ICONS: Record<string, (props: IconProps) => ReactElement> = {
   user: UserIcon,
   chart: ChartIcon,
   gear: GearIcon,
@@ -621,7 +622,50 @@ export const TEMPLATE_ICONS: Record<string, (props: IconProps) => ReactElement> 
 
 for (const iconDef of MIGSO_ICONS_DATA) {
   const renderer = createMigsoIconRenderer(iconDef.path)
-  TEMPLATE_ICONS[iconDef.id] = renderer
-  TEMPLATE_ICONS[iconDef.name] = renderer
+  BASE_TEMPLATE_ICONS[iconDef.id] = renderer
+  BASE_TEMPLATE_ICONS[iconDef.name] = renderer
 }
+
+export function resolveTemplateIcon(name?: string): ((props: IconProps) => ReactElement) | undefined {
+  if (!name) return undefined
+  const clean = name.trim()
+  if (!clean) return undefined
+
+  if (BASE_TEMPLATE_ICONS[clean]) return BASE_TEMPLATE_ICONS[clean]
+
+  const lower = clean.toLowerCase()
+  if (BASE_TEMPLATE_ICONS[lower]) return BASE_TEMPLATE_ICONS[lower]
+
+  const camel = clean.replace(/[-_]+([a-z0-9])/gi, (_, character) => character.toUpperCase())
+  if (BASE_TEMPLATE_ICONS[camel]) return BASE_TEMPLATE_ICONS[camel]
+
+  const lowerCamel = camel.charAt(0).toLowerCase() + camel.slice(1)
+  if (BASE_TEMPLATE_ICONS[lowerCamel]) return BASE_TEMPLATE_ICONS[lowerCamel]
+
+  const pascal = camel.charAt(0).toUpperCase() + camel.slice(1)
+  const lucideMap = LucideIcons as Record<string, unknown>
+  const LucideComp = (lucideMap[pascal] || lucideMap[clean] || lucideMap[pascal + 'Icon']) as ComponentType<{ size?: number; color?: string }> | undefined
+  if (LucideComp) {
+    return function DynamicLucideIcon(props: IconProps): ReactElement {
+      const color = props.color ?? props.fill ?? 'currentColor'
+      const size = props.size ?? 24
+      return createElement(LucideComp, { size, color })
+    }
+  }
+
+  return undefined
+}
+
+export const TEMPLATE_ICONS: Record<string, (props: IconProps) => ReactElement> = new Proxy(BASE_TEMPLATE_ICONS, {
+  get(target, prop: string) {
+    if (typeof prop !== 'string') return undefined
+    if (prop in target) return target[prop]
+    return resolveTemplateIcon(prop)
+  },
+  has(target, prop: string) {
+    if (typeof prop !== 'string') return false
+    if (prop in target) return true
+    return Boolean(resolveTemplateIcon(prop))
+  },
+})
 

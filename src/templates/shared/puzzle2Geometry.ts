@@ -44,3 +44,141 @@ export function translatePiecePath(path: string, deltaX: number): string {
     return (parseFloat(value) + delta).toFixed(2).replace(/\.00$/, '')
   })
 }
+
+export interface Puzzle2PieceComputedLayout {
+  path: string
+  box: Puzzle2GeometryBox
+  centerCx: number
+  centerCy: number
+  titleX: number
+  titleY: number
+  bodyY: number
+  textAnchor: 'start' | 'middle'
+  cardRect: Puzzle2GeometryBox
+  dot: { x: number; y: number }
+  dotRect: Puzzle2GeometryBox
+}
+
+export function computePuzzle2PieceLayout(index: number, totalPieces: number): Puzzle2PieceComputedLayout {
+  if (totalPieces === 4 && index >= 0 && index < 4) {
+    const box = PIECE_BOXES[index]!
+    const path = PIECE_PATHS[index]!
+    const isLeft = index === 0 || index === 1
+    const isTop = index === 0 || index === 2
+    const titleX = isLeft ? CARD_TITLE_X_LEFT : CARD_TITLE_X_RIGHT
+    const titleY = isTop ? CARD_TITLE_Y_TOP : CARD_TITLE_Y_BOTTOM
+    const bodyY = isTop ? CARD_BODY_Y_TOP : CARD_BODY_Y_BOTTOM
+    const dot = DOT_CENTERS[index]!
+    const cardRect: Puzzle2GeometryBox = {
+      x: titleX - 4,
+      y: titleY - 18,
+      width: 204,
+      height: 80,
+    }
+    const dotRect: Puzzle2GeometryBox = {
+      x: dot.x - DOT_RADIUS,
+      y: dot.y - DOT_RADIUS,
+      width: DOT_RADIUS * 2,
+      height: DOT_RADIUS * 2,
+    }
+    return {
+      path,
+      box,
+      centerCx: box.x + box.width / 2,
+      centerCy: box.y + box.height / 2,
+      titleX,
+      titleY,
+      bodyY,
+      textAnchor: 'start',
+      cardRect,
+      dot,
+      dotRect,
+    }
+  }
+
+  const stepX = 101.4
+  const pieceWidth = 190.6
+  const pieceHeight = 190.6
+  const chainWidth = (totalPieces - 1) * stepX + pieceWidth
+  const scale = chainWidth > 920 ? 920 / chainWidth : 1
+  const startX = Math.max(10, (1000 - chainWidth * scale) / 2)
+
+  const pieceX = startX + index * stepX * scale
+  const isTop = index % 2 === 0
+  const pieceY = isTop ? 165.8 : 266.3
+  const box: Puzzle2GeometryBox = {
+    x: pieceX,
+    y: pieceY,
+    width: pieceWidth * scale,
+    height: pieceHeight * scale,
+  }
+
+  let basePath: string
+  let deltaX: number
+  if (index === 0) {
+    basePath = PIECE_PATHS[0]
+    deltaX = pieceX - 247.0
+  } else if (isTop) {
+    basePath = PIECE_PATHS[2]
+    deltaX = pieceX - 449.3
+  } else if (index === totalPieces - 1) {
+    basePath = PIECE_PATHS[3]
+    deltaX = pieceX - 550.7
+  } else {
+    basePath = PIECE_PATHS[1]
+    deltaX = pieceX - 347.9
+  }
+
+  const path = deltaX !== 0 ? translatePiecePath(basePath, deltaX) : basePath
+  const centerCx = pieceX + (pieceWidth * scale) / 2
+  const centerCy = pieceY + (pieceHeight * scale) / 2
+
+  const cardWidth = Math.min(180, Math.max(110, (stepX * 2 - 15) * scale))
+  const cardHeight = 75
+  const cardX = centerCx - cardWidth / 2
+
+  let cardY: number
+  let titleY: number
+  let bodyY: number
+  let dotY: number
+
+  if (isTop) {
+    cardY = Math.max(15, pieceY - 85)
+    titleY = cardY + 18
+    bodyY = cardY + 36
+    dotY = pieceY - 10
+  } else {
+    cardY = pieceY + pieceHeight + 25
+    titleY = cardY + 18
+    bodyY = cardY + 36
+    dotY = pieceY + pieceHeight + 10
+  }
+
+  const dot = { x: centerCx, y: dotY }
+  const dotRect: Puzzle2GeometryBox = {
+    x: dot.x - DOT_RADIUS,
+    y: dot.y - DOT_RADIUS,
+    width: DOT_RADIUS * 2,
+    height: DOT_RADIUS * 2,
+  }
+  const cardRect: Puzzle2GeometryBox = {
+    x: cardX,
+    y: cardY,
+    width: cardWidth,
+    height: cardHeight,
+  }
+
+  return {
+    path,
+    box,
+    centerCx,
+    centerCy,
+    titleX: centerCx,
+    titleY,
+    bodyY,
+    textAnchor: 'middle',
+    cardRect,
+    dot,
+    dotRect,
+  }
+}

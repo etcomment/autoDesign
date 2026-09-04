@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { linter, type Diagnostic } from '@codemirror/lint'
 import { mermaidLanguage } from '../lib/codemirror/mermaidMode'
-import { templateDslLanguage } from '../lib/codemirror/templateDslMode'
+import { templateDslLanguage, templateDslAutocomplete } from '../lib/codemirror/templateDslMode'
+import { iconAutocompleteExtension } from '../lib/codemirror/iconAutocomplete'
 import { computeDiagnostics } from '../lib/codemirror/diagnostics'
 import { createEditorExtensions, editorTheme } from '../lib/codemirror/theme'
 
@@ -22,7 +23,11 @@ export function CodeEditor({ value, onChange, language, placeholder, minHeight, 
   const extensions = useMemo(() => {
     const list = [...createEditorExtensions(), editorTheme]
     if (language === 'mermaid') list.push(mermaidLanguage)
-    if (language === 'templates') list.push(templateDslLanguage)
+    if (language === 'templates') {
+      list.push(templateDslLanguage)
+      list.push(templateDslAutocomplete)
+      list.push(iconAutocompleteExtension)
+    }
     if (language) {
       list.push(
         linter((view) => {
