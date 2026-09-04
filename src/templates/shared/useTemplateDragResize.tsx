@@ -438,7 +438,7 @@ export function useTemplateDragResize(svgRef: React.RefObject<SVGGElement | null
     const activeRot = currentRotation ?? (templateElementRotations[id] || 0)
 
     return (
-      <g pointerEvents="all">
+      <g data-selection-handles="true" pointerEvents="all">
         {selectedIds.size > 1 && (
           <rect
             x={renderRect.x}

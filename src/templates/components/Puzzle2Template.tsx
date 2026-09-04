@@ -144,6 +144,7 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
               )}
               {isPieceSelected && (
                 <rect
+                  data-selection-box="true"
                   x={pieceRect.x}
                   y={pieceRect.y}
                   width={pieceRect.width}
