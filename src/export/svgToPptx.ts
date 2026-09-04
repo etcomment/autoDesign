@@ -453,11 +453,21 @@ function addTextToSlide(
 
   if (!bounds) return
 
-  const x = toSlideX(bounds.x, vb, layout)
+  const rawW = toSlideW(bounds.w, layout)
+  const rawH = toSlideH(bounds.h, layout)
+  const extraW = Math.max(0.15, rawW * 0.15)
+  const w = Math.max(0.2, rawW + extraW)
+  const h = Math.max(0.15, rawH + 0.1)
+
+  let x = toSlideX(bounds.x, vb, layout)
+  if (textAnchor === 'middle') {
+    x -= extraW / 2
+  } else if (textAnchor === 'end') {
+    x -= extraW
+  }
   const y = toSlideY(bounds.y, vb, layout)
-  const w = Math.max(0.2, toSlideW(bounds.w, layout))
-  const h = Math.max(0.15, toSlideH(bounds.h, layout))
-  const pptxFontSize = Math.max(6, Math.round(fontSizePx * ctmScale * layout.scaleX * 72))
+
+  const pptxFontSize = Math.max(6, Math.round(fontSizePx * ctmScale * 0.75))
 
   let align: PptxGenJS.HAlign = 'left'
   if (textAnchor === 'middle') align = 'center'
