@@ -14,13 +14,12 @@ const basePieces = [
 ]
 
 describe('Puzzle2Template', () => {
-  it('affiche les numéros à la place des icônes quand le DSL n\'en définit pas', () => {
+  it('ne rend aucun texte ni chiffre sur les pièces quand le DSL ne définit pas d\'icône', () => {
     const data = { type: 'puzzle2', pieces: basePieces } as unknown as PuzzleData
     const html = renderToString(<Puzzle2Template data={data} />)
     expect((html.match(/data-icon/g) ?? []).length).toBe(0)
-    expect((html.match(/fill="white"/g) ?? []).length).toBe(4)
-    expect(html).toContain('>1</text>')
-    expect(html).toContain('>4</text>')
+    expect(html).not.toContain('>1</text>')
+    expect(html).not.toContain('>4</text>')
   })
 
   it('affiche l\'icône DSL centrée en blanc quand elle est résolvable', () => {

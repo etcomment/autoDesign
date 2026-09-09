@@ -81,25 +81,25 @@ export function makeCornerSegmentPath(
 
     for (let i = 0; i < half1.length; i++) {
       const [cp1u, cp1v, cp2u, cp2v, endu, endv] = half1[i]!
-      const p1x = x1 + cp1v * scaleV
+      const p1x = x1 - cp1v * scaleV
       const p1y = midY + cp1u * scaleU
-      const p2x = x1 + cp2v * scaleV
+      const p2x = x1 - cp2v * scaleV
       const p2y = midY + cp2u * scaleU
-      const pex = x1 + endv * scaleV
+      const pex = i === half1.length - 1 ? x1 - 33.40 * scaleV : x1 - endv * scaleV
       const pey = i === half1.length - 1 ? midY - gapOffset : midY + endu * scaleU
       d.push(`C ${p1x.toFixed(2)} ${p1y.toFixed(2)} ${p2x.toFixed(2)} ${p2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
     }
   } else if (corner === 2) {
-    const startX = x1 + 33.40 * scaleV
+    const startX = x1 - 33.40 * scaleV
     const startY = midY + gapOffset
     d.push(`M ${startX.toFixed(2)} ${startY.toFixed(2)}`)
 
     for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of half2) {
-      const p1x = x1 + cp1v * scaleV
+      const p1x = x1 - cp1v * scaleV
       const p1y = midY + cp1u * scaleU
-      const p2x = x1 + cp2v * scaleV
+      const p2x = x1 - cp2v * scaleV
       const p2y = midY + cp2u * scaleU
-      const pex = x1 + endv * scaleV
+      const pex = x1 - endv * scaleV
       const pey = midY + endu * scaleU
       d.push(`C ${p1x.toFixed(2)} ${p1y.toFixed(2)} ${p2x.toFixed(2)} ${p2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
     }
@@ -110,25 +110,25 @@ export function makeCornerSegmentPath(
     for (let i = 0; i < half1.length; i++) {
       const [cp1u, cp1v, cp2u, cp2v, endu, endv] = half1[i]!
       const p1x = midX - cp1u * scaleU
-      const p1y = y1 - cp1v * scaleV
+      const p1y = y1 + cp1v * scaleV
       const p2x = midX - cp2u * scaleU
-      const p2y = y1 - cp2v * scaleV
+      const p2y = y1 + cp2v * scaleV
       const pex = i === half1.length - 1 ? midX + gapOffset : midX - endu * scaleU
-      const pey = y1 - endv * scaleV
+      const pey = y1 + endv * scaleV
       d.push(`C ${p1x.toFixed(2)} ${p1y.toFixed(2)} ${p2x.toFixed(2)} ${p2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
     }
   } else {
     const startX = midX - gapOffset
-    const startY = y1 - 33.40 * scaleV
+    const startY = y1 + 33.40 * scaleV
     d.push(`M ${startX.toFixed(2)} ${startY.toFixed(2)}`)
 
     for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of half2) {
       const p1x = midX - cp1u * scaleU
-      const p1y = y1 - cp1v * scaleV
+      const p1y = y1 + cp1v * scaleV
       const p2x = midX - cp2u * scaleU
-      const p2y = y1 - cp2v * scaleV
+      const p2y = y1 + cp2v * scaleV
       const pex = midX - endu * scaleU
-      const pey = y1 - endv * scaleV
+      const pey = y1 + endv * scaleV
       d.push(`C ${p1x.toFixed(2)} ${p1y.toFixed(2)} ${p2x.toFixed(2)} ${p2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
     }
 
@@ -141,7 +141,7 @@ export function makeCornerSegmentPath(
       const p1y = midY - cp1u * scaleU
       const p2x = x + cp2v * scaleV
       const p2y = midY - cp2u * scaleU
-      const pex = x + endv * scaleV
+      const pex = i === half1.length - 1 ? x + 33.40 * scaleV : x + endv * scaleV
       const pey = i === half1.length - 1 ? midY + gapOffset : midY - endu * scaleU
       d.push(`C ${p1x.toFixed(2)} ${p1y.toFixed(2)} ${p2x.toFixed(2)} ${p2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
     }
@@ -211,26 +211,26 @@ export function Puzzle6Template({ data }: { data: PuzzleData }): ReactElement {
     {
       index: 2,
       letterX: 948,
-      letterY: y + size - 20,
+      letterY: y + size,
       cardX: 725,
-      cardY: y + size - 55,
-      lineX1: x + size + 33.4 * scaleV,
-      lineY1: y + size - 20,
+      cardY: y + size - 35,
+      lineX1: cx + baseHalf,
+      lineY1: y + size,
       lineX2: 720,
-      lineY2: y + size - 20,
+      lineY2: y + size,
       isLeft: false,
       bbox: { x: cx, y: cy, width: size / 2 + 33.4 * scaleV, height: size / 2 + 33.4 * scaleV },
     },
     {
       index: 3,
       letterX: 52,
-      letterY: y + size - 20,
+      letterY: y + size,
       cardX: 95,
-      cardY: y + size - 55,
+      cardY: y + size - 35,
       lineX1: 280,
-      lineY1: y + size - 20,
-      lineX2: x,
-      lineY2: y + size - 20,
+      lineY1: y + size,
+      lineX2: cx - baseHalf,
+      lineY2: y + size,
       isLeft: true,
       bbox: { x, y: cy, width: size / 2 + 33.4 * scaleV, height: size / 2 + 33.4 * scaleV },
     },

@@ -13,6 +13,17 @@ const DEFAULT_PIECES: PuzzlePiece[] = [
   { number: 4, title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703' },
 ]
 
+export const PUZZLE2_TAB_BEZIERS = [
+  [-11.70, 1.40, -12.00, 3.00, -12.40, 4.10],
+  [-15.10, 9.50, -16.70, 15.00, -16.70, 18.90],
+  [-16.70, 23.30, -15.00, 27.10, -12.00, 29.60],
+  [-9.00, 32.10, -4.70, 33.40, 0.00, 33.40],
+  [4.70, 33.40, 9.00, 32.10, 12.00, 29.60],
+  [15.00, 27.10, 16.70, 23.30, 16.70, 18.90],
+  [16.70, 15.00, 15.10, 9.50, 12.40, 4.10],
+  [12.00, 3.00, 11.70, 1.40, 11.75, 0.00],
+] as const
+
 export function makePuzzlePiecePath(
   x: number,
   y: number,
@@ -21,11 +32,12 @@ export function makePuzzlePiecePath(
   rightTab: 'none' | 'out' | 'in',
   bottomTab: 'none' | 'out' | 'in',
   leftTab: 'none' | 'out' | 'in',
-  neckW = 24,
-  headR = 18,
-  neckR = 6,
 ): string {
-  const tabDepth = headR * 1.8
+  const scale = size / 142.02
+  const scaleU = scale * 1.20
+  const scaleV = scale * 1.24
+  const baseHalf = 11.75 * scaleU
+
   let d = `M ${x} ${y}`
 
   if (topTab === 'none') {
@@ -33,9 +45,10 @@ export function makePuzzlePiecePath(
   } else {
     const sgn = topTab === 'out' ? -1 : 1
     const midX = x + size / 2
-    d += ` L ${midX - neckW / 2 - neckR} ${y}`
-    d += ` C ${midX - neckW * 0.8} ${y + sgn * tabDepth * 0.1} ${midX - headR * 1.4} ${y + sgn * tabDepth * 1.05} ${midX} ${y + sgn * tabDepth}`
-    d += ` C ${midX + headR * 1.4} ${y + sgn * tabDepth * 1.05} ${midX + neckW * 0.8} ${y + sgn * tabDepth * 0.1} ${midX + neckW / 2 + neckR} ${y}`
+    d += ` L ${midX - baseHalf} ${y}`
+    for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
+      d += ` C ${midX + cp1u * scaleU} ${y + sgn * cp1v * scaleV} ${midX + cp2u * scaleU} ${y + sgn * cp2v * scaleV} ${midX + endu * scaleU} ${y + sgn * endv * scaleV}`
+    }
     d += ` L ${x + size} ${y}`
   }
 
@@ -44,9 +57,10 @@ export function makePuzzlePiecePath(
   } else {
     const sgn = rightTab === 'out' ? 1 : -1
     const midY = y + size / 2
-    d += ` L ${x + size} ${midY - neckW / 2 - neckR}`
-    d += ` C ${x + size + sgn * tabDepth * 0.1} ${midY - neckW * 0.8} ${x + size + sgn * tabDepth * 1.05} ${midY - headR * 1.4} ${x + size + sgn * tabDepth} ${midY}`
-    d += ` C ${x + size + sgn * tabDepth * 1.05} ${midY + headR * 1.4} ${x + size + sgn * tabDepth * 0.1} ${midY + neckW * 0.8} ${x + size} ${midY + neckW / 2 + neckR}`
+    d += ` L ${x + size} ${midY - baseHalf}`
+    for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
+      d += ` C ${x + size + sgn * cp1v * scaleV} ${midY + cp1u * scaleU} ${x + size + sgn * cp2v * scaleV} ${midY + cp2u * scaleU} ${x + size + sgn * endv * scaleV} ${midY + endu * scaleU}`
+    }
     d += ` L ${x + size} ${y + size}`
   }
 
@@ -55,9 +69,10 @@ export function makePuzzlePiecePath(
   } else {
     const sgn = bottomTab === 'out' ? 1 : -1
     const midX = x + size / 2
-    d += ` L ${midX + neckW / 2 + neckR} ${y + size}`
-    d += ` C ${midX + neckW * 0.8} ${y + size + sgn * tabDepth * 0.1} ${midX + headR * 1.4} ${y + size + sgn * tabDepth * 1.05} ${midX} ${y + size + sgn * tabDepth}`
-    d += ` C ${midX - headR * 1.4} ${y + size + sgn * tabDepth * 1.05} ${midX - neckW * 0.8} ${y + size + sgn * tabDepth * 0.1} ${midX - neckW / 2 - neckR} ${y + size}`
+    d += ` L ${midX + baseHalf} ${y + size}`
+    for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
+      d += ` C ${midX - cp1u * scaleU} ${y + size + sgn * cp1v * scaleV} ${midX - cp2u * scaleU} ${y + size + sgn * cp2v * scaleV} ${midX - endu * scaleU} ${y + size + sgn * endv * scaleV}`
+    }
     d += ` L ${x} ${y + size}`
   }
 
@@ -66,9 +81,10 @@ export function makePuzzlePiecePath(
   } else {
     const sgn = leftTab === 'out' ? -1 : 1
     const midY = y + size / 2
-    d += ` L ${x} ${midY + neckW / 2 + neckR}`
-    d += ` C ${x + sgn * tabDepth * 0.1} ${midY + neckW * 0.8} ${x + sgn * tabDepth * 1.05} ${midY + headR * 1.4} ${x + sgn * tabDepth} ${midY}`
-    d += ` C ${x + sgn * tabDepth * 1.05} ${midY - headR * 1.4} ${x + sgn * tabDepth * 0.1} ${midY - neckW * 0.8} ${x} ${midY - neckW / 2 - neckR}`
+    d += ` L ${x} ${midY + baseHalf}`
+    for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
+      d += ` C ${x + sgn * cp1v * scaleV} ${midY - cp1u * scaleU} ${x + sgn * cp2v * scaleV} ${midY - cp2u * scaleU} ${x + sgn * endv * scaleV} ${midY - endu * scaleU}`
+    }
     d += ` L ${x} ${y}`
   }
 
@@ -278,9 +294,6 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
           layout.right,
           layout.bottom,
           layout.left,
-          Math.round(24 * scale),
-          Math.round(18 * scale),
-          Math.round(6 * scale),
         )
 
         const centerCx = pieceBbox.x + pieceBbox.width / 2
@@ -290,9 +303,9 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
         // Elastic Dynamic Connectors (Rule 2 & 7)
         const isLeftCard = cardBbox.x < pieceBbox.x
         const lineX1 = isLeftCard ? cardBbox.x + cardBbox.width : pieceBbox.x + pieceBbox.width
-        const lineY1 = isLeftCard ? cardBbox.y + 18 : pieceBbox.y + pieceBbox.height / 2
+        const lineY1 = cardBbox.y + 18
         const lineX2 = isLeftCard ? pieceBbox.x : cardBbox.x
-        const lineY2 = isLeftCard ? pieceBbox.y + pieceBbox.height / 2 : cardBbox.y + 18
+        const lineY2 = Math.min(Math.max(cardBbox.y + 18, pieceBbox.y + 18), pieceBbox.y + pieceBbox.height - 18)
 
         return (
           <g key={elementId}>
@@ -328,10 +341,11 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
               ) : (
                 <text
                   x={centerCx}
-                  y={centerCy + Math.round(16 * scale)}
+                  y={centerCy}
+                  dominantBaseline="central"
                   textAnchor="middle"
                   fontFamily="Arial, Segoe UI, sans-serif"
-                  fontSize={Math.max(16, Math.floor(pieceBbox.width * 0.33))}
+                  fontSize={Math.max(16, Math.floor(pieceBbox.width * 0.35))}
                   fontWeight={700}
                   fill="white"
                 >
