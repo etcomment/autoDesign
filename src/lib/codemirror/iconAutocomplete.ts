@@ -2,6 +2,7 @@ import type { Completion, CompletionContext, CompletionResult } from '@codemirro
 import { autocompletion } from '@codemirror/autocomplete'
 import * as LucideIcons from 'lucide-react'
 import { MIGSO_ICONS_DATA } from '../../templates/shared/migsoIconsData'
+import { chartCompletionSource } from './chartAutocomplete'
 
 const BUILT_IN_ICON_NAMES = [
   'clock', 'gear', 'briefcase', 'people', 'star', 'phone', 'mail',
@@ -90,6 +91,13 @@ export function iconCompletionSource(context: CompletionContext): CompletionResu
   }
 }
 
+export function templateDslUnifiedCompletionSource(context: CompletionContext): CompletionResult | null {
+  const iconResult = iconCompletionSource(context)
+  if (iconResult) return iconResult
+
+  return chartCompletionSource(context)
+}
+
 export const iconAutocompleteExtension = autocompletion({
-  override: [iconCompletionSource],
+  override: [templateDslUnifiedCompletionSource],
 })

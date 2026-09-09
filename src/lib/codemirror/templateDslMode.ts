@@ -1,5 +1,5 @@
 import { StreamLanguage, type StreamParser } from '@codemirror/language'
-import { iconCompletionSource } from './iconAutocomplete'
+import { templateDslUnifiedCompletionSource } from './iconAutocomplete'
 
 const DIRECTIVE_KEYWORDS = new Set([
   'start', 'finish', 'progress', 'quarters', 'lanes', 'style', 'columns',
@@ -12,7 +12,7 @@ const ITEM_KEYWORDS = new Set([
   'comp', 'leaf', 'yes', 'no', 'line',
 ])
 
-const KV_PREFIX = /^(val|pct|icon|date|lane):/
+const KV_PREFIX = /^(val|pct|icon|date|lane|chart):/
 
 const templateDslParser: StreamParser<Record<string, never>> = {
   name: 'templateDsl',
@@ -50,5 +50,5 @@ const templateDslParser: StreamParser<Record<string, never>> = {
 
 export const templateDslLanguage = StreamLanguage.define(templateDslParser)
 export const templateDslAutocomplete = templateDslLanguage.data.of({
-  autocomplete: iconCompletionSource,
+  autocomplete: templateDslUnifiedCompletionSource,
 })
