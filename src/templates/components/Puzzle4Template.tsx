@@ -7,10 +7,10 @@ import { TEMPLATE_ICONS } from '../shared/icons'
 import { MIGSO_PALETTE } from '../../lib/theme'
 
 const DEFAULT_PIECES: PuzzlePiece[] = [
-  { number: 1, title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#2c2b64' },
-  { number: 2, title: 'Innovation', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#3466ce' },
-  { number: 3, title: 'Management', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ff4d30' },
-  { number: 4, title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703' },
+  { number: 1, title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#2c2b64', value: '1' },
+  { number: 2, title: 'Innovation', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#3466ce', value: '2' },
+  { number: 3, title: 'Management', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ff4d30', value: '3' },
+  { number: 4, title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703', value: '4' },
 ]
 
 export const PUZZLE2_TAB_BEZIERS = [
@@ -338,7 +338,7 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
                 <g transform={`translate(${centerCx - Math.round(18 * scale)}, ${centerCy - Math.round(18 * scale)})`}>
                   <IconComponent size={Math.round(36 * scale)} color="white" />
                 </g>
-              ) : (
+              ) : piece.value ? (
                 <text
                   x={centerCx}
                   y={centerCy}
@@ -349,9 +349,9 @@ export function Puzzle4Template({ data }: { data: PuzzleData }): ReactElement {
                   fontWeight={700}
                   fill="white"
                 >
-                  {piece.number !== undefined ? piece.number : layout.index + 1}
+                  {piece.value}
                 </text>
-              )}
+              ) : null}
             </g>
 
             {/* Side Text Card with Auto-resize */}

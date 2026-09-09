@@ -332,4 +332,39 @@ describe('Puzzle Templates (puzzle, puzzle3, puzzle4, puzzle5, puzzle6 & puzzle7
     expect(pathD).toContain('A 25 25')
     expect(pathD).toContain('A 50 50')
   })
+
+  it('renders Puzzle, Puzzle3, Puzzle4, Puzzle6, and Puzzle7 with empty shapes when no val nor icon is given', () => {
+    const emptyPiecesData: PuzzleData = {
+      type: 'puzzle',
+      pieces: [
+        { number: 1, title: 'Piece 1', subtitle: 'Sub 1', color: '#2c2b64' },
+        { number: 2, title: 'Piece 2', subtitle: 'Sub 2', color: '#3466ce', value: 'VAL_TEST' },
+      ],
+    }
+
+    // PuzzleTemplate
+    const p1 = render(<svg><PuzzleTemplate data={emptyPiecesData} /></svg>)
+    expect(p1.container.querySelector('[data-element-id="piece-0"] text')).toBeNull()
+    expect(p1.container.querySelector('[data-element-id="piece-1"] text')?.textContent).toBe('VAL_TEST')
+
+    // Puzzle3Template
+    const p3 = render(<svg><Puzzle3Template data={emptyPiecesData} /></svg>)
+    expect(p3.container.querySelector('[data-element-id="piece-0"] text')).toBeNull()
+    expect(p3.container.querySelector('[data-element-id="piece-1"] text')?.textContent).toBe('VAL_TEST')
+
+    // Puzzle4Template
+    const p4 = render(<svg><Puzzle4Template data={emptyPiecesData} /></svg>)
+    expect(p4.container.querySelector('[data-element-id="piece-0"] text')).toBeNull()
+    expect(p4.container.querySelector('[data-element-id="piece-1"] text')?.textContent).toBe('VAL_TEST')
+
+    // Puzzle6Template
+    const p6 = render(<svg><Puzzle6Template data={emptyPiecesData} /></svg>)
+    // in puzzle6, letter is rendered outside the piece path group at cDef.letterX/letterY
+    expect(p6.container.textContent).toContain('VAL_TEST')
+
+    // Puzzle7Template
+    const p7 = render(<svg><Puzzle7Template data={emptyPiecesData} /></svg>)
+    expect(p7.container.querySelector('[data-element-id="piece-0"] text')).toBeNull()
+    expect(p7.container.querySelector('[data-element-id="piece-1"] text')?.textContent).toBe('VAL_TEST')
+  })
 })

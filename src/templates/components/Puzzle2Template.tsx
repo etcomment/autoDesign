@@ -147,11 +147,25 @@ export function Puzzle2Template({ data }: { data: PuzzleData }): ReactElement {
                 strokeWidth={pieceStrokeWidth}
                 strokeLinejoin="round"
               />
-              {iconComponent && (
+              {iconComponent ? (
                 <g data-icon="true" pointerEvents="none" transform={`translate(${centerCx - 24}, ${centerCy - 24})`}>
                   {createElement(iconComponent, { size: 48, color: 'white' })}
                 </g>
-              )}
+              ) : piece.value ? (
+                <text
+                  x={centerCx}
+                  y={centerCy}
+                  dominantBaseline="central"
+                  textAnchor="middle"
+                  fontFamily="Arial, Segoe UI, sans-serif"
+                  fontSize={28}
+                  fontWeight="bold"
+                  fill="white"
+                  pointerEvents="none"
+                >
+                  {piece.value}
+                </text>
+              ) : null}
             </g>
 
             <g

@@ -700,10 +700,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'puzzle',
       pieces: [
-        { number: '1', title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#2c2b64' },
-        { number: '2', title: 'Innovation', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#3466ce' },
-        { number: '3', title: 'Management', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ff4d30' },
-        { number: '4', title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703' },
+        { number: '1', title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#2c2b64', value: '1' },
+        { number: '2', title: 'Innovation', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#3466ce', value: '2' },
+        { number: '3', title: 'Management', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ff4d30', value: '3' },
+        { number: '4', title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703', value: '4' },
       ],
     },
   },
@@ -746,10 +746,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'puzzle',
       pieces: [
-        { number: 1, title: 'Improve', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#1a2249' },
-        { number: 2, title: 'Innovation', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#2b63d9' },
-        { number: 3, title: 'Management', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#ff5338' },
-        { number: 4, title: 'Identify', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#ffb100' },
+        { number: 1, title: 'Improve', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#1a2249', value: '1', icon: 'inbox' },
+        { number: 2, title: 'Innovation', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#2b63d9', value: '2', icon: 'database' },
+        { number: 3, title: 'Management', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#ff5338', value: '3', icon: 'network' },
+        { number: 4, title: 'Identify', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#ffb100', value: '4', icon: 'send' },
       ],
     },
   },

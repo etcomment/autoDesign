@@ -14,12 +14,26 @@ const basePieces = [
 ]
 
 describe('Puzzle2Template', () => {
-  it('ne rend aucun texte ni chiffre sur les pièces quand le DSL ne définit pas d\'icône', () => {
+  it('ne rend aucun texte ni chiffre sur les pièces quand le DSL ne définit pas d\'icône ni de val', () => {
     const data = { type: 'puzzle2', pieces: basePieces } as unknown as PuzzleData
     const html = renderToString(<Puzzle2Template data={data} />)
     expect((html.match(/data-icon/g) ?? []).length).toBe(0)
     expect(html).not.toContain('>1</text>')
     expect(html).not.toContain('>4</text>')
+  })
+
+  it('affiche la valeur personnalisée val sur les pièces quand spécifiée', () => {
+    const pieces = [
+      { ...basePieces[0]!, value: 'A' },
+      { ...basePieces[1]!, value: 'B' },
+      { ...basePieces[2]! },
+      { ...basePieces[3]!, icon: 'clock' },
+    ]
+    const data = { type: 'puzzle2', pieces } as unknown as PuzzleData
+    const html = renderToString(<Puzzle2Template data={data} />)
+    expect(html).toContain('>A</text>')
+    expect(html).toContain('>B</text>')
+    expect((html.match(/data-icon/g) ?? []).length).toBe(1)
   })
 
   it('affiche l\'icône DSL centrée en blanc quand elle est résolvable', () => {

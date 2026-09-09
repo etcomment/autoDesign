@@ -3,6 +3,7 @@ import type { PuzzleData, PuzzlePiece } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
 import { MIGSO_PALETTE } from '../../lib/theme'
 import { PUZZLE2_TAB_BEZIERS } from './Puzzle4Template'
 
@@ -318,7 +319,7 @@ export function Puzzle6Template({ data }: { data: PuzzleData }): ReactElement {
           height: customCardPos?.height || Math.max(70, nominalCardHeight),
         }
 
-        const letter = piece.value ?? String.fromCharCode(65 + index)
+        const IconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] : null
 
         return (
           <g key={elementId}>
@@ -348,18 +349,24 @@ export function Puzzle6Template({ data }: { data: PuzzleData }): ReactElement {
               />
             </g>
 
-            <text
-              x={cDef.letterX}
-              y={cDef.letterY}
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontFamily="Arial, Segoe UI, sans-serif"
-              fontSize={60}
-              fontWeight={800}
-              fill={color}
-            >
-              {letter}
-            </text>
+            {IconComponent ? (
+              <g transform={`translate(${cDef.letterX - 25}, ${cDef.letterY - 25})`}>
+                <IconComponent size={50} color={color} />
+              </g>
+            ) : piece.value ? (
+              <text
+                x={cDef.letterX}
+                y={cDef.letterY}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontFamily="Arial, Segoe UI, sans-serif"
+                fontSize={60}
+                fontWeight={800}
+                fill={color}
+              >
+                {piece.value}
+              </text>
+            ) : null}
 
             <g
               data-element-id={cardElementId}

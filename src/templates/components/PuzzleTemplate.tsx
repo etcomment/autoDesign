@@ -321,33 +321,37 @@ export function PuzzleTemplate({ data }: { data: PuzzleData }): ReactElement {
               />
 
               {/* Icon with light square badge outline */}
-              <rect
-                x={iconX - badgeHalf}
-                y={iconY - badgeHalf}
-                width={badgeSize}
-                height={badgeSize}
-                rx={6}
-                fill="none"
-                stroke="rgba(255, 255, 255, 0.7)"
-                strokeWidth={2}
-              />
-              {IconComponent ? (
-                <g transform={`translate(${iconX - iconHalf}, ${iconY - iconHalf})`}>
-                  <IconComponent size={iconSize} color="white" />
-                </g>
-              ) : (
-                <text
-                  x={iconX}
-                  y={iconY}
-                  dominantBaseline="central"
-                  textAnchor="middle"
-                  fontFamily="Arial, Segoe UI, sans-serif"
-                  fontSize={count > 5 ? 16 : 20}
-                  fontWeight={700}
-                  fill="white"
-                >
-                  {piece.number !== undefined ? piece.number : index + 1}
-                </text>
+              {(IconComponent || piece.value) && (
+                <>
+                  <rect
+                    x={iconX - badgeHalf}
+                    y={iconY - badgeHalf}
+                    width={badgeSize}
+                    height={badgeSize}
+                    rx={6}
+                    fill="none"
+                    stroke="rgba(255, 255, 255, 0.7)"
+                    strokeWidth={2}
+                  />
+                  {IconComponent ? (
+                    <g transform={`translate(${iconX - iconHalf}, ${iconY - iconHalf})`}>
+                      <IconComponent size={iconSize} color="white" />
+                    </g>
+                  ) : (
+                    <text
+                      x={iconX}
+                      y={iconY}
+                      dominantBaseline="central"
+                      textAnchor="middle"
+                      fontFamily="Arial, Segoe UI, sans-serif"
+                      fontSize={count > 5 ? 16 : 20}
+                      fontWeight={700}
+                      fill="white"
+                    >
+                      {piece.value}
+                    </text>
+                  )}
+                </>
               )}
             </g>
 

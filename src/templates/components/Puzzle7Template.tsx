@@ -364,8 +364,6 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
           ? Math.min(piecePerimeterX - 8, Math.max(cardConnX + 16, qDef.defaultDotX + deltaX))
           : Math.max(piecePerimeterX + 8, Math.min(cardConnX - 16, qDef.defaultDotX + deltaX))
 
-        const numVal = piece.value ?? (piece.number !== undefined ? String(piece.number) : String(index + 1))
-
         return (
           <g key={elementId}>
             <line
@@ -403,7 +401,7 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
                 </g>
               )}
 
-              {numVal && (
+              {piece.value && (
                 <text
                   x={numX}
                   y={numY}
@@ -414,7 +412,7 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
                   fontWeight={800}
                   fill="white"
                 >
-                  {numVal}
+                  {piece.value}
                 </text>
               )}
             </g>
