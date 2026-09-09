@@ -167,11 +167,11 @@ export function Puzzle6Template({ data }: { data: PuzzleData }): ReactElement {
   const cx = W / 2
   const cy = H / 2
 
-  const size = 230
+  const size = 220
   const x = cx - size / 2
   const y = cy - size / 2
 
-  const scale = (size / 142.02) * 0.92
+  const scale = (size / 142.02) * 0.90
   const scaleU = scale * 1.20
   const scaleV = scale * 1.24
   const baseHalf = 11.75 * scaleU
@@ -184,11 +184,11 @@ export function Puzzle6Template({ data }: { data: PuzzleData }): ReactElement {
   const cornerDefs = [
     {
       index: 0,
-      letterX: 52,
+      letterX: 35,
       letterY: y,
-      cardX: 95,
+      cardX: 62,
       cardY: y - 35,
-      lineX1: 280,
+      lineX1: 220,
       lineY1: y,
       lineX2: cx - baseHalf,
       lineY2: y,
@@ -197,37 +197,37 @@ export function Puzzle6Template({ data }: { data: PuzzleData }): ReactElement {
     },
     {
       index: 1,
-      letterX: 948,
+      letterX: 965,
       letterY: y,
-      cardX: 725,
+      cardX: 745,
       cardY: y - 35,
       lineX1: cx + baseHalf,
       lineY1: y,
-      lineX2: 720,
+      lineX2: 780,
       lineY2: y,
       isLeft: false,
       bbox: { x: cx, y: y - 33.4 * scaleV, width: size / 2 + 33.4 * scaleV, height: size / 2 + 33.4 * scaleV },
     },
     {
       index: 2,
-      letterX: 948,
+      letterX: 965,
       letterY: y + size,
-      cardX: 725,
+      cardX: 745,
       cardY: y + size - 35,
       lineX1: cx + baseHalf,
       lineY1: y + size,
-      lineX2: 720,
+      lineX2: 780,
       lineY2: y + size,
       isLeft: false,
       bbox: { x: cx, y: cy, width: size / 2 + 33.4 * scaleV, height: size / 2 + 33.4 * scaleV },
     },
     {
       index: 3,
-      letterX: 52,
+      letterX: 35,
       letterY: y + size,
-      cardX: 95,
+      cardX: 62,
       cardY: y + size - 35,
-      lineX1: 280,
+      lineX1: 220,
       lineY1: y + size,
       lineX2: cx - baseHalf,
       lineY2: y + size,
@@ -239,10 +239,10 @@ export function Puzzle6Template({ data }: { data: PuzzleData }): ReactElement {
   const centerCardId = 'center-card'
   const customCenterPos = templateElementPositions[centerCardId]
   const centerBbox = {
-    x: customCenterPos ? customCenterPos.x : cx - 90,
-    y: customCenterPos ? customCenterPos.y : cy - 50,
-    width: customCenterPos?.width || 180,
-    height: customCenterPos?.height || 100,
+    x: customCenterPos ? customCenterPos.x : cx - 80,
+    y: customCenterPos ? customCenterPos.y : cy - 35,
+    width: customCenterPos?.width || 160,
+    height: customCenterPos?.height || 70,
   }
   const isCenterSelected = selectedIds.has(centerCardId)
 
@@ -268,12 +268,13 @@ export function Puzzle6Template({ data }: { data: PuzzleData }): ReactElement {
           <text
             key={lIdx}
             x={centerBbox.x + centerBbox.width / 2}
-            y={centerBbox.y + 24 + lIdx * 20}
+            y={centerBbox.y + (centerBbox.height - (centerTextLines.length - 1) * 16) / 2 + lIdx * 16}
             textAnchor="middle"
+            dominantBaseline="central"
             fontFamily="Arial, Segoe UI, sans-serif"
-            fontSize={15}
+            fontSize={12}
             fontWeight={600}
-            fill="#1e293b"
+            fill="#334155"
           >
             {line}
           </text>
