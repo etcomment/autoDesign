@@ -114,3 +114,46 @@ describe('parseValueChain DSL', () => {
     expect(parsed.rightChevrons![0]!.title).toBe('Chevron Yellow')
   })
 })
+
+describe('parseDashboard DSL with chart types', () => {
+  it('parses standard metrics and chart types without regressions', () => {
+    const dsl = `
+@dashboard "Performance KPI"
+  metric "Visitors" "120k" chart:line color:#1f2856
+  metric "Comments" "100,000" chart:stat icon:message-square color:#2865c8
+  metric "Users" "85,000" chart:gauge color:#f3543a
+  metric "Revenue" "£150k" chart:line color:#4ebe96
+`
+    const parsed = parseTemplateDsl(dsl) as any
+    expect(parsed).not.toBeNull()
+    expect(parsed.type).toBe('dashboard')
+    expect(parsed.title).toBe('Performance KPI')
+    expect(parsed.metrics).toHaveLength(4)
+    expect(parsed.metrics[0].label).toBe('Visitors')
+    expect(parsed.metrics[0].value).toBe('120k')
+    expect(parsed.metrics[0].chart).toBe('line')
+    expect(parsed.metrics[0].color).toBe('#1f2856')
+    expect(parsed.metrics[1].chart).toBe('stat')
+    expect(parsed.metrics[1].icon).toBe('message-square')
+    expect(parsed.metrics[2].chart).toBe('gauge')
+    expect(parsed.metrics[3].label).toBe('Revenue')
+    expect(parsed.metrics[3].chart).toBe('line')
+  })
+
+  it('preserves existing metric syntax without chart option', () => {
+    const dsl = `
+@dashboard
+  metric "Revenue" "$2.4M" "+12%" #4caf50
+  metric "Users" "48.5K" "+8%" #2196f3
+`
+    const parsed = parseTemplateDsl(dsl) as any
+    expect(parsed).not.toBeNull()
+    expect(parsed.metrics).toHaveLength(2)
+    expect(parsed.metrics[0].label).toBe('Revenue')
+    expect(parsed.metrics[0].value).toBe('$2.4M')
+    expect(parsed.metrics[0].change).toBe('+12%')
+    expect(parsed.metrics[0].color).toBe('#4caf50')
+    expect(parsed.metrics[0].chart).toBeUndefined()
+  })
+})
+

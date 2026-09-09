@@ -398,6 +398,7 @@ export interface DashboardMetric {
   category?: string
   description?: string
   series?: number[]
+  chart?: string
 }
 
 export interface DashboardData {

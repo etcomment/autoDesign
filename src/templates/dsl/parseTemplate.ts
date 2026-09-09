@@ -106,7 +106,7 @@ export function extractTrailingArgs(args: string[], startIndex: number) {
   const merged: string[] = []
   for (let i = startIndex; i < args.length; i++) {
     const arg = args[i]!
-    const kvMatch = /^(val|pct|icon|date|lane):(.*)/.exec(arg)
+    const kvMatch = /^(val|pct|icon|date|lane|chart):(.*)/.exec(arg)
     if (kvMatch && kvMatch[2]!.startsWith('"') && !kvMatch[2]!.endsWith('"') && i + 1 < args.length) {
       merged.push(arg + ' ' + args[i + 1]!)
       i++
@@ -122,10 +122,25 @@ export function extractTrailingArgs(args: string[], startIndex: number) {
   let percent: string | undefined
   let date: string | undefined
   let lane: string | undefined
+  let chart: string | undefined
   let status: 'done' | 'current' | 'future' | undefined
 
   let idx = 0
-  if (idx < merged.length && !merged[idx]!.startsWith('#') && !merged[idx]!.startsWith('val:') && !merged[idx]!.startsWith('pct:') && !merged[idx]!.startsWith('icon:') && !merged[idx]!.startsWith('date:') && !merged[idx]!.startsWith('lane:') && !merged[idx]!.startsWith('status:') && merged[idx] !== 'current' && merged[idx] !== 'active' && merged[idx] !== 'now' && merged[idx] !== 'done') {
+  if (
+    idx < merged.length &&
+    !merged[idx]!.startsWith('#') &&
+    !merged[idx]!.startsWith('val:') &&
+    !merged[idx]!.startsWith('pct:') &&
+    !merged[idx]!.startsWith('icon:') &&
+    !merged[idx]!.startsWith('date:') &&
+    !merged[idx]!.startsWith('lane:') &&
+    !merged[idx]!.startsWith('chart:') &&
+    !merged[idx]!.startsWith('status:') &&
+    merged[idx] !== 'current' &&
+    merged[idx] !== 'active' &&
+    merged[idx] !== 'now' &&
+    merged[idx] !== 'done'
+  ) {
     subtitle = stripQuotes(merged[idx]!)
     idx++
   }
@@ -142,6 +157,8 @@ export function extractTrailingArgs(args: string[], startIndex: number) {
       date = stripQuotes(arg.slice(5))
     } else if (arg.startsWith('lane:')) {
       lane = stripQuotes(arg.slice(5))
+    } else if (arg.startsWith('chart:')) {
+      chart = stripQuotes(arg.slice(6))
     } else if (arg.startsWith('color:')) {
       color = stripQuotes(arg.slice(6))
     } else if (arg.startsWith('#')) {
@@ -154,7 +171,7 @@ export function extractTrailingArgs(args: string[], startIndex: number) {
     idx++
   }
 
-  return { subtitle, color, icon, value, percent, date, lane, status, current: status === 'current' ? true : undefined }
+  return { subtitle, color, icon, value, percent, date, lane, chart, status, current: status === 'current' ? true : undefined }
 }
 
 function emitTrailingArgs(n: Record<string, any>): string {
@@ -163,6 +180,7 @@ function emitTrailingArgs(n: Record<string, any>): string {
   if (n.lane) out += ' lane:' + (/\s/.test(n.lane) ? '"' + escapeField(n.lane) + '"' : escapeField(n.lane))
   if (n.value) out += ' val:"' + escapeField(n.value) + '"'
   if (n.percent) out += ' pct:"' + escapeField(n.percent) + '"'
+  if (n.chart) out += ' chart:' + escapeField(n.chart)
   if (n.icon) out += ' icon:' + escapeField(n.icon)
   if (n.color) out += ' ' + n.color
   return out
@@ -637,6 +655,7 @@ function parseDashboard(dsl: string, headerTitle?: string, headerType?: string):
         percent: trailing.percent,
         category: trailing.lane,
         description: trailing.subtitle,
+        chart: trailing.chart,
       })
       continue
     }

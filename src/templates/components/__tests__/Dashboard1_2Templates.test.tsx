@@ -114,6 +114,30 @@ describe('DashboardTemplate (Slide 80)', () => {
     expect(container.querySelector('rect[fill="white"][width="1000"]')).toBeNull()
     expect(container.textContent).not.toContain('Global Slide Title Should Not Render')
   })
+
+  it('supports custom chart types via metric.chart property', () => {
+    const data: DashboardData = {
+      type: 'dashboard',
+      metrics: [
+        { label: 'Visitors', value: '120k', chart: 'pie' },
+        { label: 'Comments', value: '50k', chart: 'line' },
+        { label: 'Users', value: '80', chart: 'gauge' },
+        { label: 'Files', value: '10k', chart: 'bar' },
+        { label: 'Views', value: '90k', chart: 'stat', icon: 'zap' },
+        { label: 'Clicks', value: '30k', chart: 'line' },
+        { label: 'Revenue', value: '£200k', chart: 'line' },
+      ],
+    }
+    const { container } = render(
+      <svg>
+        <DashboardTemplate data={data} />
+      </svg>,
+    )
+
+    expect(container.querySelector('[data-element-id="card-6"] path')).not.toBeNull()
+    expect(container.textContent).toContain('Revenue')
+    expect(container.textContent).toContain('Views')
+  })
 })
 
 describe('Dashboard2Template (Slide 81)', () => {
