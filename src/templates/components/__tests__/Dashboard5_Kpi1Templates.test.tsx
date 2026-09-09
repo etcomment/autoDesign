@@ -266,4 +266,27 @@ describe('Kpi1Template', () => {
     expect(container.querySelector('rect[width="960"][height="540"]')).toBeNull()
     expect(container.textContent).not.toContain('KPI 1 Global Title')
   })
+
+  it('dynamically adapts when metrics are reduced, rendering only provided gauges', () => {
+    const data: DashboardData = {
+      type: 'kpi1',
+      metrics: [
+        { label: 'Leadership', value: '40' },
+        { label: 'Talent', value: '75' },
+      ],
+    }
+    const { container } = render(
+      <svg>
+        <Kpi1Template data={data} />
+      </svg>
+    )
+
+    expect(container.querySelectorAll('[data-element-id^="metric-"]').length).toBe(2)
+    expect(container.querySelector('[data-element-id="metric-0"]')).not.toBeNull()
+    expect(container.querySelector('[data-element-id="metric-1"]')).not.toBeNull()
+    expect(container.querySelector('[data-element-id="metric-2"]')).toBeNull()
+    expect(container.textContent).toContain('Leadership')
+    expect(container.textContent).toContain('Talent')
+    expect(container.textContent).not.toContain('Market')
+  })
 })

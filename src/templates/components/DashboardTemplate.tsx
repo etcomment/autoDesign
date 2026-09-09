@@ -1,27 +1,22 @@
 import { useRef, type ReactElement } from 'react'
-import type { DashboardData } from '../types'
+import type { DashboardData, DashboardMetric } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
+import { MIGSO_PALETTE } from '../../lib/theme'
 import {
   renderDashboardCardContent,
+  computeDashboardBbox,
   type CardBoundingBox,
 } from './dashboardCardContent'
 
-interface DefaultCardConfig {
-  label: string
-  value: string
-  color: string
-  defaultBbox: CardBoundingBox
-}
-
-const DEFAULT_CARDS: DefaultCardConfig[] = [
-  { label: 'Visitors', value: '', color: '#1f2856', defaultBbox: { x: 70, y: 105, width: 358, height: 193 } },
-  { label: 'Comments', value: '100,000', color: '#2865c8', defaultBbox: { x: 438, y: 105, width: 135, height: 193 } },
-  { label: 'Users', value: '100,000', color: '#f3543a', defaultBbox: { x: 582, y: 105, width: 135, height: 193 } },
-  { label: 'Files', value: '100,000', color: '#fdb813', defaultBbox: { x: 726, y: 105, width: 204, height: 193 } },
-  { label: 'Page views', value: '', color: '#7d8186', defaultBbox: { x: 70, y: 308, width: 358, height: 193 } },
-  { label: 'Clicks', value: '', color: '#f1698b', defaultBbox: { x: 438, y: 308, width: 279, height: 193 } },
-  { label: 'Revenue', value: '£100,000.00', color: '#4ebe96', defaultBbox: { x: 726, y: 308, width: 204, height: 193 } },
+const DEFAULT_METRICS: DashboardMetric[] = [
+  { label: 'Visitors', value: '', color: '#1f2856', chart: 'line' },
+  { label: 'Comments', value: '100,000', color: '#2865c8', chart: 'stat', icon: 'message-square' },
+  { label: 'Users', value: '100,000', color: '#f3543a', chart: 'stat', icon: 'user' },
+  { label: 'Files', value: '100,000', color: '#fdb813', chart: 'stat', icon: 'files' },
+  { label: 'Page views', value: '', color: '#7d8186', chart: 'bar' },
+  { label: 'Clicks', value: '', color: '#f1698b', chart: 'pie' },
+  { label: 'Revenue', value: '£100,000.00', color: '#4ebe96', chart: 'stat' },
 ]
 
 export function DashboardTemplate({ data }: { data: DashboardData }): ReactElement {
@@ -33,22 +28,32 @@ export function DashboardTemplate({ data }: { data: DashboardData }): ReactEleme
   const templateStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
+  const displayedMetrics: DashboardMetric[] =
+    data.metrics && data.metrics.length > 0
+      ? data.metrics
+      : DEFAULT_METRICS
+
+  const count = displayedMetrics.length
+
   return (
     <g ref={svgRef}>
-      {DEFAULT_CARDS.map((defaultCard, index) => {
+      {displayedMetrics.map((metric, index) => {
         const elementId = `card-${index}`
-        const metric = data.metrics?.[index]
-        const label = metric?.label || defaultCard.label
-        const value = metric?.value || defaultCard.value
-        const defaultColor = metric?.color || defaultCard.color
+        const defaultBbox = computeDashboardBbox(index, count)
+        const label = metric.label || DEFAULT_METRICS[index % DEFAULT_METRICS.length]!.label
+        const value = metric.value || ''
+        const defaultColor =
+          metric.color ||
+          DEFAULT_METRICS[index % DEFAULT_METRICS.length]?.color ||
+          MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
         const color = templateColors[elementId] ?? defaultColor
 
         const customPos = positions[elementId]
         const bbox: CardBoundingBox = {
-          x: customPos?.x ?? defaultCard.defaultBbox.x,
-          y: customPos?.y ?? defaultCard.defaultBbox.y,
-          width: customPos?.width ?? defaultCard.defaultBbox.width,
-          height: customPos?.height ?? defaultCard.defaultBbox.height,
+          x: customPos?.x ?? defaultBbox.x,
+          y: customPos?.y ?? defaultBbox.y,
+          width: customPos?.width ?? defaultBbox.width,
+          height: customPos?.height ?? defaultBbox.height,
         }
 
         const isSelected = selectedIds.has(elementId)
@@ -78,7 +83,7 @@ export function DashboardTemplate({ data }: { data: DashboardData }): ReactEleme
               y={bbox.y + 32}
               fill="#ffffff"
               fontFamily="Arial, sans-serif"
-              fontSize={index === 0 || index === 4 ? 18 : 16}
+              fontSize={count <= 4 ? 18 : 16}
               fontWeight={700}
             >
               {label}

@@ -255,3 +255,80 @@ export function renderDashboardCardContent(
 
   return null
 }
+
+export const DEFAULT_SLIDE80_BBOX: CardBoundingBox[] = [
+  { x: 70, y: 105, width: 358, height: 193 },
+  { x: 438, y: 105, width: 135, height: 193 },
+  { x: 582, y: 105, width: 135, height: 193 },
+  { x: 726, y: 105, width: 204, height: 193 },
+  { x: 70, y: 308, width: 358, height: 193 },
+  { x: 438, y: 308, width: 279, height: 193 },
+  { x: 726, y: 308, width: 204, height: 193 },
+]
+
+export function computeDashboardBbox(index: number, count: number): CardBoundingBox {
+  if (count === 7) {
+    return DEFAULT_SLIDE80_BBOX[index]!
+  }
+
+  const startX = 70
+  const startY = 105
+  const totalW = 860
+  const totalH = 396
+  const gapY = 16
+
+  if (count === 1) {
+    return { x: startX, y: startY, width: totalW, height: totalH }
+  }
+
+  if (count === 2) {
+    const gapX = 20
+    const w = (totalW - gapX) / 2
+    return { x: startX + index * (w + gapX), y: startY, width: w, height: totalH }
+  }
+
+  if (count === 3) {
+    const gapX = 18
+    const w = (totalW - 2 * gapX) / 3
+    return { x: startX + index * (w + gapX), y: startY, width: w, height: totalH }
+  }
+
+  if (count === 4) {
+    const gapX = 20
+    const w = (totalW - gapX) / 2
+    const h = (totalH - gapY) / 2
+    const col = index % 2
+    const row = Math.floor(index / 2)
+    return { x: startX + col * (w + gapX), y: startY + row * (h + gapY), width: w, height: h }
+  }
+
+  if (count === 5) {
+    const h = (totalH - gapY) / 2
+    if (index < 3) {
+      const gapX = 18
+      const w = (totalW - 2 * gapX) / 3
+      return { x: startX + index * (w + gapX), y: startY, width: w, height: h }
+    }
+    const gapX = 20
+    const w = (totalW - gapX) / 2
+    const botIdx = index - 3
+    return { x: startX + botIdx * (w + gapX), y: startY + h + gapY, width: w, height: h }
+  }
+
+  if (count === 6) {
+    const gapX = 18
+    const w = (totalW - 2 * gapX) / 3
+    const h = (totalH - gapY) / 2
+    const col = index % 3
+    const row = Math.floor(index / 3)
+    return { x: startX + col * (w + gapX), y: startY + row * (h + gapY), width: w, height: h }
+  }
+
+  const cols = Math.ceil(count / 2)
+  const gapX = 14
+  const w = (totalW - (cols - 1) * gapX) / cols
+  const h = (totalH - gapY) / 2
+  const col = index % cols
+  const row = Math.floor(index / cols)
+  return { x: startX + col * (w + gapX), y: startY + row * (h + gapY), width: w, height: h }
+}

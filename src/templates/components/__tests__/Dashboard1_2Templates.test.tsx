@@ -138,6 +138,31 @@ describe('DashboardTemplate (Slide 80)', () => {
     expect(container.textContent).toContain('Revenue')
     expect(container.textContent).toContain('Views')
   })
+
+  it('dynamically adapts when metrics are reduced, rendering only provided cards', () => {
+    const data: DashboardData = {
+      type: 'dashboard',
+      metrics: [
+        { label: 'Visitors', value: '120k', chart: 'line' },
+        { label: 'Revenue', value: '£150k', chart: 'line' },
+      ],
+    }
+    const { container } = render(
+      <svg>
+        <DashboardTemplate data={data} />
+      </svg>,
+    )
+
+    expect(container.querySelector('[data-element-id="card-0"]')).not.toBeNull()
+    expect(container.querySelector('[data-element-id="card-1"]')).not.toBeNull()
+    expect(container.querySelector('[data-element-id="card-2"]')).toBeNull()
+    expect(container.querySelector('[data-element-id="card-3"]')).toBeNull()
+    expect(container.querySelector('[data-element-id="card-6"]')).toBeNull()
+    expect(container.textContent).toContain('Visitors')
+    expect(container.textContent).toContain('Revenue')
+    expect(container.textContent).not.toContain('Comments')
+    expect(container.textContent).not.toContain('Users')
+  })
 })
 
 describe('Dashboard2Template (Slide 81)', () => {

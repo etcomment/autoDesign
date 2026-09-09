@@ -65,6 +65,44 @@ function parseNumericValue(valueString: string | undefined, fallbackValue: numbe
   return isNaN(parsedNumber) ? fallbackValue : parsedNumber
 }
 
+function computeGaugeCenter(index: number, count: number): { x: number; y: number } {
+  if (count === 5 && index < GAUGE_CONFIGURATIONS.length) {
+    return {
+      x: GAUGE_CONFIGURATIONS[index]!.defaultCenterX,
+      y: GAUGE_CONFIGURATIONS[index]!.defaultCenterY,
+    }
+  }
+
+  if (count === 1) {
+    return { x: 480, y: 330 }
+  }
+
+  if (count === 2) {
+    const xs = [300, 660]
+    return { x: xs[index]!, y: 330 }
+  }
+
+  if (count === 3) {
+    const xs = [190, 480, 770]
+    return { x: xs[index]!, y: 330 }
+  }
+
+  if (count === 4) {
+    const xs = [320, 640, 320, 640]
+    const ys = [255, 255, 445, 445]
+    return { x: xs[index]!, y: ys[index]! }
+  }
+
+  const cols = Math.ceil(count / 2)
+  const row = Math.floor(index / cols)
+  const col = index % cols
+  const spacing = 780 / Math.max(1, cols)
+  return {
+    x: 100 + col * spacing + spacing / 2,
+    y: row === 0 ? 255 : 445,
+  }
+}
+
 export function Kpi1Template({ data }: { data: DashboardData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
@@ -74,22 +112,32 @@ export function Kpi1Template({ data }: { data: DashboardData }): ReactElement {
   const templateStrokeColors = useTemplateStore(state => state.templateStrokeColors)
   const templateStrokeWidths = useTemplateStore(state => state.templateStrokeWidths)
 
-  const metrics = data.metrics ?? []
-  const radius = 100
-  const innerRadius = 58
+  const displayedMetrics =
+    data.metrics && data.metrics.length > 0
+      ? data.metrics
+      : GAUGE_CONFIGURATIONS.map(c => ({
+          label: c.fallbackLabel,
+          value: String(c.fallbackValue),
+          description: c.fallbackDescription,
+        }))
+
+  const count = displayedMetrics.length
+  const radius = count > 3 ? 90 : 100
+  const innerRadius = count > 3 ? 52 : 58
 
   return (
     <g ref={svgRef}>
-      {GAUGE_CONFIGURATIONS.map((configuration, index) => {
+      {displayedMetrics.map((metric, index) => {
         const elementId = `metric-${index}`
-        const metric = metrics[index]
-        const label = metric?.label ?? configuration.fallbackLabel
-        const description = metric?.description ?? configuration.fallbackDescription
-        const numericValue = parseNumericValue(metric?.value, configuration.fallbackValue)
+        const configuration = GAUGE_CONFIGURATIONS[index % GAUGE_CONFIGURATIONS.length]!
+        const label = metric.label || configuration.fallbackLabel
+        const description = metric.description || configuration.fallbackDescription
+        const numericValue = parseNumericValue(metric.value, configuration.fallbackValue)
+        const center = computeGaugeCenter(index, count)
 
         const defaultBoundingBox = {
-          x: configuration.defaultCenterX - 120,
-          y: configuration.defaultCenterY - 170,
+          x: center.x - 120,
+          y: center.y - 170,
           width: 240,
           height: 180,
         }
