@@ -2,9 +2,12 @@ import { describe, it, expect } from 'vitest'
 import { render } from '@testing-library/react'
 import { Puzzle4Template } from '../Puzzle4Template'
 import { PuzzleTemplate } from '../PuzzleTemplate'
+import { Puzzle3Template } from '../Puzzle3Template'
+import { Puzzle5Template } from '../Puzzle5Template'
+import { Puzzle6Template } from '../Puzzle6Template'
 import type { PuzzleData } from '../../types'
 
-describe('Puzzle Templates (puzzle & puzzle4)', () => {
+describe('Puzzle Templates (puzzle, puzzle3, puzzle4, puzzle5 & puzzle6)', () => {
   const defaultData: PuzzleData = {
     type: 'puzzle',
     pieces: [
@@ -65,7 +68,7 @@ describe('Puzzle Templates (puzzle & puzzle4)', () => {
     expect(container.textContent).toContain('Beta')
   })
 
-  it('renders PuzzleTemplate with identical geometry and dynamic cards', () => {
+  it('renders PuzzleTemplate with circular geometry and dynamic cards', () => {
     const { container } = render(
       <svg>
         <PuzzleTemplate data={defaultData} />
@@ -73,6 +76,217 @@ describe('Puzzle Templates (puzzle & puzzle4)', () => {
     )
 
     expect(container.querySelector('[data-element-id="piece-0"]')).toBeTruthy()
+    expect(container.querySelector('[data-element-id="piece-1"]')).toBeTruthy()
+    expect(container.querySelector('[data-element-id="piece-2"]')).toBeTruthy()
+    expect(container.querySelector('[data-element-id="piece-3"]')).toBeTruthy()
     expect(container.querySelector('[data-element-id="card-0"]')).toBeTruthy()
+  })
+
+  it('renders PuzzleTemplate with dynamic number of pieces (e.g. 3 pieces, 6 pieces)', () => {
+    const threePiecesData: PuzzleData = {
+      type: 'puzzle',
+      pieces: [
+        { number: 1, title: 'One', subtitle: 'Sub 1', color: '#2c2b64' },
+        { number: 2, title: 'Two', subtitle: 'Sub 2', color: '#3466ce' },
+        { number: 3, title: 'Three', subtitle: 'Sub 3', color: '#ff4d30' },
+      ],
+    }
+
+    const { container } = render(
+      <svg>
+        <PuzzleTemplate data={threePiecesData} />
+      </svg>,
+    )
+
+    expect(container.querySelector('[data-element-id="piece-0"]')).toBeTruthy()
+    expect(container.querySelector('[data-element-id="piece-1"]')).toBeTruthy()
+    expect(container.querySelector('[data-element-id="piece-2"]')).toBeTruthy()
+    expect(container.querySelector('[data-element-id="piece-3"]')).toBeNull()
+    expect(container.textContent).toContain('One')
+    expect(container.textContent).toContain('Two')
+    expect(container.textContent).toContain('Three')
+  })
+
+  it('renders Puzzle3Template with annular donut geometry and side cards', () => {
+    const { container } = render(
+      <svg>
+        <Puzzle3Template data={defaultData} />
+      </svg>,
+    )
+
+    const piece0 = container.querySelector('[data-element-id="piece-0"]')
+    const piece1 = container.querySelector('[data-element-id="piece-1"]')
+    const piece2 = container.querySelector('[data-element-id="piece-2"]')
+    const piece3 = container.querySelector('[data-element-id="piece-3"]')
+
+    expect(piece0).toBeTruthy()
+    expect(piece1).toBeTruthy()
+    expect(piece2).toBeTruthy()
+    expect(piece3).toBeTruthy()
+
+    const card0 = container.querySelector('[data-element-id="card-0"]')
+    const card3 = container.querySelector('[data-element-id="card-3"]')
+    expect(card0).toBeTruthy()
+    expect(card3).toBeTruthy()
+
+    expect(container.textContent).toContain('Identify')
+    expect(container.textContent).toContain('Innovation')
+    expect(container.textContent).toContain('Management')
+    expect(container.textContent).toContain('Improve')
+
+    const pathD = piece0?.querySelector('path')?.getAttribute('d') ?? ''
+    expect(pathD).toContain('A 175.00 175.00')
+    expect(pathD).toContain('A 75.00 75.00')
+  })
+
+  it('renders Puzzle3Template with dynamic number of pieces (e.g. 5 pieces)', () => {
+    const fivePiecesData: PuzzleData = {
+      type: 'puzzle',
+      pieces: [
+        { number: 1, title: 'One', subtitle: 'Sub 1', color: '#2c2b64' },
+        { number: 2, title: 'Two', subtitle: 'Sub 2', color: '#3466ce' },
+        { number: 3, title: 'Three', subtitle: 'Sub 3', color: '#ff4d30' },
+        { number: 4, title: 'Four', subtitle: 'Sub 4', color: '#ffb703' },
+        { number: 5, title: 'Five', subtitle: 'Sub 5', color: '#4cbfa0' },
+      ],
+    }
+
+    const { container } = render(
+      <svg>
+        <Puzzle3Template data={fivePiecesData} />
+      </svg>,
+    )
+
+    expect(container.querySelector('[data-element-id="piece-0"]')).toBeTruthy()
+    expect(container.querySelector('[data-element-id="piece-4"]')).toBeTruthy()
+    expect(container.querySelector('[data-element-id="piece-5"]')).toBeNull()
+    expect(container.textContent).toContain('One')
+    expect(container.textContent).toContain('Five')
+  })
+
+  it('renders Puzzle5Template with interlocking hexagons and alternating cards', () => {
+    const puzzle5Data: PuzzleData = {
+      type: 'puzzle',
+      pieces: [
+        { number: 1, title: 'Improve', subtitle: 'Content 1', color: '#2c2b64', value: 'A' },
+        { number: 2, title: 'Identify', subtitle: 'Content 2', color: '#3466ce', value: 'B' },
+        { number: 3, title: 'Management', subtitle: 'Content 3', color: '#ff4d30', value: 'C' },
+        { number: 4, title: 'Innovation', subtitle: 'Content 4', color: '#ffb703', value: 'D' },
+        { number: 5, title: 'Audience', subtitle: 'Content 5', color: '#4cbfa0', value: 'E' },
+      ],
+    }
+
+    const { container } = render(
+      <svg>
+        <Puzzle5Template data={puzzle5Data} />
+      </svg>,
+    )
+
+    const piece0 = container.querySelector('[data-element-id="piece-0"]')
+    const piece4 = container.querySelector('[data-element-id="piece-4"]')
+    expect(piece0).toBeTruthy()
+    expect(piece4).toBeTruthy()
+
+    const card0 = container.querySelector('[data-element-id="card-0"]')
+    const card4 = container.querySelector('[data-element-id="card-4"]')
+    expect(card0).toBeTruthy()
+    expect(card4).toBeTruthy()
+
+    expect(container.textContent).toContain('A')
+    expect(container.textContent).toContain('B')
+    expect(container.textContent).toContain('C')
+    expect(container.textContent).toContain('D')
+    expect(container.textContent).toContain('E')
+
+    expect(container.textContent).toContain('Improve')
+    expect(container.textContent).toContain('Identify')
+    expect(container.textContent).toContain('Audience')
+  })
+
+  it('renders Puzzle5Template with dynamic number of pieces (e.g. 3 pieces)', () => {
+    const threePiecesData: PuzzleData = {
+      type: 'puzzle',
+      pieces: [
+        { number: 1, title: 'Step 1', subtitle: 'Sub 1', color: '#2c2b64', value: 'X' },
+        { number: 2, title: 'Step 2', subtitle: 'Sub 2', color: '#3466ce', value: 'Y' },
+        { number: 3, title: 'Step 3', subtitle: 'Sub 3', color: '#ff4d30', value: 'Z' },
+      ],
+    }
+
+    const { container } = render(
+      <svg>
+        <Puzzle5Template data={threePiecesData} />
+      </svg>,
+    )
+
+    expect(container.querySelector('[data-element-id="piece-0"]')).toBeTruthy()
+    expect(container.querySelector('[data-element-id="piece-2"]')).toBeTruthy()
+    expect(container.querySelector('[data-element-id="piece-3"]')).toBeNull()
+    expect(container.textContent).toContain('X')
+    expect(container.textContent).toContain('Y')
+    expect(container.textContent).toContain('Z')
+  })
+
+  it('renders Puzzle5Template with empty shape when no val is given and supports icon', () => {
+    const dataWithIconAndEmpty: PuzzleData = {
+      type: 'puzzle',
+      pieces: [
+        { number: 1, title: 'Step 1', subtitle: 'Sub 1', color: '#2c2b64', icon: 'sliders' },
+        { number: 2, title: 'Step 2', subtitle: 'Sub 2', color: '#3466ce' },
+      ],
+    }
+
+    const { container } = render(
+      <svg>
+        <Puzzle5Template data={dataWithIconAndEmpty} />
+      </svg>,
+    )
+
+    const piece0 = container.querySelector('[data-element-id="piece-0"]')
+    const piece1 = container.querySelector('[data-element-id="piece-1"]')
+
+    expect(piece0?.querySelector('svg')).toBeTruthy()
+    expect(piece1?.querySelector('text')).toBeNull()
+  })
+
+  it('renders Puzzle6Template with wireframe central puzzle piece, 4 corner letters and cards', () => {
+    const puzzle6Data: PuzzleData = {
+      type: 'puzzle',
+      pieces: [
+        { number: 1, title: 'Identify', subtitle: 'Step 1 details', color: '#2c2b64', value: 'A' },
+        { number: 2, title: 'Management', subtitle: 'Step 2 details', color: '#3466ce', value: 'B' },
+        { number: 3, title: 'Innovation', subtitle: 'Step 3 details', color: '#ff4d30', value: 'C' },
+        { number: 4, title: 'Improve', subtitle: 'Step 4 details', color: '#ffb703', value: 'D' },
+      ],
+    }
+
+    const { container } = render(
+      <svg>
+        <Puzzle6Template data={puzzle6Data} />
+      </svg>,
+    )
+
+    const piece0 = container.querySelector('[data-element-id="piece-0"]')
+    const piece1 = container.querySelector('[data-element-id="piece-1"]')
+    const piece2 = container.querySelector('[data-element-id="piece-2"]')
+    const piece3 = container.querySelector('[data-element-id="piece-3"]')
+
+    expect(piece0).toBeTruthy()
+    expect(piece1).toBeTruthy()
+    expect(piece2).toBeTruthy()
+    expect(piece3).toBeTruthy()
+
+    expect(container.textContent).toContain('A')
+    expect(container.textContent).toContain('B')
+    expect(container.textContent).toContain('C')
+    expect(container.textContent).toContain('D')
+
+    expect(container.textContent).toContain('Identify')
+    expect(container.textContent).toContain('Management')
+    expect(container.textContent).toContain('Innovation')
+    expect(container.textContent).toContain('Improve')
+
+    const centerCard = container.querySelector('[data-element-id="center-card"]')
+    expect(centerCard).toBeTruthy()
   })
 })

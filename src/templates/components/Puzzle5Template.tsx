@@ -1,58 +1,112 @@
 import { useRef, type ReactElement } from 'react'
-import type { PuzzleData } from '../types'
+import type { PuzzleData, PuzzlePiece } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
-import { randomMigsoColor } from '../../lib/theme'
+import { MIGSO_PALETTE } from '../../lib/theme'
+import { PUZZLE2_TAB_BEZIERS } from './Puzzle4Template'
 
+const DEFAULT_PIECES: PuzzlePiece[] = [
+  { number: 1, title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#2c2b64', value: 'A' },
+  { number: 2, title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#3466ce', value: 'B' },
+  { number: 3, title: 'Management', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ff4d30', value: 'C' },
+  { number: 4, title: 'Innovation', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703', value: 'D' },
+  { number: 5, title: 'Audience', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#4cbfa0', value: 'E' },
+]
 
-function circularSegmentPath(
+function appendHexEdge(
+  d: string[],
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+  kind: 'straight' | 'tab' | 'indent',
+  scaleU: number,
+  scaleV: number,
+  baseHalf: number,
+): void {
+  if (kind === 'straight') {
+    d.push(`L ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`)
+    return
+  }
+
+  const dx = p2.x - p1.x
+  const dy = p2.y - p1.y
+  const len = Math.sqrt(dx * dx + dy * dy)
+  const ux = dx / len
+  const uy = dy / len
+  const nx = uy
+  const ny = -ux
+
+  const mx = (p1.x + p2.x) / 2
+  const my = (p1.y + p2.y) / 2
+
+  const sx = mx - baseHalf * ux
+  const sy = my - baseHalf * uy
+  d.push(`L ${sx.toFixed(2)} ${sy.toFixed(2)}`)
+
+  const sign = kind === 'tab' ? 1 : -1
+
+  for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
+    const cp1x = mx + cp1u * scaleU * ux + sign * (cp1v * scaleV) * nx
+    const cp1y = my + cp1u * scaleU * uy + sign * (cp1v * scaleV) * ny
+    const cp2x = mx + cp2u * scaleU * ux + sign * (cp2v * scaleV) * nx
+    const cp2y = my + cp2u * scaleU * uy + sign * (cp2v * scaleV) * ny
+    const pex = mx + endu * scaleU * ux + sign * (endv * scaleV) * nx
+    const pey = my + endu * scaleU * uy + sign * (endv * scaleV) * ny
+    d.push(`C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
+  }
+
+  d.push(`L ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`)
+}
+
+export function makePuzzleHexagonPath(
   cx: number,
   cy: number,
-  innerR: number,
-  outerR: number,
-  startAngle: number,
-  endAngle: number,
-  tabDir = 1,
+  s: number,
+  index: number,
+  _total?: number,
 ): string {
-  const sRad = (startAngle * Math.PI) / 180
-  const eRad = (endAngle * Math.PI) / 180
-  const x1 = cx + outerR * Math.cos(sRad)
-  const y1 = cy + outerR * Math.sin(sRad)
-  const x2 = cx + outerR * Math.cos(eRad)
-  const y2 = cy + outerR * Math.sin(eRad)
-  const x3 = cx + innerR * Math.cos(eRad)
-  const y3 = cy + innerR * Math.sin(eRad)
-  const x4 = cx + innerR * Math.cos(sRad)
-  const y4 = cy + innerR * Math.sin(sRad)
-  const largeArc = endAngle - startAngle > 180 ? 1 : 0
+  const w = s / 2
+  const h = (Math.sqrt(3) / 2) * s
 
-  const midR = (innerR + outerR) / 2
-  const tabR = 14
-  const tabOffset = 8
-  const tabDist = tabDir * 16
+  const scale = (s / 142.02) * 0.95
+  const scaleU = scale * 1.20
+  const scaleV = scale * 1.24
+  const baseHalf = 11.75 * scaleU
 
-  const radialMidX = cx + midR * Math.cos(eRad)
-  const radialMidY = cy + midR * Math.sin(eRad)
-  const tanX = -Math.sin(eRad) * tabDist
-  const tanY = Math.cos(eRad) * tabDist
+  const p0 = { x: cx - w, y: cy - h }
+  const p1 = { x: cx + w, y: cy - h }
+  const p2 = { x: cx + s, y: cy }
+  const p3 = { x: cx + w, y: cy + h }
+  const p4 = { x: cx - w, y: cy + h }
+  const p5 = { x: cx - s, y: cy }
 
-  const sRadX = cx + (midR - tabOffset) * Math.cos(eRad)
-  const sRadY = cy + (midR - tabOffset) * Math.sin(eRad)
-  const eRadX = cx + (midR + tabOffset) * Math.cos(eRad)
-  const eRadY = cy + (midR + tabOffset) * Math.sin(eRad)
+  const isLower = index % 2 === 0
 
-  return [
-    `M ${x1} ${y1}`,
-    `A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2} ${y2}`,
-    `L ${eRadX} ${eRadY}`,
-    `C ${eRadX + tanX * 0.4} ${eRadY + tanY * 0.4} ${radialMidX + tanX * 1.2} ${radialMidY + tanY * 1.2} ${radialMidX + tanX} ${radialMidY + tanY}`,
-    `C ${radialMidX + tanX * 0.8} ${radialMidY + tanY * 0.8} ${sRadX + tanX * 0.4} ${sRadY + tanY * 0.4} ${sRadX} ${sRadY}`,
-    `L ${x3} ${y3}`,
-    `A ${innerR} ${innerR} 0 ${largeArc} 0 ${x4} ${y4}`,
-    `Z`,
-  ].join(' ')
+  let edge1Kind: 'straight' | 'tab' | 'indent' = 'straight'
+  let edge2Kind: 'straight' | 'tab' | 'indent' = 'straight'
+  let edge4Kind: 'straight' | 'tab' | 'indent' = 'straight'
+  let edge5Kind: 'straight' | 'tab' | 'indent' = 'straight'
+
+  if (isLower) {
+    edge1Kind = 'tab'
+    edge5Kind = 'indent'
+  } else {
+    edge2Kind = 'tab'
+    edge4Kind = 'indent'
+  }
+
+  const d: string[] = []
+  d.push(`M ${p0.x.toFixed(2)} ${p0.y.toFixed(2)}`)
+  appendHexEdge(d, p0, p1, 'straight', scaleU, scaleV, baseHalf)
+  appendHexEdge(d, p1, p2, edge1Kind, scaleU, scaleV, baseHalf)
+  appendHexEdge(d, p2, p3, edge2Kind, scaleU, scaleV, baseHalf)
+  appendHexEdge(d, p3, p4, 'straight', scaleU, scaleV, baseHalf)
+  appendHexEdge(d, p4, p5, edge4Kind, scaleU, scaleV, baseHalf)
+  appendHexEdge(d, p5, p0, edge5Kind, scaleU, scaleV, baseHalf)
+  d.push('Z')
+
+  return d.join(' ')
 }
 
 export function Puzzle5Template({ data }: { data: PuzzleData }): ReactElement {
@@ -64,81 +118,178 @@ export function Puzzle5Template({ data }: { data: PuzzleData }): ReactElement {
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
-  const { pieces } = data
-  const W = 600
-  const H = 450
-  const cx = W / 2
+  const rawPieces = data.pieces?.length ? data.pieces : DEFAULT_PIECES
+  const count = rawPieces.length
+  const pieces = rawPieces
+
+  const W = 1000
+  const H = 520
   const cy = H / 2
-  const outerR = 175
-  const innerR = 75
-  const count = pieces.length
-  const angleStep = 360 / count
+
+  const maxTotalWidth = 840
+  const s = Math.min(88, maxTotalWidth / (1.5 * (count - 1) + 2))
+  const h = (Math.sqrt(3) / 2) * s
+  const totalW = (1.5 * (count - 1) + 2) * s
+  const startX = (W - totalW) / 2 + s
+
+  const yUp = cy - h / 2
+  const yDown = cy + h / 2
+
+  const tabProtrusion = (s / 142.02) * 0.95 * 1.24 * 33.4
 
   return (
     <g ref={svgRef}>
       {pieces.map((piece, index) => {
-        const startAngle = index * angleStep - 90
-        const endAngle = startAngle + angleStep
-        const path = circularSegmentPath(cx, cy, innerR, outerR, startAngle, endAngle)
-        const defaultColor = piece.color || randomMigsoColor(index)
+        const isLower = index % 2 === 0
+        const pieceCx = startX + index * 1.5 * s
+        const pieceCy = isLower ? yDown : yUp
+
         const elementId = `piece-${index}`
+        const cardElementId = `card-${index}`
+
+        const defaultColor = piece.color || MIGSO_PALETTE[index % MIGSO_PALETTE.length] || '#2c2b64'
         const color = tplColors[elementId] ?? defaultColor
-        const stroke = tplStrokeColors[elementId] || 'white'
+        const stroke = tplStrokeColors[elementId] || '#ffffff'
         const strokeWidth = tplStrokeWidths[elementId] ?? (selectedIds.has(elementId) ? 3.5 : 2.5)
         const isSelected = selectedIds.has(elementId)
+        const isCardSelected = selectedIds.has(cardElementId)
 
-        const midAngle = ((startAngle + endAngle) / 2 * Math.PI) / 180
-        const labelR = (innerR + outerR) / 2
-        const lx = cx + labelR * Math.cos(midAngle)
-        const ly = cy + labelR * Math.sin(midAngle)
-
-        const defaultRect = { x: lx - 45, y: ly - 35, width: 90, height: 70 }
-        const customPos = templateElementPositions[elementId]
-        const bbox = {
-          x: customPos ? customPos.x : defaultRect.x,
-          y: customPos ? customPos.y : defaultRect.y,
-          width: customPos?.width || defaultRect.width,
-          height: customPos?.height || defaultRect.height,
+        const defaultPieceRect = {
+          x: pieceCx - s - tabProtrusion,
+          y: pieceCy - h - tabProtrusion,
+          width: (s + tabProtrusion) * 2,
+          height: (h + tabProtrusion) * 2,
         }
+
+        const customPiecePos = templateElementPositions[elementId]
+        const pieceBbox = {
+          x: customPiecePos ? customPiecePos.x : defaultPieceRect.x,
+          y: customPiecePos ? customPiecePos.y : defaultPieceRect.y,
+          width: customPiecePos?.width || defaultPieceRect.width,
+          height: customPiecePos?.height || defaultPieceRect.height,
+        }
+
+        const deltaX = pieceBbox.x - defaultPieceRect.x
+        const deltaY = pieceBbox.y - defaultPieceRect.y
+        const currentCx = pieceCx + deltaX
+        const currentCy = pieceCy + deltaY
+
+        const path = makePuzzleHexagonPath(currentCx, currentCy, s, index, count)
+
+        const cardWidth = 170
+        const defaultCardY = isLower ? 45 : 400
+        const customCardPos = templateElementPositions[cardElementId]
+        const subtitleLines = piece.subtitle
+          ? piece.subtitle.split('\n').flatMap(l => wrapTextByWidth(l, Math.max(12, Math.floor(cardWidth / 8.5))))
+          : []
+        const nominalCardHeight = 28 + (subtitleLines.length > 0 ? 10 + subtitleLines.length * 16 : 0)
+        const cardBbox = {
+          x: customCardPos ? customCardPos.x : currentCx - cardWidth / 2,
+          y: customCardPos ? customCardPos.y : defaultCardY,
+          width: customCardPos?.width || cardWidth,
+          height: customCardPos?.height || Math.max(70, nominalCardHeight),
+        }
+
+        const lineStartX = currentCx
+        const lineStartY = isLower ? currentCy - h : currentCy + h
+        const lineEndY = isLower ? cardBbox.y + cardBbox.height : cardBbox.y
+
         const IconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] : undefined
-        const maxChars = Math.max(6, Math.floor(bbox.width / 8))
-        const titleLines = wrapTextByWidth(piece.title, maxChars)
+        const iconSize = Math.round(s * 0.46)
 
         return (
           <g key={elementId}>
-            <path d={path} fill={color} stroke={isSelected ? '#4a90d9' : stroke} strokeWidth={strokeWidth} />
+            <line
+              x1={lineStartX}
+              y1={lineStartY}
+              x2={lineStartX}
+              y2={lineEndY}
+              stroke={color}
+              strokeWidth={2.5}
+              strokeDasharray="5 4"
+            />
+
             <g
               data-element-id={elementId}
-              onMouseDown={e => startDrag(e, elementId, bbox)}
-              transform={getTransform(elementId, bbox)}
+              onMouseDown={e => startDrag(e, elementId, pieceBbox)}
+              transform={getTransform(elementId, pieceBbox)}
               style={{ cursor: 'pointer' }}
             >
+              <path
+                d={path}
+                fill={color}
+                stroke={isSelected ? '#4a90d9' : stroke}
+                strokeWidth={strokeWidth}
+                strokeLinejoin="round"
+              />
+
               {IconComponent ? (
-                <g transform={`translate(${bbox.x + bbox.width / 2 - 8}, ${bbox.y + 6})`}>
-                  <IconComponent size={16} color="white" />
+                <g transform={`translate(${currentCx - iconSize / 2}, ${currentCy - iconSize / 2})`}>
+                  <IconComponent size={iconSize} color="white" />
                 </g>
-              ) : (
-                <text x={bbox.x + bbox.width / 2} y={bbox.y + 16} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="white">
-                  {piece.number}
+              ) : piece.value ? (
+                <text
+                  x={currentCx}
+                  y={currentCy}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fill="white"
+                  fontFamily="Arial, Segoe UI, sans-serif"
+                  fontSize={Math.round(s * 0.58)}
+                  fontWeight={700}
+                >
+                  {piece.value}
                 </text>
-              )}
-              <text x={bbox.x + bbox.width / 2} y={bbox.y + 32} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill="white">
-                {titleLines.map((line, lineIndex) => (
-                  <tspan key={lineIndex} x={bbox.x + bbox.width / 2} dy={lineIndex === 0 ? 0 : 12}>
-                    {line}
-                  </tspan>
-                ))}
-              </text>
-              {isSelected && renderHandles(bbox, elementId)}
+              ) : null}
             </g>
+
+            <g
+              data-element-id={cardElementId}
+              onMouseDown={e => startDrag(e, cardElementId, cardBbox)}
+              transform={getTransform(cardElementId, cardBbox)}
+              style={{ cursor: 'pointer' }}
+            >
+              <rect
+                x={cardBbox.x}
+                y={cardBbox.y}
+                width={cardBbox.width}
+                height={cardBbox.height}
+                fill="transparent"
+                stroke={isCardSelected ? '#4a90d9' : 'none'}
+                strokeWidth={isCardSelected ? 1.5 : 0}
+                rx={4}
+              />
+              <text
+                x={cardBbox.x + cardBbox.width / 2}
+                y={cardBbox.y + 16}
+                textAnchor="middle"
+                fontFamily="Arial, Segoe UI, sans-serif"
+                fontSize={18}
+                fontWeight={700}
+                fill="#1e293b"
+              >
+                {piece.title}
+              </text>
+              {subtitleLines.map((line, lIdx) => (
+                <text
+                  key={lIdx}
+                  x={cardBbox.x + cardBbox.width / 2}
+                  y={cardBbox.y + 38 + lIdx * 16}
+                  textAnchor="middle"
+                  fontFamily="Arial, Segoe UI, sans-serif"
+                  fontSize={13}
+                  fill="#334155"
+                >
+                  {line}
+                </text>
+              ))}
+            </g>
+
+            {isSelected && renderHandles(pieceBbox, elementId)}
+            {isCardSelected && renderHandles(cardBbox, cardElementId)}
           </g>
         )
       })}
-
-      <circle cx={cx} cy={cy} r={innerR - 4} fill="white" stroke="#e2e8f0" strokeWidth={2} />
-      <text x={cx} y={cy + 5} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={700} fill="#333">
-        PUZZLE
-      </text>
     </g>
   )
 }
