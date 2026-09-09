@@ -63,7 +63,7 @@ export function makePuzzleHexagonPath(
   cy: number,
   s: number,
   index: number,
-  total: number,
+  _total?: number,
 ): string {
   const w = s / 2
   const h = (Math.sqrt(3) / 2) * s
@@ -88,11 +88,11 @@ export function makePuzzleHexagonPath(
   let edge5Kind: 'straight' | 'tab' | 'indent' = 'straight'
 
   if (isLower) {
-    edge1Kind = index === total - 1 ? 'tab' : 'indent'
-    edge5Kind = index === 0 ? 'indent' : 'tab'
+    edge1Kind = 'tab'
+    edge5Kind = 'indent'
   } else {
-    edge2Kind = index === total - 1 ? 'tab' : 'indent'
-    edge4Kind = 'tab'
+    edge2Kind = 'tab'
+    edge4Kind = 'indent'
   }
 
   const d: string[] = []
