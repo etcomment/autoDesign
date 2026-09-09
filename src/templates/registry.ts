@@ -650,15 +650,15 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'puzzle',
     label: 'puzzle',
-    description: 'Puzzle 2x2 carré (Slide 180) à 4 pièces avec pignons extérieurs et cartes descriptives reliées.',
+    description: 'Puzzle circulaire à 4 quadrants imbriqués (Slide 180) avec ergos, icônes et connecteurs latéraux.',
     category: 'Puzzles',
     defaultData: {
       type: 'puzzle',
       pieces: [
-        { number: '1', title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#2c2b64' },
-        { number: '2', title: 'Innovation', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#3466ce' },
-        { number: '3', title: 'Management', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ff4d30' },
-        { number: '4', title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703' },
+        { number: '1', title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#2c2b64', icon: 'image' },
+        { number: '2', title: 'Innovation', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#3466ce', icon: 'list-todo' },
+        { number: '3', title: 'Management', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ff4d30', icon: 'archive' },
+        { number: '4', title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703', icon: 'sliders' },
       ],
     },
   },
@@ -680,15 +680,15 @@ export const TEMPLATES: TemplateDefinition[] = [
   {
     type: 'puzzle3',
     label: 'puzzle3',
-    description: 'Disposition verticale de pièces de puzzle imbriquées.',
+    description: 'Puzzle circulaire en anneau (donut) à 4 quadrants imbriqués (Slide 180) avec ergos, icônes et connecteurs latéraux.',
     category: 'Puzzles',
     defaultData: {
       type: 'puzzle',
       pieces: [
-        { number: 1, title: 'Analysis', subtitle: 'Detailed research', color: '#1a2249' },
-        { number: 2, title: 'Design', subtitle: 'System architecture', color: '#2b63d9' },
-        { number: 3, title: 'Build', subtitle: 'Implementation phase', color: '#ff5338' },
-        { number: 4, title: 'Deploy', subtitle: 'Production release', color: '#ffb100' },
+        { number: 1, title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#2c2b64', icon: 'list-todo' },
+        { number: 2, title: 'Innovation', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#3466ce', icon: 'archive' },
+        { number: 3, title: 'Management', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ff4d30', icon: 'image' },
+        { number: 4, title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703', icon: 'sliders' },
       ],
     },
   },
