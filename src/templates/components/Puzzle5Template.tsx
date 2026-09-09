@@ -3,6 +3,7 @@ import type { PuzzleData, PuzzlePiece } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
+import { TEMPLATE_ICONS } from '../shared/icons'
 import { MIGSO_PALETTE } from '../../lib/theme'
 import { PUZZLE2_TAB_BEZIERS } from './Puzzle4Template'
 
@@ -193,7 +194,8 @@ export function Puzzle5Template({ data }: { data: PuzzleData }): ReactElement {
         const lineStartY = isLower ? currentCy - h : currentCy + h
         const lineEndY = isLower ? cardBbox.y + cardBbox.height : cardBbox.y
 
-        const letter = piece.value ?? (piece.title ? piece.title[0] : String.fromCharCode(65 + index))
+        const IconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] : undefined
+        const iconSize = Math.round(s * 0.46)
 
         return (
           <g key={elementId}>
@@ -221,18 +223,24 @@ export function Puzzle5Template({ data }: { data: PuzzleData }): ReactElement {
                 strokeLinejoin="round"
               />
 
-              <text
-                x={currentCx}
-                y={currentCy}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fill="white"
-                fontFamily="Arial, Segoe UI, sans-serif"
-                fontSize={Math.round(s * 0.58)}
-                fontWeight={700}
-              >
-                {letter}
-              </text>
+              {IconComponent ? (
+                <g transform={`translate(${currentCx - iconSize / 2}, ${currentCy - iconSize / 2})`}>
+                  <IconComponent size={iconSize} color="white" />
+                </g>
+              ) : piece.value ? (
+                <text
+                  x={currentCx}
+                  y={currentCy}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fill="white"
+                  fontFamily="Arial, Segoe UI, sans-serif"
+                  fontSize={Math.round(s * 0.58)}
+                  fontWeight={700}
+                >
+                  {piece.value}
+                </text>
+              ) : null}
             </g>
 
             <g

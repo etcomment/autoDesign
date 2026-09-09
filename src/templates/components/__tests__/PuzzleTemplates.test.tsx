@@ -225,4 +225,26 @@ describe('Puzzle Templates (puzzle, puzzle3, puzzle4 & puzzle5)', () => {
     expect(container.textContent).toContain('Y')
     expect(container.textContent).toContain('Z')
   })
+
+  it('renders Puzzle5Template with empty shape when no val is given and supports icon', () => {
+    const dataWithIconAndEmpty: PuzzleData = {
+      type: 'puzzle',
+      pieces: [
+        { number: 1, title: 'Step 1', subtitle: 'Sub 1', color: '#2c2b64', icon: 'sliders' },
+        { number: 2, title: 'Step 2', subtitle: 'Sub 2', color: '#3466ce' },
+      ],
+    }
+
+    const { container } = render(
+      <svg>
+        <Puzzle5Template data={dataWithIconAndEmpty} />
+      </svg>,
+    )
+
+    const piece0 = container.querySelector('[data-element-id="piece-0"]')
+    const piece1 = container.querySelector('[data-element-id="piece-1"]')
+
+    expect(piece0?.querySelector('svg')).toBeTruthy()
+    expect(piece1?.querySelector('text')).toBeNull()
+  })
 })
