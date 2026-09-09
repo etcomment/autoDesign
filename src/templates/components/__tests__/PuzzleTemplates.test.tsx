@@ -437,7 +437,9 @@ describe('Puzzle Templates (puzzle, puzzle3, puzzle4, puzzle5, puzzle6 & puzzle7
 
     const iconG = piece0?.querySelector('g')
     expect(iconG?.getAttribute('transform')).toContain('359, 114')
+  })
 
+  it('renders Puzzle7Template with spiral placement for 8 pieces', () => {
     const data8: PuzzleData = {
       type: 'puzzle',
       pieces: Array.from({ length: 8 }, (_, i) => ({
@@ -455,14 +457,64 @@ describe('Puzzle Templates (puzzle, puzzle3, puzzle4, puzzle5, puzzle6 & puzzle7
       </svg>,
     )
 
+    // 1 and 2: Icon to the LEFT of number (same y, iconX < numX)
     const piece8_0 = c8.querySelector('[data-element-id="piece-0"]')
-    expect(piece8_0?.querySelectorAll('circle').length).toBe(0)
     const text8_0 = piece8_0?.querySelector('text')
-    expect(text8_0?.getAttribute('fill')).toBe('white')
-    expect(text8_0?.getAttribute('font-size')).toBe('18')
     expect(text8_0?.getAttribute('x')).toBe('392')
     expect(text8_0?.getAttribute('y')).toBe('135')
     const iconG8_0 = piece8_0?.querySelector('g')
-    expect(iconG8_0?.getAttribute('transform')).toContain('347, 124')
+    expect(iconG8_0?.getAttribute('transform')).toContain('347, 124') // 358 - 11, 135 - 11
+
+    const piece8_1 = c8.querySelector('[data-element-id="piece-1"]')
+    const text8_1 = piece8_1?.querySelector('text')
+    expect(text8_1?.getAttribute('x')).toBe('517')
+    expect(text8_1?.getAttribute('y')).toBe('135')
+    const iconG8_1 = piece8_1?.querySelector('g')
+    expect(iconG8_1?.getAttribute('transform')).toContain('472, 124') // 483 - 11, 135 - 11
+
+    // 3 and 4: Icon ABOVE number (same x, iconY < numY)
+    const piece8_2 = c8.querySelector('[data-element-id="piece-2"]')
+    const text8_2 = piece8_2?.querySelector('text')
+    expect(text8_2?.getAttribute('x')).toBe('625')
+    expect(text8_2?.getAttribute('y')).toBe('152')
+    const iconG8_2 = piece8_2?.querySelector('g')
+    expect(iconG8_2?.getAttribute('transform')).toContain('614, 107') // 625 - 11, 118 - 11
+
+    const piece8_3 = c8.querySelector('[data-element-id="piece-3"]')
+    const text8_3 = piece8_3?.querySelector('text')
+    expect(text8_3?.getAttribute('x')).toBe('625')
+    expect(text8_3?.getAttribute('y')).toBe('277')
+    const iconG8_3 = piece8_3?.querySelector('g')
+    expect(iconG8_3?.getAttribute('transform')).toContain('614, 232') // 625 - 11, 243 - 11
+
+    // 5 and 6: Icon to the RIGHT of number (same y, iconX > numX)
+    const piece8_4 = c8.querySelector('[data-element-id="piece-4"]')
+    const text8_4 = piece8_4?.querySelector('text')
+    expect(text8_4?.getAttribute('x')).toBe('608')
+    expect(text8_4?.getAttribute('y')).toBe('385')
+    const iconG8_4 = piece8_4?.querySelector('g')
+    expect(iconG8_4?.getAttribute('transform')).toContain('631, 374') // 642 - 11, 385 - 11
+
+    const piece8_5 = c8.querySelector('[data-element-id="piece-5"]')
+    const text8_5 = piece8_5?.querySelector('text')
+    expect(text8_5?.getAttribute('x')).toBe('483')
+    expect(text8_5?.getAttribute('y')).toBe('385')
+    const iconG8_5 = piece8_5?.querySelector('g')
+    expect(iconG8_5?.getAttribute('transform')).toContain('506, 374') // 517 - 11, 385 - 11
+
+    // 7 and 8: Icon BELOW number (same x, iconY > numY)
+    const piece8_6 = c8.querySelector('[data-element-id="piece-6"]')
+    const text8_6 = piece8_6?.querySelector('text')
+    expect(text8_6?.getAttribute('x')).toBe('375')
+    expect(text8_6?.getAttribute('y')).toBe('368')
+    const iconG8_6 = piece8_6?.querySelector('g')
+    expect(iconG8_6?.getAttribute('transform')).toContain('364, 391') // 375 - 11, 402 - 11
+
+    const piece8_7 = c8.querySelector('[data-element-id="piece-7"]')
+    const text8_7 = piece8_7?.querySelector('text')
+    expect(text8_7?.getAttribute('x')).toBe('375')
+    expect(text8_7?.getAttribute('y')).toBe('243')
+    const iconG8_7 = piece8_7?.querySelector('g')
+    expect(iconG8_7?.getAttribute('transform')).toContain('364, 266') // 375 - 11, 277 - 11
   })
 })
