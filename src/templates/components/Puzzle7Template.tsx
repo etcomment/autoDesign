@@ -113,21 +113,46 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
         const hasValue = Boolean(piece.value)
         const hasIcon = Boolean(IconComponent)
 
-        const centerPt = pDef.center || {
-          x: (pDef.iconCenter.x + pDef.numCenter.x) / 2,
-          y: (pDef.iconCenter.y + pDef.numCenter.y) / 2,
-        }
-        const cxPiece = centerPt.x + deltaX
-        const cyPiece = centerPt.y + deltaY
+        let iconX = 0
+        let iconY = 0
+        let iconSize = 22
+        let numX = 0
+        let numY = 0
+        let fontSize = 18
 
-        let badgeX = cxPiece
-        let badgeY = cyPiece
-        let iconX = cxPiece
-        let iconY = cyPiece
+        if (count === 4) {
+          iconX = pDef.iconCenter.x + deltaX
+          iconY = pDef.iconCenter.y + deltaY
+          numX = pDef.numCenter.x + deltaX
+          numY = pDef.numCenter.y + deltaY
+          iconSize = 42
+          const valLength = piece.value ? piece.value.length : 0
+          fontSize = valLength > 3 ? 24 : valLength > 2 ? 32 : valLength === 2 ? 42 : 52
+        } else {
+          const centerPt = pDef.center || {
+            x: (pDef.iconCenter.x + pDef.numCenter.x) / 2,
+            y: (pDef.iconCenter.y + pDef.numCenter.y) / 2,
+          }
+          const cxPiece = centerPt.x + deltaX
+          const cyPiece = centerPt.y + deltaY
 
-        if (hasValue && hasIcon) {
-          badgeY = cyPiece - 15
-          iconY = cyPiece + 15
+          numX = cxPiece
+          iconX = cxPiece
+
+          if (hasValue && hasIcon) {
+            numY = cyPiece - 15
+            iconY = cyPiece + 15
+            iconSize = 22
+            const valLength = piece.value ? piece.value.length : 0
+            fontSize = valLength > 3 ? 12 : valLength > 2 ? 14 : 18
+          } else if (hasValue) {
+            numY = cyPiece
+            const valLength = piece.value ? piece.value.length : 0
+            fontSize = valLength > 4 ? 14 : valLength > 2 ? 18 : 24
+          } else {
+            iconY = cyPiece
+            iconSize = 28
+          }
         }
 
         const isMiddleAnchor = pDef.cardDirection === 'top' || pDef.cardDirection === 'bottom'
@@ -169,31 +194,23 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
               />
 
               {hasValue && (
-                <g>
-                  <circle
-                    cx={badgeX}
-                    cy={badgeY}
-                    r={hasIcon ? 13 : 16}
-                    fill="white"
-                  />
-                  <text
-                    x={badgeX}
-                    y={badgeY}
-                    dominantBaseline="central"
-                    textAnchor="middle"
-                    fontFamily="Arial, Segoe UI, sans-serif"
-                    fontSize={hasIcon ? 13 : 16}
-                    fontWeight={800}
-                    fill={color}
-                  >
-                    {piece.value}
-                  </text>
-                </g>
+                <text
+                  x={numX}
+                  y={numY}
+                  dominantBaseline="central"
+                  textAnchor="middle"
+                  fontFamily="Arial, Segoe UI, sans-serif"
+                  fontSize={fontSize}
+                  fontWeight={800}
+                  fill="white"
+                >
+                  {piece.value}
+                </text>
               )}
 
               {hasIcon && IconComponent && (
-                <g transform={`translate(${iconX - (hasValue ? 11 : 14)}, ${iconY - (hasValue ? 11 : 14)})`}>
-                  <IconComponent size={hasValue ? 22 : 28} color="white" />
+                <g transform={`translate(${iconX - iconSize / 2}, ${iconY - iconSize / 2})`}>
+                  <IconComponent size={iconSize} color="white" />
                 </g>
               )}
             </g>

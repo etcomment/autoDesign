@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { render } from '@testing-library/react'
+import { useTemplateStore } from '../../store'
 import { Puzzle4Template } from '../Puzzle4Template'
 import { PuzzleTemplate } from '../PuzzleTemplate'
 import { Puzzle3Template } from '../Puzzle3Template'
@@ -10,6 +11,9 @@ import { computePuzzle7Layout } from '../../shared/puzzle7Geometry'
 import type { PuzzleData } from '../../types'
 
 describe('Puzzle Templates (puzzle, puzzle3, puzzle4, puzzle5, puzzle6 & puzzle7)', () => {
+  beforeEach(() => {
+    useTemplateStore.getState().clearTemplate()
+  })
   const defaultData: PuzzleData = {
     type: 'puzzle',
     pieces: [
@@ -404,5 +408,57 @@ describe('Puzzle Templates (puzzle, puzzle3, puzzle4, puzzle5, puzzle6 & puzzle7
       expect(minX).toBe(335)
       expect(maxX).toBe(665)
     }
+  })
+
+  it('renders Puzzle7Template values as direct white text without circle badge, using arm coordinates for 4 pieces', () => {
+    const data4: PuzzleData = {
+      type: 'puzzle',
+      pieces: [
+        { number: 1, title: 'T1', color: '#2c2b64', value: '1', icon: 'inbox' },
+        { number: 2, title: 'T2', color: '#3466ce', value: '2', icon: 'database' },
+        { number: 3, title: 'T3', color: '#ff4d30', value: '3', icon: 'network' },
+        { number: 4, title: 'T4', color: '#ffb703', value: '4', icon: 'send' },
+      ],
+    }
+
+    const { container } = render(
+      <svg>
+        <Puzzle7Template data={data4} />
+      </svg>,
+    )
+
+    const piece0 = container.querySelector('[data-element-id="piece-0"]')
+    expect(piece0?.querySelectorAll('circle').length).toBe(0)
+    const text0 = piece0?.querySelector('text')
+    expect(text0?.getAttribute('fill')).toBe('white')
+    expect(text0?.getAttribute('font-size')).toBe('52')
+    expect(text0?.getAttribute('x')).toBe('450')
+    expect(text0?.getAttribute('y')).toBe('135')
+
+    const iconG = piece0?.querySelector('g')
+    expect(iconG?.getAttribute('transform')).toContain('359, 114')
+
+    const data8: PuzzleData = {
+      type: 'puzzle',
+      pieces: Array.from({ length: 8 }, (_, i) => ({
+        number: i + 1,
+        title: `T${i + 1}`,
+        color: '#2c2b64',
+        value: `${i + 1}`,
+        icon: 'inbox',
+      })),
+    }
+
+    const { container: c8 } = render(
+      <svg>
+        <Puzzle7Template data={data8} />
+      </svg>,
+    )
+
+    const piece8_0 = c8.querySelector('[data-element-id="piece-0"]')
+    expect(piece8_0?.querySelectorAll('circle').length).toBe(0)
+    const text8_0 = piece8_0?.querySelector('text')
+    expect(text8_0?.getAttribute('fill')).toBe('white')
+    expect(text8_0?.getAttribute('font-size')).toBe('18')
   })
 })
