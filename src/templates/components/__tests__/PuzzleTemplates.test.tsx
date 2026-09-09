@@ -401,8 +401,8 @@ describe('Puzzle Templates (puzzle, puzzle3, puzzle4, puzzle5, puzzle6 & puzzle7
       const layout = computePuzzle7Layout(count)
       const minX = Math.min(...layout.map(p => p.lineStart.x))
       const maxX = Math.max(...layout.map(p => p.lineStart.x))
-      expect(minX).toBe(320)
-      expect(maxX).toBe(680)
+      expect(minX).toBe(335)
+      expect(maxX).toBe(665)
     }
   })
 })

@@ -110,20 +110,24 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
           lineY2 = dotY
         }
 
-        const iconSize = pDef.isStraight ? 30 : 36
-        const fontSize = pDef.isStraight ? (IconComponent && piece.value ? 36 : 42) : 52
+        const hasValue = Boolean(piece.value)
+        const hasIcon = Boolean(IconComponent)
 
-        let iconX = pDef.iconCenter.x + deltaX
-        let iconY = pDef.iconCenter.y + deltaY
-        let numX = pDef.numCenter.x + deltaX
-        let numY = pDef.numCenter.y + deltaY
+        const centerPt = pDef.center || {
+          x: (pDef.iconCenter.x + pDef.numCenter.x) / 2,
+          y: (pDef.iconCenter.y + pDef.numCenter.y) / 2,
+        }
+        const cxPiece = centerPt.x + deltaX
+        const cyPiece = centerPt.y + deltaY
 
-        if (pDef.isStraight && !piece.value && IconComponent) {
-          iconX = (pDef.iconCenter.x + pDef.numCenter.x) / 2 + deltaX
-          iconY = (pDef.iconCenter.y + pDef.numCenter.y) / 2 + deltaY
-        } else if (pDef.isStraight && piece.value && !IconComponent) {
-          numX = (pDef.iconCenter.x + pDef.numCenter.x) / 2 + deltaX
-          numY = (pDef.iconCenter.y + pDef.numCenter.y) / 2 + deltaY
+        let badgeX = cxPiece
+        let badgeY = cyPiece
+        let iconX = cxPiece
+        let iconY = cyPiece
+
+        if (hasValue && hasIcon) {
+          badgeY = cyPiece - 15
+          iconY = cyPiece + 15
         }
 
         const isMiddleAnchor = pDef.cardDirection === 'top' || pDef.cardDirection === 'bottom'
@@ -164,25 +168,33 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
                 strokeLinejoin="round"
               />
 
-              {IconComponent && (
-                <g transform={`translate(${iconX - iconSize / 2}, ${iconY - iconSize / 2})`}>
-                  <IconComponent size={iconSize} color="white" />
+              {hasValue && (
+                <g>
+                  <circle
+                    cx={badgeX}
+                    cy={badgeY}
+                    r={hasIcon ? 13 : 16}
+                    fill="white"
+                  />
+                  <text
+                    x={badgeX}
+                    y={badgeY}
+                    dominantBaseline="central"
+                    textAnchor="middle"
+                    fontFamily="Arial, Segoe UI, sans-serif"
+                    fontSize={hasIcon ? 13 : 16}
+                    fontWeight={800}
+                    fill={color}
+                  >
+                    {piece.value}
+                  </text>
                 </g>
               )}
 
-              {piece.value && (
-                <text
-                  x={numX}
-                  y={numY}
-                  dominantBaseline="central"
-                  textAnchor="middle"
-                  fontFamily="Arial, Segoe UI, sans-serif"
-                  fontSize={fontSize}
-                  fontWeight={800}
-                  fill="white"
-                >
-                  {piece.value}
-                </text>
+              {hasIcon && IconComponent && (
+                <g transform={`translate(${iconX - (hasValue ? 11 : 14)}, ${iconY - (hasValue ? 11 : 14)})`}>
+                  <IconComponent size={hasValue ? 22 : 28} color="white" />
+                </g>
               )}
             </g>
 
