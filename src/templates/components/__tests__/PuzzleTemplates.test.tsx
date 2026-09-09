@@ -367,4 +367,30 @@ describe('Puzzle Templates (puzzle, puzzle3, puzzle4, puzzle5, puzzle6 & puzzle7
     expect(p7.container.querySelector('[data-element-id="piece-0"] text')).toBeNull()
     expect(p7.container.querySelector('[data-element-id="piece-1"] text')?.textContent).toBe('VAL_TEST')
   })
+
+  it('renders Puzzle7Template with dynamic piece counts (2, 5, 6 and 8 pieces)', () => {
+    const makeData = (count: number): PuzzleData => ({
+      type: 'puzzle',
+      pieces: Array.from({ length: count }, (_, i) => ({
+        number: i + 1,
+        title: `Item ${i + 1}`,
+        subtitle: `Sub ${i + 1}`,
+        color: '#3466ce',
+        value: `${i + 1}`,
+      })),
+    })
+
+    for (const count of [2, 5, 6, 8]) {
+      const { container } = render(
+        <svg>
+          <Puzzle7Template data={makeData(count)} />
+        </svg>,
+      )
+      for (let i = 0; i < count; i++) {
+        expect(container.querySelector(`[data-element-id="piece-${i}"]`)).toBeTruthy()
+        expect(container.querySelector(`[data-element-id="card-${i}"]`)).toBeTruthy()
+      }
+      expect(container.querySelector(`[data-element-id="piece-${count}"]`)).toBeNull()
+    }
+  })
 })

@@ -5,7 +5,7 @@ import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
 import { MIGSO_PALETTE } from '../../lib/theme'
-import { PUZZLE2_TAB_BEZIERS } from './Puzzle4Template'
+import { computePuzzle7Layout } from '../shared/puzzle7Geometry'
 
 const DEFAULT_PIECES: PuzzlePiece[] = [
   { number: 1, title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#2c2b64', value: '1', icon: 'inbox' },
@@ -13,206 +13,6 @@ const DEFAULT_PIECES: PuzzlePiece[] = [
   { number: 3, title: 'Management', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ff4d30', value: '3', icon: 'network' },
   { number: 4, title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703', value: '4', icon: 'send' },
 ]
-
-function appendEdgeWithTab(
-  d: string[],
-  p1: { x: number; y: number },
-  p2: { x: number; y: number },
-  kind: 'straight' | 'tab' | 'indent',
-  scaleU: number,
-  scaleV: number,
-  baseHalf: number,
-): void {
-  if (kind === 'straight') {
-    d.push(`L ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`)
-    return
-  }
-
-  const dx = p2.x - p1.x
-  const dy = p2.y - p1.y
-  const len = Math.sqrt(dx * dx + dy * dy)
-  const ux = dx / len
-  const uy = dy / len
-  // Normal vector pointing to the right side of the forward path
-  const nx = uy
-  const ny = -ux
-
-  const mx = (p1.x + p2.x) / 2
-  const my = (p1.y + p2.y) / 2
-
-  const sx = mx - baseHalf * ux
-  const sy = my - baseHalf * uy
-  d.push(`L ${sx.toFixed(2)} ${sy.toFixed(2)}`)
-
-  const sign = kind === 'tab' ? 1 : -1
-
-  for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
-    const cp1x = mx + cp1u * scaleU * ux + sign * (cp1v * scaleV) * nx
-    const cp1y = my + cp1u * scaleU * uy + sign * (cp1v * scaleV) * ny
-    const cp2x = mx + cp2u * scaleU * ux + sign * (cp2v * scaleV) * nx
-    const cp2y = my + cp2u * scaleU * uy + sign * (cp2v * scaleV) * ny
-    const pex = mx + endu * scaleU * ux + sign * (endv * scaleV) * nx
-    const pey = my + endu * scaleU * uy + sign * (endv * scaleV) * ny
-    d.push(`C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
-  }
-
-  d.push(`L ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`)
-}
-
-export function makePuzzle7QuadrantPath(
-  quadrant: number,
-  cx: number,
-  cy: number,
-  Rout: number,
-  Rin: number,
-  rOutCorner: number,
-  rInCorner: number,
-  scaleU: number,
-  scaleV: number,
-  baseHalf: number,
-): string {
-  const d: string[] = []
-
-  if (quadrant === 0) {
-    // Q0 (Top-Left): Clockwise traversal
-    d.push(`M ${(cx - Rout).toFixed(2)} ${cy.toFixed(2)}`)
-    d.push(`L ${(cx - Rout).toFixed(2)} ${(cy - Rout + rOutCorner).toFixed(2)}`)
-    d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx - Rout + rOutCorner).toFixed(2)} ${(cy - Rout).toFixed(2)}`)
-    d.push(`L ${cx.toFixed(2)} ${(cy - Rout).toFixed(2)}`)
-
-    // Right junction: from (cx, cy - Rout) to (cx, cy - Rin) with TAB (+X direction, male into Piece 2)
-    appendEdgeWithTab(
-      d,
-      { x: cx, y: cy - Rout },
-      { x: cx, y: cy - Rin },
-      'tab',
-      scaleU,
-      scaleV,
-      baseHalf,
-    )
-
-    // Inner rounded corner: (cx, cy - Rin) -> (cx - Rin, cy)
-    d.push(`L ${(cx - Rin + rInCorner).toFixed(2)} ${(cy - Rin).toFixed(2)}`)
-    d.push(`A ${rInCorner} ${rInCorner} 0 0 0 ${(cx - Rin).toFixed(2)} ${(cy - Rin + rInCorner).toFixed(2)}`)
-    d.push(`L ${(cx - Rin).toFixed(2)} ${cy.toFixed(2)}`)
-
-    // Bottom junction: from (cx - Rin, cy) to (cx - Rout, cy) with INDENT (-Y direction, female receiving Piece 4)
-    appendEdgeWithTab(
-      d,
-      { x: cx - Rin, y: cy },
-      { x: cx - Rout, y: cy },
-      'indent',
-      scaleU,
-      scaleV,
-      baseHalf,
-    )
-    d.push('Z')
-  } else if (quadrant === 1) {
-    // Q1 (Top-Right): Clockwise traversal
-    d.push(`M ${cx.toFixed(2)} ${(cy - Rout).toFixed(2)}`)
-    d.push(`L ${(cx + Rout - rOutCorner).toFixed(2)} ${(cy - Rout).toFixed(2)}`)
-    d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx + Rout).toFixed(2)} ${(cy - Rout + rOutCorner).toFixed(2)}`)
-    d.push(`L ${(cx + Rout).toFixed(2)} ${cy.toFixed(2)}`)
-
-    // Bottom junction: from (cx + Rout, cy) to (cx + Rin, cy) with TAB (+Y direction, male into Piece 3)
-    appendEdgeWithTab(
-      d,
-      { x: cx + Rout, y: cy },
-      { x: cx + Rin, y: cy },
-      'tab',
-      scaleU,
-      scaleV,
-      baseHalf,
-    )
-
-    // Inner rounded corner: (cx + Rin, cy) -> (cx, cy - Rin)
-    d.push(`L ${(cx + Rin).toFixed(2)} ${(cy - Rin + rInCorner).toFixed(2)}`)
-    d.push(`A ${rInCorner} ${rInCorner} 0 0 0 ${(cx + Rin - rInCorner).toFixed(2)} ${(cy - Rin).toFixed(2)}`)
-    d.push(`L ${cx.toFixed(2)} ${(cy - Rin).toFixed(2)}`)
-
-    // Left junction: from (cx, cy - Rin) to (cx, cy - Rout) with INDENT (+X direction, female receiving Piece 1)
-    appendEdgeWithTab(
-      d,
-      { x: cx, y: cy - Rin },
-      { x: cx, y: cy - Rout },
-      'indent',
-      scaleU,
-      scaleV,
-      baseHalf,
-    )
-    d.push('Z')
-  } else if (quadrant === 2) {
-    // Q2 (Bottom-Right): Clockwise traversal
-    d.push(`M ${(cx + Rout).toFixed(2)} ${cy.toFixed(2)}`)
-    d.push(`L ${(cx + Rout).toFixed(2)} ${(cy + Rout - rOutCorner).toFixed(2)}`)
-    d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx + Rout - rOutCorner).toFixed(2)} ${(cy + Rout).toFixed(2)}`)
-    d.push(`L ${cx.toFixed(2)} ${(cy + Rout).toFixed(2)}`)
-
-    // Left junction: from (cx, cy + Rout) to (cx, cy + Rin) with TAB (-X direction, male into Piece 4)
-    appendEdgeWithTab(
-      d,
-      { x: cx, y: cy + Rout },
-      { x: cx, y: cy + Rin },
-      'tab',
-      scaleU,
-      scaleV,
-      baseHalf,
-    )
-
-    // Inner rounded corner: (cx, cy + Rin) -> (cx + Rin, cy)
-    d.push(`L ${(cx + Rin - rInCorner).toFixed(2)} ${(cy + Rin).toFixed(2)}`)
-    d.push(`A ${rInCorner} ${rInCorner} 0 0 0 ${(cx + Rin).toFixed(2)} ${(cy + Rin - rInCorner).toFixed(2)}`)
-    d.push(`L ${(cx + Rin).toFixed(2)} ${cy.toFixed(2)}`)
-
-    // Top junction: from (cx + Rin, cy) to (cx + Rout, cy) with INDENT (+Y direction, female receiving Piece 2)
-    appendEdgeWithTab(
-      d,
-      { x: cx + Rin, y: cy },
-      { x: cx + Rout, y: cy },
-      'indent',
-      scaleU,
-      scaleV,
-      baseHalf,
-    )
-    d.push('Z')
-  } else {
-    // Q3 (Bottom-Left): Clockwise traversal
-    d.push(`M ${cx.toFixed(2)} ${(cy + Rout).toFixed(2)}`)
-    d.push(`L ${(cx - Rout + rOutCorner).toFixed(2)} ${(cy + Rout).toFixed(2)}`)
-    d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx - Rout).toFixed(2)} ${(cy + Rout - rOutCorner).toFixed(2)}`)
-    d.push(`L ${(cx - Rout).toFixed(2)} ${cy.toFixed(2)}`)
-
-    // Top junction: from (cx - Rout, cy) to (cx - Rin, cy) with TAB (-Y direction, male into Piece 1)
-    appendEdgeWithTab(
-      d,
-      { x: cx - Rout, y: cy },
-      { x: cx - Rin, y: cy },
-      'tab',
-      scaleU,
-      scaleV,
-      baseHalf,
-    )
-
-    // Inner rounded corner: (cx - Rin, cy) -> (cx, cy + Rin)
-    d.push(`L ${(cx - Rin).toFixed(2)} ${(cy + Rin - rInCorner).toFixed(2)}`)
-    d.push(`A ${rInCorner} ${rInCorner} 0 0 0 ${(cx - Rin + rInCorner).toFixed(2)} ${(cy + Rin).toFixed(2)}`)
-    d.push(`L ${cx.toFixed(2)} ${(cy + Rin).toFixed(2)}`)
-
-    // Right junction: from (cx, cy + Rin) to (cx, cy + Rout) with INDENT (-X direction, female receiving Piece 3)
-    appendEdgeWithTab(
-      d,
-      { x: cx, y: cy + Rin },
-      { x: cx, y: cy + Rout },
-      'indent',
-      scaleU,
-      scaleV,
-      baseHalf,
-    )
-    d.push('Z')
-  }
-
-  return d.join(' ')
-}
 
 export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -224,74 +24,15 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
   const templateElementPositions = useTemplateStore(s => s.templateElementPositions)
 
   const rawPieces = data.pieces?.length ? data.pieces : DEFAULT_PIECES
-  const pieces = rawPieces
+  const count = Math.min(8, Math.max(2, rawPieces.length))
+  const pieces = rawPieces.slice(0, count)
 
-  const W = 1000
-  const H = 520
-  const cx = W / 2
-  const cy = H / 2
-
-  const Rout = 185
-  const Rin = 90
-  const rOutCorner = 50
-  const rInCorner = 25
-
-  const scale = ((Rout - Rin) / 142.02) * 1.05
-  const scaleU = scale * 1.20
-  const scaleV = scale * 1.24
-  const baseHalf = 11.75 * scaleU
-
-  const quadrantDefs = [
-    {
-      index: 0,
-      iconCenter: { x: cx - 130, y: cy - 135 },
-      numCenter: { x: cx - 55, y: cy - 135 },
-      lineY: cy - 135,
-      perimeterX: cx - Rout,
-      defaultDotX: 190,
-      defaultCard: { x: 45, y: cy - 135 - 42, width: 130, height: 85 },
-      isLeft: true,
-      bbox: { x: cx - Rout, y: cy - Rout, width: Rout + 33.4 * scaleV, height: Rout + 33.4 * scaleV },
-    },
-    {
-      index: 1,
-      iconCenter: { x: cx + 130, y: cy - 135 },
-      numCenter: { x: cx + 130, y: cy - 55 },
-      lineY: cy - 135,
-      perimeterX: cx + Rout,
-      defaultDotX: 810,
-      defaultCard: { x: 825, y: cy - 135 - 42, width: 130, height: 85 },
-      isLeft: false,
-      bbox: { x: cx, y: cy - Rout, width: Rout, height: Rout + 33.4 * scaleV },
-    },
-    {
-      index: 2,
-      iconCenter: { x: cx + 130, y: cy + 135 },
-      numCenter: { x: cx + 55, y: cy + 135 },
-      lineY: cy + 135,
-      perimeterX: cx + Rout,
-      defaultDotX: 810,
-      defaultCard: { x: 825, y: cy + 135 - 42, width: 130, height: 85 },
-      isLeft: false,
-      bbox: { x: cx - 33.4 * scaleV, y: cy, width: Rout + 33.4 * scaleV, height: Rout },
-    },
-    {
-      index: 3,
-      iconCenter: { x: cx - 130, y: cy + 135 },
-      numCenter: { x: cx - 130, y: cy + 55 },
-      lineY: cy + 135,
-      perimeterX: cx - Rout,
-      defaultDotX: 190,
-      defaultCard: { x: 45, y: cy + 135 - 42, width: 130, height: 85 },
-      isLeft: true,
-      bbox: { x: cx - Rout, y: cy - 33.4 * scaleV, width: Rout, height: Rout + 33.4 * scaleV },
-    },
-  ]
+  const layouts = computePuzzle7Layout(count, 500, 260)
 
   return (
     <g ref={svgRef}>
-      {pieces.slice(0, 4).map((piece, index) => {
-        const qDef = quadrantDefs[index]!
+      {pieces.map((piece, index) => {
+        const pDef = layouts[index]!
         const elementId = `piece-${index}`
         const cardElementId = `card-${index}`
 
@@ -304,71 +45,106 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
 
         const customPiecePos = templateElementPositions[elementId]
         const pieceBbox = {
-          x: customPiecePos ? customPiecePos.x : qDef.bbox.x,
-          y: customPiecePos ? customPiecePos.y : qDef.bbox.y,
-          width: customPiecePos?.width || qDef.bbox.width,
-          height: customPiecePos?.height || qDef.bbox.height,
+          x: customPiecePos ? customPiecePos.x : pDef.bbox.x,
+          y: customPiecePos ? customPiecePos.y : pDef.bbox.y,
+          width: customPiecePos?.width || pDef.bbox.width,
+          height: customPiecePos?.height || pDef.bbox.height,
         }
 
         const customCardPos = templateElementPositions[cardElementId]
-        const cardWidth = customCardPos?.width || qDef.defaultCard.width
+        const cardWidth = customCardPos?.width || pDef.defaultCard.width
         const subtitleLines = piece.subtitle
           ? piece.subtitle.split('\n').flatMap(l => wrapTextByWidth(l, Math.max(12, Math.floor(cardWidth / 7.5))))
           : []
         const nominalCardHeight = 28 + (subtitleLines.length > 0 ? 12 + subtitleLines.length * 16 : 0)
         const cardBbox = {
-          x: customCardPos ? customCardPos.x : qDef.defaultCard.x,
-          y: customCardPos ? customCardPos.y : qDef.defaultCard.y,
+          x: customCardPos ? customCardPos.x : pDef.defaultCard.x,
+          y: customCardPos ? customCardPos.y : pDef.defaultCard.y,
           width: cardWidth,
           height: customCardPos?.height || Math.max(70, nominalCardHeight),
         }
 
-        const deltaX = pieceBbox.x - qDef.bbox.x
-        const deltaY = pieceBbox.y - qDef.bbox.y
-        const currentCx = cx + deltaX
-        const currentCy = cy + deltaY
-        const path = makePuzzle7QuadrantPath(
-          index,
-          currentCx,
-          currentCy,
-          Rout,
-          Rin,
-          rOutCorner,
-          rInCorner,
-          scaleU,
-          scaleV,
-          baseHalf,
-        )
+        const deltaX = pieceBbox.x - pDef.bbox.x
+        const deltaY = pieceBbox.y - pDef.bbox.y
 
-        const iconX = qDef.iconCenter.x + deltaX
-        const iconY = qDef.iconCenter.y + deltaY
-        const numX = qDef.numCenter.x + deltaX
-        const numY = qDef.numCenter.y + deltaY
+        const IconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] : null
 
-        const IconComponent = piece.icon ? TEMPLATE_ICONS[piece.icon] : undefined
-        const iconSize = 42
+        let lineX1 = 0
+        let lineY1 = 0
+        let lineX2 = 0
+        let lineY2 = 0
+        let dotX = 0
+        let dotY = 0
 
-        const cardConnX = qDef.isLeft ? cardBbox.x + cardBbox.width : cardBbox.x
-        const lineY = qDef.lineY + deltaY
-        const piecePerimeterX = qDef.perimeterX + deltaX
+        if (pDef.cardDirection === 'left') {
+          const cardConnX = cardBbox.x + cardBbox.width
+          lineY1 = pDef.lineStart.y + deltaY
+          lineY2 = lineY1
+          lineX1 = pDef.lineStart.x + deltaX
+          dotX = Math.min(lineX1 - 8, Math.max(cardConnX + 16, pDef.defaultDot.x + deltaX))
+          dotY = lineY1
+          lineX2 = dotX
+        } else if (pDef.cardDirection === 'right') {
+          const cardConnX = cardBbox.x
+          lineY1 = pDef.lineStart.y + deltaY
+          lineY2 = lineY1
+          lineX1 = pDef.lineStart.x + deltaX
+          dotX = Math.max(lineX1 + 8, Math.min(cardConnX - 16, pDef.defaultDot.x + deltaX))
+          dotY = lineY1
+          lineX2 = dotX
+        } else if (pDef.cardDirection === 'top') {
+          const cardConnY = cardBbox.y + cardBbox.height
+          lineX1 = pDef.lineStart.x + deltaX
+          lineX2 = lineX1
+          lineY1 = pDef.lineStart.y + deltaY
+          dotX = lineX1
+          dotY = Math.min(lineY1 - 8, Math.max(cardConnY + 16, pDef.defaultDot.y + deltaY))
+          lineY2 = dotY
+        } else {
+          const cardConnY = cardBbox.y
+          lineX1 = pDef.lineStart.x + deltaX
+          lineX2 = lineX1
+          lineY1 = pDef.lineStart.y + deltaY
+          dotX = lineX1
+          dotY = Math.max(lineY1 + 8, Math.min(cardConnY - 16, pDef.defaultDot.y + deltaY))
+          lineY2 = dotY
+        }
 
-        const dotX = qDef.isLeft
-          ? Math.min(piecePerimeterX - 8, Math.max(cardConnX + 16, qDef.defaultDotX + deltaX))
-          : Math.max(piecePerimeterX + 8, Math.min(cardConnX - 16, qDef.defaultDotX + deltaX))
+        const iconSize = pDef.isStraight ? 30 : 36
+        const fontSize = pDef.isStraight ? (IconComponent && piece.value ? 36 : 42) : 52
+
+        let iconX = pDef.iconCenter.x + deltaX
+        let iconY = pDef.iconCenter.y + deltaY
+        let numX = pDef.numCenter.x + deltaX
+        let numY = pDef.numCenter.y + deltaY
+
+        if (pDef.isStraight && !piece.value && IconComponent) {
+          iconX = (pDef.iconCenter.x + pDef.numCenter.x) / 2 + deltaX
+          iconY = (pDef.iconCenter.y + pDef.numCenter.y) / 2 + deltaY
+        } else if (pDef.isStraight && piece.value && !IconComponent) {
+          numX = (pDef.iconCenter.x + pDef.numCenter.x) / 2 + deltaX
+          numY = (pDef.iconCenter.y + pDef.numCenter.y) / 2 + deltaY
+        }
+
+        const isMiddleAnchor = pDef.cardDirection === 'top' || pDef.cardDirection === 'bottom'
+        const textAnchor = isMiddleAnchor ? 'middle' : (pDef.cardDirection === 'left' ? 'end' : 'start')
+        const titleX = isMiddleAnchor
+          ? cardBbox.x + cardBbox.width / 2
+          : (pDef.cardDirection === 'left' ? cardBbox.x + cardBbox.width : cardBbox.x)
 
         return (
           <g key={elementId}>
             <line
-              x1={piecePerimeterX}
-              y1={lineY}
-              x2={dotX}
-              y2={lineY}
+              x1={lineX1}
+              y1={lineY1}
+              x2={lineX2}
+              y2={lineY2}
               stroke={color}
               strokeWidth={3.5}
             />
             <circle
               cx={dotX}
-              cy={lineY}
+              cy={dotY}
               r={7}
               fill={color}
             />
@@ -380,7 +156,8 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
               style={{ cursor: 'pointer' }}
             >
               <path
-                d={path}
+                d={pDef.path}
+                transform={deltaX !== 0 || deltaY !== 0 ? `translate(${deltaX}, ${deltaY})` : undefined}
                 fill={color}
                 stroke={isSelected ? '#4a90d9' : stroke}
                 strokeWidth={strokeWidth}
@@ -400,7 +177,7 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
                   dominantBaseline="central"
                   textAnchor="middle"
                   fontFamily="Arial, Segoe UI, sans-serif"
-                  fontSize={52}
+                  fontSize={fontSize}
                   fontWeight={800}
                   fill="white"
                 >
@@ -426,11 +203,11 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
                 rx={4}
               />
               <text
-                x={qDef.isLeft ? cardBbox.x + cardBbox.width : cardBbox.x}
+                x={titleX}
                 y={cardBbox.y + 16}
-                textAnchor={qDef.isLeft ? 'end' : 'start'}
+                textAnchor={textAnchor}
                 fontFamily="Arial, Segoe UI, sans-serif"
-                fontSize={18}
+                fontSize={16}
                 fontWeight={700}
                 fill="#1e293b"
               >
@@ -439,11 +216,11 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
               {subtitleLines.map((line, lIdx) => (
                 <text
                   key={lIdx}
-                  x={qDef.isLeft ? cardBbox.x + cardBbox.width : cardBbox.x}
-                  y={cardBbox.y + 40 + lIdx * 16}
-                  textAnchor={qDef.isLeft ? 'end' : 'start'}
+                  x={titleX}
+                  y={cardBbox.y + 38 + lIdx * 15}
+                  textAnchor={textAnchor}
                   fontFamily="Arial, Segoe UI, sans-serif"
-                  fontSize={13}
+                  fontSize={12}
                   fill="#334155"
                 >
                   {line}
