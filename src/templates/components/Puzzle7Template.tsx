@@ -75,34 +75,33 @@ export function makePuzzle7QuadrantPath(
 
   if (quadrant === 0) {
     // Q0 (Top-Left): Clockwise traversal
-    // Outer top: (cx, cy - Rout) -> outer top-left corner -> (cx - Rout, cy)
-    d.push(`M ${cx.toFixed(2)} ${(cy - Rout).toFixed(2)}`)
-    d.push(`L ${(cx - Rout + rOutCorner).toFixed(2)} ${(cy - Rout).toFixed(2)}`)
-    d.push(`A ${rOutCorner} ${rOutCorner} 0 0 0 ${(cx - Rout).toFixed(2)} ${(cy - Rout + rOutCorner).toFixed(2)}`)
-    d.push(`L ${(cx - Rout).toFixed(2)} ${cy.toFixed(2)}`)
+    d.push(`M ${(cx - Rout).toFixed(2)} ${cy.toFixed(2)}`)
+    d.push(`L ${(cx - Rout).toFixed(2)} ${(cy - Rout + rOutCorner).toFixed(2)}`)
+    d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx - Rout + rOutCorner).toFixed(2)} ${(cy - Rout).toFixed(2)}`)
+    d.push(`L ${cx.toFixed(2)} ${(cy - Rout).toFixed(2)}`)
 
-    // Bottom radial edge from (cx - Rout, cy) to (cx - Rin, cy) with INDENT (-Y direction, left of vector)
+    // Right junction: from (cx, cy - Rout) to (cx, cy - Rin) with TAB (+X direction, male into Piece 2)
     appendEdgeWithTab(
       d,
-      { x: cx - Rout, y: cy },
-      { x: cx - Rin, y: cy },
-      'indent',
+      { x: cx, y: cy - Rout },
+      { x: cx, y: cy - Rin },
+      'tab',
       scaleU,
       scaleV,
       baseHalf,
     )
 
-    // Inner rounded corner: (cx - Rin, cy) -> (cx, cy - Rin)
-    d.push(`L ${(cx - Rin).toFixed(2)} ${(cy - Rin + rInCorner).toFixed(2)}`)
-    d.push(`A ${rInCorner} ${rInCorner} 0 0 1 ${(cx - Rin + rInCorner).toFixed(2)} ${(cy - Rin).toFixed(2)}`)
-    d.push(`L ${cx.toFixed(2)} ${(cy - Rin).toFixed(2)}`)
+    // Inner rounded corner: (cx, cy - Rin) -> (cx - Rin, cy)
+    d.push(`L ${(cx - Rin + rInCorner).toFixed(2)} ${(cy - Rin).toFixed(2)}`)
+    d.push(`A ${rInCorner} ${rInCorner} 0 0 0 ${(cx - Rin).toFixed(2)} ${(cy - Rin + rInCorner).toFixed(2)}`)
+    d.push(`L ${(cx - Rin).toFixed(2)} ${cy.toFixed(2)}`)
 
-    // Right radial edge from (cx, cy - Rin) to (cx, cy - Rout) with TAB (+X direction, right of vector)
+    // Bottom junction: from (cx - Rin, cy) to (cx - Rout, cy) with INDENT (-Y direction, female receiving Piece 4)
     appendEdgeWithTab(
       d,
-      { x: cx, y: cy - Rin },
-      { x: cx, y: cy - Rout },
-      'tab',
+      { x: cx - Rin, y: cy },
+      { x: cx - Rout, y: cy },
+      'indent',
       scaleU,
       scaleV,
       baseHalf,
@@ -110,10 +109,12 @@ export function makePuzzle7QuadrantPath(
     d.push('Z')
   } else if (quadrant === 1) {
     // Q1 (Top-Right): Clockwise traversal
-    // Outer top/right: (cx, cy - Rout) -> outer top-right corner -> (cx + Rout, cy)
-    d.push(`M ${(cx + Rout).toFixed(2)} ${cy.toFixed(2)}`)
+    d.push(`M ${cx.toFixed(2)} ${(cy - Rout).toFixed(2)}`)
+    d.push(`L ${(cx + Rout - rOutCorner).toFixed(2)} ${(cy - Rout).toFixed(2)}`)
+    d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx + Rout).toFixed(2)} ${(cy - Rout + rOutCorner).toFixed(2)}`)
+    d.push(`L ${(cx + Rout).toFixed(2)} ${cy.toFixed(2)}`)
 
-    // Bottom radial edge from (cx + Rout, cy) to (cx + Rin, cy) with TAB (+Y direction, right of vector)
+    // Bottom junction: from (cx + Rout, cy) to (cx + Rin, cy) with TAB (+Y direction, male into Piece 3)
     appendEdgeWithTab(
       d,
       { x: cx + Rout, y: cy },
@@ -129,7 +130,7 @@ export function makePuzzle7QuadrantPath(
     d.push(`A ${rInCorner} ${rInCorner} 0 0 0 ${(cx + Rin - rInCorner).toFixed(2)} ${(cy - Rin).toFixed(2)}`)
     d.push(`L ${cx.toFixed(2)} ${(cy - Rin).toFixed(2)}`)
 
-    // Left radial edge from (cx, cy - Rin) to (cx, cy - Rout) with INDENT (+X direction, right of vector)
+    // Left junction: from (cx, cy - Rin) to (cx, cy - Rout) with INDENT (+X direction, female receiving Piece 1)
     appendEdgeWithTab(
       d,
       { x: cx, y: cy - Rin },
@@ -139,17 +140,15 @@ export function makePuzzle7QuadrantPath(
       scaleV,
       baseHalf,
     )
-
-    // Outer top edge moving right to top-right corner
-    d.push(`L ${(cx + Rout - rOutCorner).toFixed(2)} ${(cy - Rout).toFixed(2)}`)
-    d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx + Rout).toFixed(2)} ${(cy - Rout + rOutCorner).toFixed(2)}`)
-    d.push(`L ${(cx + Rout).toFixed(2)} ${cy.toFixed(2)}`)
     d.push('Z')
   } else if (quadrant === 2) {
     // Q2 (Bottom-Right): Clockwise traversal
-    d.push(`M ${cx.toFixed(2)} ${(cy + Rout).toFixed(2)}`)
+    d.push(`M ${(cx + Rout).toFixed(2)} ${cy.toFixed(2)}`)
+    d.push(`L ${(cx + Rout).toFixed(2)} ${(cy + Rout - rOutCorner).toFixed(2)}`)
+    d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx + Rout - rOutCorner).toFixed(2)} ${(cy + Rout).toFixed(2)}`)
+    d.push(`L ${cx.toFixed(2)} ${(cy + Rout).toFixed(2)}`)
 
-    // Left radial edge from (cx, cy + Rout) to (cx, cy + Rin) with TAB (-X direction, left of vector)
+    // Left junction: from (cx, cy + Rout) to (cx, cy + Rin) with TAB (-X direction, male into Piece 4)
     appendEdgeWithTab(
       d,
       { x: cx, y: cy + Rout },
@@ -165,7 +164,7 @@ export function makePuzzle7QuadrantPath(
     d.push(`A ${rInCorner} ${rInCorner} 0 0 0 ${(cx + Rin).toFixed(2)} ${(cy + Rin - rInCorner).toFixed(2)}`)
     d.push(`L ${(cx + Rin).toFixed(2)} ${cy.toFixed(2)}`)
 
-    // Top radial edge from (cx + Rin, cy) to (cx + Rout, cy) with INDENT (+Y direction, right of vector)
+    // Top junction: from (cx + Rin, cy) to (cx + Rout, cy) with INDENT (+Y direction, female receiving Piece 2)
     appendEdgeWithTab(
       d,
       { x: cx + Rin, y: cy },
@@ -175,17 +174,15 @@ export function makePuzzle7QuadrantPath(
       scaleV,
       baseHalf,
     )
-
-    // Outer bottom-right corner: (cx + Rout, cy) -> (cx, cy + Rout)
-    d.push(`L ${(cx + Rout).toFixed(2)} ${(cy + Rout - rOutCorner).toFixed(2)}`)
-    d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx + Rout - rOutCorner).toFixed(2)} ${(cy + Rout).toFixed(2)}`)
-    d.push(`L ${cx.toFixed(2)} ${(cy + Rout).toFixed(2)}`)
     d.push('Z')
   } else {
     // Q3 (Bottom-Left): Clockwise traversal
-    d.push(`M ${(cx - Rout).toFixed(2)} ${cy.toFixed(2)}`)
+    d.push(`M ${cx.toFixed(2)} ${(cy + Rout).toFixed(2)}`)
+    d.push(`L ${(cx - Rout + rOutCorner).toFixed(2)} ${(cy + Rout).toFixed(2)}`)
+    d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx - Rout).toFixed(2)} ${(cy + Rout - rOutCorner).toFixed(2)}`)
+    d.push(`L ${(cx - Rout).toFixed(2)} ${cy.toFixed(2)}`)
 
-    // Top radial edge from (cx - Rout, cy) to (cx - Rin, cy) with TAB (-Y direction, left of vector)
+    // Top junction: from (cx - Rout, cy) to (cx - Rin, cy) with TAB (-Y direction, male into Piece 1)
     appendEdgeWithTab(
       d,
       { x: cx - Rout, y: cy },
@@ -201,7 +198,7 @@ export function makePuzzle7QuadrantPath(
     d.push(`A ${rInCorner} ${rInCorner} 0 0 0 ${(cx - Rin + rInCorner).toFixed(2)} ${(cy + Rin).toFixed(2)}`)
     d.push(`L ${cx.toFixed(2)} ${(cy + Rin).toFixed(2)}`)
 
-    // Right radial edge from (cx, cy + Rin) to (cx, cy + Rout) with INDENT (-X direction, left of vector)
+    // Right junction: from (cx, cy + Rin) to (cx, cy + Rout) with INDENT (-X direction, female receiving Piece 3)
     appendEdgeWithTab(
       d,
       { x: cx, y: cy + Rin },
@@ -211,11 +208,6 @@ export function makePuzzle7QuadrantPath(
       scaleV,
       baseHalf,
     )
-
-    // Outer bottom-left corner: (cx, cy + Rout) -> (cx - Rout, cy)
-    d.push(`L ${(cx - Rout + rOutCorner).toFixed(2)} ${(cy + Rout).toFixed(2)}`)
-    d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx - Rout).toFixed(2)} ${(cy + Rout - rOutCorner).toFixed(2)}`)
-    d.push(`L ${(cx - Rout).toFixed(2)} ${cy.toFixed(2)}`)
     d.push('Z')
   }
 
