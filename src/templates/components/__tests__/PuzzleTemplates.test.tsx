@@ -6,6 +6,7 @@ import { Puzzle3Template } from '../Puzzle3Template'
 import { Puzzle5Template } from '../Puzzle5Template'
 import { Puzzle6Template } from '../Puzzle6Template'
 import { Puzzle7Template } from '../Puzzle7Template'
+import { computePuzzle7Layout } from '../../shared/puzzle7Geometry'
 import type { PuzzleData } from '../../types'
 
 describe('Puzzle Templates (puzzle, puzzle3, puzzle4, puzzle5, puzzle6 & puzzle7)', () => {
@@ -391,6 +392,17 @@ describe('Puzzle Templates (puzzle, puzzle3, puzzle4, puzzle5, puzzle6 & puzzle7
         expect(container.querySelector(`[data-element-id="card-${i}"]`)).toBeTruthy()
       }
       expect(container.querySelector(`[data-element-id="piece-${count}"]`)).toBeNull()
+    }
+  })
+
+  it('keeps the global square frame dimensions constant for any piece count in Puzzle7Template', () => {
+    const counts = [2, 3, 4, 5, 6, 7, 8]
+    for (const count of counts) {
+      const layout = computePuzzle7Layout(count)
+      const minX = Math.min(...layout.map(p => p.lineStart.x))
+      const maxX = Math.max(...layout.map(p => p.lineStart.x))
+      expect(minX).toBe(320)
+      expect(maxX).toBe(680)
     }
   })
 })
