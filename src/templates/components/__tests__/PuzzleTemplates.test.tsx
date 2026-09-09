@@ -518,4 +518,40 @@ describe('Puzzle Templates (puzzle, puzzle3, puzzle4, puzzle5, puzzle6 & puzzle7
     const iconG8_7 = piece8_7?.querySelector('g')
     expect(iconG8_7?.getAttribute('transform')).toContain('362, 255') // 375 - 13, 268 - 13
   })
+
+  it('renders Puzzle7Template with mixed sizes for 5 pieces: smaller on 3-piece side and original on 2-piece sides', () => {
+    const data5: PuzzleData = {
+      type: 'puzzle',
+      pieces: Array.from({ length: 5 }, (_, i) => ({
+        number: i + 1,
+        title: `T${i + 1}`,
+        color: '#2c2b64',
+        value: `${i + 1}`,
+        icon: 'inbox',
+      })),
+    }
+
+    const { container: c5 } = render(
+      <svg>
+        <Puzzle7Template data={data5} />
+      </svg>,
+    )
+
+    // Piece 0 is on the top side (3 pieces) -> reduced sizes
+    const piece0 = c5.querySelector('[data-element-id="piece-0"]')
+    const text0 = piece0?.querySelector('text')
+    expect(text0?.getAttribute('font-size')).toBe('22')
+    expect(text0?.getAttribute('x')).toBe('422')
+    const icon0 = piece0?.querySelector('g')
+    expect(icon0?.getAttribute('transform')).toContain('362, 122') // iconSize 26
+
+    // Piece 2 is on the right side (2 pieces) -> original N4 sizes
+    const piece2 = c5.querySelector('[data-element-id="piece-2"]')
+    const text2 = piece2?.querySelector('text')
+    expect(text2?.getAttribute('font-size')).toBe('52')
+    expect(text2?.getAttribute('x')).toBe('625')
+    expect(text2?.getAttribute('y')).toBe('210')
+    const icon2 = piece2?.querySelector('g')
+    expect(icon2?.getAttribute('transform')).toContain('604, 119') // iconSize 42: 625 - 21, 140 - 21
+  })
 })

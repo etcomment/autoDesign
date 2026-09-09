@@ -120,14 +120,32 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
         let numY = 0
         let fontSize = 18
 
-        if (count === 4) {
-          iconX = pDef.iconCenter.x + deltaX
-          iconY = pDef.iconCenter.y + deltaY
-          numX = pDef.numCenter.x + deltaX
-          numY = pDef.numCenter.y + deltaY
-          iconSize = 42
-          const valLength = piece.value ? piece.value.length : 0
-          fontSize = valLength > 3 ? 24 : valLength > 2 ? 32 : valLength === 2 ? 42 : 52
+        if (!pDef.isThreePieceSide) {
+          const centerPt = pDef.center || {
+            x: (pDef.iconCenter.x + pDef.numCenter.x) / 2,
+            y: (pDef.iconCenter.y + pDef.numCenter.y) / 2,
+          }
+          const cxPiece = centerPt.x + deltaX
+          const cyPiece = centerPt.y + deltaY
+
+          if (hasValue && hasIcon) {
+            iconX = pDef.iconCenter.x + deltaX
+            iconY = pDef.iconCenter.y + deltaY
+            numX = pDef.numCenter.x + deltaX
+            numY = pDef.numCenter.y + deltaY
+            iconSize = 42
+            const valLength = piece.value ? piece.value.length : 0
+            fontSize = valLength > 3 ? 24 : valLength > 2 ? 32 : valLength === 2 ? 42 : 52
+          } else if (hasValue) {
+            numX = cxPiece
+            numY = cyPiece
+            const valLength = piece.value ? piece.value.length : 0
+            fontSize = valLength > 3 ? 24 : valLength > 2 ? 32 : valLength === 2 ? 42 : 52
+          } else {
+            iconX = cxPiece
+            iconY = cyPiece
+            iconSize = 42
+          }
         } else {
           const centerPt = pDef.center || {
             x: (pDef.iconCenter.x + pDef.numCenter.x) / 2,
