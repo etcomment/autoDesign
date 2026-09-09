@@ -2,161 +2,225 @@ import { useRef, type ReactElement } from 'react'
 import type { DashboardData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { wrapTextByWidth } from '../shared/primitives'
-import { TEMPLATE_ICONS } from '../shared/icons'
-import { MIGSO_PALETTE } from '../../lib/theme'
+import {
+  MapAreaWidget,
+  LineChartWidget,
+  BarChartWidget,
+  StackedChartWidget,
+  BottomHeaderWidget,
+  DonutCardWidget,
+} from './dashboard2Widgets'
 
-function isPositive(change: string): boolean {
-  return change.startsWith('+')
+interface BoundingBox {
+  x: number
+  y: number
+  width: number
+  height: number
 }
+
+const DEFAULT_KPIS = [
+  { value: '87%', color: '#1f2856', defaultBbox: { x: 50, y: 280, width: 88, height: 75 } },
+  { value: '36%', color: '#2865c8', defaultBbox: { x: 154, y: 280, width: 88, height: 75 } },
+  { value: '24%', color: '#f3543a', defaultBbox: { x: 258, y: 280, width: 88, height: 75 } },
+  { value: '18%', color: '#fdb813', defaultBbox: { x: 362, y: 280, width: 88, height: 75 } },
+]
+
+const DEFAULT_DONUTS = [
+  { color: '#1f2856', value: 25, defaultBbox: { x: 265, y: 385, width: 165, height: 125 } },
+  { color: '#2865c8', value: 20, defaultBbox: { x: 445, y: 385, width: 165, height: 125 } },
+  { color: '#f3543a', value: 35, defaultBbox: { x: 625, y: 385, width: 165, height: 125 } },
+  { color: '#fdb813', value: 30, defaultBbox: { x: 805, y: 385, width: 165, height: 125 } },
+]
 
 export function Dashboard2Template({ data }: { data: DashboardData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
+  const templateColors = useTemplateStore(s => s.templateElementColors)
+  const templateStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const templateStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
-  const tplColors = useTemplateStore(s => s.templateElementColors)
-  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
-  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
-  const { metrics } = data
-  const W = 900
-  const displayed = metrics && metrics.length > 0 ? metrics : [
-    { label: 'Total Revenue', value: '$420,000', change: '+18.4%' },
-    { label: 'Subscribers', value: '12.4k', change: '+5%' },
-    { label: 'Active Sessions', value: '3,820', change: '+14%' },
-    { label: 'Conversion Rate', value: '4.8%', change: '-0.3%' },
-  ]
+  function getElementBbox(elementId: string, fallback: BoundingBox): BoundingBox {
+    const customPos = positions[elementId]
+    return {
+      x: customPos?.x ?? fallback.x,
+      y: customPos?.y ?? fallback.y,
+      width: customPos?.width ?? fallback.width,
+      height: customPos?.height ?? fallback.height,
+    }
+  }
 
-  const bigW = 340
-  const bigH = 180
-  const smallW = 220
-  const smallH = 120
-  const gap = 20
+  function renderWidget(
+    id: string,
+    defaultBbox: BoundingBox,
+    renderContent: (bbox: BoundingBox) => ReactElement,
+  ): ReactElement {
+    const bbox = getElementBbox(id, defaultBbox)
+    const isSelected = selectedIds.has(id)
+    const strokeColor = templateStrokeColors[id] || (isSelected ? '#4a90d9' : 'none')
+    const strokeWidth = templateStrokeWidths[id] ?? (isSelected ? 2 : 0)
 
-  const mainMetric = displayed[0]
-  const subMetrics = displayed.slice(1)
+    return (
+      <g
+        key={id}
+        data-element-id={id}
+        onMouseDown={event => startDrag(event, id, bbox)}
+        transform={getTransform(id, bbox)}
+        style={{ cursor: 'pointer' }}
+      >
+        <rect
+          x={bbox.x}
+          y={bbox.y}
+          width={bbox.width}
+          height={bbox.height}
+          fill="transparent"
+          stroke={strokeColor}
+          strokeWidth={strokeWidth}
+        />
+        {renderContent(bbox)}
+        {isSelected && renderHandles(bbox, id)}
+      </g>
+    )
+  }
 
   return (
     <g ref={svgRef}>
-      {mainMetric && (() => {
-        const elementId = 'metric-0'
-        const defaultBbox = { x: (W - bigW) / 2, y: 40, width: bigW, height: bigH }
-        const customPos = positions[elementId]
-        const bbox = {
-          x: customPos?.x ?? defaultBbox.x,
-          y: customPos?.y ?? defaultBbox.y,
-          width: customPos?.width ?? defaultBbox.width,
-          height: customPos?.height ?? defaultBbox.height,
-        }
+      {renderWidget('map-area', { x: 50, y: 30, width: 420, height: 235 }, bbox => (
+        <MapAreaWidget x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} />
+      ))}
+
+      {DEFAULT_KPIS.map((defaultKpi, index) => {
+        const elementId = `kpi-card-${index}`
+        const bbox = getElementBbox(elementId, defaultKpi.defaultBbox)
         const isSelected = selectedIds.has(elementId)
-        const color = tplColors[elementId] ?? mainMetric.color ?? MIGSO_PALETTE[0]!
-        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : '#e2e8f0')
-        const strokeWidth = tplStrokeWidths[elementId] ?? (isSelected ? 2.5 : 1)
-        const IconComponent = mainMetric.icon ? TEMPLATE_ICONS[mainMetric.icon] : undefined
-        const maxChars = Math.max(10, Math.floor(bbox.width / 9))
-        const labelLines = wrapTextByWidth(mainMetric.label.toUpperCase(), maxChars)
+        const metric = data.metrics?.[index]
+        const val = metric?.value || defaultKpi.value
+        const color = templateColors[elementId] ?? metric?.color ?? defaultKpi.color
+        const strokeColor = templateStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = templateStrokeWidths[elementId] ?? (isSelected ? 2 : 0)
+        const rxVal = index === 0 || index === 3 ? 14 : 6
 
         return (
           <g
             key={elementId}
             data-element-id={elementId}
-            onMouseDown={e => startDrag(e, elementId, bbox)}
+            onMouseDown={event => startDrag(event, elementId, bbox)}
             transform={getTransform(elementId, bbox)}
             style={{ cursor: 'pointer' }}
           >
-            <rect x={bbox.x + 3} y={bbox.y + 3} width={bbox.width} height={bbox.height} rx={12} fill="black" opacity={0.06} />
-            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={12} fill="white" stroke={strokeColor} strokeWidth={strokeWidth} />
-            <rect x={bbox.x} y={bbox.y} width={6} height={bbox.height} rx={3} fill={color} />
-
-            {IconComponent && (
-              <g transform={`translate(${bbox.x + 20}, ${bbox.y + 20})`}>
-                <IconComponent size={22} color={color} />
-              </g>
-            )}
-
-            <text x={bbox.x + bbox.width / 2} y={bbox.y + 36} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={13} fontWeight={600} fill="#718096">
-              {labelLines.map((line, lineIndex) => (
-                <tspan key={lineIndex} x={bbox.x + bbox.width / 2} dy={lineIndex === 0 ? 0 : 14}>
-                  {line}
-                </tspan>
-              ))}
+            <rect
+              x={bbox.x}
+              y={bbox.y}
+              width={bbox.width}
+              height={bbox.height}
+              fill={color}
+              rx={rxVal}
+              stroke={strokeColor}
+              strokeWidth={strokeWidth}
+            />
+            <text
+              x={bbox.x + bbox.width / 2}
+              y={bbox.y + 32}
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize={22}
+              fontWeight={800}
+              fontFamily="Arial, sans-serif"
+            >
+              {val}
             </text>
-
-            <text x={bbox.x + bbox.width / 2} y={bbox.y + 98} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={42} fontWeight={800} fill="#1a202c">
-              {mainMetric.value}
+            <text
+              x={bbox.x + bbox.width / 2}
+              y={bbox.y + 48}
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize={9}
+              fontWeight={600}
+              fontFamily="Arial, sans-serif"
+            >
+              MIGSO-
             </text>
-
-            {mainMetric.change && (
-              <text x={bbox.x + bbox.width / 2} y={bbox.y + 138} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={15} fontWeight={700} fill={isPositive(mainMetric.change) ? '#48bb78' : '#f56565'}>
-                {mainMetric.change}
-              </text>
-            )}
+            <text
+              x={bbox.x + bbox.width / 2}
+              y={bbox.y + 58}
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize={9}
+              fontWeight={600}
+              fontFamily="Arial, sans-serif"
+            >
+              PCUBED
+            </text>
+            <text
+              x={bbox.x + bbox.width / 2}
+              y={bbox.y + 68}
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize={9}
+              fontWeight={600}
+              fontFamily="Arial, sans-serif"
+            >
+              content
+            </text>
             {isSelected && renderHandles(bbox, elementId)}
           </g>
         )
-      })()}
+      })}
 
-      {subMetrics.map((metric, index) => {
-        const idx = index + 1
-        const count = subMetrics.length
-        const totalSmall = count * smallW + (count - 1) * gap
-        const startX = (W - totalSmall) / 2
-        const px = startX + index * (smallW + gap)
-        const py = 250
-        const elementId = `metric-${idx}`
-        const color = tplColors[elementId] ?? metric.color ?? MIGSO_PALETTE[idx % MIGSO_PALETTE.length]!
+      {renderWidget('widget-line-chart', { x: 495, y: 30, width: 245, height: 115 }, bbox => (
+        <LineChartWidget x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} />
+      ))}
+
+      {renderWidget('widget-bar-chart', { x: 495, y: 165, width: 245, height: 190 }, bbox => (
+        <BarChartWidget x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} />
+      ))}
+
+      {renderWidget('widget-stacked-chart', { x: 765, y: 30, width: 185, height: 325 }, bbox => (
+        <StackedChartWidget x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} />
+      ))}
+
+      {renderWidget('bottom-header', { x: 50, y: 385, width: 190, height: 120 }, bbox => (
+        <BottomHeaderWidget x={bbox.x} y={bbox.y} />
+      ))}
+
+      {DEFAULT_DONUTS.map((donut, index) => {
+        const elementId = `donut-card-${index}`
+        const bbox = getElementBbox(elementId, donut.defaultBbox)
         const isSelected = selectedIds.has(elementId)
-        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : '#e2e8f0')
-        const strokeWidth = tplStrokeWidths[elementId] ?? (isSelected ? 2.5 : 1)
-        const defaultBbox = { x: px, y: py, width: smallW, height: smallH }
+        const metric = data.metrics?.[index + 4]
+        const sliceColor = templateColors[elementId] ?? metric?.color ?? donut.color
+        const strokeColor = templateStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = templateStrokeWidths[elementId] ?? (isSelected ? 2 : 0)
 
-        const customPos = positions[elementId]
-        const bbox = {
-          x: customPos?.x ?? defaultBbox.x,
-          y: customPos?.y ?? defaultBbox.y,
-          width: customPos?.width ?? defaultBbox.width,
-          height: customPos?.height ?? defaultBbox.height,
-        }
-        const IconComponent = metric.icon ? TEMPLATE_ICONS[metric.icon] : undefined
-        const maxChars = Math.max(10, Math.floor(bbox.width / 8))
-        const labelLines = wrapTextByWidth(metric.label.toUpperCase(), maxChars)
+        const pieSlices = [
+          { value: donut.value, color: sliceColor },
+          { value: 100 - donut.value, color: '#d1d5db' },
+        ]
 
         return (
           <g
             key={elementId}
             data-element-id={elementId}
-            onMouseDown={e => startDrag(e, elementId, bbox)}
+            onMouseDown={event => startDrag(event, elementId, bbox)}
             transform={getTransform(elementId, bbox)}
             style={{ cursor: 'pointer' }}
           >
-            <rect x={bbox.x + 2} y={bbox.y + 2} width={bbox.width} height={bbox.height} rx={8} fill="black" opacity={0.05} />
-            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill="white" stroke={strokeColor} strokeWidth={strokeWidth} />
-            <rect x={bbox.x} y={bbox.y} width={bbox.width} height={5} rx={2.5} fill={color} />
-
-            {IconComponent && (
-              <g transform={`translate(${bbox.x + 14}, ${bbox.y + 14})`}>
-                <IconComponent size={16} color={color} />
-              </g>
-            )}
-
-            <text x={bbox.x + bbox.width / 2} y={bbox.y + 34} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={600} fill="#718096">
-              {labelLines.map((line, lineIndex) => (
-                <tspan key={lineIndex} x={bbox.x + bbox.width / 2} dy={lineIndex === 0 ? 0 : 12}>
-                  {line}
-                </tspan>
-              ))}
-            </text>
-
-            <text x={bbox.x + bbox.width / 2} y={bbox.y + 72} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={26} fontWeight={800} fill="#1a202c">
-              {metric.value}
-            </text>
-
-            {metric.change && (
-              <text x={bbox.x + bbox.width / 2} y={bbox.y + 98} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={700} fill={isPositive(metric.change) ? '#48bb78' : '#f56565'}>
-                {metric.change}
-              </text>
-            )}
+            <rect
+              x={bbox.x}
+              y={bbox.y}
+              width={bbox.width}
+              height={bbox.height}
+              fill="transparent"
+              stroke={strokeColor}
+              strokeWidth={strokeWidth}
+            />
+            <DonutCardWidget
+              x={bbox.x}
+              y={bbox.y}
+              width={bbox.width}
+              slices={pieSlices}
+            />
             {isSelected && renderHandles(bbox, elementId)}
           </g>
         )

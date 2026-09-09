@@ -205,7 +205,8 @@ export function parseTemplateDsl(dsl: string): TemplateData | null {
       result = parseFunnel(trimmed, header.title)
       break
     case 'dashboard':
-      result = parseDashboard(trimmed, header.title)
+    case 'kpi':
+      result = parseDashboard(trimmed, header.title, header.type)
       break
     case 'table':
       result = parseTable(trimmed, header.title)
@@ -612,18 +613,18 @@ function parseFunnel(dsl: string, headerTitle?: string): FunnelData {
   return { type: 'funnel', title, levels }
 }
 
-function parseDashboard(dsl: string, headerTitle?: string): DashboardData {
+function parseDashboard(dsl: string, headerTitle?: string, headerType?: string): DashboardData {
   const lines = getLines(dsl)
   let title: string | undefined = headerTitle
   const metrics: DashboardMetric[] = []
 
   for (const line of lines) {
-    if (line.startsWith('@dashboard')) {
-      const m = /^@dashboard\d*\s+"?([^"]*)"?\s*$/.exec(line)
-      if (m && m[1]) title = stripQuotes(m[1])
+    if (line.startsWith('@dashboard') || line.startsWith('@kpi')) {
+      const m = /^@(dashboard\d*|kpi\d*)\s+"?([^"]*)"?\s*$/.exec(line)
+      if (m && m[2]) title = stripQuotes(m[2])
       continue
     }
-    var tokens = tokenizeLine(line)
+    const tokens = tokenizeLine(line)
     if (tokens.tokens[0] === 'metric' && tokens.tokens.length >= 3) {
       const args = tokens.tokens.slice(1)
       const trailing = extractTrailingArgs(args, 2)
@@ -634,12 +635,14 @@ function parseDashboard(dsl: string, headerTitle?: string): DashboardData {
         color: trailing.color,
         icon: trailing.icon,
         percent: trailing.percent,
+        category: trailing.lane,
+        description: trailing.subtitle,
       })
       continue
     }
   }
 
-  return { type: 'dashboard', title, metrics }
+  return { type: headerType ?? 'dashboard', title, metrics }
 }
 
 function parseTable(dsl: string, headerTitle?: string): TableData {

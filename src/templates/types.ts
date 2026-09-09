@@ -395,13 +395,39 @@ export interface DashboardMetric {
   color?: string
   icon?: string
   percent?: string
+  category?: string
+  description?: string
+  series?: number[]
 }
 
 export interface DashboardData {
-  type: 'dashboard'
+  type:
+    | 'dashboard'
+    | 'dashboard2'
+    | 'dashboard3'
+    | 'dashboard4'
+    | 'dashboard5'
+    | 'dashboard6'
+    | 'dashboard7'
+    | 'dashboard8'
+    | 'kpi1'
+    | 'kpi2'
+    | 'kpi3'
+    | string
   title?: string
   metrics: DashboardMetric[]
 }
+
+export type Dashboard2Data = DashboardData
+export type Dashboard3Data = DashboardData
+export type Dashboard4Data = DashboardData
+export type Dashboard5Data = DashboardData
+export type Dashboard6Data = DashboardData
+export type Dashboard7Data = DashboardData
+export type Dashboard8Data = DashboardData
+export type Kpi1Data = DashboardData
+export type Kpi2Data = DashboardData
+export type Kpi3Data = DashboardData
 
 export interface TableRow {
   label: string

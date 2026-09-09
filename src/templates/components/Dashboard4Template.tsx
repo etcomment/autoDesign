@@ -2,138 +2,338 @@ import { useRef, type ReactElement } from 'react'
 import type { DashboardData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { wrapTextByWidth } from '../shared/primitives'
 import { TEMPLATE_ICONS } from '../shared/icons'
+import {
+  ArcGauge,
+  MiniBarChart,
+  MiniLineChart,
+  MiniPieChart,
+} from '../shared/charts'
 import { MIGSO_PALETTE } from '../../lib/theme'
-
-const GAUGE_R = 70
-const GAUGE_GAP = 40
-
-function parseValue(val: string): number {
-  const num = parseFloat(val.replace(/[^0-9.]/g, ''))
-  return isNaN(num) ? 0 : num
-}
-
-function gaugeArc(r: number, startAngle: number, endAngle: number): string {
-  const sRad = (startAngle * Math.PI) / 180
-  const eRad = (endAngle * Math.PI) / 180
-  const sx = r * Math.cos(sRad)
-  const sy = r * Math.sin(sRad)
-  const ex = r * Math.cos(eRad)
-  const ey = r * Math.sin(eRad)
-  const large = endAngle - startAngle > 180 ? 1 : 0
-  return `M ${sx} ${sy} A ${r} ${r} 0 ${large} 1 ${ex} ${ey}`
-}
 
 export function Dashboard4Template({ data }: { data: DashboardData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
-  const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const positions = useTemplateStore(s => s.templateElementPositions)
-  const tplColors = useTemplateStore(s => s.templateElementColors)
-  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
-  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const selectedIds = useTemplateStore(state => state.selectedTemplateElementIds)
+  const positions = useTemplateStore(state => state.templateElementPositions)
+  const elementColors = useTemplateStore(state => state.templateElementColors)
+  const strokeColors = useTemplateStore(state => state.templateStrokeColors)
+  const strokeWidths = useTemplateStore(state => state.templateStrokeWidths)
 
-  const { metrics } = data
-  const displayed = metrics && metrics.length > 0 ? metrics : [
-    { label: 'CPU Usage', value: '64%', change: '+2%' },
-    { label: 'Memory', value: '82%', change: '+5%' },
-    { label: 'Disk IO', value: '45%', change: '-1%' },
-    { label: 'Bandwidth', value: '30%', change: '+0%' },
-  ]
+  const metrics = data.metrics ?? []
+  const businessValue = metrics[0]?.value ?? '6/10'
+  const industryValue = metrics[1]?.value ?? '8/10'
 
-  const W = 900
-  const count = Math.min(displayed.length, 4)
-  const totalW = count * (GAUGE_R * 2 + GAUGE_GAP) - GAUGE_GAP
-  const startX = (W - totalW) / 2
-  const cy = 180
+  const computeBox = (elementId: string, defaultBounds: { x: number; y: number; width: number; height: number }) => {
+    const customPosition = positions[elementId]
+    return {
+      x: customPosition?.x ?? defaultBounds.x,
+      y: customPosition?.y ?? defaultBounds.y,
+      width: customPosition?.width ?? defaultBounds.width,
+      height: customPosition?.height ?? defaultBounds.height,
+    }
+  }
 
-  const values = displayed.map(m => {
-    const v = parseValue(m.value)
-    return Math.min(Math.max(v / 100, 0.05), 0.98)
-  })
+  const computeBorder = (elementId: string, isSelected: boolean) => {
+    return {
+      stroke: strokeColors[elementId] || (isSelected ? '#4a90d9' : '#e2e8f0'),
+      strokeWidth: strokeWidths[elementId] ?? (isSelected ? 2.5 : 1),
+    }
+  }
+
+  const businessId = 'card-business'
+  const businessBox = computeBox(businessId, { x: 45, y: 35, width: 215, height: 125 })
+  const isBusinessSelected = selectedIds.has(businessId)
+  const businessBorder = computeBorder(businessId, isBusinessSelected)
+  const businessColor = elementColors[businessId] ?? MIGSO_PALETTE[0]!
+
+  const industryId = 'card-industry'
+  const industryBox = computeBox(industryId, { x: 270, y: 35, width: 215, height: 125 })
+  const isIndustrySelected = selectedIds.has(industryId)
+  const industryBorder = computeBorder(industryId, isIndustrySelected)
+  const industryColor = elementColors[industryId] ?? MIGSO_PALETTE[2]!
+
+  const categoriesId = 'card-categories'
+  const categoriesBox = computeBox(categoriesId, { x: 45, y: 175, width: 440, height: 135 })
+  const isCategoriesSelected = selectedIds.has(categoriesId)
+  const categoriesBorder = computeBorder(categoriesId, isCategoriesSelected)
+
+  const activitiesId = 'card-activities'
+  const activitiesBox = computeBox(activitiesId, { x: 500, y: 35, width: 420, height: 275 })
+  const isActivitiesSelected = selectedIds.has(activitiesId)
+  const activitiesBorder = computeBorder(activitiesId, isActivitiesSelected)
+
+  const aestheticsId = 'card-aesthetics'
+  const aestheticsBox = computeBox(aestheticsId, { x: 45, y: 325, width: 210, height: 170 })
+  const isAestheticsSelected = selectedIds.has(aestheticsId)
+  const aestheticsBorder = computeBorder(aestheticsId, isAestheticsSelected)
+
+  const navigationId = 'card-navigation'
+  const navigationBox = computeBox(navigationId, { x: 265, y: 325, width: 210, height: 170 })
+  const isNavigationSelected = selectedIds.has(navigationId)
+  const navigationBorder = computeBorder(navigationId, isNavigationSelected)
+
+  const speedId = 'card-speed'
+  const speedBox = computeBox(speedId, { x: 485, y: 325, width: 210, height: 170 })
+  const isSpeedSelected = selectedIds.has(speedId)
+  const speedBorder = computeBorder(speedId, isSpeedSelected)
+
+  const searchId = 'card-searchability'
+  const searchBox = computeBox(searchId, { x: 705, y: 325, width: 215, height: 170 })
+  const isSearchSelected = selectedIds.has(searchId)
+  const searchBorder = computeBorder(searchId, isSearchSelected)
+
+  const PrinterIcon = TEMPLATE_ICONS.printer
+  const NewspaperIcon = TEMPLATE_ICONS.newspaper
+  const SearchIcon = TEMPLATE_ICONS.search
 
   return (
     <g ref={svgRef}>
-      {displayed.slice(0, count).map((metric, index) => {
-        const elementId = `metric-${index}`
-        const centerDefaultX = startX + index * (GAUGE_R * 2 + GAUGE_GAP) + GAUGE_R
-        const color = tplColors[elementId] ?? metric.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
-        const pct = values[index]!
-        const needleAngle = 180 - pct * 180
+      <g
+        data-element-id={businessId}
+        onMouseDown={event => startDrag(event, businessId, businessBox)}
+        transform={getTransform(businessId, businessBox)}
+        style={{ cursor: 'pointer' }}
+      >
+        <rect x={businessBox.x} y={businessBox.y} width={businessBox.width} height={businessBox.height} rx={4} fill="#ffffff" stroke={businessBorder.stroke} strokeWidth={businessBorder.strokeWidth} />
+        <text x={businessBox.x + 16} y={businessBox.y + 24} fontSize={14} fontWeight={700} fill="#1a202c" fontFamily="Arial, sans-serif">Your business</text>
+        <text x={businessBox.x + businessBox.width - 16} y={businessBox.y + 24} textAnchor="end" fontSize={12} fontWeight={700} fill={businessColor} fontFamily="Arial, sans-serif">{businessValue}</text>
+        <ArcGauge
+          cx={businessBox.x + businessBox.width / 2}
+          cy={businessBox.y + 92}
+          radius={48}
+          innerRadius={34}
+          value={6}
+          min={0}
+          max={10}
+          segments={[
+            { color: businessColor, weight: 6 },
+            { color: '#eef2f6', weight: 4 },
+          ]}
+          needleColor="#718096"
+          pivotColor="#718096"
+        />
+        <line x1={businessBox.x + 18} y1={businessBox.y + 92} x2={businessBox.x + businessBox.width - 18} y2={businessBox.y + 92} stroke="#e2e8f0" strokeWidth={1} />
+        <text x={businessBox.x + 36} y={businessBox.y + 110} textAnchor="middle" fontSize={10} fill="#718096" fontFamily="Arial, sans-serif">Low</text>
+        <text x={businessBox.x + businessBox.width - 36} y={businessBox.y + 110} textAnchor="middle" fontSize={10} fill="#718096" fontFamily="Arial, sans-serif">High</text>
+        {isBusinessSelected && renderHandles(businessBox, businessId)}
+      </g>
 
-        const bgArc = gaugeArc(GAUGE_R, 0, 180)
-        const valArc = gaugeArc(GAUGE_R, 180 - pct * 180, 180)
+      <g
+        data-element-id={industryId}
+        onMouseDown={event => startDrag(event, industryId, industryBox)}
+        transform={getTransform(industryId, industryBox)}
+        style={{ cursor: 'pointer' }}
+      >
+        <rect x={industryBox.x} y={industryBox.y} width={industryBox.width} height={industryBox.height} rx={4} fill="#ffffff" stroke={industryBorder.stroke} strokeWidth={industryBorder.strokeWidth} />
+        <text x={industryBox.x + 16} y={industryBox.y + 24} fontSize={14} fontWeight={700} fill="#1a202c" fontFamily="Arial, sans-serif">Industry average</text>
+        <text x={industryBox.x + industryBox.width - 16} y={industryBox.y + 24} textAnchor="end" fontSize={12} fontWeight={700} fill="#1a202c" fontFamily="Arial, sans-serif">{industryValue}</text>
+        <ArcGauge
+          cx={industryBox.x + industryBox.width / 2}
+          cy={industryBox.y + 92}
+          radius={48}
+          innerRadius={34}
+          value={8}
+          min={0}
+          max={10}
+          segments={[
+            { color: industryColor, weight: 8 },
+            { color: '#eef2f6', weight: 2 },
+          ]}
+          needleColor="#718096"
+          pivotColor="#718096"
+        />
+        <line x1={industryBox.x + 18} y1={industryBox.y + 92} x2={industryBox.x + industryBox.width - 18} y2={industryBox.y + 92} stroke="#e2e8f0" strokeWidth={1} />
+        <text x={industryBox.x + 36} y={industryBox.y + 110} textAnchor="middle" fontSize={10} fill="#718096" fontFamily="Arial, sans-serif">Low</text>
+        <text x={industryBox.x + industryBox.width - 36} y={industryBox.y + 110} textAnchor="middle" fontSize={10} fill="#718096" fontFamily="Arial, sans-serif">High</text>
+        {isIndustrySelected && renderHandles(industryBox, industryId)}
+      </g>
 
-        const defaultBbox = { x: centerDefaultX - GAUGE_R, y: cy - GAUGE_R - 10, width: GAUGE_R * 2, height: GAUGE_R + 100 }
-        const customPos = positions[elementId]
-        const bbox = {
-          x: customPos?.x ?? defaultBbox.x,
-          y: customPos?.y ?? defaultBbox.y,
-          width: customPos?.width ?? defaultBbox.width,
-          height: customPos?.height ?? defaultBbox.height,
-        }
-        const isSelected = selectedIds.has(elementId)
-        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
-        const strokeWidth = tplStrokeWidths[elementId] ?? (isSelected ? 2 : 0)
-        const centerCx = bbox.x + bbox.width / 2
-        const centerCy = bbox.y + GAUGE_R + 10
-
-        const nx = centerCx + GAUGE_R * 0.75 * Math.cos((needleAngle * Math.PI) / 180)
-        const ny = centerCy + GAUGE_R * 0.75 * Math.sin((needleAngle * Math.PI) / 180)
-        const IconComponent = metric.icon ? TEMPLATE_ICONS[metric.icon] : undefined
-        const maxChars = Math.max(8, Math.floor(bbox.width / 8))
-        const labelLines = wrapTextByWidth(metric.label.toUpperCase(), maxChars)
-
-        return (
-          <g
-            key={elementId}
-            data-element-id={elementId}
-            onMouseDown={e => startDrag(e, elementId, bbox)}
-            transform={getTransform(elementId, bbox)}
-            style={{ cursor: 'pointer' }}
-          >
-            {strokeWidth > 0 && (
-              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={8} fill="none" stroke={strokeColor} strokeWidth={strokeWidth} />
-            )}
-
-            <g transform={`translate(${centerCx}, ${centerCy})`}>
-              <path d={bgArc} fill="none" stroke="#edf2f7" strokeWidth={14} strokeLinecap="round" />
-              <path d={valArc} fill="none" stroke={color} strokeWidth={14} strokeLinecap="round" />
-
-              <line x1={0} y1={0} x2={nx - centerCx} y2={ny - centerCy} stroke="#1a202c" strokeWidth={2.5} />
-              <circle cx={0} cy={0} r={6} fill="#1a202c" />
-              <circle cx={0} cy={0} r={3} fill="white" />
-            </g>
-
-            {IconComponent && (
-              <g transform={`translate(${centerCx - 8}, ${centerCy + 8})`}>
-                <IconComponent size={16} color={color} />
-              </g>
-            )}
-
-            <text x={centerCx} y={centerCy + GAUGE_R + 32} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={18} fontWeight={800} fill={color}>
-              {metric.value}
-            </text>
-
-            <text x={centerCx} y={centerCy + GAUGE_R + 52} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={12} fontWeight={600} fill="#718096">
-              {labelLines.map((line, lineIndex) => (
-                <tspan key={lineIndex} x={centerCx} dy={lineIndex === 0 ? 0 : 12}>
-                  {line}
-                </tspan>
-              ))}
-            </text>
-
-            {metric.change && (
-              <text x={centerCx} y={centerCy + GAUGE_R + 52 + labelLines.length * 12 + 4} textAnchor="middle" fontFamily="Arial, sans-serif" fontSize={11} fontWeight={700} fill={metric.change.startsWith('+') ? '#48bb78' : '#f56565'}>
-                {metric.change}
-              </text>
-            )}
-
-            {isSelected && renderHandles(bbox, elementId)}
+      <g
+        data-element-id={categoriesId}
+        onMouseDown={event => startDrag(event, categoriesId, categoriesBox)}
+        transform={getTransform(categoriesId, categoriesBox)}
+        style={{ cursor: 'pointer' }}
+      >
+        <rect x={categoriesBox.x} y={categoriesBox.y} width={categoriesBox.width} height={categoriesBox.height} rx={4} fill="#ffffff" stroke={categoriesBorder.stroke} strokeWidth={categoriesBorder.strokeWidth} />
+        
+        {PrinterIcon && (
+          <g transform={`translate(${categoriesBox.x + 16}, ${categoriesBox.y + 20})`}>
+            <PrinterIcon size={18} color="#4a5568" />
           </g>
-        )
-      })}
+        )}
+        <text x={categoriesBox.x + 44} y={categoriesBox.y + 34} fontSize={12} fontWeight={600} fill="#1a202c" fontFamily="Arial, sans-serif">Technology</text>
+        <rect x={categoriesBox.x + 145} y={categoriesBox.y + 28} width={220} height={7} rx={3.5} fill="#f1f5f9" />
+        <rect x={categoriesBox.x + 145} y={categoriesBox.y + 28} width={110} height={7} rx={3.5} fill="#2c2b64" />
+        <text x={categoriesBox.x + 380} y={categoriesBox.y + 34} fontSize={11} fontWeight={700} fill="#1a202c" fontFamily="Arial, sans-serif">5/10</text>
+
+        {NewspaperIcon && (
+          <g transform={`translate(${categoriesBox.x + 16}, ${categoriesBox.y + 58})`}>
+            <NewspaperIcon size={18} color="#4a5568" />
+          </g>
+        )}
+        <text x={categoriesBox.x + 44} y={categoriesBox.y + 72} fontSize={12} fontWeight={600} fill="#1a202c" fontFamily="Arial, sans-serif">Accessibility</text>
+        <rect x={categoriesBox.x + 145} y={categoriesBox.y + 66} width={220} height={7} rx={3.5} fill="#f1f5f9" />
+        <rect x={categoriesBox.x + 145} y={categoriesBox.y + 66} width={154} height={7} rx={3.5} fill="#3366cc" />
+        <text x={categoriesBox.x + 380} y={categoriesBox.y + 72} fontSize={11} fontWeight={700} fill="#1a202c" fontFamily="Arial, sans-serif">7/10</text>
+
+        {SearchIcon && (
+          <g transform={`translate(${categoriesBox.x + 16}, ${categoriesBox.y + 96})`}>
+            <SearchIcon size={18} color="#4a5568" />
+          </g>
+        )}
+        <text x={categoriesBox.x + 44} y={categoriesBox.y + 110} fontSize={12} fontWeight={600} fill="#1a202c" fontFamily="Arial, sans-serif">Security</text>
+        <rect x={categoriesBox.x + 145} y={categoriesBox.y + 104} width={220} height={7} rx={3.5} fill="#f1f5f9" />
+        <rect x={categoriesBox.x + 145} y={categoriesBox.y + 104} width={198} height={7} rx={3.5} fill="#ff5338" />
+        <text x={categoriesBox.x + 380} y={categoriesBox.y + 110} fontSize={11} fontWeight={700} fill="#1a202c" fontFamily="Arial, sans-serif">9/10</text>
+        {isCategoriesSelected && renderHandles(categoriesBox, categoriesId)}
+      </g>
+
+      <g
+        data-element-id={activitiesId}
+        onMouseDown={event => startDrag(event, activitiesId, activitiesBox)}
+        transform={getTransform(activitiesId, activitiesBox)}
+        style={{ cursor: 'pointer' }}
+      >
+        <rect x={activitiesBox.x} y={activitiesBox.y} width={activitiesBox.width} height={activitiesBox.height} rx={4} fill="#ffffff" stroke={activitiesBorder.stroke} strokeWidth={activitiesBorder.strokeWidth} />
+        <text x={activitiesBox.x + 20} y={activitiesBox.y + 28} fontSize={15} fontWeight={700} fill="#1a202c" fontFamily="Arial, sans-serif">Latest activities</text>
+        {[6, 5, 4, 3, 2, 1, 0].map((val, idx) => {
+          const tickY = activitiesBox.y + 55 + idx * 24
+          return (
+            <text key={val} x={activitiesBox.x + 26} y={tickY + 4} fontSize={13} fill="#1a202c" textAnchor="end" fontFamily="Arial, sans-serif">{val}</text>
+          )
+        })}
+        <MiniLineChart
+          x={activitiesBox.x + 44}
+          y={activitiesBox.y + 55}
+          width={activitiesBox.width - 64}
+          height={175}
+          yMin={0}
+          yMax={6}
+          showBaseline={true}
+          labels={['2014', '2015', '2016', '2017']}
+          fontSize={15}
+          textColor="#1a202c"
+          series={[
+            { points: [4.3, 2.5, 3.5, 4.5], color: '#2c2b64', strokeWidth: 4 },
+            { points: [2.4, 4.4, 1.8, 2.8], color: '#3366cc', strokeWidth: 4 },
+            { points: [2.0, 2.0, 3.0, 5.0], color: '#ff5338', strokeWidth: 4 },
+          ]}
+        />
+        {isActivitiesSelected && renderHandles(activitiesBox, activitiesId)}
+      </g>
+
+      <g
+        data-element-id={aestheticsId}
+        onMouseDown={event => startDrag(event, aestheticsId, aestheticsBox)}
+        transform={getTransform(aestheticsId, aestheticsBox)}
+        style={{ cursor: 'pointer' }}
+      >
+        <rect x={aestheticsBox.x} y={aestheticsBox.y} width={aestheticsBox.width} height={aestheticsBox.height} rx={4} fill="#ffffff" stroke={aestheticsBorder.stroke} strokeWidth={aestheticsBorder.strokeWidth} />
+        <text x={aestheticsBox.x + 16} y={aestheticsBox.y + 24} fontSize={14} fontWeight={700} fill="#1a202c" fontFamily="Arial, sans-serif">Aesthetics</text>
+        <text x={aestheticsBox.x + 16} y={aestheticsBox.y + 52} fontSize={10} fill="#1a202c" fontFamily="Arial, sans-serif">5</text>
+        <text x={aestheticsBox.x + 16} y={aestheticsBox.y + 120} fontSize={10} fill="#1a202c" fontFamily="Arial, sans-serif">0</text>
+        <MiniBarChart
+          x={aestheticsBox.x + 30}
+          y={aestheticsBox.y + 44}
+          width={aestheticsBox.width - 45}
+          height={95}
+          yMax={5}
+          fontSize={12}
+          textColor="#1a202c"
+          groups={[
+            { label: '1', values: [4.0], colors: ['#2c2b64'] },
+            { label: '2', values: [2.0], colors: ['#3366cc'] },
+            { label: '3', values: [3.2], colors: ['#ff5338'] },
+            { label: '4', values: [4.2], colors: ['#f2cb13'] },
+          ]}
+        />
+        {isAestheticsSelected && renderHandles(aestheticsBox, aestheticsId)}
+      </g>
+
+      <g
+        data-element-id={navigationId}
+        onMouseDown={event => startDrag(event, navigationId, navigationBox)}
+        transform={getTransform(navigationId, navigationBox)}
+        style={{ cursor: 'pointer' }}
+      >
+        <rect x={navigationBox.x} y={navigationBox.y} width={navigationBox.width} height={navigationBox.height} rx={4} fill="#ffffff" stroke={navigationBorder.stroke} strokeWidth={navigationBorder.strokeWidth} />
+        <text x={navigationBox.x + 16} y={navigationBox.y + 24} fontSize={14} fontWeight={700} fill="#1a202c" fontFamily="Arial, sans-serif">Navigation</text>
+        <MiniPieChart
+          cx={navigationBox.x + navigationBox.width / 2}
+          cy={navigationBox.y + 95}
+          radius={48}
+          innerRadius={28}
+          slices={[
+            { value: 70, color: '#ff5338' },
+            { value: 30, color: '#e2e8f0' },
+          ]}
+          centerText="70%"
+          centerTextColor="#1a202c"
+        />
+        {isNavigationSelected && renderHandles(navigationBox, navigationId)}
+      </g>
+
+      <g
+        data-element-id={speedId}
+        onMouseDown={event => startDrag(event, speedId, speedBox)}
+        transform={getTransform(speedId, speedBox)}
+        style={{ cursor: 'pointer' }}
+      >
+        <rect x={speedBox.x} y={speedBox.y} width={speedBox.width} height={speedBox.height} rx={4} fill="#ffffff" stroke={speedBorder.stroke} strokeWidth={speedBorder.strokeWidth} />
+        <text x={speedBox.x + 16} y={speedBox.y + 24} fontSize={14} fontWeight={700} fill="#1a202c" fontFamily="Arial, sans-serif">Speed</text>
+        <text x={speedBox.x + 16} y={speedBox.y + 52} fontSize={10} fill="#1a202c" fontFamily="Arial, sans-serif">20</text>
+        <text x={speedBox.x + 16} y={speedBox.y + 86} fontSize={10} fill="#1a202c" fontFamily="Arial, sans-serif">10</text>
+        <text x={speedBox.x + 16} y={speedBox.y + 120} fontSize={10} fill="#1a202c" fontFamily="Arial, sans-serif">0</text>
+        <MiniBarChart
+          x={speedBox.x + 32}
+          y={speedBox.y + 44}
+          width={speedBox.width - 46}
+          height={95}
+          isStacked={true}
+          yMax={20}
+          fontSize={12}
+          textColor="#1a202c"
+          groups={[
+            { label: '0', values: [3, 4, 6], colors: ['#2c2b64', '#3366cc', '#ff5338'] },
+            { label: '1', values: [4, 2, 3], colors: ['#2c2b64', '#3366cc', '#ff5338'] },
+            { label: '2', values: [6, 4, 5], colors: ['#2c2b64', '#3366cc', '#ff5338'] },
+            { label: '3', values: [4, 5, 5], colors: ['#2c2b64', '#3366cc', '#ff5338'] },
+          ]}
+        />
+        {isSpeedSelected && renderHandles(speedBox, speedId)}
+      </g>
+
+      <g
+        data-element-id={searchId}
+        onMouseDown={event => startDrag(event, searchId, searchBox)}
+        transform={getTransform(searchId, searchBox)}
+        style={{ cursor: 'pointer' }}
+      >
+        <rect x={searchBox.x} y={searchBox.y} width={searchBox.width} height={searchBox.height} rx={4} fill="#ffffff" stroke={searchBorder.stroke} strokeWidth={searchBorder.strokeWidth} />
+        <text x={searchBox.x + 16} y={searchBox.y + 24} fontSize={14} fontWeight={700} fill="#1a202c" fontFamily="Arial, sans-serif">Searchability</text>
+        <text x={searchBox.x + 16} y={searchBox.y + 52} fontSize={10} fill="#1a202c" fontFamily="Arial, sans-serif">10</text>
+        <text x={searchBox.x + 16} y={searchBox.y + 86} fontSize={10} fill="#1a202c" fontFamily="Arial, sans-serif">5</text>
+        <text x={searchBox.x + 16} y={searchBox.y + 120} fontSize={10} fill="#1a202c" fontFamily="Arial, sans-serif">0</text>
+        <MiniLineChart
+          x={searchBox.x + 30}
+          y={searchBox.y + 44}
+          width={searchBox.width - 45}
+          height={95}
+          yMin={0}
+          yMax={10}
+          showBaseline={true}
+          labels={['2014', '2015', '2016', '2017']}
+          fontSize={10}
+          textColor="#1a202c"
+          series={[
+            { points: [4.5, 2.5, 3.5, 4.5], color: '#2c2b64', strokeWidth: 2.5 },
+            { points: [2.5, 4.5, 2.0, 3.0], color: '#3366cc', strokeWidth: 2.5 },
+            { points: [2.0, 2.0, 3.0, 5.0], color: '#ff5338', strokeWidth: 2.5 },
+          ]}
+        />
+        {isSearchSelected && renderHandles(searchBox, searchId)}
+      </g>
     </g>
   )
 }

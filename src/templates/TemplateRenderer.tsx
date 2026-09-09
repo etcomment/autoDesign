@@ -107,6 +107,9 @@ import { Dashboard2Template } from './components/Dashboard2Template'
 import { Dashboard3Template } from './components/Dashboard3Template'
 import { Dashboard4Template } from './components/Dashboard4Template'
 import { Dashboard5Template } from './components/Dashboard5Template'
+import { Kpi1Template } from './components/Kpi1Template'
+import { Kpi2Template } from './components/Kpi2Template'
+import { Kpi3Template } from './components/Kpi3Template'
 import { TableTemplate } from './components/TableTemplate'
 import { Table2Template } from './components/Table2Template'
 import { Table3Template } from './components/Table3Template'
@@ -236,6 +239,13 @@ const TEMPLATE_MAP: Record<TemplateType, TemplateComponent> = {
   dashboard3: ({ data }) => <Dashboard3Template data={data as DashboardData} />,
   dashboard4: ({ data }) => <Dashboard4Template data={data as DashboardData} />,
   dashboard5: ({ data }) => <Dashboard5Template data={data as DashboardData} />,
+  dashboard6: ({ data }) => <Kpi1Template data={data as DashboardData} />,
+  dashboard7: ({ data }) => <Kpi2Template data={data as DashboardData} />,
+  dashboard8: ({ data }) => <Kpi3Template data={data as DashboardData} />,
+  kpi: ({ data }) => <Kpi1Template data={data as DashboardData} />,
+  kpi1: ({ data }) => <Kpi1Template data={data as DashboardData} />,
+  kpi2: ({ data }) => <Kpi2Template data={data as DashboardData} />,
+  kpi3: ({ data }) => <Kpi3Template data={data as DashboardData} />,
   table: ({ data }) => <TableTemplate data={data as TableData} />,
   table2: ({ data }) => <Table2Template data={data as TableData} />,
   table3: ({ data }) => <Table3Template data={data as TableData} />,
