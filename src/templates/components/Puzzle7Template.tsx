@@ -14,6 +14,51 @@ const DEFAULT_PIECES: PuzzlePiece[] = [
   { number: 4, title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703', value: '4', icon: 'send' },
 ]
 
+function appendEdgeWithTab(
+  d: string[],
+  p1: { x: number; y: number },
+  p2: { x: number; y: number },
+  kind: 'straight' | 'tab' | 'indent',
+  scaleU: number,
+  scaleV: number,
+  baseHalf: number,
+): void {
+  if (kind === 'straight') {
+    d.push(`L ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`)
+    return
+  }
+
+  const dx = p2.x - p1.x
+  const dy = p2.y - p1.y
+  const len = Math.sqrt(dx * dx + dy * dy)
+  const ux = dx / len
+  const uy = dy / len
+  // Normal vector pointing to the right side of the forward path
+  const nx = uy
+  const ny = -ux
+
+  const mx = (p1.x + p2.x) / 2
+  const my = (p1.y + p2.y) / 2
+
+  const sx = mx - baseHalf * ux
+  const sy = my - baseHalf * uy
+  d.push(`L ${sx.toFixed(2)} ${sy.toFixed(2)}`)
+
+  const sign = kind === 'tab' ? 1 : -1
+
+  for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
+    const cp1x = mx + cp1u * scaleU * ux + sign * (cp1v * scaleV) * nx
+    const cp1y = my + cp1u * scaleU * uy + sign * (cp1v * scaleV) * ny
+    const cp2x = mx + cp2u * scaleU * ux + sign * (cp2v * scaleV) * nx
+    const cp2y = my + cp2u * scaleU * uy + sign * (cp2v * scaleV) * ny
+    const pex = mx + endu * scaleU * ux + sign * (endv * scaleV) * nx
+    const pey = my + endu * scaleU * uy + sign * (endv * scaleV) * ny
+    d.push(`C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)} ${cp2x.toFixed(2)} ${cp2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
+  }
+
+  d.push(`L ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`)
+}
+
 export function makePuzzle7QuadrantPath(
   quadrant: number,
   cx: number,
@@ -27,147 +72,150 @@ export function makePuzzle7QuadrantPath(
   baseHalf: number,
 ): string {
   const d: string[] = []
-  const midR = (Rout + Rin) / 2
 
   if (quadrant === 0) {
-    d.push(`M ${cx.toFixed(2)} ${(cy - Rin).toFixed(2)}`)
-    d.push(`L ${(cx - Rin + rInCorner).toFixed(2)} ${(cy - Rin).toFixed(2)}`)
-    d.push(`A ${rInCorner} ${rInCorner} 0 0 1 ${(cx - Rin).toFixed(2)} ${(cy - Rin + rInCorner).toFixed(2)}`)
-    d.push(`L ${(cx - Rin).toFixed(2)} ${cy.toFixed(2)}`)
-    d.push(`L ${(cx - midR + baseHalf).toFixed(2)} ${cy.toFixed(2)}`)
-
-    for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
-      const p1x = cx - midR - cp1u * scaleU
-      const p1y = cy - cp1v * scaleV
-      const p2x = cx - midR - cp2u * scaleU
-      const p2y = cy - cp2v * scaleV
-      const pex = cx - midR - endu * scaleU
-      const pey = cy - endv * scaleV
-      d.push(`C ${p1x.toFixed(2)} ${p1y.toFixed(2)} ${p2x.toFixed(2)} ${p2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
-    }
-
+    // Q0 (Top-Left): Clockwise traversal
+    // Outer top: (cx, cy - Rout) -> outer top-left corner -> (cx - Rout, cy)
+    d.push(`M ${cx.toFixed(2)} ${(cy - Rout).toFixed(2)}`)
+    d.push(`L ${(cx - Rout + rOutCorner).toFixed(2)} ${(cy - Rout).toFixed(2)}`)
+    d.push(`A ${rOutCorner} ${rOutCorner} 0 0 0 ${(cx - Rout).toFixed(2)} ${(cy - Rout + rOutCorner).toFixed(2)}`)
     d.push(`L ${(cx - Rout).toFixed(2)} ${cy.toFixed(2)}`)
-    d.push(`L ${(cx - Rout).toFixed(2)} ${(cy - Rout + rOutCorner).toFixed(2)}`)
-    d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx - Rout + rOutCorner).toFixed(2)} ${(cy - Rout).toFixed(2)}`)
-    d.push(`L ${cx.toFixed(2)} ${(cy - Rout).toFixed(2)}`)
-    d.push(`L ${cx.toFixed(2)} ${(cy - midR - baseHalf).toFixed(2)}`)
 
-    for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
-      const p1x = cx + cp1v * scaleV
-      const p1y = cy - midR + cp1u * scaleU
-      const p2x = cx + cp2v * scaleV
-      const p2y = cy - midR + cp2u * scaleU
-      const pex = cx + endv * scaleV
-      const pey = cy - midR + endu * scaleU
-      d.push(`C ${p1x.toFixed(2)} ${p1y.toFixed(2)} ${p2x.toFixed(2)} ${p2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
-    }
+    // Bottom radial edge from (cx - Rout, cy) to (cx - Rin, cy) with INDENT (-Y direction, left of vector)
+    appendEdgeWithTab(
+      d,
+      { x: cx - Rout, y: cy },
+      { x: cx - Rin, y: cy },
+      'indent',
+      scaleU,
+      scaleV,
+      baseHalf,
+    )
 
+    // Inner rounded corner: (cx - Rin, cy) -> (cx, cy - Rin)
+    d.push(`L ${(cx - Rin).toFixed(2)} ${(cy - Rin + rInCorner).toFixed(2)}`)
+    d.push(`A ${rInCorner} ${rInCorner} 0 0 1 ${(cx - Rin + rInCorner).toFixed(2)} ${(cy - Rin).toFixed(2)}`)
     d.push(`L ${cx.toFixed(2)} ${(cy - Rin).toFixed(2)}`)
+
+    // Right radial edge from (cx, cy - Rin) to (cx, cy - Rout) with TAB (+X direction, right of vector)
+    appendEdgeWithTab(
+      d,
+      { x: cx, y: cy - Rin },
+      { x: cx, y: cy - Rout },
+      'tab',
+      scaleU,
+      scaleV,
+      baseHalf,
+    )
     d.push('Z')
   } else if (quadrant === 1) {
-    d.push(`M ${(cx + Rin).toFixed(2)} ${cy.toFixed(2)}`)
+    // Q1 (Top-Right): Clockwise traversal
+    // Outer top/right: (cx, cy - Rout) -> outer top-right corner -> (cx + Rout, cy)
+    d.push(`M ${(cx + Rout).toFixed(2)} ${cy.toFixed(2)}`)
+
+    // Bottom radial edge from (cx + Rout, cy) to (cx + Rin, cy) with TAB (+Y direction, right of vector)
+    appendEdgeWithTab(
+      d,
+      { x: cx + Rout, y: cy },
+      { x: cx + Rin, y: cy },
+      'tab',
+      scaleU,
+      scaleV,
+      baseHalf,
+    )
+
+    // Inner rounded corner: (cx + Rin, cy) -> (cx, cy - Rin)
     d.push(`L ${(cx + Rin).toFixed(2)} ${(cy - Rin + rInCorner).toFixed(2)}`)
-    d.push(`A ${rInCorner} ${rInCorner} 0 0 1 ${(cx + Rin - rInCorner).toFixed(2)} ${(cy - Rin).toFixed(2)}`)
+    d.push(`A ${rInCorner} ${rInCorner} 0 0 0 ${(cx + Rin - rInCorner).toFixed(2)} ${(cy - Rin).toFixed(2)}`)
     d.push(`L ${cx.toFixed(2)} ${(cy - Rin).toFixed(2)}`)
-    d.push(`L ${cx.toFixed(2)} ${(cy - midR + baseHalf).toFixed(2)}`)
 
-    for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
-      const p1x = cx + cp1v * scaleV
-      const p1y = cy - midR - cp1u * scaleU
-      const p2x = cx + cp2v * scaleV
-      const p2y = cy - midR - cp2u * scaleU
-      const pex = cx + endv * scaleV
-      const pey = cy - midR - endu * scaleU
-      d.push(`C ${p1x.toFixed(2)} ${p1y.toFixed(2)} ${p2x.toFixed(2)} ${p2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
-    }
+    // Left radial edge from (cx, cy - Rin) to (cx, cy - Rout) with INDENT (+X direction, right of vector)
+    appendEdgeWithTab(
+      d,
+      { x: cx, y: cy - Rin },
+      { x: cx, y: cy - Rout },
+      'indent',
+      scaleU,
+      scaleV,
+      baseHalf,
+    )
 
-    d.push(`L ${cx.toFixed(2)} ${(cy - Rout).toFixed(2)}`)
+    // Outer top edge moving right to top-right corner
     d.push(`L ${(cx + Rout - rOutCorner).toFixed(2)} ${(cy - Rout).toFixed(2)}`)
     d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx + Rout).toFixed(2)} ${(cy - Rout + rOutCorner).toFixed(2)}`)
     d.push(`L ${(cx + Rout).toFixed(2)} ${cy.toFixed(2)}`)
-    d.push(`L ${(cx + midR + baseHalf).toFixed(2)} ${cy.toFixed(2)}`)
-
-    for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
-      const p1x = cx + midR + cp1u * scaleU
-      const p1y = cy + cp1v * scaleV
-      const p2x = cx + midR + cp2u * scaleU
-      const p2y = cy + cp2v * scaleV
-      const pex = cx + midR + endu * scaleU
-      const pey = cy + endv * scaleV
-      d.push(`C ${p1x.toFixed(2)} ${p1y.toFixed(2)} ${p2x.toFixed(2)} ${p2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
-    }
-
-    d.push(`L ${(cx + Rin).toFixed(2)} ${cy.toFixed(2)}`)
     d.push('Z')
   } else if (quadrant === 2) {
-    d.push(`M ${cx.toFixed(2)} ${(cy + Rin).toFixed(2)}`)
+    // Q2 (Bottom-Right): Clockwise traversal
+    d.push(`M ${cx.toFixed(2)} ${(cy + Rout).toFixed(2)}`)
+
+    // Left radial edge from (cx, cy + Rout) to (cx, cy + Rin) with TAB (-X direction, left of vector)
+    appendEdgeWithTab(
+      d,
+      { x: cx, y: cy + Rout },
+      { x: cx, y: cy + Rin },
+      'tab',
+      scaleU,
+      scaleV,
+      baseHalf,
+    )
+
+    // Inner rounded corner: (cx, cy + Rin) -> (cx + Rin, cy)
     d.push(`L ${(cx + Rin - rInCorner).toFixed(2)} ${(cy + Rin).toFixed(2)}`)
-    d.push(`A ${rInCorner} ${rInCorner} 0 0 1 ${(cx + Rin).toFixed(2)} ${(cy + Rin - rInCorner).toFixed(2)}`)
+    d.push(`A ${rInCorner} ${rInCorner} 0 0 0 ${(cx + Rin).toFixed(2)} ${(cy + Rin - rInCorner).toFixed(2)}`)
     d.push(`L ${(cx + Rin).toFixed(2)} ${cy.toFixed(2)}`)
-    d.push(`L ${(cx + midR - baseHalf).toFixed(2)} ${cy.toFixed(2)}`)
 
-    for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
-      const p1x = cx + midR - cp1u * scaleU
-      const p1y = cy + cp1v * scaleV
-      const p2x = cx + midR - cp2u * scaleU
-      const p2y = cy + cp2v * scaleV
-      const pex = cx + midR - endu * scaleU
-      const pey = cy + endv * scaleV
-      d.push(`C ${p1x.toFixed(2)} ${p1y.toFixed(2)} ${p2x.toFixed(2)} ${p2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
-    }
+    // Top radial edge from (cx + Rin, cy) to (cx + Rout, cy) with INDENT (+Y direction, right of vector)
+    appendEdgeWithTab(
+      d,
+      { x: cx + Rin, y: cy },
+      { x: cx + Rout, y: cy },
+      'indent',
+      scaleU,
+      scaleV,
+      baseHalf,
+    )
 
-    d.push(`L ${(cx + Rout).toFixed(2)} ${cy.toFixed(2)}`)
+    // Outer bottom-right corner: (cx + Rout, cy) -> (cx, cy + Rout)
     d.push(`L ${(cx + Rout).toFixed(2)} ${(cy + Rout - rOutCorner).toFixed(2)}`)
     d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx + Rout - rOutCorner).toFixed(2)} ${(cy + Rout).toFixed(2)}`)
     d.push(`L ${cx.toFixed(2)} ${(cy + Rout).toFixed(2)}`)
-    d.push(`L ${cx.toFixed(2)} ${(cy + midR + baseHalf).toFixed(2)}`)
-
-    for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
-      const p1x = cx - cp1v * scaleV
-      const p1y = cy + midR + cp1u * scaleU
-      const p2x = cx - cp2v * scaleV
-      const p2y = cy + midR + cp2u * scaleU
-      const pex = cx - endv * scaleV
-      const pey = cy + midR + endu * scaleU
-      d.push(`C ${p1x.toFixed(2)} ${p1y.toFixed(2)} ${p2x.toFixed(2)} ${p2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
-    }
-
-    d.push(`L ${cx.toFixed(2)} ${(cy + Rin).toFixed(2)}`)
     d.push('Z')
   } else {
-    d.push(`M ${(cx - Rin).toFixed(2)} ${cy.toFixed(2)}`)
+    // Q3 (Bottom-Left): Clockwise traversal
+    d.push(`M ${(cx - Rout).toFixed(2)} ${cy.toFixed(2)}`)
+
+    // Top radial edge from (cx - Rout, cy) to (cx - Rin, cy) with TAB (-Y direction, left of vector)
+    appendEdgeWithTab(
+      d,
+      { x: cx - Rout, y: cy },
+      { x: cx - Rin, y: cy },
+      'tab',
+      scaleU,
+      scaleV,
+      baseHalf,
+    )
+
+    // Inner rounded corner: (cx - Rin, cy) -> (cx, cy + Rin)
     d.push(`L ${(cx - Rin).toFixed(2)} ${(cy + Rin - rInCorner).toFixed(2)}`)
-    d.push(`A ${rInCorner} ${rInCorner} 0 0 1 ${(cx - Rin + rInCorner).toFixed(2)} ${(cy + Rin).toFixed(2)}`)
+    d.push(`A ${rInCorner} ${rInCorner} 0 0 0 ${(cx - Rin + rInCorner).toFixed(2)} ${(cy + Rin).toFixed(2)}`)
     d.push(`L ${cx.toFixed(2)} ${(cy + Rin).toFixed(2)}`)
-    d.push(`L ${cx.toFixed(2)} ${(cy + midR - baseHalf).toFixed(2)}`)
 
-    for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
-      const p1x = cx - cp1v * scaleV
-      const p1y = cy + midR - cp1u * scaleU
-      const p2x = cx - cp2v * scaleV
-      const p2y = cy + midR - cp2u * scaleU
-      const pex = cx - endv * scaleV
-      const pey = cy + midR - endu * scaleU
-      d.push(`C ${p1x.toFixed(2)} ${p1y.toFixed(2)} ${p2x.toFixed(2)} ${p2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
-    }
+    // Right radial edge from (cx, cy + Rin) to (cx, cy + Rout) with INDENT (-X direction, left of vector)
+    appendEdgeWithTab(
+      d,
+      { x: cx, y: cy + Rin },
+      { x: cx, y: cy + Rout },
+      'indent',
+      scaleU,
+      scaleV,
+      baseHalf,
+    )
 
-    d.push(`L ${cx.toFixed(2)} ${(cy + Rout).toFixed(2)}`)
+    // Outer bottom-left corner: (cx, cy + Rout) -> (cx - Rout, cy)
     d.push(`L ${(cx - Rout + rOutCorner).toFixed(2)} ${(cy + Rout).toFixed(2)}`)
     d.push(`A ${rOutCorner} ${rOutCorner} 0 0 1 ${(cx - Rout).toFixed(2)} ${(cy + Rout - rOutCorner).toFixed(2)}`)
     d.push(`L ${(cx - Rout).toFixed(2)} ${cy.toFixed(2)}`)
-    d.push(`L ${(cx - midR - baseHalf).toFixed(2)} ${cy.toFixed(2)}`)
-
-    for (const [cp1u, cp1v, cp2u, cp2v, endu, endv] of PUZZLE2_TAB_BEZIERS) {
-      const p1x = cx - midR - cp1u * scaleU
-      const p1y = cy - cp1v * scaleV
-      const p2x = cx - midR - cp2u * scaleU
-      const p2y = cy - cp2v * scaleV
-      const pex = cx - midR - endu * scaleU
-      const pey = cy - endv * scaleV
-      d.push(`C ${p1x.toFixed(2)} ${p1y.toFixed(2)} ${p2x.toFixed(2)} ${p2y.toFixed(2)} ${pex.toFixed(2)} ${pey.toFixed(2)}`)
-    }
-
-    d.push(`L ${(cx - Rin).toFixed(2)} ${cy.toFixed(2)}`)
     d.push('Z')
   }
 
