@@ -731,10 +731,10 @@ export const TEMPLATES: TemplateDefinition[] = [
     defaultData: {
       type: 'puzzle',
       pieces: [
-        { number: 1, title: 'Identify', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#1a2249', value: 'A' },
-        { number: 2, title: 'Management', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#2b63d9', value: 'B' },
-        { number: 3, title: 'Innovation', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#ff5338', value: 'C' },
-        { number: 4, title: 'Improve', subtitle: 'MIGSO-PCUBED content and words to be added here as required', color: '#ffb100', value: 'D' },
+        { number: 1, title: 'Identify', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#2c2b64', value: 'A' },
+        { number: 2, title: 'Management', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#3466ce', value: 'B' },
+        { number: 3, title: 'Innovation', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ff4d30', value: 'C' },
+        { number: 4, title: 'Improve', subtitle: 'MIGSO-PCUBED\ncontent and words to\nbe added here as\nrequired', color: '#ffb703', value: 'D' },
       ],
     },
   },

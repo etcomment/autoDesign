@@ -4,9 +4,10 @@ import { Puzzle4Template } from '../Puzzle4Template'
 import { PuzzleTemplate } from '../PuzzleTemplate'
 import { Puzzle3Template } from '../Puzzle3Template'
 import { Puzzle5Template } from '../Puzzle5Template'
+import { Puzzle6Template } from '../Puzzle6Template'
 import type { PuzzleData } from '../../types'
 
-describe('Puzzle Templates (puzzle, puzzle3, puzzle4 & puzzle5)', () => {
+describe('Puzzle Templates (puzzle, puzzle3, puzzle4, puzzle5 & puzzle6)', () => {
   const defaultData: PuzzleData = {
     type: 'puzzle',
     pieces: [
@@ -246,5 +247,46 @@ describe('Puzzle Templates (puzzle, puzzle3, puzzle4 & puzzle5)', () => {
 
     expect(piece0?.querySelector('svg')).toBeTruthy()
     expect(piece1?.querySelector('text')).toBeNull()
+  })
+
+  it('renders Puzzle6Template with wireframe central puzzle piece, 4 corner letters and cards', () => {
+    const puzzle6Data: PuzzleData = {
+      type: 'puzzle',
+      pieces: [
+        { number: 1, title: 'Identify', subtitle: 'Step 1 details', color: '#2c2b64', value: 'A' },
+        { number: 2, title: 'Management', subtitle: 'Step 2 details', color: '#3466ce', value: 'B' },
+        { number: 3, title: 'Innovation', subtitle: 'Step 3 details', color: '#ff4d30', value: 'C' },
+        { number: 4, title: 'Improve', subtitle: 'Step 4 details', color: '#ffb703', value: 'D' },
+      ],
+    }
+
+    const { container } = render(
+      <svg>
+        <Puzzle6Template data={puzzle6Data} />
+      </svg>,
+    )
+
+    const piece0 = container.querySelector('[data-element-id="piece-0"]')
+    const piece1 = container.querySelector('[data-element-id="piece-1"]')
+    const piece2 = container.querySelector('[data-element-id="piece-2"]')
+    const piece3 = container.querySelector('[data-element-id="piece-3"]')
+
+    expect(piece0).toBeTruthy()
+    expect(piece1).toBeTruthy()
+    expect(piece2).toBeTruthy()
+    expect(piece3).toBeTruthy()
+
+    expect(container.textContent).toContain('A')
+    expect(container.textContent).toContain('B')
+    expect(container.textContent).toContain('C')
+    expect(container.textContent).toContain('D')
+
+    expect(container.textContent).toContain('Identify')
+    expect(container.textContent).toContain('Management')
+    expect(container.textContent).toContain('Innovation')
+    expect(container.textContent).toContain('Improve')
+
+    const centerCard = container.querySelector('[data-element-id="center-card"]')
+    expect(centerCard).toBeTruthy()
   })
 })
