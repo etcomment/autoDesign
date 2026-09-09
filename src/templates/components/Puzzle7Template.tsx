@@ -141,9 +141,9 @@ export function Puzzle7Template({ data }: { data: PuzzleData }): ReactElement {
             iconY = pDef.iconCenter.y + deltaY
             numX = pDef.numCenter.x + deltaX
             numY = pDef.numCenter.y + deltaY
-            iconSize = 22
+            iconSize = 26
             const valLength = piece.value ? piece.value.length : 0
-            fontSize = valLength > 3 ? 12 : valLength > 2 ? 14 : 18
+            fontSize = valLength > 3 ? 14 : valLength > 2 ? 18 : 22
           } else if (hasValue) {
             numX = cxPiece
             numY = cyPiece
