@@ -2,9 +2,15 @@ import { useRef, type ReactElement } from 'react'
 import type { BudgetData } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
-import { wrapTextByWidth } from '../shared/primitives'
-import { TEMPLATE_ICONS } from '../shared/icons'
 import { MIGSO_PALETTE } from '../../lib/theme'
+
+const DEFAULT_ITEMS = [
+  { label: '2015', percentage: 50, percent: '50%', color: '#1a2249' },
+  { label: '2016', percentage: 60, percent: '60%', color: '#2b63d9' },
+  { label: '2017', percentage: 67, percent: '67%', color: '#ff5338' },
+  { label: '2018', percentage: 72, percent: '72%', color: '#ffb100' },
+  { label: '2019', percentage: 80, percent: '80%', color: '#4ebe96' },
+]
 
 export function Budget2Template({ data }: { data: BudgetData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
@@ -15,31 +21,35 @@ export function Budget2Template({ data }: { data: BudgetData }): ReactElement {
   const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
   const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
 
-  const { items } = data
-  const displayed = items && items.length > 0 ? items : [
-    { label: 'Engineering', percentage: 40, amount: '€40,000' },
-    { label: 'Marketing', percentage: 25, amount: '€25,000' },
-    { label: 'Operations', percentage: 20, amount: '€20,000' },
-    { label: 'Design', percentage: 15, amount: '€15,000' },
-  ]
+  const items = data.items && data.items.length > 0 ? data.items : DEFAULT_ITEMS
+  const count = Math.max(1, items.length)
 
-  const W = 800
-  const labelW = 160
-  const trackWidth = 440
-  const rowHeight = 52
-  const barHeight = 34
-  const startY = 40
+  const totalW = 1000
+  const startY = 60
+  const availableH = 380
+  const gap = count > 1 ? Math.max(14, Math.min(26, (availableH - count * 42) / (count - 1))) : 20
+  const barHeight = Math.min(44, (availableH - (count - 1) * gap) / count)
+
+  const labelX = 140
+  const trackX = 220
+  const trackWidth = 560
+  const pctX = trackX + trackWidth + 40
+
+  const subtitle = data.subtitle ?? 'MIGSO-PCUBED content and words to be added here as required'
 
   return (
     <g ref={svgRef}>
-      {displayed.map((item, index) => {
-        const rowY = startY + index * rowHeight
+      {items.map((item, index) => {
+        const rowY = startY + index * (barHeight + gap)
         const elementId = `item-${index}`
         const color = tplColors[elementId] ?? item.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
-        const pct = Math.max(0, Math.min(100, item.percentage || 0))
-        const fillWidth = (pct / 100) * trackWidth
 
-        const defaultBbox = { x: 20, y: rowY - 6, width: W - 40, height: rowHeight }
+        let rawPercentage = item.percentage ?? (item.percent ? parseFloat(item.percent.replace('%', '')) : 0)
+        if (isNaN(rawPercentage)) rawPercentage = 0
+        const percentage = Math.max(0, Math.min(100, rawPercentage))
+        const fillWidth = (percentage / 100) * trackWidth
+
+        const defaultBbox = { x: 80, y: rowY, width: totalW - 160, height: barHeight }
         const customPos = templateElementPositions[elementId]
         const bbox = {
           x: customPos?.x ?? defaultBbox.x,
@@ -47,11 +57,12 @@ export function Budget2Template({ data }: { data: BudgetData }): ReactElement {
           width: customPos?.width ?? defaultBbox.width,
           height: customPos?.height ?? defaultBbox.height,
         }
+
         const isSelected = selectedIds.has(elementId)
         const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
         const strokeWidth = tplStrokeWidths[elementId] ?? (isSelected ? 2 : 0)
-        const IconComponent = item.icon ? TEMPLATE_ICONS[item.icon] : undefined
-        const labelLines = wrapTextByWidth(item.label, 15)
+
+        const displayPercent = item.percent || `${percentage}%`
 
         return (
           <g
@@ -61,42 +72,65 @@ export function Budget2Template({ data }: { data: BudgetData }): ReactElement {
             transform={getTransform(elementId, bbox)}
             style={{ cursor: 'pointer' }}
           >
-            {strokeWidth > 0 && (
-              <rect x={bbox.x} y={bbox.y} width={bbox.width} height={bbox.height} rx={6} fill="none" stroke={strokeColor} strokeWidth={strokeWidth} />
-            )}
-
-            {IconComponent && (
-              <g transform={`translate(${bbox.x + 8}, ${bbox.y + barHeight / 2})`}>
-                <IconComponent size={18} color={color} />
-              </g>
-            )}
-
-            <text x={bbox.x + (IconComponent ? 32 : 8)} y={bbox.y + barHeight / 2 + (item.amount ? 0 : 8) - (labelLines.length > 1 ? 4 : 0)} fontFamily="Arial, sans-serif" fontSize={14} fontWeight={600} fill="#333">
-              {labelLines.map((line, lineIndex) => (
-                <tspan key={lineIndex} x={bbox.x + (IconComponent ? 32 : 8)} dy={lineIndex === 0 ? 0 : 13}>
-                  {line}
-                </tspan>
-              ))}
+            <text
+              x={labelX}
+              y={bbox.y + bbox.height / 2 + 10}
+              textAnchor="middle"
+              fontFamily="Arial, sans-serif"
+              fontSize={28}
+              fontWeight={700}
+              fill={color}
+            >
+              {item.label}
             </text>
-            {item.amount && (
-              <text x={bbox.x + (IconComponent ? 32 : 8)} y={bbox.y + barHeight / 2 + labelLines.length * 13 + 3} fontFamily="Arial, sans-serif" fontSize={11} fill="#888">
-                {item.amount}
-              </text>
-            )}
 
-            <rect x={bbox.x + labelW} y={bbox.y + 6} width={trackWidth} height={barHeight} rx={4} fill="#f0f0f0" />
-            {fillWidth > 0 && (
-              <rect x={bbox.x + labelW} y={bbox.y + 6} width={fillWidth} height={barHeight} rx={4} fill={color} />
-            )}
+            <rect
+              x={trackX}
+              y={bbox.y}
+              width={trackWidth}
+              height={bbox.height}
+              fill="#edf0f5"
+              stroke={strokeColor}
+              strokeWidth={strokeWidth}
+            />
 
-            <text x={bbox.x + labelW + trackWidth + 16} y={bbox.y + 6 + barHeight / 2 + 5} fontFamily="Arial, sans-serif" fontSize={14} fontWeight={700} fill={color}>
-              {Math.round(pct)}%
+            <rect
+              x={trackX}
+              y={bbox.y}
+              width={fillWidth}
+              height={bbox.height}
+              fill={color}
+            />
+
+            <text
+              x={pctX}
+              y={bbox.y + bbox.height / 2 + 10}
+              textAnchor="start"
+              fontFamily="Arial, sans-serif"
+              fontSize={28}
+              fontWeight={700}
+              fill={color}
+            >
+              {displayPercent}
             </text>
 
             {isSelected && renderHandles(bbox, elementId)}
           </g>
         )
       })}
+
+      {subtitle && (
+        <text
+          x={500}
+          y={startY + count * (barHeight + gap) + 36}
+          textAnchor="middle"
+          fontFamily="Arial, sans-serif"
+          fontSize={13}
+          fill="#475569"
+        >
+          {subtitle}
+        </text>
+      )}
     </g>
   )
 }

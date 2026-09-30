@@ -514,19 +514,28 @@ export interface BrainData {
 
 export interface BudgetItem {
   label: string
-  amount: string
-  percentage: number
+  subtitle?: string
+  amount?: string
+  percentage?: number
   color?: string
   icon?: string
   value?: string
   percent?: string
+  bullets?: string[]
+  planned?: string
+  actual?: string
+  variance?: string
 }
 
 export interface BudgetData {
-  type: 'budget'
+  type: 'budget' | 'budget2' | 'budget3' | 'budget4' | 'budget5'
   title?: string
-  totalLabel: string
-  totalAmount: string
+  subtitle?: string
+  totalLabel?: string
+  totalAmount?: string
+  totalActual?: string
+  totalVariance?: string
+  columns?: string[]
   items: BudgetItem[]
 }
 

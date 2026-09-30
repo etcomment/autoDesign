@@ -1,49 +1,108 @@
 import { useRef, type ReactElement } from 'react'
-import type { BudgetData } from '../types'
+import type { BudgetData, BudgetItem } from '../types'
 import { useTemplateDragResize } from '../shared/useTemplateDragResize'
 import { useTemplateStore } from '../store'
 import { wrapTextByWidth } from '../shared/primitives'
 import { MIGSO_PALETTE } from '../../lib/theme'
-import { TEMPLATE_ICONS } from '../shared/icons'
+
+const DEFAULT_ITEMS: BudgetItem[] = [
+  {
+    label: 'Budget',
+    amount: '£50,000',
+    color: '#1a2249',
+    bullets: [
+      'MIGSO-PCUBED content and words',
+      'to be added here as required',
+      'MIGSO-PCUBED content and words',
+      'to be added here as required',
+    ],
+  },
+  {
+    label: 'Spending',
+    amount: '£30,000',
+    color: '#2b63d9',
+    bullets: [
+      'MIGSO-PCUBED content and words',
+      'to be added here as required',
+      'MIGSO-PCUBED content and words',
+      'to be added here as required',
+    ],
+  },
+  {
+    label: 'Saving',
+    amount: '£20,000',
+    color: '#ff5338',
+    bullets: [
+      'MIGSO-PCUBED content and words',
+      'to be added here as required',
+      'MIGSO-PCUBED content and words',
+      'to be added here as required',
+    ],
+  },
+]
+
+function createHeaderBadgePath(x: number, y: number, width: number, height: number): string {
+  const rTopLeft = 24
+  const rBottomRight = 24
+  const rSmall = 4
+
+  return [
+    `M ${x + rTopLeft} ${y}`,
+    `L ${x + width - rSmall} ${y}`,
+    `Q ${x + width} ${y} ${x + width} ${y + rSmall}`,
+    `L ${x + width} ${y + height - rBottomRight}`,
+    `Q ${x + width} ${y + height} ${x + width - rBottomRight} ${y + height}`,
+    `L ${x + rSmall} ${y + height}`,
+    `Q ${x} ${y + height} ${x} ${y + height - rSmall}`,
+    `L ${x} ${y + rTopLeft}`,
+    `Q ${x} ${y} ${x + rTopLeft} ${y}`,
+    'Z',
+  ].join(' ')
+}
 
 export function BudgetTemplate({ data }: { data: BudgetData }): ReactElement {
   const svgRef = useRef<SVGGElement>(null)
   const { startDrag, getTransform, renderHandles } = useTemplateDragResize(svgRef)
   const selectedIds = useTemplateStore(s => s.selectedTemplateElementIds)
-  const tplColors = useTemplateStore(s => s.templateElementColors)
-  const tplStrokeColors = useTemplateStore(s => s.templateStrokeColors)
-  const tplStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
+  const templateColors = useTemplateStore(s => s.templateElementColors)
+  const templateStrokeColors = useTemplateStore(s => s.templateStrokeColors)
+  const templateStrokeWidths = useTemplateStore(s => s.templateStrokeWidths)
   const positions = useTemplateStore(s => s.templateElementPositions)
 
-  const items = data.items && data.items.length > 0 ? data.items : [
-    { label: 'Engineering', percentage: 40, amount: '€40,000' },
-    { label: 'Marketing', percentage: 25, amount: '€25,000' },
-    { label: 'Operations', percentage: 20, amount: '€20,000' },
-    { label: 'Design', percentage: 15, amount: '€15,000' },
-  ]
-  const totalLabel = data.totalLabel || 'Total Budget'
-  const totalAmount = data.totalAmount || '€100,000'
-
+  const items = data.items && data.items.length > 0 ? data.items : DEFAULT_ITEMS
   const count = Math.max(1, items.length)
-  const barX = 200
-  const barMaxW = 500
-  const barH = count > 5 ? 36 : 42
-  const startY = 30
-  const availableH = 400
-  const gap = count > 1 ? Math.max(10, Math.min(18, (availableH - count * barH) / (count - 1))) : 18
+
+  const canvasWidth = 1000
+  const startX = 60
+  const totalAvailableWidth = canvasWidth - startX * 2
+  const gap = count > 1 ? Math.max(20, Math.min(45, (totalAvailableWidth - count * 260) / (count - 1))) : 20
+  const colWidth = Math.min(280, (totalAvailableWidth - (count - 1) * gap) / count)
+  const headerHeight = 58
+  const headerY = 70
+  const dividerY = headerY + headerHeight + 24
+  const bulletsStartY = dividerY + 36
 
   return (
     <g ref={svgRef}>
+      <line
+        x1={startX}
+        y1={dividerY}
+        x2={startX + count * colWidth + (count - 1) * gap}
+        y2={dividerY}
+        stroke="#cbd5e1"
+        strokeWidth={1.5}
+      />
+
       {items.map((item, index) => {
         const elementId = `item-${index}`
-        const color = tplColors[elementId] ?? item.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
+        const color = templateColors[elementId] ?? item.color ?? MIGSO_PALETTE[index % MIGSO_PALETTE.length]!
         const isSelected = selectedIds.has(elementId)
-        const strokeColor = tplStrokeColors[elementId] || (isSelected ? '#4a90d9' : color)
-        const strokeWidth = tplStrokeWidths[elementId] ?? (isSelected ? 2.5 : 0)
+        const strokeColor = templateStrokeColors[elementId] || (isSelected ? '#4a90d9' : 'none')
+        const strokeWidth = templateStrokeWidths[elementId] ?? (isSelected ? 2 : 0)
 
-        const y = startY + index * (barH + gap)
-        const barWidth = Math.max(30, (item.percentage / 100) * barMaxW)
-        const defaultBbox = { x: barX, y, width: barWidth + 140, height: barH }
+        const defaultX = startX + index * (colWidth + gap)
+        const defaultHeight = 440
+        const defaultBbox = { x: defaultX, y: headerY, width: colWidth, height: defaultHeight }
 
         const customPos = positions[elementId]
         const bbox = {
@@ -52,8 +111,14 @@ export function BudgetTemplate({ data }: { data: BudgetData }): ReactElement {
           width: customPos?.width ?? defaultBbox.width,
           height: customPos?.height ?? defaultBbox.height,
         }
-        const IconComponent = item.icon ? TEMPLATE_ICONS[item.icon] : undefined
-        const labelLines = wrapTextByWidth(item.label, 14)
+
+        const rawBullets = item.bullets && item.bullets.length > 0
+          ? item.bullets
+          : item.subtitle
+            ? item.subtitle.split('\n')
+            : DEFAULT_ITEMS[index % DEFAULT_ITEMS.length]?.bullets ?? []
+
+        const amount = item.amount || item.value || DEFAULT_ITEMS[index % DEFAULT_ITEMS.length]?.amount || '£0'
 
         return (
           <g
@@ -63,122 +128,76 @@ export function BudgetTemplate({ data }: { data: BudgetData }): ReactElement {
             transform={getTransform(elementId, bbox)}
             style={{ cursor: 'pointer' }}
           >
-            <text
-              x={bbox.x - 14}
-              y={bbox.y + bbox.height / 2 + (labelLines.length > 1 ? -3 : 4)}
-              textAnchor="end"
-              fontFamily="Arial, sans-serif"
-              fontSize={13}
-              fontWeight={600}
-              fill="#333"
-            >
-              {labelLines.map((line, lineIndex) => (
-                <tspan key={lineIndex} x={bbox.x - 14} dy={lineIndex === 0 ? 0 : 13}>
-                  {line}
-                </tspan>
-              ))}
-            </text>
-
-            <rect
-              x={bbox.x}
-              y={bbox.y}
-              width={barWidth}
-              height={bbox.height}
-              rx={6}
+            <path
+              d={createHeaderBadgePath(bbox.x, bbox.y, bbox.width, headerHeight)}
               fill={color}
-              opacity={0.9}
               stroke={strokeColor}
               strokeWidth={strokeWidth}
             />
 
             <text
-              x={bbox.x + 14}
-              y={bbox.y + bbox.height / 2 + 4}
+              x={bbox.x + bbox.width / 2}
+              y={bbox.y + headerHeight / 2 + 7}
+              textAnchor="middle"
               fontFamily="Arial, sans-serif"
-              fontSize={12}
+              fontSize={20}
               fontWeight={700}
-              fill="white"
+              fill="#ffffff"
             >
-              {Math.round(item.percentage)}%
+              {item.label}
             </text>
+
+            {rawBullets.map((bulletText: string, bulletIndex: number) => {
+              const bulletY = bulletsStartY + bulletIndex * 42
+              const wrappedLines = wrapTextByWidth(bulletText, Math.max(16, Math.floor(bbox.width / 11)))
+
+              return (
+                <g key={`bullet-${bulletIndex}`}>
+                  <rect
+                    x={bbox.x + 12}
+                    y={bulletY + 3}
+                    width={7}
+                    height={7}
+                    fill={color}
+                  />
+
+                  <text
+                    x={bbox.x + 28}
+                    y={bulletY + 10}
+                    fontFamily="Arial, sans-serif"
+                    fontSize={13}
+                    fill="#334155"
+                  >
+                    {wrappedLines.map((line, lineIdx) => (
+                      <tspan
+                        key={lineIdx}
+                        x={bbox.x + 28}
+                        dy={lineIdx === 0 ? 0 : 17}
+                      >
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+                </g>
+              )
+            })}
 
             <text
-              x={bbox.x + barWidth + 14}
-              y={bbox.y + bbox.height / 2 + 4}
-              textAnchor="start"
+              x={bbox.x + bbox.width / 2}
+              y={bbox.y + bbox.height - 30}
+              textAnchor="middle"
               fontFamily="Arial, sans-serif"
-              fontSize={13}
-              fontWeight={600}
+              fontSize={34}
+              fontWeight={800}
               fill={color}
             >
-              {item.amount}
+              {amount}
             </text>
-
-            {IconComponent && (
-              <g transform={`translate(${bbox.x + barWidth + 70}, ${bbox.y + bbox.height / 2 - 8})`}>
-                <IconComponent size={16} color={color} />
-              </g>
-            )}
 
             {isSelected && renderHandles(bbox, elementId)}
           </g>
         )
       })}
-
-      {(() => {
-        const totalId = 'total-summary'
-        const totalY = startY + items.length * (barH + gap) + 16
-        const defaultBbox = { x: barX, y: totalY, width: barMaxW, height: 40 }
-        const customPos = positions[totalId]
-        const isSelected = selectedIds.has(totalId)
-        const strokeColor = tplStrokeColors[totalId] || (isSelected ? '#4a90d9' : 'none')
-        const strokeWidth = tplStrokeWidths[totalId] ?? (isSelected ? 2 : 0)
-        const bbox = {
-          x: customPos?.x ?? defaultBbox.x,
-          y: customPos?.y ?? defaultBbox.y,
-          width: customPos?.width ?? defaultBbox.width,
-          height: customPos?.height ?? defaultBbox.height,
-        }
-
-        return (
-          <g
-            key={totalId}
-            data-element-id={totalId}
-            onMouseDown={e => startDrag(e, totalId, bbox)}
-            transform={getTransform(totalId, bbox)}
-            style={{ cursor: 'pointer' }}
-          >
-            {strokeWidth > 0 && (
-              <rect x={bbox.x - 10} y={bbox.y - 4} width={bbox.width + 20} height={bbox.height + 8} rx={4} fill="none" stroke={strokeColor} strokeWidth={strokeWidth} />
-            )}
-            <line x1={bbox.x} y1={bbox.y} x2={bbox.x + bbox.width} y2={bbox.y} stroke="#ccc" strokeWidth={2} />
-            <text
-              x={bbox.x - 14}
-              y={bbox.y + 24}
-              textAnchor="end"
-              fontFamily="Arial, sans-serif"
-              fontSize={14}
-              fontWeight={700}
-              fill="#222"
-            >
-              {totalLabel}
-            </text>
-            <text
-              x={bbox.x + bbox.width + 14}
-              y={bbox.y + 24}
-              textAnchor="start"
-              fontFamily="Arial, sans-serif"
-              fontSize={14}
-              fontWeight={700}
-              fill="#222"
-            >
-              {totalAmount}
-            </text>
-
-            {isSelected && renderHandles(bbox, totalId)}
-          </g>
-        )
-      })()}
     </g>
   )
 }
