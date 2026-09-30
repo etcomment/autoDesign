@@ -3,6 +3,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
 
+const apiTarget = process.env.API_URL || 'http://localhost:3001'
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -13,9 +15,12 @@ export default defineConfig({
   server: {
     allowedHosts: true,
     proxy: {
-      '/api': 'http://localhost:3001',
-      '/health': 'http://localhost:3001',
+      '/api': apiTarget,
+      '/health': apiTarget,
     },
+  },
+  preview: {
+    allowedHosts: true,
   },
   test: {
     globals: true,

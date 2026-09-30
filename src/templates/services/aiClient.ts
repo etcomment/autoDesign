@@ -45,6 +45,11 @@ export async function requestDslGeneration(options: GenerateDslClientOptions): P
       }),
     })
 
+    const isJson = (res.headers.get('content-type') || '').includes('application/json')
+    if (!isJson) {
+      throw new Error("Le serveur IA est injoignable (l'API /api/ai n'est pas déployée). Renseignez une clé OpenRouter pour un appel direct.")
+    }
+
     if (res.ok) {
       const data = await res.json()
       if (data.success && data.dsl) {

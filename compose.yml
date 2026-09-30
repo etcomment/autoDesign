@@ -1,0 +1,26 @@
+services:
+  mplate-api:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OPENROUTER_DEFAULT_MODEL: ${OPENROUTER_DEFAULT_MODEL:-stealth/space-bunny-alpha}
+      PORT: "3001"
+    command: sh -c "npm ci && npm run server"
+    restart: unless-stopped
+
+  mplate:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      API_URL: http://mplate-api:3001
+    ports:
+      - "5173:5173"
+    depends_on:
+      - mplate-api
+    command: sh -c "npm ci && npm run build && npx vite preview --host 0.0.0.0 --port 5173"
+    restart: unless-stopped
