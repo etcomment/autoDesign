@@ -1016,12 +1016,6 @@ function parseBudget(dsl: string, headerTitle?: string, variantType?: string): B
       continue
     }
 
-    if (line.startsWith('subtitle ') || line.startsWith('note ')) {
-      const m = /^(?:subtitle|note)\s+"?([^"]*)"?\s*$/.exec(line)
-      if (m && m[1]) subtitle = stripQuotes(m[1])
-      continue
-    }
-
     if (line.startsWith('columns ') || line.startsWith('headers ')) {
       const tokens = tokenizeLine(line)
       if (tokens.tokens.length > 1) {
@@ -1044,22 +1038,36 @@ function parseBudget(dsl: string, headerTitle?: string, variantType?: string): B
       continue
     }
 
-    if (line.startsWith('bullet ') || line.startsWith('point ')) {
-      const m = /^(?:bullet|point)\s+"?([^"]*)"?\s*$/.exec(line)
-      if (m && m[1] && items.length > 0) {
-        const lastItem = items[items.length - 1]!
-        if (!lastItem.bullets) lastItem.bullets = []
-        lastItem.bullets.push(stripQuotes(m[1]))
+    const bulletMatch = /^(?:bullet|point|-|\*)\s+"?([^"]*)"?\s*$/.exec(line)
+    if (bulletMatch && bulletMatch[1] && items.length > 0) {
+      const lastItem = items[items.length - 1]!
+      if (!lastItem.bullets) lastItem.bullets = []
+      lastItem.bullets.push(stripQuotes(bulletMatch[1]))
+      continue
+    }
+
+    if (line.startsWith('subtitle ') || line.startsWith('note ') || line.startsWith('desc ')) {
+      const m = /^(?:subtitle|note|desc)\s+"?([^"]*)"?\s*$/.exec(line)
+      if (m && m[1]) {
+        const text = stripQuotes(m[1])
+        if (items.length > 0 && (resolvedType === 'budget4' || resolvedType === 'budget')) {
+          items[items.length - 1]!.subtitle = text
+        } else {
+          subtitle = text
+        }
       }
       continue
     }
 
     const tokens = tokenizeLine(line)
     const firstKeyword = (tokens.tokens[0] || '').toLowerCase()
-    if (['line', 'item', 'row', 'metric', 'block', 'node', 'column', 'station', 'level'].includes(firstKeyword) && tokens.tokens.length >= 2) {
+    const allowedKeywords = [
+      'line', 'item', 'row', 'metric', 'block', 'node', 'column',
+      'station', 'level', 'bar', 'cone', 'gauge', 'donut', 'col'
+    ]
+    if (allowedKeywords.includes(firstKeyword) && tokens.tokens.length >= 2) {
       const args = tokens.tokens.slice(1)
       const trailing = extractTrailingArgs(args, 1)
-
       const label = stripQuotes(args[0]!)
 
       const nonKvArgs: string[] = []
@@ -1071,22 +1079,40 @@ function parseBudget(dsl: string, headerTitle?: string, variantType?: string): B
         nonKvArgs.push(stripQuotes(arg))
       }
 
-      let rawAmount = trailing.value ?? (nonKvArgs[0] ?? '')
-      let rawPct = trailing.percent ?? (nonKvArgs[1] ?? '')
+      let planned: string | undefined = undefined
+      let actual: string | undefined = undefined
+      let variance: string | undefined = undefined
+      let rawAmount = trailing.value ?? ''
+      let rawPct = trailing.percent ?? ''
+      let itemSubtitle: string | undefined = undefined
 
-      let planned = nonKvArgs[0]
-      let actual = nonKvArgs[1]
-      let variance = nonKvArgs[2]
-
-      if (firstKeyword === 'row' && nonKvArgs.length >= 2) {
+      if (resolvedType === 'budget5' || firstKeyword === 'row') {
         planned = nonKvArgs[0]
         actual = nonKvArgs[1]
         variance = nonKvArgs[2]
         rawAmount = planned ?? ''
+      } else if (resolvedType === 'budget4' || firstKeyword === 'gauge' || firstKeyword === 'donut') {
+        for (const arg of nonKvArgs) {
+          if (arg.endsWith('%') || (!isNaN(Number(arg)) && !arg.includes('£') && !arg.includes('$') && !arg.includes('€'))) {
+            rawPct = arg.endsWith('%') ? arg : `${arg}%`
+          } else {
+            itemSubtitle = arg
+          }
+        }
+      } else {
+        for (const arg of nonKvArgs) {
+          if (arg.endsWith('%') || (!isNaN(Number(arg)) && !arg.includes('£') && !arg.includes('$') && !arg.includes('€') && rawAmount)) {
+            rawPct = arg.endsWith('%') ? arg : `${arg}%`
+          } else if (arg.includes('£') || arg.includes('$') || arg.includes('€') || !rawAmount) {
+            rawAmount = arg
+          } else {
+            itemSubtitle = arg
+          }
+        }
       }
 
       if (!rawPct && rawAmount && (rawAmount.endsWith('%') || (!isNaN(Number(rawAmount)) && nonKvArgs.length === 1 && !rawAmount.includes('£') && !rawAmount.includes('$') && !rawAmount.includes('€')))) {
-        rawPct = rawAmount
+        rawPct = rawAmount.endsWith('%') ? rawAmount : `${rawAmount}%`
         rawAmount = ''
       }
 
@@ -1097,13 +1123,13 @@ function parseBudget(dsl: string, headerTitle?: string, variantType?: string): B
 
       items.push({
         label,
-        subtitle: nonKvArgs[0] && nonKvArgs[0] !== rawAmount && nonKvArgs[0] !== rawPct ? nonKvArgs[0] : undefined,
+        subtitle: itemSubtitle,
         amount: rawAmount,
         percentage,
         color: trailing.color,
         icon: trailing.icon,
         value: trailing.value || rawAmount,
-        percent: trailing.percent || rawPct,
+        percent: trailing.percent || (rawPct ? (rawPct.endsWith('%') ? rawPct : `${rawPct}%`) : undefined),
         planned,
         actual,
         variance,
@@ -1118,8 +1144,30 @@ function parseBudget(dsl: string, headerTitle?: string, variantType?: string): B
     items.forEach(it => {
       if (!it.percentage) {
         it.percentage = defaultPct
+        it.percent = `${defaultPct}%`
       }
     })
+  }
+
+  if (resolvedType === 'budget3' && items.length > 0) {
+    const hasZeros = items.some(it => !it.percentage)
+    if (hasZeros) {
+      const numericAmounts = items.map(it => {
+        const val = (it.amount || it.value || '').replace(/[^0-9.-]/g, '')
+        const n = parseFloat(val)
+        return isNaN(n) ? 0 : n
+      })
+      const maxAmt = Math.max(...numericAmounts)
+      if (maxAmt > 0) {
+        items.forEach((it, idx) => {
+          if (!it.percentage) {
+            const pct = Math.max(10, Math.round((numericAmounts[idx]! / maxAmt) * 100))
+            it.percentage = pct
+            it.percent = `${pct}%`
+          }
+        })
+      }
+    }
   }
 
   if (!totalAmount && items.length > 0) {
@@ -1690,6 +1738,53 @@ export function generateDslText(type: string, data: TemplateData): string {
       const targetOrChange = m.target ? ` "${esc(m.target)}"` : (m.change ? ` "${esc(m.change)}"` : '')
       out += `  metric "${esc(m.label)}" "${esc(m.value)}"${targetOrChange}${emitTrailingArgs(m)}\n`
     }
+  }
+
+  if (['budget', 'budget2', 'budget3', 'budget4', 'budget5'].includes(type)) {
+    if (d.subtitle) out += `  subtitle "${esc(String(d.subtitle))}"\n`
+    if (d.columns && Array.isArray(d.columns) && d.columns.length > 0) {
+      out += `  columns ${d.columns.map((c: unknown) => `"${esc(String(c))}"`).join(' ')}\n`
+    }
+    if (d.totalLabel || d.totalAmount || d.totalActual || d.totalVariance) {
+      let totalLine = `  total "${esc(String(d.totalLabel || 'Total'))}" "${esc(String(d.totalAmount || ''))}"`
+      if (d.totalActual) totalLine += ` "${esc(String(d.totalActual))}"`
+      if (d.totalVariance) totalLine += ` "${esc(String(d.totalVariance))}"`
+      out += totalLine + '\n'
+    }
+
+    const budgetItems = list('items')
+    if (budgetItems) {
+      for (const it of budgetItems) {
+        if (type === 'budget5') {
+          const planned = esc(String(it.planned ?? it.amount ?? ''))
+          const actual = esc(String(it.actual ?? it.value ?? ''))
+          const variance = esc(String(it.variance ?? ''))
+          out += `  row "${esc(String(it.label))}" "${planned}" "${actual}" "${variance}"${emitTrailingArgs(it)}\n`
+        } else if (type === 'budget4') {
+          const sub = it.subtitle ? ` "${esc(String(it.subtitle))}"` : ''
+          const pct = it.percent || (it.percentage != null ? `${it.percentage}%` : '')
+          out += `  gauge "${esc(String(it.label))}"${sub}${pct ? ` ${pct}` : ''}${emitTrailingArgs(it)}\n`
+        } else if (type === 'budget3') {
+          const amt = it.amount || it.value ? ` "${esc(String(it.amount || it.value))}"` : ''
+          const pct = it.percent || (it.percentage != null ? ` ${it.percentage}%` : '')
+          out += `  cone "${esc(String(it.label))}"${amt}${pct}${emitTrailingArgs(it)}\n`
+        } else if (type === 'budget2') {
+          const amt = it.amount ? ` "${esc(String(it.amount))}"` : ''
+          const pct = it.percent || (it.percentage != null ? ` ${it.percentage}%` : '')
+          out += `  bar "${esc(String(it.label))}"${amt}${pct}${emitTrailingArgs(it)}\n`
+        } else {
+          const amt = it.amount || it.value ? ` "${esc(String(it.amount || it.value))}"` : ''
+          out += `  item "${esc(String(it.label))}"${amt}${emitTrailingArgs(it)}\n`
+          if (it.bullets && Array.isArray(it.bullets)) {
+            for (const b of it.bullets) {
+              out += `    bullet "${esc(String(b))}"\n`
+            }
+          }
+        }
+      }
+    }
+
+    return out
   }
 
   const items = list('items')

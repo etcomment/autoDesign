@@ -354,13 +354,65 @@ Ce document constitue la **source officielle et unique de la syntaxe DSL** pour 
 
 ### 2.12 Budget 1 à 5 (`@budget` à `@budget5`)
 
+#### Budget 1 — Colonnes avec Badges & Puces (`@budget`)
 ```dsl
-@budget "Répartition du Budget Projets 2026"
-  item "Infrastructure & Cloud" "£1.2M" "40%" icon:"database" #3b82f6
-    style fill #3b82f6 fontColor #ffffff
-  item "Équipe & Recrutement" "£900K" "30%" icon:"people" #8b5cf6
-  item "Marketing & Acquisition" "£600K" "20%" icon:"chat" #10b981
-  item "R&D & Outillage" "£300K" "10%" icon:"gear" #f59e0b
+@budget "Budget Summary"
+  total "Total" "£100,000"
+  item "Budget" "£50,000" #1a2249
+    bullet "MIGSO-PCUBED content and words"
+    bullet "to be added here as required"
+  item "Spending" "£30,000" #2b63d9
+    bullet "MIGSO-PCUBED content and words"
+    bullet "to be added here as required"
+  item "Saving" "£20,000" #ff5338
+    bullet "MIGSO-PCUBED content and words"
+    bullet "to be added here as required"
+```
+
+#### Budget 2 — Barres de Progression Horizontales (`@budget2`)
+```dsl
+@budget2 "Progression Budgétaire Annuelle"
+  bar "2020" 30% #1a2249
+  bar "2021" 45% #2b63d9
+  bar "2022" 60% #ff5338
+  bar "2023" 75% #ffb100
+  bar "2024" 90% #48bb95
+```
+
+#### Budget 3 — Cônes Triangulaires Verticaux (`@budget3`)
+```dsl
+@budget3 "Répartition Mensuelle"
+  total "Total" "£76,100"
+  cone "JANUARY" "£17,300" 70% #1a2249
+  cone "FEBRUARY" "£7,600" 30% #2b63d9
+  cone "MARCH" "£15,200" 60% #ff5338
+  cone "APRIL" "£4,000" 16% #ffb100
+  cone "MAY" "£25,000" 100% #1a2249
+  cone "JUNE" "£2,000" 8% #2b63d9
+  cone "JULY" "£5,000" 20% #ff5338
+```
+
+#### Budget 4 — Jauges Donut Circulaires (`@budget4`)
+```dsl
+@budget4 "Indicateurs Budgétaires"
+  total "Average" "60%"
+  gauge "Your title 01" "MIGSO-PCUBED content and words to be added here as required" 72% #1a2249
+  gauge "Your title 02" "MIGSO-PCUBED content and words to be added here as required" 68% #2b63d9
+  gauge "Your title 03" "MIGSO-PCUBED content and words to be added here as required" 56% #ff5338
+  gauge "Your title 04" "MIGSO-PCUBED content and words to be added here as required" 44% #ffb100
+```
+
+#### Budget 5 — Tableau Financier Exécutif (`@budget5`)
+```dsl
+@budget5 "Synthèse Financière"
+  columns "Cost type" "Planned (£)" "Actual (£)" "Variance (£)"
+  row "Staff Costs (Internal)" "£5,000.00" "£3,000.00" "£2,000.00"
+  row "Services (External)" "£5,000.00" "£3,000.00" "£2,000.00"
+  row "Material" "£5,000.00" "£3,000.00" "£2,000.00"
+  row "Travel Expenses" "£5,000.00" "£3,000.00" "£2,000.00"
+  row "Advertising Expenses" "£5,000.00" "£3,000.00" "£2,000.00"
+  row "Rent" "£5,000.00" "£3,000.00" "£2,000.00"
+  total "Total costs" "£50,000.00" "£30,000.00" "£20,000.00"
 ```
 
 ### 2.13 DecisionTree / Decision 1 à 2 (`@decision` / `@decisionTree`, `@decision2`)
