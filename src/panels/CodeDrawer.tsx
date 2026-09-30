@@ -11,7 +11,7 @@ export interface CodeDrawerProps {
 }
 
 export function CodeDrawer({ isOpen, onClose }: CodeDrawerProps) {
-  const [activeTab, setActiveTab] = useState('mermaid')
+  const [activeTab, setActiveTab] = useState('templates')
   const isMobile = useIsMobile()
   const [height, setHeight] = useState(() =>
     parseInt(isMobile ? theme.layout.drawerMinHeight : theme.layout.drawerDefaultHeight, 10)
@@ -42,8 +42,8 @@ export function CodeDrawer({ isOpen, onClose }: CodeDrawerProps) {
   }, [height])
 
   const tabs: TabItem[] = [
-    { id: 'mermaid', label: 'Mermaid' },
     { id: 'templates', label: 'Template DSL' },
+    { id: 'mermaid', label: 'Mermaid' },
   ]
 
   return (

@@ -90,6 +90,17 @@ export function App() {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null
+      const isInput = Boolean(
+        target && (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable ||
+          target.closest?.('.cm-editor')
+        )
+      )
+      if (isInput) return
+
       const isMod = e.ctrlKey || e.metaKey
 
       if (isMod && e.key === 'z' && !e.shiftKey) {
@@ -105,8 +116,6 @@ export function App() {
       }
 
       if (isMod && (e.key === 'g' || e.key === 'G')) {
-        const target = e.target as HTMLElement
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return
         e.preventDefault()
         
         const state = useDiagramStore.getState()
