@@ -28,3 +28,6 @@ bugs/
 *.orig
 *.rej
 ex/.~lock.*
+.env
+.env.*
+*.env

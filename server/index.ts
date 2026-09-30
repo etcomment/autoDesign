@@ -1,5 +1,9 @@
 import { createApp } from './app'
 
+try {
+  process.loadEnvFile()
+} catch {}
+
 const DEFAULT_PORT = 3001
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : DEFAULT_PORT
 

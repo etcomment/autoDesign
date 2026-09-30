@@ -2,6 +2,7 @@ import express, { type Application, type Request, type Response, type NextFuncti
 import { createHealthRouter } from './routes/healthRoutes'
 import { createTemplatesRouter } from './routes/templatesRoutes'
 import { createRenderRouter } from './routes/renderRoutes'
+import { createAiRouter } from './routes/aiRoutes'
 
 export function createApp(): Application {
   const app = express()
@@ -12,6 +13,7 @@ export function createApp(): Application {
   app.use('/health', createHealthRouter())
   app.use('/api/templates', createTemplatesRouter())
   app.use('/api/render', createRenderRouter())
+  app.use('/api/ai', createAiRouter())
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     const errorMessage = err instanceof Error ? err.message : 'Unknown internal error'
