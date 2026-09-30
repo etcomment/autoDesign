@@ -242,7 +242,7 @@ export function parseTemplateDsl(dsl: string): TemplateData | null {
       result = parseBrain(trimmed, header.title)
       break
     case 'budget':
-      result = parseBudget(trimmed, header.title)
+      result = parseBudget(trimmed, header.title, header.type)
       break
     case 'decision':
     case 'decisionTree':
@@ -994,12 +994,20 @@ function parseBrain(dsl: string, headerTitle?: string): BrainData {
   return { type: 'brain', title, centerLabel, branches }
 }
 
-function parseBudget(dsl: string, headerTitle?: string): BudgetData {
+function parseBudget(dsl: string, headerTitle?: string, variantType?: string): BudgetData {
   const lines = getLines(dsl)
   let title: string | undefined = headerTitle
-  let totalLabel = 'Total Budget'
+  let subtitle: string | undefined = undefined
+  let totalLabel = 'Total'
   let totalAmount = ''
+  let totalActual: string | undefined = undefined
+  let totalVariance: string | undefined = undefined
+  let columns: string[] | undefined = undefined
   const items: BudgetItem[] = []
+
+  const resolvedType = (['budget', 'budget2', 'budget3', 'budget4', 'budget5'].includes(variantType ?? '')
+    ? variantType
+    : 'budget') as BudgetData['type']
 
   for (const line of lines) {
     if (line.startsWith('@budget')) {
@@ -1008,20 +1016,47 @@ function parseBudget(dsl: string, headerTitle?: string): BudgetData {
       continue
     }
 
-    const totalMatch = /^total\s+"([^"]*)"(?:\s+"([^"]*)")?\s*$/.exec(line)
-    if (totalMatch) {
-      if (totalMatch[2]) {
-        totalLabel = stripQuotes(totalMatch[1]!)
-        totalAmount = stripQuotes(totalMatch[2]!)
-      } else {
-        totalAmount = stripQuotes(totalMatch[1]!)
+    if (line.startsWith('subtitle ') || line.startsWith('note ')) {
+      const m = /^(?:subtitle|note)\s+"?([^"]*)"?\s*$/.exec(line)
+      if (m && m[1]) subtitle = stripQuotes(m[1])
+      continue
+    }
+
+    if (line.startsWith('columns ') || line.startsWith('headers ')) {
+      const tokens = tokenizeLine(line)
+      if (tokens.tokens.length > 1) {
+        columns = tokens.tokens.slice(1).map(stripQuotes)
       }
       continue
     }
 
-    var tokens = tokenizeLine(line)
+    if (line.startsWith('total ') || line === 'total') {
+      const tokens = tokenizeLine(line)
+      const args = tokens.tokens.slice(1).map(stripQuotes)
+      if (args.length === 1) {
+        totalAmount = args[0]!
+      } else if (args.length >= 2) {
+        totalLabel = args[0]!
+        totalAmount = args[1]!
+        if (args[2]) totalActual = args[2]
+        if (args[3]) totalVariance = args[3]
+      }
+      continue
+    }
+
+    if (line.startsWith('bullet ') || line.startsWith('point ')) {
+      const m = /^(?:bullet|point)\s+"?([^"]*)"?\s*$/.exec(line)
+      if (m && m[1] && items.length > 0) {
+        const lastItem = items[items.length - 1]!
+        if (!lastItem.bullets) lastItem.bullets = []
+        lastItem.bullets.push(stripQuotes(m[1]))
+      }
+      continue
+    }
+
+    const tokens = tokenizeLine(line)
     const firstKeyword = (tokens.tokens[0] || '').toLowerCase()
-    if (['line', 'item', 'row', 'metric', 'block', 'node', 'station', 'level'].includes(firstKeyword) && tokens.tokens.length >= 2) {
+    if (['line', 'item', 'row', 'metric', 'block', 'node', 'column', 'station', 'level'].includes(firstKeyword) && tokens.tokens.length >= 2) {
       const args = tokens.tokens.slice(1)
       const trailing = extractTrailingArgs(args, 1)
 
@@ -1039,7 +1074,18 @@ function parseBudget(dsl: string, headerTitle?: string): BudgetData {
       let rawAmount = trailing.value ?? (nonKvArgs[0] ?? '')
       let rawPct = trailing.percent ?? (nonKvArgs[1] ?? '')
 
-      if (!rawPct && rawAmount && (rawAmount.endsWith('%') || (!isNaN(Number(rawAmount)) && nonKvArgs.length === 1))) {
+      let planned = nonKvArgs[0]
+      let actual = nonKvArgs[1]
+      let variance = nonKvArgs[2]
+
+      if (firstKeyword === 'row' && nonKvArgs.length >= 2) {
+        planned = nonKvArgs[0]
+        actual = nonKvArgs[1]
+        variance = nonKvArgs[2]
+        rawAmount = planned ?? ''
+      }
+
+      if (!rawPct && rawAmount && (rawAmount.endsWith('%') || (!isNaN(Number(rawAmount)) && nonKvArgs.length === 1 && !rawAmount.includes('£') && !rawAmount.includes('$') && !rawAmount.includes('€')))) {
         rawPct = rawAmount
         rawAmount = ''
       }
@@ -1051,19 +1097,23 @@ function parseBudget(dsl: string, headerTitle?: string): BudgetData {
 
       items.push({
         label,
+        subtitle: nonKvArgs[0] && nonKvArgs[0] !== rawAmount && nonKvArgs[0] !== rawPct ? nonKvArgs[0] : undefined,
         amount: rawAmount,
         percentage,
         color: trailing.color,
         icon: trailing.icon,
         value: trailing.value || rawAmount,
         percent: trailing.percent || rawPct,
+        planned,
+        actual,
+        variance,
       })
       continue
     }
   }
 
   const zeroPctCount = items.filter(it => !it.percentage).length
-  if (zeroPctCount > 0 && items.length > 0) {
+  if (zeroPctCount > 0 && items.length > 0 && resolvedType === 'budget2') {
     const defaultPct = Math.round(100 / items.length)
     items.forEach(it => {
       if (!it.percentage) {
@@ -1077,13 +1127,14 @@ function parseBudget(dsl: string, headerTitle?: string): BudgetData {
     let symbol = ''
     let valid = false
     for (const it of items) {
-      if (it.amount) {
-        const cleaned = it.amount.replace(/[^0-9.-]/g, '')
+      const targetVal = it.amount || it.value || it.planned
+      if (targetVal) {
+        const cleaned = targetVal.replace(/[^0-9.-]/g, '')
         const num = parseFloat(cleaned)
         if (!isNaN(num)) {
           sum += num
           valid = true
-          const sym = /[$€£¥]/.exec(it.amount)
+          const sym = /[$€£¥]/.exec(targetVal)
           if (sym) symbol = sym[0]!
         }
       }
@@ -1093,7 +1144,17 @@ function parseBudget(dsl: string, headerTitle?: string): BudgetData {
     }
   }
 
-  return { type: 'budget', title, totalLabel, totalAmount, items }
+  return {
+    type: resolvedType,
+    title,
+    subtitle,
+    totalLabel,
+    totalAmount,
+    totalActual,
+    totalVariance,
+    columns,
+    items,
+  }
 }
 
 function parseDecision(dsl: string, headerTitle?: string): DecisionTreeData {
