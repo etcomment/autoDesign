@@ -175,9 +175,9 @@ import { PieChart3Template } from './components/PieChart3Template'
 import { PieChart4Template } from './components/PieChart4Template'
 import { PieChart5Template } from './components/PieChart5Template'
 
-type TemplateComponent = (props: { data: TemplateData }) => ReactElement
+export type TemplateComponent = (props: { data: TemplateData }) => ReactElement
 
-const TEMPLATE_MAP: Record<TemplateType, TemplateComponent> = {
+export const TEMPLATE_MAP: Record<TemplateType, TemplateComponent> = {
   roadmap: ({ data }) => <RoadmapTemplate data={data as RoadmapData} />,
   roadmap2: ({ data }) => <Roadmap2Template data={data as RoadmapData} />,
   roadmap3: ({ data }) => <Roadmap3Template data={data as RoadmapData} />,
